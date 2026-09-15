@@ -190,6 +190,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 26500,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 36300,
+          "when": "2026-09-06",
+          "source": "SNKRDUNK recent completed sales history"
+        },
+        "tiers": {
+          "definitely_buy": 25000,
+          "buy_upper": 29000,
+          "ceiling": 32000
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — still grinding toward definitely-buy",
+          "reasoning": "Real sales keep printing lower: ¥26,480-27,000 over the last 2-20 hours, continuing the break from the ¥34,500-36,300 cluster ten days ago. Getting close to the ¥25,000 definitely-buy line — a print there would confirm it, not just approach it."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -432,6 +453,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 78000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 130000,
+          "when": "April 2026",
+          "source": "your own pokeca-chart per-card verification; altema's table shows a conflicting ¥155,000 for the same date, treated as the less reliable of the two per your prior read"
+        },
+        "tiers": {
+          "definitely_buy": 65000,
+          "buy_upper": 75000,
+          "ceiling": 85000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch — still declining, now close to the buy zone",
+          "reasoning": "Real sales continue lower (¥81,000 twenty hours ago down to ¥77,000 three hours ago) and are now within ¥3,000 of the ¥75,000 buy_upper line. Two new Pikachu ex SAR variants are on sale today as of this release — that supply pressure is the main reason to still wait rather than front-run the buy zone."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -693,6 +735,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 66500,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 97000,
+          "when": "~early August 2026",
+          "source": "altema — low confidence; the same source overstated this card's current price by ~30% in an earlier check, so treat this as an upper-bound estimate, not a confirmed figure"
+        },
+        "tiers": {
+          "definitely_buy": 62000,
+          "buy_upper": 70000,
+          "ceiling": 75000
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — today is the actual test you were waiting for",
+          "reasoning": "A real sale printed at ¥65,000 six hours ago, below the ¥67,500-71,000 band that had held steady for two days — though depth is still excellent (20 of 20 listings within 15%), so this could be one print, not a trend yet. Today is release day for the competing Umbreon/Espeon full-art deck; recheck later today to see whether this was noise or the start of real softening before treating ¥65,000 as the new normal."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -920,6 +983,25 @@
               "when": "2026/06/29"
             }
           ]
+        }
+      },
+      "analysis": {
+        "representative_price": 310000,
+        "price_source": "ask_depth",
+        "peak": {
+          "price": 400000,
+          "when": "2026-09-02",
+          "source": "SNKRDUNK recent completed sales history"
+        },
+        "tiers": {
+          "definitely_buy": 300000,
+          "buy_upper": 330000,
+          "ceiling": 360000
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — asks now sit at the definitely-buy line, sales haven't confirmed it yet",
+          "reasoning": "The lowest ask fell to ¥299,999-300,000 with real depth behind it (11 of 20 listings within 15%), but the most recent actual completed sale is still ¥320,000 from Sept 13 — nobody has transacted at the new low yet, hence ask_depth rather than sales_confirmed. Representative price blends both sides. A confirmed sale at or below ¥300,000 would be the clean definitely-buy trigger; until then this sits just inside buy."
         }
       }
     },
@@ -1183,6 +1265,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 42400,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 70500,
+          "when": "~August 2026",
+          "source": "altema — low confidence; likely overstated, consistent with the pattern seen across every other tracked card"
+        },
+        "tiers": {
+          "definitely_buy": 38000,
+          "buy_upper": 42000,
+          "ceiling": 46000
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — unchanged, flat and stable",
+          "reasoning": "Sales are still pinned tightly at ¥42,000-42,500 with strong depth (17 of 20 within 15%) — no material change from the last check. Sits right at the buy_upper line; a print below ¥40,000 would be needed to call this a real trend rather than noise."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -1935,5 +2038,20 @@
       "volume_trend": "flat",
       "volume_note": "Transaction-count bars across the trailing month hold a broadly steady, consistent range with no unusual spike or drop near the most recent days (around 9/10-9/14)."
     }
-  }
+  },
+  "market_context": {
+    "catalyst": "30th Anniversary release day is today (Sept 16) — the standard booster box, the Umbreon/Espeon premium deck, and the Futuristic set with two new Pikachu ex SAR are on sale now. No SNKRDUNK listings have appeared yet for any of the six new M6a cards as of this morning's check — too early for opened product to hit the market. Broad PSA10 index has been down ~21% MoM into this release; historical analog still points to the true floor forming Nov 2026 onward."
+  },
+  "banners": [
+    {
+      "type": "warning",
+      "title": "Gengar VMAX SA: asks now sit at your definitely-buy line, but no sale has confirmed it yet.",
+      "body": "The lowest ask dropped to ¥299,999-300,000 with real depth behind it (11 of 20 listings within 15%), but the most recent actual completed sale is still ¥320,000 from Sept 13 — nobody has transacted at the new lower level yet. Representative price below blends both at ¥310,000. Watch for the first real completed sale at or below ¥300,000 — that's your confirmed definitely-buy trigger, not just an ask."
+    },
+    {
+      "type": "info",
+      "title": "Blacky ex SAR: today is the Umbreon/Espeon deck-set test.",
+      "body": "A single real sale printed at ¥65,000 six hours ago — below the tight ¥67,500-71,000 band that had held for two days. Depth is still excellent (20 of 20 listings within 15%), so this could be noise, or the first sign of today's competing full-art Umbreon deck pulling demand. Worth a same-day recheck once the deck-set has been on sale a few hours."
+    }
+  ]
 }
