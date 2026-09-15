@@ -214,15 +214,17 @@ header.top .title-block p {
   color: var(--text);
 }
 
+/* One full-width card per row — each card's height is its own, so expanding one
+   card's detail never stretches or blanks out the cards next to it. */
 .cards {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   margin-bottom: 28px;
 }
 
 @media (min-width: 700px) {
-  .cards { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+  .cards { gap: 16px; }
 }
 
 .card {
@@ -252,6 +254,20 @@ header.top .title-block p {
 }
 
 .card-summary:active { background: var(--panel-2); }
+
+/* Top row: identity, price, and (only when there's no gauge) quick stats sit
+   side by side on wide screens, and stack on narrow ones. */
+.card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 18px 32px;
+  margin-bottom: 14px;
+}
+
+.card-head { flex: 1 1 260px; min-width: 200px; }
+.card-price-block { flex: 1 1 220px; min-width: 200px; }
+.card-quickstats { flex: 1 1 220px; min-width: 200px; }
 
 .card .eyebrow {
   color: var(--muted-2);
@@ -283,7 +299,6 @@ header.top .title-block p {
 .card .subtitle {
   color: var(--muted);
   font-size: 0.76rem;
-  margin-bottom: 14px;
 }
 
 .price-row {
@@ -386,6 +401,16 @@ header.top .title-block p {
 .card-stats .stat-value { color: var(--text); }
 .card-stats .stat-value.up { color: var(--red); }
 .card-stats .stat-value.down { color: var(--green); }
+
+/* Inside the narrow top-row quickstats column there's no divider above it (the
+   row itself already separates it from the title/price beside it), and one
+   column reads better than a cramped 2-up grid at that width. */
+.card-quickstats .card-stats {
+  grid-template-columns: 1fr;
+  border-top: none;
+  padding-top: 0;
+  gap: 10px;
+}
 
 .depth-bar-track {
   height: 5px;
