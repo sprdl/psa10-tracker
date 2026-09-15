@@ -397,6 +397,11 @@
     let verdictHtml;
     if (analysis && analysis.verdict) {
       verdictHtml = `<div class="verdict-line"><span class="verdict-tag ${analysis.verdict.tag}">${escapeHtml(analysis.verdict.label || analysis.verdict.tag)}</span><div>${escapeHtml(analysis.verdict.reasoning || '')}</div></div>`;
+    } else if (gaugeHtml) {
+      // tiers/peak carried forward from a previous snapshot, but this run's own
+      // representative_price/price_source/verdict haven't been reviewed yet —
+      // distinct from "no analysis at all" below.
+      verdictHtml = `<div class="tier-pending needs-review">Tiers carried forward from a previous check — this run's price and verdict haven't been reviewed yet.</div>`;
     } else {
       verdictHtml = `<div class="tier-pending">Tiers not yet established for this card — showing raw stats only.</div>`;
     }

@@ -466,6 +466,11 @@ header.top .title-block p {
   font-style: italic;
 }
 
+.tier-pending.needs-review {
+  color: var(--amber-strong);
+  font-style: normal;
+}
+
 /* ---------- Expanded detail ---------- */
 
 .card-detail {
