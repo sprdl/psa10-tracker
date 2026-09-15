@@ -42,20 +42,33 @@ Add `--no-push` if you want to commit locally without pushing yet.
 
 Open the Pages URL on your phone/tablet (bookmark it or add it to your home
 screen). The snapshot dropdown at the top switches between every run you've ever
-pushed. Tap a card to expand it and see the full listing spread, the 15%-cutoff
-split, recent completed sales with a small trend sparkline, and the raw A-grade
-comparison; tap it again to collapse.
+pushed.
+
+A snapshot with just the raw price-check data renders honestly on its own: market
+strip, per-card price/depth/favorites, and — tap a card to expand it — the full
+listing spread, the 15%-cutoff split, recent completed sales with a labeled trend
+chart (dates and prices), and the raw A-grade comparison. Cards without an
+evaluation yet are labeled "tiers not yet established" rather than guessing.
+
+Once you layer on an **analysis overlay** (see `docs/schema.md`) — representative
+price, peak, tiers, verdict — a card also gets the colored price gauge, an
+off-peak %, a verdict tag with reasoning, and rows in the two comparison tables at
+the bottom of the page. Banners at the top surface both your own written notes
+(`banners` in the JSON) and small auto-detected flags the app computes itself by
+diffing against the previous snapshot (depth drops, favorite-count swings, a price
+crossing a tier boundary).
 
 ## Project layout
 
 ```
-index.html                 the whole app shell
-assets/style.css           styling
-assets/app.js               all client-side logic (fetches data/, renders cards)
-data/manifest.json          list of snapshots, in chronological order
-data/snapshots/*.json       one file per price-check run, exactly as produced
-scripts/add_snapshot.py     the one-command "publish a new run" script
-.github/workflows/deploy.yml   GitHub Actions: deploy to Pages on push
+index.html                     the whole app shell
+assets/style.css                styling
+assets/app.js                   all client-side logic (fetches data/, renders cards, tables, gauges)
+data/manifest.json              list of snapshots, in chronological order
+data/snapshots/*.json           one file per run — see docs/schema.md for the shape
+scripts/add_snapshot.py         the one-command "publish a new run" script
+docs/schema.md                  the full snapshot JSON schema, raw fields + optional analysis overlay
+.github/workflows/deploy.yml    GitHub Actions: deploy to Pages on push
 ```
 
 No build step, no dependencies, no backend — it's a static site that reads its own
