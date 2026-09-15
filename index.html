@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PSA10 Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="title-block">
+      <h1>PSA10 Tracker</h1>
+      <p>Japanese Pokémon TCG PSA10 &amp; raw A-rank prices, tracked from SNKRDUNK.</p>
+    </div>
+    <div class="snapshot-picker">
+      <label for="snapshot-select">Snapshot</label>
+      <select id="snapshot-select"></select>
+    </div>
+  </header>
+
+  <div id="market-strip" class="market-strip"></div>
+
+  <details class="notes-toggle">
+    <summary>Methodology &amp; collection notes — <span id="collected-at"></span></summary>
+    <div id="notes-body" class="notes-body"></div>
+  </details>
+
+  <h2 class="section-label">Tracked cards</h2>
+  <div id="cards" class="cards">
+    <div class="loading">Loading…</div>
+  </div>
+
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
