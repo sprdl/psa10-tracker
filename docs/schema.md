@@ -19,6 +19,7 @@ when nothing more is added.
     {
       "card_name_ja": "...",
       "url": "https://snkrdunk.com/apparels/...",
+      "image_url": "https://.../card-photo.jpg",  // optional — shown as a small thumbnail on the card
       "favorite_count": 780,
       "psa10_population": 10846,
       "psa10_gem_rate_pct": 88.0,
@@ -42,6 +43,11 @@ when nothing more is added.
   }
 }
 ```
+
+`image_url` can point at any directly-loadable image — a photo you host yourself, a
+SNKRDUNK listing photo's URL, whatever's convenient. It's entirely optional and
+per-card: a missing or broken URL just means no thumbnail for that card, nothing
+else changes.
 
 ## Analysis overlay (optional — adds verdicts, gauges, tiers, banners)
 

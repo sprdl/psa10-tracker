@@ -265,9 +265,20 @@ header.top .title-block p {
   margin-bottom: 14px;
 }
 
-.card-head { flex: 1 1 260px; min-width: 200px; }
+.card-head { flex: 1 1 260px; min-width: 200px; display: flex; gap: 12px; align-items: flex-start; }
+.card-head-text { min-width: 0; flex: 1; }
 .card-price-block { flex: 1 1 220px; min-width: 200px; }
 .card-quickstats { flex: 1 1 220px; min-width: 200px; }
+
+.card-thumb {
+  width: 56px;
+  height: 78px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  flex-shrink: 0;
+}
 
 .card .eyebrow {
   color: var(--muted-2);

@@ -64,6 +64,11 @@
       .replace(/>/g, '&gt;');
   }
 
+  // For values placed inside an HTML attribute (e.g. src="...") — also escapes quotes.
+  function escapeAttr(str) {
+    return escapeHtml(str).replace(/"/g, '&quot;');
+  }
+
   function dirClass(pct) {
     if (pct === null || pct === undefined || isNaN(pct) || pct === 0) return '';
     return pct > 0 ? 'pos' : 'neg';
@@ -396,16 +401,23 @@
       verdictHtml = `<div class="tier-pending">Tiers not yet established for this card — showing raw stats only.</div>`;
     }
 
+    const imgHtml = card.image_url
+      ? `<img class="card-thumb" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.closest('.card-head').classList.add('no-thumb'); this.remove();">`
+      : '';
+
     return `
       <div class="card-summary" data-idx="${i}">
         <div class="card-top">
           <div class="card-head">
-            <div class="eyebrow">
-              <span>Pop. ${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'} · gem rate ${card.psa10_gem_rate_pct != null ? card.psa10_gem_rate_pct + '%' : '—'}</span>
-              <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            ${imgHtml}
+            <div class="card-head-text">
+              <div class="eyebrow">
+                <span>Pop. ${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'} · gem rate ${card.psa10_gem_rate_pct != null ? card.psa10_gem_rate_pct + '%' : '—'}</span>
+                <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <h2>${escapeHtml(card.card_name_ja)}</h2>
+              <div class="subtitle">♥ ${card.favorite_count != null ? card.favorite_count.toLocaleString() : '—'} favorites</div>
             </div>
-            <h2>${escapeHtml(card.card_name_ja)}</h2>
-            <div class="subtitle">♥ ${card.favorite_count != null ? card.favorite_count.toLocaleString() : '—'} favorites</div>
           </div>
           <div class="card-price-block">
             <div class="price-row"><span class="price">${fmtYen(repPrice)}</span><span class="label">${analysis && analysis.representative_price != null ? 'representative PSA10 price' : 'lowest PSA10 ask'}</span>${flagHtml}</div>
