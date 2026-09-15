@@ -1,0 +1,1939 @@
+{
+  "collected_at_jst": "2026-09-16T07:36:31+09:00",
+  "notes": "Prices in JPY from SNKRDUNK. Listings filtered to 販売中のみ (for-sale only); top-20 cheapest active listings taken per grade, with a 15% cutoff above the lowest listing (threshold = lowest * 1.15) splitting them into within_15pct vs excluded_over_15pct. The site's 安い順 (cheapest-first) sort was applied and verified before extracting the top 20. recent_completed_sales are the most recent ~10-20 sales-history entries per grade, oldest-to-newest, filtered by the 状態 grade pill on the card's 売買履歴 section (rows leaking an unintended grade were discarded). PSA10 population/gem-rate sourced from altema.jp (pokekachi) for the 5 established cards, all re-verified unchanged from the prior run. image_url reused from the skill's cached table for all 11 cards (no re-fetching needed). The 6 new 30th CELEBRATION (M6a) cards actually released today, 2026-09-16 (JST) - this run re-verified, via live browser checks (not assumption carried over from the prior day), that all 6 still have zero PSA10 listings/sales (PSA grading turnaround hasn't happened yet, as expected) and none yet have a real altema.jp PSA10 population page (only price-prediction articles, unchanged from 2026-09-15). Genuine day-over-day market changes were observed for the M6a cards now that they are actually released: card 9 (ミュウツーex SAR) went from zero active A-grade listings in the prior run to 13 active listings (one at an outlier ¥100,000, likely a non-serious placeholder price); card 10 (ピカチュウex SAR M6a126, day version) went from zero completed A-grade sales to 20 real completed sales. Card 4 (ゲンガーVMAX SA) continues to show very thin A-grade supply (only 1 active listing). psa_tier_status omitted this run (JST is Wednesday, not Monday; the weekly PSA Value-tier check runs Mondays only).",
+  "cards": [
+    {
+      "card_name_ja": "ピカチュウVMAX CSR[s8b 223/184](ハイクラスパック「VMAXクライマックス」)",
+      "url": "https://snkrdunk.com/apparels/138599",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230913100335-0.webp?size=l",
+      "favorite_count": 781,
+      "psa10_population": 10846,
+      "psa10_gem_rate_pct": 88.0,
+      "grades": {
+        "psa10": {
+          "lowest_price": 26999,
+          "threshold_115pct_of_lowest": 31049,
+          "top20_cheapest_listings": [
+            26999,
+            27000,
+            29000,
+            29800,
+            33000,
+            34500,
+            34700,
+            34900,
+            35000,
+            35000,
+            36000,
+            36000,
+            37000,
+            37999,
+            38000,
+            38000,
+            38400,
+            38888,
+            39500,
+            40000
+          ],
+          "listings_within_15pct_of_lowest": [
+            26999,
+            27000,
+            29000,
+            29800
+          ],
+          "count_within_15pct": 4,
+          "count_excluded_over_15pct": 16,
+          "recent_completed_sales": [
+            {
+              "price": 35000,
+              "when": "2026/09/12"
+            },
+            {
+              "price": 28999,
+              "when": "2026/09/13"
+            },
+            {
+              "price": 28500,
+              "when": "1日前"
+            },
+            {
+              "price": 32500,
+              "when": "1日前"
+            },
+            {
+              "price": 29999,
+              "when": "1日前"
+            },
+            {
+              "price": 29000,
+              "when": "1日前"
+            },
+            {
+              "price": 27000,
+              "when": "20時間前"
+            },
+            {
+              "price": 27000,
+              "when": "11時間前"
+            },
+            {
+              "price": 26480,
+              "when": "2時間前"
+            },
+            {
+              "price": 26500,
+              "when": "2時間前"
+            }
+          ]
+        },
+        "raw_a_grade": {
+          "lowest_price": 16000,
+          "threshold_115pct_of_lowest": 18400,
+          "top20_cheapest_listings": [
+            16000,
+            21000,
+            22000,
+            22000,
+            22500,
+            23000,
+            23000,
+            30000,
+            30000,
+            50000,
+            55000
+          ],
+          "listings_within_15pct_of_lowest": [
+            16000
+          ],
+          "count_within_15pct": 1,
+          "count_excluded_over_15pct": 10,
+          "recent_completed_sales": [
+            {
+              "price": 26000,
+              "when": "2026/04/18"
+            },
+            {
+              "price": 27777,
+              "when": "2026/04/21"
+            },
+            {
+              "price": 25500,
+              "when": "2026/04/28"
+            },
+            {
+              "price": 29800,
+              "when": "2026/04/29"
+            },
+            {
+              "price": 21000,
+              "when": "2026/05/04"
+            },
+            {
+              "price": 26999,
+              "when": "2026/05/06"
+            },
+            {
+              "price": 25000,
+              "when": "2026/05/08"
+            },
+            {
+              "price": 28000,
+              "when": "2026/05/11"
+            },
+            {
+              "price": 25000,
+              "when": "2026/05/16"
+            },
+            {
+              "price": 26500,
+              "when": "2026/05/16"
+            },
+            {
+              "price": 29999,
+              "when": "2026/05/20"
+            },
+            {
+              "price": 29000,
+              "when": "2026/06/01"
+            },
+            {
+              "price": 30000,
+              "when": "2026/06/01"
+            },
+            {
+              "price": 33000,
+              "when": "2026/06/04"
+            },
+            {
+              "price": 25600,
+              "when": "2026/06/05"
+            },
+            {
+              "price": 33000,
+              "when": "2026/06/16"
+            },
+            {
+              "price": 29800,
+              "when": "2026/07/09"
+            },
+            {
+              "price": 22000,
+              "when": "2026/07/31"
+            },
+            {
+              "price": 24000,
+              "when": "2026/07/31"
+            },
+            {
+              "price": 20000,
+              "when": "2026/08/15"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "ピカチュウex SAR [SV8 132/106](拡張パック「超電ブレイカー」)",
+      "url": "https://snkrdunk.com/apparels/408333",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/8c2d34aa-dab1-4c89-b51c-5dd44b8eaca6.webp?size=l",
+      "favorite_count": 1770,
+      "psa10_population": 20026,
+      "psa10_gem_rate_pct": 88.7,
+      "grades": {
+        "psa10": {
+          "lowest_price": 78880,
+          "threshold_115pct_of_lowest": 90712,
+          "top20_cheapest_listings": [
+            78880,
+            79000,
+            79000,
+            79000,
+            79000,
+            81000,
+            83000,
+            85000,
+            85000,
+            87000,
+            90000,
+            94000,
+            95000,
+            98000,
+            99800,
+            99999,
+            100000,
+            100000,
+            103000,
+            105000
+          ],
+          "listings_within_15pct_of_lowest": [
+            78880,
+            79000,
+            79000,
+            79000,
+            79000,
+            81000,
+            83000,
+            85000,
+            85000,
+            87000,
+            90000
+          ],
+          "count_within_15pct": 11,
+          "count_excluded_over_15pct": 9,
+          "recent_completed_sales": [
+            {
+              "price": 84000,
+              "when": "2026/09/12"
+            },
+            {
+              "price": 83800,
+              "when": "2026/09/12"
+            },
+            {
+              "price": 85800,
+              "when": "2026/09/13"
+            },
+            {
+              "price": 84000,
+              "when": "2026/09/13"
+            },
+            {
+              "price": 81999,
+              "when": "1日前"
+            },
+            {
+              "price": 89000,
+              "when": "1日前"
+            },
+            {
+              "price": 89000,
+              "when": "1日前"
+            },
+            {
+              "price": 88880,
+              "when": "1日前"
+            },
+            {
+              "price": 85000,
+              "when": "1日前"
+            },
+            {
+              "price": 83000,
+              "when": "1日前"
+            },
+            {
+              "price": 82000,
+              "when": "1日前"
+            },
+            {
+              "price": 80500,
+              "when": "1日前"
+            },
+            {
+              "price": 80000,
+              "when": "1日前"
+            },
+            {
+              "price": 79500,
+              "when": "1日前"
+            },
+            {
+              "price": 81000,
+              "when": "20時間前"
+            },
+            {
+              "price": 79000,
+              "when": "17時間前"
+            },
+            {
+              "price": 79800,
+              "when": "16時間前"
+            },
+            {
+              "price": 78000,
+              "when": "11時間前"
+            },
+            {
+              "price": 77000,
+              "when": "3時間前"
+            }
+          ]
+        },
+        "raw_a_grade": {
+          "lowest_price": 59000,
+          "threshold_115pct_of_lowest": 67850,
+          "top20_cheapest_listings": [
+            59000,
+            62000,
+            62000,
+            62000,
+            63500,
+            67980,
+            70000,
+            72000,
+            72000,
+            75000,
+            79500,
+            87000,
+            88000,
+            92000,
+            109800,
+            109999
+          ],
+          "listings_within_15pct_of_lowest": [
+            59000,
+            62000,
+            62000,
+            62000,
+            63500
+          ],
+          "count_within_15pct": 5,
+          "count_excluded_over_15pct": 11,
+          "recent_completed_sales": [
+            {
+              "price": 86000,
+              "when": "2026/05/10"
+            },
+            {
+              "price": 81000,
+              "when": "2026/05/11"
+            },
+            {
+              "price": 88000,
+              "when": "2026/05/12"
+            },
+            {
+              "price": 76000,
+              "when": "2026/05/19"
+            },
+            {
+              "price": 89999,
+              "when": "2026/05/20"
+            },
+            {
+              "price": 90000,
+              "when": "2026/06/01"
+            },
+            {
+              "price": 90000,
+              "when": "2026/06/03"
+            },
+            {
+              "price": 87500,
+              "when": "2026/06/11"
+            },
+            {
+              "price": 100000,
+              "when": "2026/06/14"
+            },
+            {
+              "price": 89500,
+              "when": "2026/06/14"
+            },
+            {
+              "price": 81000,
+              "when": "2026/06/21"
+            },
+            {
+              "price": 77000,
+              "when": "2026/07/04"
+            },
+            {
+              "price": 79000,
+              "when": "2026/07/07"
+            },
+            {
+              "price": 88000,
+              "when": "2026/07/21"
+            },
+            {
+              "price": 87000,
+              "when": "2026/07/29"
+            },
+            {
+              "price": 89800,
+              "when": "2026/07/31"
+            },
+            {
+              "price": 80000,
+              "when": "2026/08/13"
+            },
+            {
+              "price": 79500,
+              "when": "2026/08/24"
+            },
+            {
+              "price": 69999,
+              "when": "2026/08/27"
+            },
+            {
+              "price": 70000,
+              "when": "2026/08/28"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
+      "url": "https://snkrdunk.com/apparels/455596",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/79302385-1b7d-4fb5-bd23-b78bd029a9df.webp?size=l",
+      "favorite_count": 3828,
+      "psa10_population": 80321,
+      "psa10_gem_rate_pct": 86.9,
+      "grades": {
+        "psa10": {
+          "lowest_price": 66500,
+          "threshold_115pct_of_lowest": 76475,
+          "top20_cheapest_listings": [
+            66500,
+            67000,
+            67500,
+            67500,
+            67500,
+            67500,
+            68000,
+            68000,
+            68000,
+            68000,
+            68000,
+            68900,
+            69000,
+            69000,
+            69000,
+            69400,
+            70000,
+            70000,
+            71000,
+            71000
+          ],
+          "listings_within_15pct_of_lowest": [
+            66500,
+            67000,
+            67500,
+            67500,
+            67500,
+            67500,
+            68000,
+            68000,
+            68000,
+            68000,
+            68000,
+            68900,
+            69000,
+            69000,
+            69000,
+            69400,
+            70000,
+            70000,
+            71000,
+            71000
+          ],
+          "count_within_15pct": 20,
+          "count_excluded_over_15pct": 0,
+          "recent_completed_sales": [
+            {
+              "price": 69800,
+              "when": "1日前"
+            },
+            {
+              "price": 69999,
+              "when": "1日前"
+            },
+            {
+              "price": 69800,
+              "when": "1日前"
+            },
+            {
+              "price": 69500,
+              "when": "1日前"
+            },
+            {
+              "price": 69500,
+              "when": "1日前"
+            },
+            {
+              "price": 69500,
+              "when": "1日前"
+            },
+            {
+              "price": 69400,
+              "when": "1日前"
+            },
+            {
+              "price": 69000,
+              "when": "19時間前"
+            },
+            {
+              "price": 69000,
+              "when": "19時間前"
+            },
+            {
+              "price": 69000,
+              "when": "19時間前"
+            },
+            {
+              "price": 68500,
+              "when": "15時間前"
+            },
+            {
+              "price": 67500,
+              "when": "13時間前"
+            },
+            {
+              "price": 66000,
+              "when": "12時間前"
+            },
+            {
+              "price": 67500,
+              "when": "11時間前"
+            },
+            {
+              "price": 67500,
+              "when": "10時間前"
+            },
+            {
+              "price": 67500,
+              "when": "8時間前"
+            },
+            {
+              "price": 67500,
+              "when": "7時間前"
+            },
+            {
+              "price": 65000,
+              "when": "6時間前"
+            }
+          ]
+        },
+        "raw_a_grade": {
+          "lowest_price": 47980,
+          "threshold_115pct_of_lowest": 55177,
+          "top20_cheapest_listings": [
+            47980,
+            50000,
+            51500,
+            52000,
+            52000,
+            52000,
+            52800,
+            52800,
+            53000,
+            53000,
+            54000,
+            54000,
+            54500,
+            55000,
+            55000,
+            56000,
+            56000,
+            58000,
+            58000,
+            59888
+          ],
+          "listings_within_15pct_of_lowest": [
+            47980,
+            50000,
+            51500,
+            52000,
+            52000,
+            52000,
+            52800,
+            52800,
+            53000,
+            53000,
+            54000,
+            54000,
+            54500,
+            55000,
+            55000
+          ],
+          "count_within_15pct": 15,
+          "count_excluded_over_15pct": 5,
+          "recent_completed_sales": [
+            {
+              "price": 59000,
+              "when": "2026/08/24"
+            },
+            {
+              "price": 66000,
+              "when": "2026/08/25"
+            },
+            {
+              "price": 57000,
+              "when": "2026/08/25"
+            },
+            {
+              "price": 57000,
+              "when": "2026/08/25"
+            },
+            {
+              "price": 67500,
+              "when": "2026/08/26"
+            },
+            {
+              "price": 57000,
+              "when": "2026/08/27"
+            },
+            {
+              "price": 54999,
+              "when": "2026/08/28"
+            },
+            {
+              "price": 62999,
+              "when": "2026/08/28"
+            },
+            {
+              "price": 55555,
+              "when": "2026/08/30"
+            },
+            {
+              "price": 52000,
+              "when": "2026/09/04"
+            },
+            {
+              "price": 59000,
+              "when": "2026/09/04"
+            },
+            {
+              "price": 54500,
+              "when": "2026/09/05"
+            },
+            {
+              "price": 60000,
+              "when": "2026/09/06"
+            },
+            {
+              "price": 60900,
+              "when": "2026/09/07"
+            },
+            {
+              "price": 59700,
+              "when": "2026/09/07"
+            },
+            {
+              "price": 59500,
+              "when": "2026/09/08"
+            },
+            {
+              "price": 54000,
+              "when": "2026/09/09"
+            },
+            {
+              "price": 56000,
+              "when": "2026/09/11"
+            },
+            {
+              "price": 56000,
+              "when": "2026/09/11"
+            },
+            {
+              "price": 53000,
+              "when": "1日前"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+      "url": "https://snkrdunk.com/apparels/91178",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20240611034356-0.webp?size=l",
+      "favorite_count": 1365,
+      "psa10_population": 8102,
+      "psa10_gem_rate_pct": 81.5,
+      "grades": {
+        "psa10": {
+          "lowest_price": 299999,
+          "threshold_115pct_of_lowest": 344999,
+          "top20_cheapest_listings": [
+            299999,
+            300000,
+            307000,
+            308000,
+            315000,
+            320000,
+            320000,
+            329000,
+            340000,
+            340000,
+            343000,
+            350000,
+            366666,
+            366666,
+            378000,
+            399999,
+            400000,
+            400000,
+            400000,
+            400000
+          ],
+          "listings_within_15pct_of_lowest": [
+            299999,
+            300000,
+            307000,
+            308000,
+            315000,
+            320000,
+            320000,
+            329000,
+            340000,
+            340000,
+            343000
+          ],
+          "count_within_15pct": 11,
+          "count_excluded_over_15pct": 9,
+          "recent_completed_sales": [
+            {
+              "price": 389000,
+              "when": "2026/09/01"
+            },
+            {
+              "price": 388000,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 400000,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 380000,
+              "when": "2026/09/05"
+            },
+            {
+              "price": 375000,
+              "when": "2026/09/05"
+            },
+            {
+              "price": 370000,
+              "when": "2026/09/05"
+            },
+            {
+              "price": 380000,
+              "when": "2026/09/06"
+            },
+            {
+              "price": 378000,
+              "when": "2026/09/06"
+            },
+            {
+              "price": 359000,
+              "when": "2026/09/08"
+            },
+            {
+              "price": 358000,
+              "when": "2026/09/08"
+            },
+            {
+              "price": 347900,
+              "when": "2026/09/09"
+            },
+            {
+              "price": 349000,
+              "when": "2026/09/09"
+            },
+            {
+              "price": 349000,
+              "when": "2026/09/10"
+            },
+            {
+              "price": 343000,
+              "when": "2026/09/10"
+            },
+            {
+              "price": 345000,
+              "when": "2026/09/10"
+            },
+            {
+              "price": 340000,
+              "when": "2026/09/10"
+            },
+            {
+              "price": 358000,
+              "when": "2026/09/11"
+            },
+            {
+              "price": 343000,
+              "when": "2026/09/11"
+            },
+            {
+              "price": 340000,
+              "when": "2026/09/12"
+            },
+            {
+              "price": 320000,
+              "when": "2026/09/13"
+            }
+          ]
+        },
+        "raw_a_grade": {
+          "lowest_price": 335500,
+          "threshold_115pct_of_lowest": 385825,
+          "top20_cheapest_listings": [
+            335500
+          ],
+          "listings_within_15pct_of_lowest": [
+            335500
+          ],
+          "count_within_15pct": 1,
+          "count_excluded_over_15pct": 0,
+          "note": "Only 1 active A-grade listing found (very thin supply for this grade).",
+          "recent_completed_sales": [
+            {
+              "price": 38000,
+              "when": "2023/12/26"
+            },
+            {
+              "price": 38000,
+              "when": "2024/03/07"
+            },
+            {
+              "price": 145000,
+              "when": "2025/04/03"
+            },
+            {
+              "price": 90000,
+              "when": "2025/04/05"
+            },
+            {
+              "price": 120000,
+              "when": "2025/05/14"
+            },
+            {
+              "price": 100000,
+              "when": "2025/05/23"
+            },
+            {
+              "price": 100000,
+              "when": "2025/06/05"
+            },
+            {
+              "price": 120000,
+              "when": "2025/08/02"
+            },
+            {
+              "price": 167999,
+              "when": "2025/08/03"
+            },
+            {
+              "price": 210000,
+              "when": "2025/09/16"
+            },
+            {
+              "price": 195000,
+              "when": "2025/10/11"
+            },
+            {
+              "price": 204000,
+              "when": "2025/10/20"
+            },
+            {
+              "price": 190000,
+              "when": "2025/11/03"
+            },
+            {
+              "price": 210000,
+              "when": "2025/11/06"
+            },
+            {
+              "price": 180000,
+              "when": "2025/12/17"
+            },
+            {
+              "price": 200000,
+              "when": "2026/03/08"
+            },
+            {
+              "price": 210000,
+              "when": "2026/03/11"
+            },
+            {
+              "price": 180000,
+              "when": "2026/04/02"
+            },
+            {
+              "price": 250000,
+              "when": "2026/05/24"
+            },
+            {
+              "price": 245000,
+              "when": "2026/06/29"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "名探偵ピカチュウ: プロモ [SV-P 098](プロモーションカード「SV-P」)",
+      "url": "https://snkrdunk.com/apparels/135232",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230823022422-0.webp?size=l",
+      "favorite_count": 2539,
+      "psa10_population": 49275,
+      "psa10_gem_rate_pct": 86.6,
+      "grades": {
+        "psa10": {
+          "lowest_price": 42500,
+          "threshold_115pct_of_lowest": 48875,
+          "top20_cheapest_listings": [
+            42500,
+            42500,
+            42800,
+            42899,
+            42900,
+            42990,
+            42999,
+            43000,
+            43500,
+            44000,
+            46000,
+            46000,
+            46500,
+            46500,
+            47500,
+            48300,
+            48800,
+            48900,
+            49500,
+            49999
+          ],
+          "listings_within_15pct_of_lowest": [
+            42500,
+            42500,
+            42800,
+            42899,
+            42900,
+            42990,
+            42999,
+            43000,
+            43500,
+            44000,
+            46000,
+            46000,
+            46500,
+            46500,
+            47500,
+            48300,
+            48800
+          ],
+          "count_within_15pct": 17,
+          "count_excluded_over_15pct": 3,
+          "recent_completed_sales": [
+            {
+              "price": 41999,
+              "when": "2026/09/13"
+            },
+            {
+              "price": 42000,
+              "when": "2026/09/13"
+            },
+            {
+              "price": 42900,
+              "when": "2026/09/13"
+            },
+            {
+              "price": 42999,
+              "when": "2026/09/13"
+            },
+            {
+              "price": 42999,
+              "when": "2026/09/13"
+            },
+            {
+              "price": 42800,
+              "when": "1日前"
+            },
+            {
+              "price": 41000,
+              "when": "1日前"
+            },
+            {
+              "price": 42000,
+              "when": "1日前"
+            },
+            {
+              "price": 42380,
+              "when": "1日前"
+            },
+            {
+              "price": 42000,
+              "when": "1日前"
+            },
+            {
+              "price": 42499,
+              "when": "1日前"
+            },
+            {
+              "price": 42900,
+              "when": "1日前"
+            },
+            {
+              "price": 42990,
+              "when": "23時間前"
+            },
+            {
+              "price": 42300,
+              "when": "17時間前"
+            },
+            {
+              "price": 42500,
+              "when": "16時間前"
+            },
+            {
+              "price": 42400,
+              "when": "15時間前"
+            },
+            {
+              "price": 42500,
+              "when": "10時間前"
+            },
+            {
+              "price": 42000,
+              "when": "10時間前"
+            },
+            {
+              "price": 42400,
+              "when": "9時間前"
+            },
+            {
+              "price": 42500,
+              "when": "6時間前"
+            }
+          ]
+        },
+        "raw_a_grade": {
+          "lowest_price": 27500,
+          "threshold_115pct_of_lowest": 31625,
+          "top20_cheapest_listings": [
+            27500,
+            28000,
+            28000,
+            28000,
+            28000,
+            28000,
+            29000,
+            29500,
+            30000,
+            30000,
+            31000,
+            32000,
+            33000,
+            34000,
+            34000,
+            34000,
+            34500,
+            35000,
+            35000,
+            35000
+          ],
+          "listings_within_15pct_of_lowest": [
+            27500,
+            28000,
+            28000,
+            28000,
+            28000,
+            28000,
+            29000,
+            29500,
+            30000,
+            30000,
+            31000
+          ],
+          "count_within_15pct": 11,
+          "count_excluded_over_15pct": 9,
+          "recent_completed_sales": [
+            {
+              "price": 40000,
+              "when": "2026/09/01"
+            },
+            {
+              "price": 31000,
+              "when": "2026/09/01"
+            },
+            {
+              "price": 35800,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 35999,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 36999,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 37500,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 37000,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 37000,
+              "when": "2026/09/03"
+            },
+            {
+              "price": 34999,
+              "when": "2026/09/03"
+            },
+            {
+              "price": 36000,
+              "when": "2026/09/04"
+            },
+            {
+              "price": 38500,
+              "when": "2026/09/06"
+            },
+            {
+              "price": 32000,
+              "when": "2026/09/07"
+            },
+            {
+              "price": 34000,
+              "when": "2026/09/08"
+            },
+            {
+              "price": 36000,
+              "when": "2026/09/08"
+            },
+            {
+              "price": 38000,
+              "when": "2026/09/09"
+            },
+            {
+              "price": 28000,
+              "when": "2026/09/14"
+            },
+            {
+              "price": 28000,
+              "when": "1日前"
+            },
+            {
+              "price": 28000,
+              "when": "14時間前"
+            },
+            {
+              "price": 28000,
+              "when": "11時間前"
+            },
+            {
+              "price": 28000,
+              "when": "11時間前"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "ゲンガーex SAR [M6a 131/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/896992",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/c4e43e7c-599c-4a12-bda1-c14fd82e7a1f.webp?size=l",
+      "favorite_count": 107,
+      "psa10_population_error": "No altema.jp population page found yet - card is a 30th CELEBRATION card that released today (2026-09-16); altema still shows only a price-prediction page with no PSA10 population/gem-rate data (re-checked this run, unchanged from 2026-09-15).",
+      "grades": {
+        "psa10": {
+          "error": "No PSA10 listings found (出品待ち) - card released today (2026-09-16); PSA grading turnaround hasn't happened yet, as expected for a same-day release."
+        },
+        "raw_a_grade": {
+          "lowest_price": 13480,
+          "threshold_115pct_of_lowest": 15502,
+          "top20_cheapest_listings": [
+            13480,
+            13800,
+            13999,
+            14000,
+            14500,
+            14700,
+            15000,
+            15501,
+            15502,
+            16000,
+            17000,
+            17500,
+            17500,
+            17999,
+            18000,
+            18888,
+            25000
+          ],
+          "listings_within_15pct_of_lowest": [
+            13480,
+            13800,
+            13999,
+            14000,
+            14500,
+            14700,
+            15000,
+            15501,
+            15502
+          ],
+          "count_within_15pct": 9,
+          "count_excluded_over_15pct": 8,
+          "recent_completed_sales": [
+            {
+              "price": 23000,
+              "when": "13時間前"
+            },
+            {
+              "price": 23000,
+              "when": "12時間前"
+            },
+            {
+              "price": 23000,
+              "when": "8時間前"
+            },
+            {
+              "price": 23000,
+              "when": "8時間前"
+            },
+            {
+              "price": 19800,
+              "when": "8時間前"
+            },
+            {
+              "price": 19800,
+              "when": "8時間前"
+            },
+            {
+              "price": 17000,
+              "when": "7時間前"
+            },
+            {
+              "price": 18500,
+              "when": "7時間前"
+            },
+            {
+              "price": 17800,
+              "when": "6時間前"
+            },
+            {
+              "price": 18000,
+              "when": "6時間前"
+            },
+            {
+              "price": 16000,
+              "when": "5時間前"
+            },
+            {
+              "price": 16000,
+              "when": "5時間前"
+            },
+            {
+              "price": 14501,
+              "when": "4時間前"
+            },
+            {
+              "price": 14900,
+              "when": "4時間前"
+            },
+            {
+              "price": 14500,
+              "when": "3時間前"
+            },
+            {
+              "price": 15999,
+              "when": "3時間前"
+            },
+            {
+              "price": 15423,
+              "when": "2時間前"
+            },
+            {
+              "price": 14999,
+              "when": "1時間前"
+            },
+            {
+              "price": 18888,
+              "when": "1時間前"
+            },
+            {
+              "price": 14000,
+              "when": "33分前"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "ミュウex SAR [M6a 129/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/896991",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/a471001c-e055-4f99-8791-f76d9ecaaf43.webp?size=l",
+      "favorite_count": 125,
+      "psa10_population_error": "No altema.jp population page found yet - card is a 30th CELEBRATION card that released today (2026-09-16); altema still shows only a price-prediction page with no PSA10 population/gem-rate data (re-checked this run, unchanged from 2026-09-15).",
+      "grades": {
+        "psa10": {
+          "error": "No PSA10 listings found (出品待ち) - card released today (2026-09-16); PSA grading turnaround hasn't happened yet, as expected for a same-day release."
+        },
+        "raw_a_grade": {
+          "lowest_price": 19000,
+          "threshold_115pct_of_lowest": 21850,
+          "top20_cheapest_listings": [
+            19000,
+            19800,
+            19999,
+            21500,
+            21800,
+            24000,
+            27999
+          ],
+          "listings_within_15pct_of_lowest": [
+            19000,
+            19800,
+            19999,
+            21500,
+            21800
+          ],
+          "count_within_15pct": 5,
+          "count_excluded_over_15pct": 2,
+          "recent_completed_sales": [
+            {
+              "price": 17500,
+              "when": "6時間前"
+            },
+            {
+              "price": 15500,
+              "when": "6時間前"
+            },
+            {
+              "price": 15000,
+              "when": "6時間前"
+            },
+            {
+              "price": 14000,
+              "when": "5時間前"
+            },
+            {
+              "price": 14990,
+              "when": "5時間前"
+            },
+            {
+              "price": 16000,
+              "when": "5時間前"
+            },
+            {
+              "price": 16000,
+              "when": "5時間前"
+            },
+            {
+              "price": 15000,
+              "when": "5時間前"
+            },
+            {
+              "price": 16000,
+              "when": "5時間前"
+            },
+            {
+              "price": 15500,
+              "when": "5時間前"
+            },
+            {
+              "price": 15500,
+              "when": "5時間前"
+            },
+            {
+              "price": 16000,
+              "when": "4時間前"
+            },
+            {
+              "price": 16000,
+              "when": "4時間前"
+            },
+            {
+              "price": 19800,
+              "when": "4時間前"
+            },
+            {
+              "price": 15900,
+              "when": "4時間前"
+            },
+            {
+              "price": 17999,
+              "when": "4時間前"
+            },
+            {
+              "price": 22000,
+              "when": "4時間前"
+            },
+            {
+              "price": 22000,
+              "when": "29分前"
+            },
+            {
+              "price": 14444,
+              "when": "15分前"
+            },
+            {
+              "price": 14999,
+              "when": "5分前"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "ジラーチex SAR [M6a 132/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/891195",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/pkmn-tcg-2026-0907-pk012-of.webp?size=l",
+      "favorite_count": 79,
+      "psa10_population_error": "No altema.jp population page found yet - card is a 30th CELEBRATION card that released today (2026-09-16); altema still shows only a price-prediction page with no PSA10 population/gem-rate data (re-checked this run, unchanged from 2026-09-15).",
+      "grades": {
+        "psa10": {
+          "error": "No PSA10 listings found (出品待ち) - card released today (2026-09-16); PSA grading turnaround hasn't happened yet, as expected for a same-day release."
+        },
+        "raw_a_grade": {
+          "lowest_price": 8900,
+          "threshold_115pct_of_lowest": 10235,
+          "top20_cheapest_listings": [
+            8900,
+            9000,
+            11000,
+            11000,
+            11200,
+            11500,
+            12500,
+            12800,
+            15000,
+            16000,
+            30000
+          ],
+          "listings_within_15pct_of_lowest": [
+            8900,
+            9000
+          ],
+          "count_within_15pct": 2,
+          "count_excluded_over_15pct": 9,
+          "recent_completed_sales": [
+            {
+              "price": 9500,
+              "when": "1日前"
+            },
+            {
+              "price": 12000,
+              "when": "1日前"
+            },
+            {
+              "price": 12000,
+              "when": "1日前"
+            },
+            {
+              "price": 17000,
+              "when": "20時間前"
+            },
+            {
+              "price": 19000,
+              "when": "15時間前"
+            },
+            {
+              "price": 18000,
+              "when": "14時間前"
+            },
+            {
+              "price": 16000,
+              "when": "12時間前"
+            },
+            {
+              "price": 10000,
+              "when": "9時間前"
+            },
+            {
+              "price": 15000,
+              "when": "9時間前"
+            },
+            {
+              "price": 16000,
+              "when": "8時間前"
+            },
+            {
+              "price": 15000,
+              "when": "8時間前"
+            },
+            {
+              "price": 15000,
+              "when": "7時間前"
+            },
+            {
+              "price": 14000,
+              "when": "6時間前"
+            },
+            {
+              "price": 10500,
+              "when": "6時間前"
+            },
+            {
+              "price": 8300,
+              "when": "5時間前"
+            },
+            {
+              "price": 10023,
+              "when": "5時間前"
+            },
+            {
+              "price": 12800,
+              "when": "4時間前"
+            },
+            {
+              "price": 12000,
+              "when": "4時間前"
+            },
+            {
+              "price": 12000,
+              "when": "2時間前"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "ミュウツーex SAR [M6a 128/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/896990",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/7be3f490-752f-4727-805f-2dccfc3a8bf6.webp?size=l",
+      "favorite_count": 96,
+      "psa10_population_error": "No altema.jp population page found yet - card is a 30th CELEBRATION card that released today (2026-09-16); altema still shows only a price-prediction page with no PSA10 population/gem-rate data (re-checked this run, unchanged from 2026-09-15).",
+      "grades": {
+        "psa10": {
+          "error": "No PSA10 listings found (出品待ち) - card released today (2026-09-16); PSA grading turnaround hasn't happened yet, as expected for a same-day release."
+        },
+        "raw_a_grade": {
+          "lowest_price": 11500,
+          "threshold_115pct_of_lowest": 13225,
+          "top20_cheapest_listings": [
+            11500,
+            11800,
+            11999,
+            12500,
+            14500,
+            16500,
+            17000,
+            19000,
+            19500,
+            20000,
+            20000,
+            25000,
+            100000
+          ],
+          "listings_within_15pct_of_lowest": [
+            11500,
+            11800,
+            11999,
+            12500
+          ],
+          "count_within_15pct": 4,
+          "count_excluded_over_15pct": 9,
+          "note": "One outlier listing at ¥100,000 present among active A-grade listings (likely a protective/non-serious price); all other listings cluster ¥11,500-¥25,000.",
+          "recent_completed_sales": [
+            {
+              "price": 14000,
+              "when": "7時間前"
+            },
+            {
+              "price": 16500,
+              "when": "6時間前"
+            },
+            {
+              "price": 13001,
+              "when": "6時間前"
+            },
+            {
+              "price": 12800,
+              "when": "6時間前"
+            },
+            {
+              "price": 11800,
+              "when": "6時間前"
+            },
+            {
+              "price": 12000,
+              "when": "6時間前"
+            },
+            {
+              "price": 10990,
+              "when": "6時間前"
+            },
+            {
+              "price": 10000,
+              "when": "5時間前"
+            },
+            {
+              "price": 10999,
+              "when": "5時間前"
+            },
+            {
+              "price": 11000,
+              "when": "5時間前"
+            },
+            {
+              "price": 12001,
+              "when": "5時間前"
+            },
+            {
+              "price": 12500,
+              "when": "5時間前"
+            },
+            {
+              "price": 17000,
+              "when": "4時間前"
+            },
+            {
+              "price": 13500,
+              "when": "4時間前"
+            },
+            {
+              "price": 10800,
+              "when": "1時間前"
+            },
+            {
+              "price": 15499,
+              "when": "1時間前"
+            },
+            {
+              "price": 11500,
+              "when": "45分前"
+            },
+            {
+              "price": 12501,
+              "when": "32分前"
+            },
+            {
+              "price": 12500,
+              "when": "15分前"
+            },
+            {
+              "price": 12000,
+              "when": "11分前"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "ピカチュウex SAR [M6a 126/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/882279",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/a8ae3f3e-aa84-46f6-89c5-b310371979d5.webp?size=l",
+      "favorite_count": 160,
+      "psa10_population_error": "No altema.jp population page found yet - card is a 30th CELEBRATION card that released today (2026-09-16); altema still shows only a price-prediction page with no PSA10 population/gem-rate data (re-checked this run, unchanged from 2026-09-15).",
+      "grades": {
+        "psa10": {
+          "error": "No PSA10 listings found (出品待ち) - card released today (2026-09-16); PSA grading turnaround hasn't happened yet, as expected for a same-day release."
+        },
+        "raw_a_grade": {
+          "lowest_price": 18988,
+          "threshold_115pct_of_lowest": 21836,
+          "top20_cheapest_listings": [
+            18988,
+            19000,
+            19999,
+            19999,
+            20000,
+            21999,
+            22800,
+            28000
+          ],
+          "listings_within_15pct_of_lowest": [
+            18988,
+            19000,
+            19999,
+            19999,
+            20000
+          ],
+          "count_within_15pct": 5,
+          "count_excluded_over_15pct": 3,
+          "recent_completed_sales": [
+            {
+              "price": 15000,
+              "when": "6時間前"
+            },
+            {
+              "price": 14990,
+              "when": "6時間前"
+            },
+            {
+              "price": 17800,
+              "when": "5時間前"
+            },
+            {
+              "price": 13000,
+              "when": "5時間前"
+            },
+            {
+              "price": 16001,
+              "when": "5時間前"
+            },
+            {
+              "price": 14500,
+              "when": "5時間前"
+            },
+            {
+              "price": 16500,
+              "when": "5時間前"
+            },
+            {
+              "price": 15000,
+              "when": "4時間前"
+            },
+            {
+              "price": 17000,
+              "when": "4時間前"
+            },
+            {
+              "price": 17000,
+              "when": "4時間前"
+            },
+            {
+              "price": 15000,
+              "when": "4時間前"
+            },
+            {
+              "price": 20001,
+              "when": "3時間前"
+            },
+            {
+              "price": 21000,
+              "when": "2時間前"
+            },
+            {
+              "price": 22800,
+              "when": "2時間前"
+            },
+            {
+              "price": 19000,
+              "when": "1時間前"
+            },
+            {
+              "price": 18800,
+              "when": "55分前"
+            },
+            {
+              "price": 22222,
+              "when": "41分前"
+            },
+            {
+              "price": 19999,
+              "when": "39分前"
+            },
+            {
+              "price": 18500,
+              "when": "17分前"
+            },
+            {
+              "price": 18500,
+              "when": "0分前"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "card_name_ja": "ピカチュウex SAR [M6a 127/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/882280",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/9537cce2-2788-4bd5-ac0f-34aea4318ee6.webp?size=l",
+      "favorite_count": 176,
+      "psa10_population_error": "No altema.jp population page found yet - card is a 30th CELEBRATION card that released today (2026-09-16); altema still shows only a price-prediction page with no PSA10 population/gem-rate data (re-checked this run, unchanged from 2026-09-15).",
+      "grades": {
+        "psa10": {
+          "error": "No PSA10 listings found (出品待ち) - card released today (2026-09-16); PSA grading turnaround hasn't happened yet, as expected for a same-day release."
+        },
+        "raw_a_grade": {
+          "lowest_price": 22000,
+          "threshold_115pct_of_lowest": 25300,
+          "top20_cheapest_listings": [
+            22000,
+            23000,
+            23000,
+            23500,
+            23999,
+            23999,
+            24000,
+            25000,
+            29800,
+            30000,
+            30000,
+            30000,
+            30000,
+            36000
+          ],
+          "listings_within_15pct_of_lowest": [
+            22000,
+            23000,
+            23000,
+            23500,
+            23999,
+            23999,
+            24000,
+            25000
+          ],
+          "count_within_15pct": 8,
+          "count_excluded_over_15pct": 6,
+          "recent_completed_sales": [
+            {
+              "price": 18800,
+              "when": "5時間前"
+            },
+            {
+              "price": 19000,
+              "when": "5時間前"
+            },
+            {
+              "price": 21000,
+              "when": "5時間前"
+            },
+            {
+              "price": 18000,
+              "when": "5時間前"
+            },
+            {
+              "price": 18500,
+              "when": "5時間前"
+            },
+            {
+              "price": 26000,
+              "when": "4時間前"
+            },
+            {
+              "price": 23000,
+              "when": "4時間前"
+            },
+            {
+              "price": 22999,
+              "when": "4時間前"
+            },
+            {
+              "price": 23900,
+              "when": "2時間前"
+            },
+            {
+              "price": 23456,
+              "when": "2時間前"
+            },
+            {
+              "price": 21950,
+              "when": "1時間前"
+            },
+            {
+              "price": 23500,
+              "when": "1時間前"
+            },
+            {
+              "price": 23000,
+              "when": "48分前"
+            },
+            {
+              "price": 23000,
+              "when": "44分前"
+            },
+            {
+              "price": 24501,
+              "when": "36分前"
+            },
+            {
+              "price": 21300,
+              "when": "34分前"
+            },
+            {
+              "price": 24000,
+              "when": "29分前"
+            },
+            {
+              "price": 23000,
+              "when": "12分前"
+            },
+            {
+              "price": 22000,
+              "when": "4分前"
+            },
+            {
+              "price": 22300,
+              "when": "3分前"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "pokeca_chart_index": {
+    "psa10": {
+      "latest_index_value_jpy": 117772,
+      "day_change_jpy": -2117,
+      "day_change_pct": -1.8,
+      "month_change_jpy": -33032,
+      "month_change_pct": -21.9,
+      "year_change_jpy": 22917,
+      "year_change_pct": 24.2,
+      "data_range": "2021/01/30 〜 2026/09/15",
+      "volume_trend": "flat",
+      "volume_note": "Daily transaction-count bars over the trailing month stay in a fairly consistent band with no sharp spike; a brief dip appears around 9/8-9/9 followed by a rebound to the period's tallest bar around 9/13, but overall the last 1-2 weeks look similar in volume to the preceding month even as the average price index has fallen steadily (-21.9% month-over-month)."
+    },
+    "raw_bihin": {
+      "latest_index_value_jpy": 52350,
+      "day_change_jpy": 448,
+      "day_change_pct": 0.9,
+      "month_change_jpy": -1373,
+      "month_change_pct": -2.6,
+      "year_change_jpy": 12410,
+      "year_change_pct": 31.1,
+      "data_range": "2020/06/01 〜 2026/09/15",
+      "volume_trend": "flat",
+      "volume_note": "Transaction-count bars across the trailing month hold a broadly steady, consistent range with no unusual spike or drop near the most recent days (around 9/10-9/14)."
+    }
+  }
+}
