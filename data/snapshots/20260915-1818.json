@@ -190,6 +190,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 28000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 36300,
+          "when": "2026-09-06",
+          "source": "SNKRDUNK recent completed sales history"
+        },
+        "tiers": {
+          "definitely_buy": 25000,
+          "buy_upper": 29000,
+          "ceiling": 32000
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — fresh real break, but thin depth below",
+          "reasoning": "Multiple confirmed sales (not just asks) moved from a ¥34,500-36,300 cluster (09/06-09/12) to ¥27,000-29,999 over the last day and a half — a real ~23% break, not a single outlier print. Only 4 of 20 listings sit within 15% of the new low, so support is thin; a print below ¥26,000 would confirm capitulation and upgrade this to definitely-buy."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -396,6 +417,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 82000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 130000,
+          "when": "April 2026",
+          "source": "your own pokeca-chart per-card verification; altema's table shows a conflicting ¥155,000 for the same date, treated as the less reliable of the two per your prior read"
+        },
+        "tiers": {
+          "definitely_buy": 65000,
+          "buy_upper": 75000,
+          "ceiling": 85000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch — active decline, facing the most direct new-card competition of the five",
+          "reasoning": "Real sales are still working lower (recent prints ¥88,880-89,000 a day ago, against a ¥78,000 lowest ask) with no sign of stabilizing depth yet — the top 11 listings span the full ¥78k-90k range rather than clustering tightly. This card also has the largest population of the five and faces two brand-new Pikachu ex SAR variants releasing tomorrow as direct competition. Wait for a print into the ¥65,000-75,000 band or clear depth-firming before committing."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -624,6 +666,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 69000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 97000,
+          "when": "~early August 2026",
+          "source": "altema — low confidence; the same source overstated this card's current price by ~30% this run, so treat this as an upper-bound estimate, not a confirmed figure"
+        },
+        "tiers": {
+          "definitely_buy": 62000,
+          "buy_upper": 70000,
+          "ceiling": 75000
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — tightest, most stable floor of the five tracked cards",
+          "reasoning": "All 20 of 20 listings now sit within 15% of the lowest ask (up from 18/20 two hours earlier), and real sales are pinned in a tight ¥68,500-69,000 band — this looks like a formed floor, not a falling knife, unlike the other four cards this run. The near-term risk is entirely event-specific: tomorrow's official Umbreon/Espeon full-art deck could cannibalize demand or be a non-event. Worth watching one more day to see how that prices before committing, per your own threshold (buyback holding ≥¥50,000 two weeks post-launch)."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -811,6 +874,25 @@
               "when": "2026/06/29"
             }
           ]
+        }
+      },
+      "analysis": {
+        "representative_price": 320000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 400000,
+          "when": "2026-09-02",
+          "source": "SNKRDUNK recent completed sales history"
+        },
+        "tiers": {
+          "definitely_buy": 300000,
+          "buy_upper": 330000,
+          "ceiling": 360000
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — actually falling, not rising; a prior external read had this backwards",
+          "reasoning": "Real completed sales confirm a sustained ~20% decline over two weeks (¥400,000 on 09/02 to ¥318,000-320,000 this week) — the opposite of an outside read that called this 'rising' off a stale altema figure. It remains the scarcest card here (smallest population, lowest gem rate, out of print), and depth at the new lower band (11 of 20 listings within 15%) suggests some real support forming. Given the position size, I'd still lean toward one more confirmed leg down toward ¥300,000-310,000 rather than chasing the current print, though a partial buy near ¥320,000 while depth holds is defensible."
         }
       }
     },
@@ -1018,6 +1100,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 42400,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 70500,
+          "when": "~August 2026",
+          "source": "altema — low confidence; likely overstated, consistent with the pattern seen across every other tracked card this run"
+        },
+        "tiers": {
+          "definitely_buy": 38000,
+          "buy_upper": 42000,
+          "ceiling": 46000
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — calmest of the five, no acute break visible",
+          "reasoning": "Sales have been flat and tight (¥42,300-42,500 over the last few hours) with steady demand — unlike the other cards this run, there's no active break happening here, just steady softening in line with the broader index correction. Note the listed 'lowest ask' of ¥28,000 is a thin outlier (only 1 of 20 listings sits within 15% of it) — every real completed sale is happening at ¥42,000+, so that ask should be ignored, not treated as the market price. Treat the ¥70,500 'peak' skeptically too: it comes from the same source that overstated current price by ~40% for this same card."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -1354,5 +1457,25 @@
       "volume_trend": "flat",
       "volume_note": "7D, 1M, and 3M views all show transaction volume holding a broadly steady, consistent range with no sharp recent spike or drop."
     }
-  }
+  },
+  "market_context": {
+    "catalyst": "30th Anniversary release day is tomorrow (Sept 16) — the standard booster box, the Umbreon/Espeon premium deck, and the Futuristic set with two new Pikachu ex SAR all release. Broad PSA10 index is down -21.0% MoM as pre-release liquidation continues; historical analog (the July M6 SAR release, and the 25th-anniversary cycle) suggests the true floor forms Nov 2026 onward, not at release."
+  },
+  "banners": [
+    {
+      "type": "correction",
+      "title": "Gengar VMAX SA is falling, not rising — an outside read had this backwards.",
+      "body": "A dossier read this card as 'rising' based on an altema snapshot from July 22 (¥390,000, up from ¥375,000 a month prior). Real SNKRDUNK sales history tells a different story: completed sales went from ¥400,000 (Sept 2) to ¥318,000-320,000 (this week) — a confirmed ~20% decline in two weeks. Treat this as an actively correcting card, not a rising one."
+    },
+    {
+      "type": "warning",
+      "title": "External 'current price' figures ran stale across the board this check.",
+      "body": "altema-sourced current-price readings came in 25-45% above live SNKRDUNK sales for four of the five established tracked cards (e.g. VMAX CSR: altema ¥48,600 vs. real recent sales ¥27,000-29,000; Detective Pikachu: altema ¥59,600 vs. real ¥42,000-42,500). Representative prices below are built from SNKRDUNK's own recent_completed_sales rather than the secondary sources — peaks still sourced from altema are explicitly flagged as low-confidence."
+    },
+    {
+      "type": "info",
+      "title": "The six new 30th Anniversary M6a cards have no analysis yet — by design.",
+      "body": "No listings or completed sales exist yet on SNKRDUNK for any of the six brand-new cards (release is tomorrow, Sept 16). Pre-release predictions circulating externally (e.g. ¥70,000-85,000 for the new Pikachu ex SAR pair) are unconfirmed and three of six illustrator/slot details weren't even officially revealed as of this week — filling in tiers now would mean guessing. Re-check once real post-release sales appear."
+    }
+  ]
 }
