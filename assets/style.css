@@ -431,7 +431,7 @@ header.top .title-block p {
   font-variant-numeric: tabular-nums;
 }
 
-.marker { position: absolute; top: -7px; transform: translateX(-50%); text-align: center; }
+.marker { position: absolute; top: -16px; transform: translateX(-50%); text-align: center; }
 .marker .stem { width: 2px; height: 20px; background: var(--text); margin: 0 auto; border-radius: 2px; }
 .marker .tag { font-size: 0.66rem; font-weight: 700; font-family: var(--sans); white-space: nowrap; margin-bottom: 2px; font-variant-numeric: tabular-nums; }
 
