@@ -598,6 +598,49 @@ header.top .title-block p {
   font-variant-numeric: tabular-nums;
 }
 
+.history-block {
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.history-block .lbl,
+.hist-note {
+  font-size: 0.66rem;
+  color: var(--muted-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.hist-note {
+  text-transform: none;
+  letter-spacing: normal;
+  font-style: italic;
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.history-block svg { display: block; width: 100%; height: 130px; overflow: visible; }
+
+.hist-ref-line { stroke-dasharray: 4 3; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.hist-ref-line.db { stroke: var(--green-strong); }
+.hist-ref-line.bu { stroke: var(--amber); }
+.hist-ref-line.ceil { stroke: var(--red); }
+
+.hist-ref-label { font-size: 9px; font-family: var(--sans); }
+.hist-ref-label.db { fill: var(--green-strong); }
+.hist-ref-label.bu { fill: var(--amber); }
+.hist-ref-label.ceil { fill: var(--red); }
+
+.hist-empty {
+  font-size: 0.75rem;
+  color: var(--muted-2);
+  font-style: italic;
+}
+
+.loading-inline { font-size: 0.75rem; color: var(--muted-2); }
+
 .spark-block { margin-bottom: 16px; }
 .spark-block .lbl {
   font-size: 0.66rem;
@@ -656,6 +699,80 @@ header.top .title-block p {
 }
 
 .lot-link:hover { text-decoration: underline; }
+
+/* ---------- Portfolio (cards you've actually bought) ---------- */
+
+.pf-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.pf-stat { background: var(--panel); padding: 14px 16px; }
+
+.pf-stat .lbl {
+  color: var(--muted-2);
+  font-size: 0.68rem;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pf-stat .val { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pf-stat .val.pos { color: var(--green); }
+.pf-stat .val.neg { color: var(--red); }
+.pf-stat .val.muted { font-family: var(--sans); font-size: 0.85rem; font-weight: 500; color: var(--muted); }
+
+.pf-list {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+
+.pf-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pf-row:last-child { border-bottom: none; }
+
+.pf-thumb {
+  width: 38px;
+  height: 53px;
+  border-radius: 5px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+.pf-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.pf-info { flex: 1; min-width: 0; }
+.pf-name { font-family: var(--serif); font-size: 0.98rem; font-weight: 600; margin-bottom: 3px; }
+.pf-meta { font-size: 0.74rem; color: var(--muted-2); }
+
+.pf-current { text-align: right; flex-shrink: 0; }
+.pf-current .val { font-family: var(--serif); font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pf-pnl { font-size: 0.76rem; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.pf-pnl .pos { color: var(--green); font-weight: 600; }
+.pf-pnl .neg { color: var(--red); font-weight: 600; }
+.pf-pnl .muted { color: var(--muted-2); }
+
+@media (max-width: 640px) {
+  .pf-row { flex-wrap: wrap; }
+  .pf-current { text-align: left; margin-left: 52px; }
+}
 
 /* ---------- Watching panel (compact pending cards) ---------- */
 

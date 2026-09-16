@@ -138,3 +138,47 @@ with no `analysis` block still renders honestly — raw price, depth, sales, and
 population, labeled "tiers not yet established" — rather than a guessed verdict.
 Add the `analysis` overlay only once you've actually done the depth-check →
 sales-check → peak-check work; false precision is worse than an honest gap.
+
+## Price history (computed, not stored)
+
+Every card's expanded detail shows a long-run price chart built by reading
+`representative_price` (or `lowest_price` as a fallback) out of every snapshot file
+on file, matched by card `url` — not a separate field anywhere. Nothing needs to
+change about how you add snapshots; the chart just gets one more data point each
+time. To keep the worst-case page load bounded as the archive grows over months of
+2x/day checks, the app only fetches the most recent `HISTORY_MAX_SNAPSHOTS` (200 as
+of writing, in `assets/app.js`) snapshot files for this — plenty of runway for a
+multi-month trend without ever downloading years of history on every card expand.
+
+## `data/holdings.json` — cards you've actually bought
+
+Separate from the snapshot archive, this file is the portfolio layer: what you
+paid, when, and for what — pure facts, no judgment, matching the same
+raw-vs-computed split as everything else. The app matches each holding to the
+current snapshot by `card_url` and computes current value / unrealized P&L itself;
+never hand-write those numbers here.
+
+```jsonc
+{
+  "holdings": [
+    {
+      "card_url": "https://snkrdunk.com/apparels/...",  // must match a tracked card's `url`
+      "card_name_ja": "...",                             // denormalized label — kept even if
+                                                           // the card later drops out of tracking
+      "image_url": "https://.../card-photo.jpg",         // optional, used only if card_url stops matching
+      "condition": "psa10",                              // "psa10" (bought already-slabbed) or
+                                                           // "raw_to_grade" (bought raw, paying to grade it)
+      "purchase_price_jpy": 65000,
+      "purchase_date": "2026-09-20",
+      "grading_fee_jpy": 9980,                            // only used if condition is raw_to_grade
+      "shipping_insurance_jpy": 2000,                     // optional, defaults to 2000 if grading_fee_jpy is set
+      "notes": "optional free text"
+    }
+  ]
+}
+```
+
+Add holdings with `python3 scripts/add_holding.py` (same clipboard-or-file-argument
+pattern as `add_snapshot.py`) rather than hand-editing the file, so the commit
+message and validation stay consistent. The "Your holdings" section on the site is
+hidden entirely whenever `data/holdings.json` has no entries.

@@ -6,6 +6,7 @@
     currentIndex: -1, // index into manifest.snapshots (chronological ascending)
     currentData: null,
     previousData: null,
+    holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
   };
 
   const els = {
@@ -17,6 +18,9 @@
     cards: document.getElementById('cards'),
     watchSection: document.getElementById('watch-section'),
     watchPanel: document.getElementById('watch-panel'),
+    portfolioSection: document.getElementById('portfolio-section'),
+    portfolioSummary: document.getElementById('portfolio-summary'),
+    portfolioList: document.getElementById('portfolio-list'),
   };
 
   // Deterministic abstract art-band variant per card (by url), so a given card
@@ -146,6 +150,15 @@
     els.snapshotSelect.addEventListener('change', () => {
       loadIndex(parseInt(els.snapshotSelect.value, 10));
     });
+
+    // Holdings are optional and rare to change — a missing file just means
+    // nothing's been bought yet, not an error.
+    try {
+      const h = await fetchJSON('data/holdings.json');
+      state.holdings = h.holdings || [];
+    } catch (e) {
+      state.holdings = [];
+    }
 
     await loadIndex(snaps.length - 1);
   }
@@ -322,8 +335,75 @@
     renderMarketStrip(data);
     renderBanners(data, state.previousData);
     els.notesBody.textContent = data.notes || '';
+    renderPortfolio(state.holdings, data.cards || []);
     renderCards(data.cards || [], prevCards);
     renderTables(data.cards || [], prevCards);
+  }
+
+  // ---------- render: portfolio (cards you've actually bought) ----------
+
+  function renderPortfolio(holdings, currentCards) {
+    if (!holdings.length) {
+      els.portfolioSection.hidden = true;
+      return;
+    }
+    els.portfolioSection.hidden = false;
+
+    let totalCost = 0;
+    let totalValue = 0;
+    let matchedCount = 0;
+
+    const rows = holdings.map((h) => {
+      const match = currentCards.find((c) => c.url === h.card_url);
+      const currentPrice = match ? getRep(match) : null;
+      const gradingCost = h.condition === 'raw_to_grade'
+        ? (h.grading_fee_jpy || 0) + (h.shipping_insurance_jpy != null ? h.shipping_insurance_jpy : 2000)
+        : 0;
+      const cost = (h.purchase_price_jpy || 0) + gradingCost;
+      const pnl = currentPrice != null ? currentPrice - cost : null;
+      const pnlPct = currentPrice != null && cost ? (pnl / cost) * 100 : null;
+      if (currentPrice != null) {
+        totalCost += cost;
+        totalValue += currentPrice;
+        matchedCount++;
+      }
+      return { h, match, currentPrice, cost, pnl, pnlPct };
+    });
+
+    if (matchedCount) {
+      const totalPnl = totalValue - totalCost;
+      const totalPnlPct = totalCost ? (totalPnl / totalCost) * 100 : null;
+      els.portfolioSummary.innerHTML = `
+        <div class="pf-stat"><div class="lbl">Total cost</div><div class="val">${fmtYen(totalCost)}</div></div>
+        <div class="pf-stat"><div class="lbl">Current value</div><div class="val">${fmtYen(totalValue)}</div></div>
+        <div class="pf-stat"><div class="lbl">Unrealized P&amp;L</div><div class="val ${totalPnl >= 0 ? 'pos' : 'neg'}">${totalPnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(totalPnl))}${totalPnlPct != null ? ' (' + fmtPct(totalPnlPct) + ')' : ''}</div></div>
+        ${matchedCount < holdings.length ? `<div class="pf-stat"><div class="lbl">Untracked</div><div class="val muted">${holdings.length - matchedCount} card${holdings.length - matchedCount === 1 ? '' : 's'}</div></div>` : ''}
+      `;
+    } else {
+      els.portfolioSummary.innerHTML = `<div class="pf-stat"><div class="lbl">Status</div><div class="val muted">No current price data for any held card yet</div></div>`;
+    }
+
+    els.portfolioList.innerHTML = rows.map(({ h, match, currentPrice, cost, pnl, pnlPct }) => {
+      const displayName = match ? parseCardName(match.card_name_ja).short : parseCardName(h.card_name_ja || '').short;
+      const imgSrc = (match && match.image_url) || h.image_url;
+      const thumbHtml = imgSrc ? `<img src="${escapeAttr(imgSrc)}" alt="" loading="lazy" onerror="this.remove();">` : '';
+      const costNote = h.condition === 'raw_to_grade' ? ' + grading' : '';
+      const pnlHtml = pnl != null
+        ? `<span class="${pnl >= 0 ? 'pos' : 'neg'}">${pnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(pnl))}${pnlPct != null ? ' (' + fmtPct(pnlPct) + ')' : ''}</span>`
+        : `<span class="muted">no current price</span>`;
+      return `
+        <div class="pf-row">
+          <span class="pf-thumb">${thumbHtml}</span>
+          <div class="pf-info">
+            <div class="pf-name">${escapeHtml(displayName)}</div>
+            <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}</div>
+          </div>
+          <div class="pf-current">
+            <div class="val">${currentPrice != null ? fmtYen(currentPrice) : '—'}</div>
+            <div class="pf-pnl">${pnlHtml}</div>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   function renderCards(cards, prevCards) {
@@ -543,8 +623,10 @@
       return;
     }
     if (!detail.dataset.built) {
-      detail.innerHTML = buildDetailHtml(card);
+      detail.innerHTML = `<div class="history-block" id="history-${i}"><div class="lbl">Price history</div><div class="loading-inline">Loading full history…</div></div>` + buildDetailHtml(card);
       detail.dataset.built = '1';
+      const historyEl = detail.querySelector(`#history-${i}`);
+      renderPriceHistoryInto(card, historyEl);
     }
     article.classList.add('expanded');
     detail.hidden = false;
@@ -558,6 +640,123 @@
     if (raw) html += buildGradeDetail('Raw A-rank', raw);
     html += `<a class="lot-link" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">View on SNKRDUNK ↗</a>`;
     return html;
+  }
+
+  // ---------- price history (across every snapshot on file, not just this one) ----------
+
+  // Bounds the worst-case fetch volume as the archive grows over months/years of
+  // 2x/day checks — plenty of runway for a multi-month trend without ever
+  // downloading the entire history on every card expand.
+  const HISTORY_MAX_SNAPSHOTS = 200;
+  let historySnapshotsPromise = null;
+
+  function loadAllSnapshotsForHistory() {
+    if (historySnapshotsPromise) return historySnapshotsPromise;
+    const snaps = state.manifest.snapshots || [];
+    const capped = snaps.length > HISTORY_MAX_SNAPSHOTS ? snaps.slice(snaps.length - HISTORY_MAX_SNAPSHOTS) : snaps;
+    historySnapshotsPromise = Promise.all(
+      capped.map((s) => fetchJSON('data/snapshots/' + s.file).catch(() => null))
+    ).then((results) => results.filter(Boolean));
+    return historySnapshotsPromise;
+  }
+
+  async function getCardPriceHistory(card) {
+    const allSnaps = await loadAllSnapshotsForHistory();
+    const points = [];
+    allSnaps.forEach((snap) => {
+      const c = (snap.cards || []).find((x) => x.url === card.url);
+      if (!c) return;
+      const psa10 = c.grades && c.grades.psa10;
+      if (!psa10 || psa10.lowest_price == null) return;
+      const price = getRep(c);
+      if (price == null) return;
+      points.push({
+        date: snap.collected_at_jst,
+        price,
+        confirmed: !!(c.analysis && c.analysis.price_source === 'sales_confirmed'),
+      });
+    });
+    points.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    return points;
+  }
+
+  async function renderPriceHistoryInto(card, container) {
+    if (!container) return;
+    const points = await getCardPriceHistory(card);
+    container.innerHTML = buildPriceHistoryHtml(card, points);
+  }
+
+  // A long-run line chart of representative_price across every snapshot the
+  // card appears in, distinct from the short-window "recent sales" sparkline
+  // above (which only covers one snapshot's own recent_completed_sales). This
+  // is the view for judging progress against a months-long thesis, not a
+  // single check.
+  function buildPriceHistoryHtml(card, points) {
+    if (points.length < 2) {
+      return `<div class="lbl">Price history</div><div class="hist-empty">Not enough history yet — this builds up as you run more price checks.</div>`;
+    }
+
+    const prices = points.map((p) => p.price);
+    let lo = Math.min(...prices);
+    let hi = Math.max(...prices);
+    const tiers = card.analysis && card.analysis.tiers;
+    if (tiers) {
+      lo = Math.min(lo, tiers.definitely_buy);
+      hi = Math.max(hi, tiers.ceiling);
+    }
+    const pad = (hi - lo) * 0.1 || hi * 0.1 || 1000;
+    lo = Math.max(0, lo - pad);
+    hi = hi + pad;
+    const range = hi - lo || 1;
+
+    const w = 700, h = 160, padX = 4, padTop = 10, padBottom = 10;
+    const plotH = h - padTop - padBottom;
+    const step = (w - padX * 2) / (points.length - 1);
+    const y = (price) => padTop + plotH - ((price - lo) / range) * plotH;
+    const pts = points.map((p, i) => [padX + i * step, y(p.price)]);
+
+    const trendUp = prices[prices.length - 1] > prices[0];
+    const color = trendUp ? 'var(--red)' : 'var(--green-strong)';
+    const gradId = 'hist-grad-' + (sparkGradCounter++);
+    const linePath = smoothPath(pts);
+    const baseline = h - padBottom;
+    const last = pts[pts.length - 1];
+    const areaPath = `${linePath} L${last[0].toFixed(1)},${baseline} L${pts[0][0].toFixed(1)},${baseline} Z`;
+
+    const dots = points.map((p, i) => {
+      const [px, py] = pts[i];
+      return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${p.confirmed ? 2.6 : 2}" fill="${p.confirmed ? color : 'var(--muted-2)'}" />`;
+    }).join('');
+
+    let refLines = '';
+    if (tiers) {
+      const refLine = (price, cls, label) => `
+        <line x1="${padX}" y1="${y(price).toFixed(1)}" x2="${w - padX}" y2="${y(price).toFixed(1)}" class="hist-ref-line ${cls}" />
+        <text x="${w - padX}" y="${(y(price) - 4).toFixed(1)}" class="hist-ref-label ${cls}" text-anchor="end">${label}</text>`;
+      refLines = refLine(tiers.definitely_buy, 'db', 'Definitely-buy')
+        + refLine(tiers.buy_upper, 'bu', 'Buy')
+        + refLine(tiers.ceiling, 'ceil', "Don't-buy");
+    }
+
+    const svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      ${refLines}
+      <path d="${areaPath}" fill="url(#${gradId})" />
+      <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2" />
+      ${dots}
+    </svg>`;
+
+    const dateLabels = `<div class="spark-dates"><span>${escapeHtml(fmtDateShort(points[0].date))}</span><span>${escapeHtml(fmtDateShort(points[points.length - 1].date))}</span></div>`;
+    const note = tiers
+      ? `<div class="hist-note">Dashed lines are today's tiers, shown for reference — they may not have applied at every point in the past.</div>`
+      : '';
+
+    return `<div class="lbl">Price history — ${points.length} checks, ${escapeHtml(fmtDateShort(points[0].date))} → ${escapeHtml(fmtDateShort(points[points.length - 1].date))}</div>${svg}${dateLabels}${note}`;
   }
 
   function buildGradeDetail(label, grade) {
