@@ -271,6 +271,7 @@ header.top .title-block p {
 
 .lot {
   display: flex;
+  align-items: flex-start;
   background: var(--panel);
   border: 1px solid var(--line);
   border-left: 3px solid var(--line);
@@ -287,13 +288,14 @@ header.top .title-block p {
 .lot.tag-depth-thin { border-left-color: var(--muted-2); }
 
 .lot-art {
-  width: 128px;
+  width: 150px;
+  aspect-ratio: 5 / 7;
   flex-shrink: 0;
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: flex-end;
-  padding: 12px;
+  padding: 10px;
   background: var(--panel-2);
 }
 
@@ -303,8 +305,8 @@ header.top .title-block p {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  object-position: center top;
-  padding: 12px;
+  object-position: center center;
+  padding: 6px;
   z-index: 0;
 }
 
@@ -690,9 +692,9 @@ a.watch-row:last-child { border-bottom: none; }
 a.watch-row:hover { background: var(--panel-2); }
 
 .watch-row .wthumb {
-  width: 22px;
-  height: 30px;
-  border-radius: 4px;
+  width: 38px;
+  height: 53px;
+  border-radius: 5px;
   overflow: hidden;
   flex-shrink: 0;
   background: var(--panel-2);
@@ -727,7 +729,7 @@ a.watch-row:hover { background: var(--panel-2); }
 
 @media (max-width: 640px) {
   .lot { flex-direction: column; }
-  .lot-art { width: 100%; height: 64px; }
+  .lot-art { width: 130px; align-self: center; margin-top: 14px; }
   .lot-price { text-align: left; }
   .watch-row .wstate { display: none; }
 }
