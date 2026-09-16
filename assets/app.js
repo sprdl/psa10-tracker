@@ -381,9 +381,12 @@
       }
       const fav = card.favorite_count != null ? card.favorite_count.toLocaleString() : '—';
       const name = parseCardName(card.card_name_ja).short || card.card_name_ja;
+      const raw = card.grades && card.grades.raw_a_grade;
+      const rawText = raw && raw.lowest_price != null ? 'Raw A ' + fmtYen(raw.lowest_price) : 'Raw A —';
       return `<a class="watch-row" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">
         <span class="wdot"></span>
         <span class="wname">${escapeHtml(name)}</span>
+        <span class="wraw">${escapeHtml(rawText)}</span>
         <span class="wmeta">♥ ${fav}</span>
         <span class="wstate">${escapeHtml(state)}</span>
       </a>`;
@@ -491,8 +494,17 @@
 
     const popText = `Pop. ${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'}${card.psa10_gem_rate_pct != null ? ' · ' + card.psa10_gem_rate_pct + '%' : ''}`;
 
+    // Prefer the card's real SNKRDUNK photo; fall back to the abstract art-band
+    // gradient (never a hand-drawn character) if there's no image, or if the
+    // photo fails to load.
+    const fallbackArt = artClassFor(card);
+    const artImgHtml = card.image_url
+      ? `<img class="lot-art-img" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="var p=this.parentElement; this.remove(); if(p) p.classList.add('${fallbackArt}');">`
+      : '';
+    const artDivClass = card.image_url ? 'lot-art' : `lot-art ${fallbackArt}`;
+
     return `
-      <div class="lot-art ${artClassFor(card)}"><span class="pop">${escapeHtml(popText)}</span></div>
+      <div class="${artDivClass}">${artImgHtml}<span class="pop">${escapeHtml(popText)}</span></div>
       <div class="lot-body">
         <div class="lot-summary" data-idx="${i}">
           <div class="lot-head">
