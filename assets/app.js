@@ -383,8 +383,11 @@
       const name = parseCardName(card.card_name_ja).short || card.card_name_ja;
       const raw = card.grades && card.grades.raw_a_grade;
       const rawText = raw && raw.lowest_price != null ? 'Raw A ' + fmtYen(raw.lowest_price) : 'Raw A —';
+      const thumbHtml = card.image_url
+        ? `<img src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove();">`
+        : '';
       return `<a class="watch-row" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">
-        <span class="wdot"></span>
+        <span class="wthumb">${thumbHtml}</span>
         <span class="wname">${escapeHtml(name)}</span>
         <span class="wraw">${escapeHtml(rawText)}</span>
         <span class="wmeta">♥ ${fav}</span>

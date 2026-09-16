@@ -689,7 +689,17 @@ a.watch-row {
 a.watch-row:last-child { border-bottom: none; }
 a.watch-row:hover { background: var(--panel-2); }
 
-.watch-row .wdot { width: 6px; height: 6px; border-radius: 50%; background: var(--slate); flex-shrink: 0; }
+.watch-row .wthumb {
+  width: 22px;
+  height: 30px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+.watch-row .wthumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .watch-row .wname {
   font-family: var(--serif);
