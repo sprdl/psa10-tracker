@@ -233,15 +233,22 @@
         }
       },
       "analysis": {
+        "representative_price": 27000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 50000,
+          "when": "2026-07-16",
+          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip); user-cited ¥47,000/August corrected — chart shows ¥50,000 on 2026-07-16 (thin data, 2 trades that day)"
+        },
         "tiers": {
           "definitely_buy": 25000,
-          "buy_upper": 29000,
-          "ceiling": 32000
+          "buy_upper": 29500,
+          "ceiling": 35500
         },
-        "peak": {
-          "price": 36300,
-          "when": "2026-09-06",
-          "source": "SNKRDUNK recent completed sales history"
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — below the Dec 2025 base, but mid-crash",
+          "reasoning": "Sold at ¥26.5–27k, 8% below the Dec 2025 base (¥29.4k) and about 30% below the cost of grading your own copy (~¥38.6k). Out of print, and only 3 asks within 15% of the lowest ask (¥29.8k), so sellers aren't dumping below that. The risk is speed: it fell 25% in one week, so a further ~10% to ¥25k is plausible (about 40%) within weeks. Buy in small steps or set a ¥25–27k target rather than chasing it. Peak corrected to ¥50,000 (2026-07-16, pokeca-chart) — 46% off that high, a deeper discount than the ¥47k figure implied."
         },
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2000
@@ -498,15 +505,22 @@
         }
       },
       "analysis": {
-        "tiers": {
-          "definitely_buy": 65000,
-          "buy_upper": 75000,
-          "ceiling": 85000
-        },
+        "representative_price": 76000,
+        "price_source": "sales_confirmed",
         "peak": {
           "price": 130000,
-          "when": "April 2026",
-          "source": "your own pokeca-chart per-card verification; altema's table shows a conflicting ¥155,000 for the same date, treated as the less reliable of the two per your prior read"
+          "when": "2026-04-12",
+          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip — exact match to prior figure)"
+        },
+        "tiers": {
+          "definitely_buy": 59500,
+          "buy_upper": 70000,
+          "ceiling": 85000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch — still falling about ¥4k a day",
+          "reasoning": "Sales slid from ¥89k (Sep 14) to ¥76k (−15% in 3 days) with no sign of a floor yet, and the raw buyback price is falling too (¥82k → ¥55k since June). The Dec 2025 base (¥70k) is the realistic Buy level, and I'd put roughly 55% odds on reaching it within 1–2 months at the current pace. The ceiling is set at ¥85k, the top of the current ask cluster, rather than the Jan–Mar plateau (¥91k), because the ¥85–89k prints from Sep 14 already failed. Buying today risks another 10–20% drop."
         },
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2000
@@ -784,15 +798,22 @@
         }
       },
       "analysis": {
-        "tiers": {
-          "definitely_buy": 62000,
-          "buy_upper": 70000,
-          "ceiling": 75000
-        },
+        "representative_price": 67500,
+        "price_source": "sales_confirmed",
         "peak": {
-          "price": 97000,
-          "when": "~early August 2026",
-          "source": "altema — low confidence; the same source overstated this card's current price by ~30% in an earlier check, so treat this as an upper-bound estimate, not a confirmed figure"
+          "price": 110000,
+          "when": "2026-05-17",
+          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip); user-cited ¥120,000/April corrected — chart shows ¥110,000 on 2026-05-17"
+        },
+        "tiers": {
+          "definitely_buy": 58000,
+          "buy_upper": 68500,
+          "ceiling": 77500
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy — back at the Dec 2025 pre-hype base",
+          "reasoning": "Sales have recovered from ¥63–65k to ¥68k and now sit on the Dec 2025 level (¥68.3k), right about where making your own PSA10 costs the same (~¥69k). But the index is still falling (−23% this month), there are 80k PSA10s, and there's a wall of asks at ¥75k. Roughly 35% chance it dips back to ¥60k or below within 3 months if the index keeps sliding; a drop to Definitely-buy (≤¥58k) needs the market to overshoot below its pre-hype level. Best move: buy at ≤¥68.5k once the ¥65–68k range has held for about a week. Peak corrected to ¥110,000 (2026-05-17, pokeca-chart) — about 39% off that high, a bit less discount than the ¥120k/April figure implied."
         },
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2000
@@ -1024,15 +1045,22 @@
         }
       },
       "analysis": {
-        "tiers": {
-          "definitely_buy": 300000,
-          "buy_upper": 330000,
-          "ceiling": 360000
-        },
+        "representative_price": 295000,
+        "price_source": "sales_confirmed",
         "peak": {
-          "price": 400000,
-          "when": "2026-09-02",
-          "source": "SNKRDUNK recent completed sales history"
+          "price": 470000,
+          "when": "2026-08-22",
+          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip; user-cited ¥478,000 essentially confirmed, off by <2%)"
+        },
+        "tiers": {
+          "definitely_buy": 216000,
+          "buy_upper": 254500,
+          "ceiling": 300000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch — grail, sliding fast toward pre-hype base",
+          "reasoning": "Down 37% from the Aug peak (¥470k) and 28% in two weeks, with the last sale at ¥289k and only 5 asks before a gap to ¥320k. It is back at the Jan–Mar 2026 plateau (¥285k). The ceiling is set about 5% above that as a grail allowance, but the Dec 2025 base (¥254k) is the real Buy level. I'd put roughly 50% odds on reaching it in 1–3 months, since there's no sign yet that the decline is stopping. Buying today risks another ¥30–50k drop, and at ¥290k this is 4x the Umbreon budget."
         }
       }
     },
@@ -1301,15 +1329,22 @@
         }
       },
       "analysis": {
-        "tiers": {
-          "definitely_buy": 38000,
-          "buy_upper": 42000,
-          "ceiling": 46000
-        },
+        "representative_price": 42500,
+        "price_source": "sales_confirmed",
         "peak": {
-          "price": 70500,
-          "when": "~August 2026",
-          "source": "altema — low confidence; likely overstated, consistent with the pattern seen across every other tracked card"
+          "price": 74200,
+          "when": "2026-05-20",
+          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip — exact ¥74,187); user-cited ¥82,300/April corrected, about 11% lower and a month later"
+        },
+        "tiers": {
+          "definitely_buy": 28500,
+          "buy_upper": 34000,
+          "ceiling": 44500
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch — stable, but raw price is falling underneath",
+          "reasoning": "PSA10 has been flat at ¥42–43k for 5 days with deep asks (19 within 15%), but raw A copies just dropped from ¥35–38k to ¥26.5–28k, which removes its cost-of-grading support (~¥45k). It's still 26% above the Dec 2025 base, and altema runs about 20% above SNKRDUNK for this card, so the base may really be closer to ¥28–30k. Low odds (about 25%) of reaching Buy within 3 months. It's a promo, not an AR/SAR, so it's outside your display criteria — lowest priority. Peak corrected to ¥74,200 (2026-05-20, pokeca-chart) — 43% off that high, a smaller discount than the ¥82.3k figure implied."
         },
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2000
