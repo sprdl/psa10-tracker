@@ -43,6 +43,79 @@ CARRY_FORWARD_KEYS = ("tiers", "peak", "grading_fee_jpy", "shipping_insurance_jp
 # must NOT be silently reused from an older run — they need a fresh look each time.
 SNAPSHOT_SPECIFIC_KEYS = ("representative_price", "price_source", "verdict")
 
+# The pokemon-card-price-check skill's native output uses flat psa10_*/a_* field
+# names on each card. The app (assets/app.js) and docs/schema.md instead expect a
+# nested `grades: {psa10: {...}, raw_a_grade: {...}}` shape. If that raw output is
+# ever pasted straight into this script without converting it first, `grades` ends
+# up missing entirely and every card silently renders as "no market data yet" —
+# this happened for real on 2026-09-18 (run11). These maps let us auto-detect and
+# fix that shape instead of writing broken data to the live site.
+_PSA10_FIELD_MAP = {
+    "psa10_lowest_price": "lowest_price",
+    "psa10_threshold_115pct_of_lowest": "threshold_115pct_of_lowest",
+    "psa10_top20": "top20_cheapest_listings",
+    "psa10_listings_within_15pct": "listings_within_15pct_of_lowest",
+    "psa10_count_within_15pct": "count_within_15pct",
+    "psa10_count_excluded_over_15pct": "count_excluded_over_15pct",
+    "psa10_sales": "recent_completed_sales",
+    "psa10_note": "note",
+    "psa10_sales_note": "sales_note",
+    "psa10_top20_stats": "top20_stats",
+    "psa10_error": "error",
+}
+_A_GRADE_FIELD_MAP = {
+    "a_lowest_price": "lowest_price",
+    "a_threshold_115pct_of_lowest": "threshold_115pct_of_lowest",
+    "a_top20": "top20_cheapest_listings",
+    "a_listings_within_15pct": "listings_within_15pct_of_lowest",
+    "a_count_within_15pct": "count_within_15pct",
+    "a_count_excluded_over_15pct": "count_excluded_over_15pct",
+    "a_sales": "recent_completed_sales",
+    "a_note": "note",
+    "a_sales_note": "sales_note",
+    "a_top20_stats": "top20_stats",
+    "a_error": "error",
+}
+
+
+def _normalize_card_schema(card: dict) -> dict:
+    """Converts one card from the price-check skill's flat psa10_*/a_* field names
+    to the nested grades.psa10 / grades.raw_a_grade shape the app expects. A card
+    that already has a (truthy) `grades` block is assumed correct and left as-is."""
+    if card.get("grades"):
+        return card
+    if not any(k in card for k in (*_PSA10_FIELD_MAP, *_A_GRADE_FIELD_MAP)):
+        return card  # nothing flat to convert — leave whatever shape it has alone
+
+    psa10, raw_a, rest = {}, {}, {}
+    for k, v in card.items():
+        if k in _PSA10_FIELD_MAP:
+            psa10[_PSA10_FIELD_MAP[k]] = v
+        elif k in _A_GRADE_FIELD_MAP:
+            raw_a[_A_GRADE_FIELD_MAP[k]] = v
+        else:
+            rest[k] = v
+    grades = {}
+    if psa10:
+        grades["psa10"] = psa10
+    if raw_a:
+        grades["raw_a_grade"] = raw_a
+    rest["grades"] = grades
+    return rest
+
+
+def normalize_schema(data: dict) -> int:
+    """Mutates data['cards'] in place, converting any flat-schema cards to the
+    nested shape. Returns how many cards were converted."""
+    converted = 0
+    cards = data.get("cards", [])
+    for i, card in enumerate(cards):
+        fixed = _normalize_card_schema(card)
+        if fixed is not card:
+            cards[i] = fixed
+            converted += 1
+    return converted
+
 
 def find_repo_root() -> Path:
     here = Path(__file__).resolve().parent
@@ -181,8 +254,29 @@ def main():
     if "collected_at_jst" not in data:
         print("Warning: JSON has no 'collected_at_jst' field — using the current time for the filename.", file=sys.stderr)
 
+    converted = normalize_schema(data)
+    if converted:
+        print(f"Converted {converted} card(s) from the price-check skill's flat psa10_*/a_* field names "
+              f"to the app's nested grades.psa10/raw_a_grade shape.")
+
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest.setdefault("snapshots", [])
+
+    # Guard against saving an exact duplicate under a new filename (e.g. the same
+    # run pasted in twice) — compare against any existing snapshot with the same
+    # collected_at_jst timestamp before creating a "-2" file for it.
+    same_ts_files = [s["file"] for s in manifest["snapshots"] if s.get("collected_at_jst") == data.get("collected_at_jst")]
+    for existing_file in same_ts_files:
+        existing_path = snapshots_dir / existing_file
+        if not existing_path.exists():
+            continue
+        try:
+            existing_data = json.loads(existing_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if existing_data.get("cards") == data.get("cards"):
+            sys.exit(f"This snapshot's cards are byte-identical to the already-saved {existing_file} "
+                      f"(same collected_at_jst). Not saving a duplicate — nothing to do.")
 
     if no_carry_forward:
         print("Skipping analysis carry-forward (--no-carry-forward).")
