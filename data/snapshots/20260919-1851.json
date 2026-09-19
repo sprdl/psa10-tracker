@@ -1392,6 +1392,32 @@
             "median": 20750.0
           }
         }
+      },
+      "analysis": {
+        "representative_price": 41000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 57100,
+          "when": "August 2026",
+          "source": "altema.jp 10-day price table, read 2026-09-19"
+        },
+        "tiers": {
+          "definitely_buy": 32000,
+          "buy_upper": 38000,
+          "ceiling": 46000
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000,
+        "raw_tiers": {
+          "definitely_buy": 15000,
+          "buy_upper": 18000,
+          "ceiling": 22000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch — only tracked card still above its pre-rally base",
+          "reasoning": "At ¥41,000 it is 28% off the August peak but still 38% above its Dec 2025–Mar 2026 base of ~¥30–32k, while the PSA10 index falls 24.8% a month, so roughly 45% odds of reaching the ¥38,000 Buy tier within 3–6 months (likely Nov 2026–Feb 2027) and about 50% odds of a further 10% drop if bought today. The low 72% gem rate puts a genuine floor near the ¥44,400 self-grading cost, but the raw buyback already slipped from ¥18,000 to ¥15,000, so that floor is softening; liquidity is excellent (15 PSA10 sales in two days), and it is an SM-era non-full-art RR that does not fit the modern AR/SAR display criteria."
+        }
       }
     },
     {
