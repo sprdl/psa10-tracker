@@ -840,259 +840,6 @@
       }
     },
     {
-      "card_name_ja": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
-      "url": "https://snkrdunk.com/apparels/91178",
-      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20240611034356-0.webp?size=l",
-      "favorite_count": 1378,
-      "altema_url": "https://altema.jp/pokemoncard/card/10819",
-      "psa10_population": 8102,
-      "psa10_gem_rate_pct": 81.5,
-      "grades": {
-        "psa10": {
-          "top20_cheapest_listings": [
-            325000,
-            329000,
-            340000,
-            343000,
-            366666,
-            366666,
-            378000,
-            399999,
-            400000,
-            400000,
-            400000,
-            420000,
-            430000,
-            440000,
-            440000,
-            440000,
-            460000,
-            469990,
-            470000,
-            470000
-          ],
-          "note": "PSA10 top20 listing set is IDENTICAL to run11's - lowest still exactly ¥325,000, same full list of 20 prices. No PSA10 listing activity at all since run11. The listings-vs-sales gap persists: sales cluster ¥280,000-300,000 vs the ¥325,000+ listing floor.",
-          "recent_completed_sales": [
-            {
-              "price": 345000,
-              "when": "2026/09/10"
-            },
-            {
-              "price": 340000,
-              "when": "2026/09/10"
-            },
-            {
-              "price": 358000,
-              "when": "2026/09/11"
-            },
-            {
-              "price": 343000,
-              "when": "2026/09/11"
-            },
-            {
-              "price": 340000,
-              "when": "2026/09/12"
-            },
-            {
-              "price": 320000,
-              "when": "2026/09/13"
-            },
-            {
-              "price": 295000,
-              "when": "2026/09/16"
-            },
-            {
-              "price": 289000,
-              "when": "2026/09/17"
-            },
-            {
-              "price": 287000,
-              "when": "1日前"
-            },
-            {
-              "price": 288000,
-              "when": "1日前"
-            },
-            {
-              "price": 284000,
-              "when": "1日前"
-            },
-            {
-              "price": 280000,
-              "when": "1日前"
-            },
-            {
-              "price": 280000,
-              "when": "1日前"
-            },
-            {
-              "price": 286000,
-              "when": "1日前"
-            },
-            {
-              "price": 290000,
-              "when": "1日前"
-            },
-            {
-              "price": 294000,
-              "when": "1日前"
-            },
-            {
-              "price": 299999,
-              "when": "1日前"
-            },
-            {
-              "price": 297000,
-              "when": "9時間前"
-            },
-            {
-              "price": 295000,
-              "when": "8時間前"
-            },
-            {
-              "price": 335000,
-              "when": "5分前"
-            }
-          ],
-          "sales_note": "All 20 rows in the default すべて view were already PSA10 - no discards needed. Notable: a fresh sale just 5 minutes ago at ¥335,000 - the first sale to reach the listing floor level in this window, a step up from the ¥280,000-300,000 cluster that has dominated recent sales since run8.",
-          "lowest_price": 325000,
-          "threshold_115pct_of_lowest": 373750,
-          "listings_within_15pct_of_lowest": [
-            325000,
-            329000,
-            340000,
-            343000,
-            366666,
-            366666
-          ],
-          "count_within_15pct": 6,
-          "count_excluded_over_15pct": 14,
-          "top20_stats": {
-            "count": 20,
-            "min": 325000,
-            "max": 470000,
-            "mean": 404416.05,
-            "median": 400000.0
-          }
-        },
-        "raw_a_grade": {
-          "top20_cheapest_listings": [
-            335500
-          ],
-          "note": "Still only 1 active A-grade listing at ¥335,500 - identical to run11, confirmed via the checked すべて (all-conditions) view. Supply remains extremely thin.",
-          "recent_completed_sales": [
-            {
-              "price": 38000,
-              "when": "2023/12/26"
-            },
-            {
-              "price": 38000,
-              "when": "2024/03/07"
-            },
-            {
-              "price": 145000,
-              "when": "2025/04/03"
-            },
-            {
-              "price": 90000,
-              "when": "2025/04/05"
-            },
-            {
-              "price": 120000,
-              "when": "2025/05/14"
-            },
-            {
-              "price": 100000,
-              "when": "2025/05/23"
-            },
-            {
-              "price": 100000,
-              "when": "2025/06/05"
-            },
-            {
-              "price": 120000,
-              "when": "2025/08/02"
-            },
-            {
-              "price": 167999,
-              "when": "2025/08/03"
-            },
-            {
-              "price": 210000,
-              "when": "2025/09/16"
-            },
-            {
-              "price": 195000,
-              "when": "2025/10/11"
-            },
-            {
-              "price": 204000,
-              "when": "2025/10/20"
-            },
-            {
-              "price": 190000,
-              "when": "2025/11/03"
-            },
-            {
-              "price": 210000,
-              "when": "2025/11/06"
-            },
-            {
-              "price": 180000,
-              "when": "2025/12/17"
-            },
-            {
-              "price": 200000,
-              "when": "2026/03/08"
-            },
-            {
-              "price": 210000,
-              "when": "2026/03/11"
-            },
-            {
-              "price": 180000,
-              "when": "2026/04/02"
-            },
-            {
-              "price": 250000,
-              "when": "2026/05/24"
-            },
-            {
-              "price": 245000,
-              "when": "2026/06/29"
-            }
-          ],
-          "sales_note": "Still no A-grade sale since 2026/06/29 - identical to run11, exactly the same 20-row history. The A-grade market for this card remains essentially dormant aside from its single active listing.",
-          "lowest_price": 335500,
-          "threshold_115pct_of_lowest": 385825,
-          "listings_within_15pct_of_lowest": [
-            335500
-          ],
-          "count_within_15pct": 1,
-          "count_excluded_over_15pct": 0,
-          "top20_stats": {
-            "count": 1,
-            "min": 335500,
-            "max": 335500,
-            "mean": 335500,
-            "median": 335500
-          }
-        }
-      },
-      "analysis": {
-        "tiers": {
-          "definitely_buy": 216000,
-          "buy_upper": 254500,
-          "ceiling": 300000
-        },
-        "peak": {
-          "price": 470000,
-          "when": "2026-08-22",
-          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip; user-cited ¥478,000 essentially confirmed, off by <2%)"
-        }
-      }
-    },
-    {
       "card_name_ja": "名探偵ピカチュウ プロモ [SV-P 098](プロモーションカード「SV-P」)",
       "url": "https://snkrdunk.com/apparels/135232",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230823022422-0.webp?size=l",
@@ -2286,6 +2033,195 @@
             "mean": 13951.35,
             "median": 14000.0
           }
+        }
+      }
+    },
+    {
+      "card_name_ja": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
+      "url": "https://snkrdunk.com/apparels/387059",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/85cc3d97-a5a1-4b35-a65c-6e6a4b59e8de.webp?size=l",
+      "favorite_count": 712,
+      "psa10_population": 13373,
+      "psa10_gem_rate_pct": 72.0,
+      "grades": {
+        "psa10": {
+          "lowest_price": 40500,
+          "threshold_115pct_of_lowest": 46575,
+          "top20_cheapest_listings": [
+            40500,
+            41000,
+            41000,
+            41000,
+            42000,
+            43000,
+            43000,
+            43500,
+            43800,
+            43800,
+            44000,
+            44900,
+            45000,
+            45000,
+            45000,
+            47650,
+            47850,
+            50000,
+            50000,
+            50000
+          ],
+          "listings_within_15pct_of_lowest": [
+            40500,
+            41000,
+            41000,
+            41000,
+            42000,
+            43000,
+            43000,
+            43500,
+            43800,
+            43800,
+            44000,
+            44900,
+            45000,
+            45000,
+            45000
+          ],
+          "count_within_15pct": 15,
+          "count_excluded_over_15pct": 5,
+          "recent_completed_sales": [
+            {
+              "price": 40800,
+              "when": "3時間前"
+            },
+            {
+              "price": 42000,
+              "when": "5時間前"
+            },
+            {
+              "price": 41000,
+              "when": "14時間前"
+            },
+            {
+              "price": 41000,
+              "when": "19時間前"
+            },
+            {
+              "price": 40800,
+              "when": "22時間前"
+            },
+            {
+              "price": 41000,
+              "when": "1日前"
+            },
+            {
+              "price": 41500,
+              "when": "1日前"
+            },
+            {
+              "price": 42950,
+              "when": "1日前"
+            },
+            {
+              "price": 41000,
+              "when": "1日前"
+            },
+            {
+              "price": 42300,
+              "when": "1日前"
+            },
+            {
+              "price": 42400,
+              "when": "1日前"
+            },
+            {
+              "price": 41800,
+              "when": "1日前"
+            },
+            {
+              "price": 42800,
+              "when": "1日前"
+            },
+            {
+              "price": 41500,
+              "when": "1日前"
+            },
+            {
+              "price": 41000,
+              "when": "2026/09/17"
+            }
+          ]
+        },
+        "raw_a_grade": {
+          "lowest_price": 20000,
+          "threshold_115pct_of_lowest": 23000,
+          "top20_cheapest_listings": [
+            20000,
+            20000,
+            20000,
+            20000,
+            20000,
+            20000,
+            21500,
+            21500,
+            22000,
+            23000,
+            24000,
+            40000
+          ],
+          "listings_within_15pct_of_lowest": [
+            20000,
+            20000,
+            20000,
+            20000,
+            20000,
+            20000,
+            21500,
+            21500,
+            22000,
+            23000
+          ],
+          "count_within_15pct": 10,
+          "count_excluded_over_15pct": 2,
+          "recent_completed_sales": [
+            {
+              "price": 22000,
+              "when": "1時間前"
+            },
+            {
+              "price": 22000,
+              "when": "7時間前"
+            },
+            {
+              "price": 20000,
+              "when": "18時間前"
+            }
+          ]
+        }
+      },
+      "analysis": {
+        "representative_price": 41000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 57100,
+          "when": "August 2026",
+          "source": "altema.jp 10-day price table, read 2026-09-19"
+        },
+        "tiers": {
+          "definitely_buy": 32000,
+          "buy_upper": 38000,
+          "ceiling": 46000
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000,
+        "raw_tiers": {
+          "definitely_buy": 15000,
+          "buy_upper": 18000,
+          "ceiling": 22000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch — only tracked card still above its pre-rally base",
+          "reasoning": "At ¥41,000 it is 28% off the August peak but still 38% above its Dec 2025–Mar 2026 base of ~¥30–32k, while the PSA10 index falls 24.8% a month, so roughly 45% odds of reaching the ¥38,000 Buy tier within 3–6 months (likely Nov 2026–Feb 2027) and about 50% odds of a further 10% drop if bought today. The low 72% gem rate puts a genuine floor near the ¥44,400 self-grading cost, but the raw buyback already slipped from ¥18,000 to ¥15,000, so that floor is softening; liquidity is excellent (15 PSA10 sales in two days), and it is an SM-era non-full-art RR that does not fit the modern AR/SAR display criteria."
         }
       }
     }
