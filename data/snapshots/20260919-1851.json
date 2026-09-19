@@ -1,0 +1,2364 @@
+{
+  "run": "run14",
+  "collected_at_jst": "2026-09-19T18:51:16+09:00",
+  "previous_run_reference": "run13 collected 2026-09-19T13:26:58+09:00 JST (~5.5 hours earlier, same calendar day)",
+  "cards": [
+    {
+      "card_name_ja": "ピカチュウVMAX CSR[s8b 223/184](ハイクラスパック「VMAXクライマックス」)",
+      "url": "https://snkrdunk.com/apparels/138599",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230913100335-0.webp?size=l",
+      "favorite_count": 779,
+      "altema_url": "https://altema.jp/pokemoncard/card/12527",
+      "psa10_population": 10846,
+      "psa10_gem_rate_pct": 88.0,
+      "grades": {
+        "psa10": {
+          "top20_cheapest_listings": [
+            29300,
+            29500,
+            33800,
+            34000,
+            34500,
+            34700,
+            35000,
+            35000,
+            35000,
+            36000,
+            37000,
+            37999,
+            38000,
+            38000,
+            38888,
+            39500,
+            40000,
+            40000,
+            41000,
+            42000
+          ],
+          "note": "Floor unchanged at ¥29,300. One new listing entered (¥33,800, not present in run13's top20) which pushed run13's ¥43,000 tail listing off the bottom of the top20 - minor listing churn, no real floor move.",
+          "recent_completed_sales": [
+            {
+              "price": 35900,
+              "when": "2026/09/10"
+            },
+            {
+              "price": 35000,
+              "when": "2026/09/10"
+            },
+            {
+              "price": 35500,
+              "when": "2026/09/10"
+            },
+            {
+              "price": 35000,
+              "when": "2026/09/10"
+            },
+            {
+              "price": 36000,
+              "when": "2026/09/11"
+            },
+            {
+              "price": 34500,
+              "when": "2026/09/12"
+            },
+            {
+              "price": 35000,
+              "when": "2026/09/12"
+            },
+            {
+              "price": 28999,
+              "when": "2026/09/13"
+            },
+            {
+              "price": 28500,
+              "when": "2026/09/14"
+            },
+            {
+              "price": 32500,
+              "when": "2026/09/14"
+            },
+            {
+              "price": 29999,
+              "when": "2026/09/14"
+            },
+            {
+              "price": 29000,
+              "when": "2026/09/15"
+            },
+            {
+              "price": 27000,
+              "when": "2026/09/15"
+            },
+            {
+              "price": 27000,
+              "when": "2026/09/15"
+            },
+            {
+              "price": 26480,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 26500,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 26999,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 27000,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 26999,
+              "when": "1日前"
+            },
+            {
+              "price": 28000,
+              "when": "1日前"
+            }
+          ],
+          "sales_note": "All 20 rows in the default すべて view were already PSA10 - no discards needed. Byte-for-byte identical 20-sale history to run13, just aged further (run13's newest two rows read '1日前'/'23時間前'; here both read '1日前') - no new PSA10 sale occurred in this ~5-hour window.",
+          "lowest_price": 29300,
+          "threshold_115pct_of_lowest": 33695,
+          "listings_within_15pct_of_lowest": [
+            29300,
+            29500
+          ],
+          "count_within_15pct": 2,
+          "count_excluded_over_15pct": 18,
+          "top20_stats": {
+            "count": 20,
+            "min": 29300,
+            "max": 42000,
+            "mean": 36459.35,
+            "median": 36500.0
+          }
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            16000,
+            21000,
+            22000,
+            22000,
+            22500,
+            23000,
+            23000,
+            30000,
+            30000,
+            50000,
+            55000
+          ],
+          "note": "A-grade top20 listing set identical to run13 - still 11 active listings, floor unchanged at ¥16,000. No new A-grade listing activity.",
+          "recent_completed_sales": [
+            {
+              "price": 26000,
+              "when": "2026/04/18"
+            },
+            {
+              "price": 27777,
+              "when": "2026/04/21"
+            },
+            {
+              "price": 25500,
+              "when": "2026/04/28"
+            },
+            {
+              "price": 29800,
+              "when": "2026/04/29"
+            },
+            {
+              "price": 21000,
+              "when": "2026/05/04"
+            },
+            {
+              "price": 26999,
+              "when": "2026/05/06"
+            },
+            {
+              "price": 25000,
+              "when": "2026/05/08"
+            },
+            {
+              "price": 28000,
+              "when": "2026/05/11"
+            },
+            {
+              "price": 25000,
+              "when": "2026/05/16"
+            },
+            {
+              "price": 26500,
+              "when": "2026/05/16"
+            },
+            {
+              "price": 29999,
+              "when": "2026/05/20"
+            },
+            {
+              "price": 29000,
+              "when": "2026/06/01"
+            },
+            {
+              "price": 30000,
+              "when": "2026/06/01"
+            },
+            {
+              "price": 33000,
+              "when": "2026/06/04"
+            },
+            {
+              "price": 25600,
+              "when": "2026/06/05"
+            },
+            {
+              "price": 33000,
+              "when": "2026/06/16"
+            },
+            {
+              "price": 29800,
+              "when": "2026/07/09"
+            },
+            {
+              "price": 22000,
+              "when": "2026/07/31"
+            },
+            {
+              "price": 24000,
+              "when": "2026/07/31"
+            },
+            {
+              "price": 20000,
+              "when": "2026/08/15"
+            }
+          ],
+          "sales_note": "Still no new A-grade sale since 2026/08/15, identical to run13 - the A-grade market remains dormant, over a month with zero A-grade transactions.",
+          "lowest_price": 16000,
+          "threshold_115pct_of_lowest": 18400,
+          "listings_within_15pct_of_lowest": [
+            16000
+          ],
+          "count_within_15pct": 1,
+          "count_excluded_over_15pct": 10,
+          "top20_stats": {
+            "count": 11,
+            "min": 16000,
+            "max": 55000,
+            "mean": 28590.91,
+            "median": 23000
+          }
+        }
+      },
+      "analysis": {
+        "tiers": {
+          "definitely_buy": 25000,
+          "buy_upper": 29500,
+          "ceiling": 35500
+        },
+        "peak": {
+          "price": 50000,
+          "when": "2026-07-16",
+          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip); user-cited ¥47,000/August corrected — chart shows ¥50,000 on 2026-07-16 (thin data, 2 trades that day)"
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
+      }
+    },
+    {
+      "card_name_ja": "ピカチュウex SAR [SV8 132/106](拡張パック「超電ブレイカー」)",
+      "url": "https://snkrdunk.com/apparels/408333",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/8c2d34aa-dab1-4c89-b51c-5dd44b8eaca6.webp?size=l",
+      "favorite_count": 1786,
+      "altema_url": "https://altema.jp/pokemoncard/card/29010",
+      "psa10_population": 20026,
+      "psa10_gem_rate_pct": 88.7,
+      "grades": {
+        "psa10": {
+          "top20_cheapest_listings": [
+            80000,
+            80000,
+            85000,
+            85000,
+            85000,
+            89999,
+            90000,
+            94000,
+            95000,
+            95000,
+            99800,
+            99999,
+            100000,
+            100000,
+            103000,
+            105000,
+            105000,
+            106000,
+            110000,
+            110000
+          ],
+          "note": "Floor unchanged at ¥80,000. The run13 ¥81,000 listing has sold/been removed; a new ¥80,000 and a new ¥85,000 listing entered, pushing one of run13's three ¥110,000 listings off the bottom of the top20 window - modest bullish churn on the cheap end.",
+          "recent_completed_sales": [
+            {
+              "price": 79800,
+              "when": "2026/09/15"
+            },
+            {
+              "price": 78000,
+              "when": "2026/09/15"
+            },
+            {
+              "price": 77000,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 76000,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 76000,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 71500,
+              "when": "1日前"
+            },
+            {
+              "price": 72000,
+              "when": "1日前"
+            },
+            {
+              "price": 71000,
+              "when": "1日前"
+            },
+            {
+              "price": 70999,
+              "when": "1日前"
+            },
+            {
+              "price": 72999,
+              "when": "1日前"
+            },
+            {
+              "price": 72000,
+              "when": "23時間前"
+            },
+            {
+              "price": 73400,
+              "when": "21時間前"
+            },
+            {
+              "price": 72000,
+              "when": "19時間前"
+            },
+            {
+              "price": 73000,
+              "when": "18時間前"
+            },
+            {
+              "price": 74300,
+              "when": "18時間前"
+            },
+            {
+              "price": 75000,
+              "when": "17時間前"
+            },
+            {
+              "price": 75000,
+              "when": "17時間前"
+            },
+            {
+              "price": 78000,
+              "when": "11時間前"
+            },
+            {
+              "price": 80000,
+              "when": "11時間前"
+            },
+            {
+              "price": 80000,
+              "when": "3時間前"
+            }
+          ],
+          "sales_note": "All 20 rows in default すべて view were already PSA10. Run13's oldest row (¥79,000, 2026/09/15) aged out of the 20-row window, and one genuinely NEW sale appeared at the newest slot: ¥80,000 dated 3時間前 (run13's newest was ¥80,000 at 4時間前, which has now aged to 11時間前, and this new one is on top of it) - a real, if minor, new PSA10 sale in this ~5-hour window, at the same price level as the recent cluster.",
+          "lowest_price": 80000,
+          "threshold_115pct_of_lowest": 92000,
+          "listings_within_15pct_of_lowest": [
+            80000,
+            80000,
+            85000,
+            85000,
+            85000,
+            89999,
+            90000
+          ],
+          "count_within_15pct": 7,
+          "count_excluded_over_15pct": 13,
+          "top20_stats": {
+            "count": 20,
+            "min": 80000,
+            "max": 110000,
+            "mean": 95889.9,
+            "median": 97400.0
+          }
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            59000,
+            62000,
+            62000,
+            62000,
+            62000,
+            67980,
+            70000,
+            72000,
+            72000,
+            75000,
+            79500,
+            87000,
+            88000,
+            92000,
+            109800,
+            109999
+          ],
+          "note": "A-grade top20 listing set identical to run13 - 16 active listings, floor unchanged at ¥59,000.",
+          "recent_completed_sales": [
+            {
+              "price": 86000,
+              "when": "2026/05/10"
+            },
+            {
+              "price": 81000,
+              "when": "2026/05/11"
+            },
+            {
+              "price": 88000,
+              "when": "2026/05/12"
+            },
+            {
+              "price": 76000,
+              "when": "2026/05/19"
+            },
+            {
+              "price": 89999,
+              "when": "2026/05/20"
+            },
+            {
+              "price": 90000,
+              "when": "2026/06/01"
+            },
+            {
+              "price": 90000,
+              "when": "2026/06/03"
+            },
+            {
+              "price": 87500,
+              "when": "2026/06/11"
+            },
+            {
+              "price": 100000,
+              "when": "2026/06/14"
+            },
+            {
+              "price": 89500,
+              "when": "2026/06/14"
+            },
+            {
+              "price": 81000,
+              "when": "2026/06/21"
+            },
+            {
+              "price": 77000,
+              "when": "2026/07/04"
+            },
+            {
+              "price": 79000,
+              "when": "2026/07/07"
+            },
+            {
+              "price": 88000,
+              "when": "2026/07/21"
+            },
+            {
+              "price": 87000,
+              "when": "2026/07/29"
+            },
+            {
+              "price": 89800,
+              "when": "2026/07/31"
+            },
+            {
+              "price": 80000,
+              "when": "2026/08/13"
+            },
+            {
+              "price": 79500,
+              "when": "2026/08/24"
+            },
+            {
+              "price": 69999,
+              "when": "2026/08/27"
+            },
+            {
+              "price": 70000,
+              "when": "2026/08/28"
+            }
+          ],
+          "sales_note": "Still no new A-grade sale since 2026/08/28, identical to run13 - about 3 weeks of A-grade quiet continues, unlike PSA10 which remains actively traded.",
+          "lowest_price": 59000,
+          "threshold_115pct_of_lowest": 67850,
+          "listings_within_15pct_of_lowest": [
+            59000,
+            62000,
+            62000,
+            62000,
+            62000
+          ],
+          "count_within_15pct": 5,
+          "count_excluded_over_15pct": 11,
+          "top20_stats": {
+            "count": 16,
+            "min": 59000,
+            "max": 109999,
+            "mean": 76892.44,
+            "median": 72000.0
+          }
+        }
+      },
+      "analysis": {
+        "tiers": {
+          "definitely_buy": 59500,
+          "buy_upper": 70000,
+          "ceiling": 85000
+        },
+        "peak": {
+          "price": 130000,
+          "when": "2026-04-12",
+          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip — exact match to prior figure)"
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
+      }
+    },
+    {
+      "card_name_ja": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
+      "url": "https://snkrdunk.com/apparels/455596",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/79302385-1b7d-4fb5-bd23-b78bd029a9df.webp?size=l",
+      "favorite_count": 3872,
+      "altema_url": "https://altema.jp/pokemoncard/card/30180",
+      "psa10_population": 80321,
+      "psa10_gem_rate_pct": 86.9,
+      "grades": {
+        "psa10": {
+          "top20_cheapest_listings": [
+            72999,
+            73500,
+            74000,
+            74000,
+            74999,
+            75000,
+            75000,
+            75000,
+            75000,
+            75500,
+            76500,
+            77000,
+            77900,
+            78000,
+            79600,
+            80000,
+            80000,
+            81500,
+            82000,
+            82000
+          ],
+          "note": "Floor rose to ¥72,999 from run13's ¥72,800 - run13's cheapest listings (72,800/73,000/two of the 74,999-75,000 cluster) have sold, replaced by several new higher listings (75,500/76,500/81,500/82,000x2). A modest firming on the listing side, consistent with continued active PSA10 sales.",
+          "recent_completed_sales": [
+            {
+              "price": 72500,
+              "when": "1日前"
+            },
+            {
+              "price": 72999,
+              "when": "1日前"
+            },
+            {
+              "price": 72990,
+              "when": "1日前"
+            },
+            {
+              "price": 73000,
+              "when": "22時間前"
+            },
+            {
+              "price": 73000,
+              "when": "22時間前"
+            },
+            {
+              "price": 73000,
+              "when": "22時間前"
+            },
+            {
+              "price": 96500,
+              "when": "21時間前"
+            },
+            {
+              "price": 73000,
+              "when": "20時間前"
+            },
+            {
+              "price": 73000,
+              "when": "20時間前"
+            },
+            {
+              "price": 74000,
+              "when": "19時間前"
+            },
+            {
+              "price": 74000,
+              "when": "18時間前"
+            },
+            {
+              "price": 72500,
+              "when": "6時間前"
+            },
+            {
+              "price": 75000,
+              "when": "5時間前"
+            },
+            {
+              "price": 75000,
+              "when": "5時間前"
+            },
+            {
+              "price": 75000,
+              "when": "5時間前"
+            },
+            {
+              "price": 74999,
+              "when": "5時間前"
+            },
+            {
+              "price": 74000,
+              "when": "5時間前"
+            },
+            {
+              "price": 73500,
+              "when": "5時間前"
+            },
+            {
+              "price": 70000,
+              "when": "2時間前"
+            },
+            {
+              "price": 73000,
+              "when": "49分前"
+            }
+          ],
+          "sales_note": "Confirmed via PSA10 pill click - all 20 rows PSA10, no discards needed. Run13's six oldest rows (all clustered ¥71,000-74,900, dated up to '1日前') have fully aged out of this window; 9 fresh sales appeared in the last ~5 hours, including a cluster of five at ¥73,500-75,000 and one notably lower ¥70,000 sale (49分前 shows the most recent at ¥73,000, back in the normal range - the ¥70,000 looks like an isolated single lower sale rather than a floor shift, since surrounding sales are ¥73k+). The ¥96,500 outlier persists in the same relative position, now aged to 21時間前 (was 14時間前 in run13) - still the same one-off high sale.",
+          "lowest_price": 72999,
+          "threshold_115pct_of_lowest": 83949,
+          "listings_within_15pct_of_lowest": [
+            72999,
+            73500,
+            74000,
+            74000,
+            74999,
+            75000,
+            75000,
+            75000,
+            75000,
+            75500,
+            76500,
+            77000,
+            77900,
+            78000,
+            79600,
+            80000,
+            80000,
+            81500,
+            82000,
+            82000
+          ],
+          "count_within_15pct": 20,
+          "count_excluded_over_15pct": 0,
+          "top20_stats": {
+            "count": 20,
+            "min": 72999,
+            "max": 82000,
+            "mean": 76974.9,
+            "median": 76000.0
+          }
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            48888,
+            50000,
+            52000,
+            52000,
+            52000,
+            52000,
+            52800,
+            54000,
+            54000,
+            54000,
+            55000,
+            55000,
+            56000,
+            58000,
+            58000,
+            59888,
+            62000,
+            62000,
+            62888,
+            64000
+          ],
+          "note": "Floor DROPPED to ¥48,888 from run13's ¥50,000 - a new cheaper listing entered below the prior floor, while run13's ¥64,999 tail listing fell off the bottom of the top20. A-grade sales confirm no new completed sale at this new low price yet, so this reads as a fresh underpriced/aggressive ask rather than a confirmed market move.",
+          "recent_completed_sales": [
+            {
+              "price": 67500,
+              "when": "2026/08/26"
+            },
+            {
+              "price": 57000,
+              "when": "2026/08/27"
+            },
+            {
+              "price": 54999,
+              "when": "2026/08/28"
+            },
+            {
+              "price": 62999,
+              "when": "2026/08/28"
+            },
+            {
+              "price": 55555,
+              "when": "2026/08/30"
+            },
+            {
+              "price": 52000,
+              "when": "2026/09/04"
+            },
+            {
+              "price": 59000,
+              "when": "2026/09/04"
+            },
+            {
+              "price": 54500,
+              "when": "2026/09/05"
+            },
+            {
+              "price": 60000,
+              "when": "2026/09/06"
+            },
+            {
+              "price": 60900,
+              "when": "2026/09/07"
+            },
+            {
+              "price": 59700,
+              "when": "2026/09/07"
+            },
+            {
+              "price": 59500,
+              "when": "2026/09/08"
+            },
+            {
+              "price": 54000,
+              "when": "2026/09/09"
+            },
+            {
+              "price": 56000,
+              "when": "2026/09/11"
+            },
+            {
+              "price": 56000,
+              "when": "2026/09/11"
+            },
+            {
+              "price": 53000,
+              "when": "2026/09/14"
+            },
+            {
+              "price": 50000,
+              "when": "2026/09/17"
+            },
+            {
+              "price": 47980,
+              "when": "19時間前"
+            },
+            {
+              "price": 53000,
+              "when": "10時間前"
+            },
+            {
+              "price": 49500,
+              "when": "8時間前"
+            }
+          ],
+          "sales_note": "Confirmed via A pill click - all 20 rows A-grade, no discards needed. Identical 20-sale history to run13 (run13's '1日前'/'12時間前'/'3時間前'/'1時間前' relative timestamps have simply aged/converted to '2026/09/17'/'19時間前'/'10時間前'/'8時間前' respectively) - no new A-grade sale in this window. The new ¥48,888 listing floor has not yet resulted in a matching sale.",
+          "lowest_price": 48888,
+          "threshold_115pct_of_lowest": 56221,
+          "listings_within_15pct_of_lowest": [
+            48888,
+            50000,
+            52000,
+            52000,
+            52000,
+            52000,
+            52800,
+            54000,
+            54000,
+            54000,
+            55000,
+            55000,
+            56000
+          ],
+          "count_within_15pct": 13,
+          "count_excluded_over_15pct": 7,
+          "top20_stats": {
+            "count": 20,
+            "min": 48888,
+            "max": 64000,
+            "mean": 55723.2,
+            "median": 54500.0
+          }
+        }
+      },
+      "analysis": {
+        "tiers": {
+          "definitely_buy": 58000,
+          "buy_upper": 68500,
+          "ceiling": 77500
+        },
+        "peak": {
+          "price": 110000,
+          "when": "2026-05-17",
+          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip); user-cited ¥120,000/April corrected — chart shows ¥110,000 on 2026-05-17"
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
+      }
+    },
+    {
+      "card_name_ja": "名探偵ピカチュウ: プロモ [SV-P 098](プロモーションカード「SV-P」)",
+      "url": "https://snkrdunk.com/apparels/135232",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230823022422-0.webp?size=l",
+      "favorite_count": 2541,
+      "altema_url": "https://altema.jp/pokemoncard/card/22861",
+      "psa10_population": 49275,
+      "psa10_gem_rate_pct": 86.6,
+      "grades": {
+        "psa10": {
+          "top20_cheapest_listings": [
+            41500,
+            41800,
+            42000,
+            42999,
+            43000,
+            45000,
+            46500,
+            48300,
+            48900,
+            49500,
+            50000,
+            50000,
+            51000,
+            51999,
+            52000,
+            52500,
+            53000,
+            53000,
+            53000,
+            53000
+          ],
+          "note": "Floor DROPPED slightly to ¥41,500 from run13's ¥41,800 - a new cheaper listing entered below the prior floor; run13's ¥42,500 listing has sold/dropped off, and a new ¥45,000 listing appeared mid-ladder. Net effect modestly bearish on the listing side even as sales remain firm around ¥42-43k.",
+          "recent_completed_sales": [
+            {
+              "price": 42000,
+              "when": "2026/09/17"
+            },
+            {
+              "price": 42000,
+              "when": "2026/09/17"
+            },
+            {
+              "price": 42500,
+              "when": "2026/09/17"
+            },
+            {
+              "price": 42400,
+              "when": "2026/09/17"
+            },
+            {
+              "price": 42400,
+              "when": "2026/09/17"
+            },
+            {
+              "price": 41900,
+              "when": "1日前"
+            },
+            {
+              "price": 41899,
+              "when": "1日前"
+            },
+            {
+              "price": 42800,
+              "when": "1日前"
+            },
+            {
+              "price": 42000,
+              "when": "1日前"
+            },
+            {
+              "price": 42000,
+              "when": "1日前"
+            },
+            {
+              "price": 41000,
+              "when": "1日前"
+            },
+            {
+              "price": 41950,
+              "when": "1日前"
+            },
+            {
+              "price": 41500,
+              "when": "1日前"
+            },
+            {
+              "price": 41800,
+              "when": "1日前"
+            },
+            {
+              "price": 41800,
+              "when": "1日前"
+            },
+            {
+              "price": 41900,
+              "when": "1日前"
+            },
+            {
+              "price": 41500,
+              "when": "20時間前"
+            },
+            {
+              "price": 42300,
+              "when": "19時間前"
+            },
+            {
+              "price": 43000,
+              "when": "6時間前"
+            },
+            {
+              "price": 42000,
+              "when": "3時間前"
+            }
+          ],
+          "sales_note": "Unlike run13 (which read the mixed すべて view and lost a slot to an A-grade row, returning only 19 PSA10 rows), this run used the PSA10 pill filter directly, returning a clean, fully authoritative most-recent-20 PSA10 window - confirmed via get_page_text re-check that all 20 rows show PSA10. The most recent sale is a notably higher ¥43,000 (6時間前), the top of the recent range; the newest sale after that (¥42,000, 3時間前) is back in the normal ¥41-42k band, so this reads as a one-off firm sale rather than a floor shift. Prices remain tightly clustered ¥41,000-43,000 overall, consistent with run13's character.",
+          "lowest_price": 41500,
+          "threshold_115pct_of_lowest": 47725,
+          "listings_within_15pct_of_lowest": [
+            41500,
+            41800,
+            42000,
+            42999,
+            43000,
+            45000,
+            46500
+          ],
+          "count_within_15pct": 7,
+          "count_excluded_over_15pct": 13,
+          "top20_stats": {
+            "count": 20,
+            "min": 41500,
+            "max": 53000,
+            "mean": 48449.9,
+            "median": 49750.0
+          }
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            27000,
+            27000,
+            28000,
+            28000,
+            28000,
+            28000,
+            29000,
+            29000,
+            29500,
+            29700,
+            30000,
+            32000,
+            33000,
+            34000,
+            34000,
+            34000,
+            34500,
+            35000,
+            35000,
+            35000
+          ],
+          "note": "A-grade top20 listing set identical to run13 - floor unchanged at ¥27,000, no listing churn.",
+          "recent_completed_sales": [
+            {
+              "price": 35800,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 35999,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 36999,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 37500,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 37000,
+              "when": "2026/09/02"
+            },
+            {
+              "price": 37000,
+              "when": "2026/09/03"
+            },
+            {
+              "price": 34999,
+              "when": "2026/09/03"
+            },
+            {
+              "price": 36000,
+              "when": "2026/09/04"
+            },
+            {
+              "price": 38500,
+              "when": "2026/09/06"
+            },
+            {
+              "price": 32000,
+              "when": "2026/09/07"
+            },
+            {
+              "price": 34000,
+              "when": "2026/09/08"
+            },
+            {
+              "price": 36000,
+              "when": "2026/09/08"
+            },
+            {
+              "price": 38000,
+              "when": "2026/09/09"
+            },
+            {
+              "price": 28000,
+              "when": "2026/09/14"
+            },
+            {
+              "price": 28000,
+              "when": "2026/09/15"
+            },
+            {
+              "price": 28000,
+              "when": "2026/09/15"
+            },
+            {
+              "price": 28000,
+              "when": "2026/09/15"
+            },
+            {
+              "price": 26500,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 28000,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 21800,
+              "when": "6時間前"
+            }
+          ],
+          "sales_note": "All 20 rows confirmed A-grade, no discards needed. Identical 20-sale history to run13 (the ¥21,800 sale has simply aged from '3分前' to '6時間前') - no new A-grade sale in this window. The book's floor remains ¥27,000, well above the ¥21,800 anomalous sale.",
+          "lowest_price": 27000,
+          "threshold_115pct_of_lowest": 31050,
+          "listings_within_15pct_of_lowest": [
+            27000,
+            27000,
+            28000,
+            28000,
+            28000,
+            28000,
+            29000,
+            29000,
+            29500,
+            29700,
+            30000
+          ],
+          "count_within_15pct": 11,
+          "count_excluded_over_15pct": 9,
+          "top20_stats": {
+            "count": 20,
+            "min": 27000,
+            "max": 35000,
+            "mean": 30985,
+            "median": 29850.0
+          }
+        }
+      },
+      "analysis": {
+        "tiers": {
+          "definitely_buy": 28500,
+          "buy_upper": 34000,
+          "ceiling": 44500
+        },
+        "peak": {
+          "price": 74200,
+          "when": "2026-05-20",
+          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip — exact ¥74,187); user-cited ¥82,300/April corrected, about 11% lower and a month later"
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
+      }
+    },
+    {
+      "card_name_ja": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
+      "url": "https://snkrdunk.com/apparels/387059",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/85cc3d97-a5a1-4b35-a65c-6e6a4b59e8de.webp?size=l",
+      "favorite_count": 712,
+      "new_card_note": "This is run14's first check of this card (added to tracking this run, replacing ゲンガーVMAX SA [SGG 020/019] which was removed) - no run13 baseline exists for comparison. All figures below establish the baseline for future runs.",
+      "altema_url": "https://altema.jp/pokemoncard/card/2681",
+      "psa10_population": 13373,
+      "psa10_gem_rate_pct": 72.0,
+      "grades": {
+        "psa10": {
+          "top20_cheapest_listings": [
+            41000,
+            41000,
+            41000,
+            42000,
+            43000,
+            43000,
+            43500,
+            43800,
+            43800,
+            44000,
+            44900,
+            45000,
+            45000,
+            45000,
+            47650,
+            47850,
+            50000,
+            50000,
+            50000,
+            50000
+          ],
+          "note": "Baseline run. Floor ¥41,000 with 3 listings at that price, ladder extends to ¥50,000 at the top of the top20 (four listings tied there). One SOLD anomaly noted during data collection: a ¥6,200 PSA10 listing appeared when 販売中のみ was unchecked but was already marked SOLD and disappeared once the for-sale-only filter was applied - a stale/already-sold mispriced listing, not a live market price.",
+          "recent_completed_sales": [
+            {
+              "price": 41500,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 41500,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 41999,
+              "when": "2026/09/17"
+            },
+            {
+              "price": 41500,
+              "when": "2026/09/17"
+            },
+            {
+              "price": 41000,
+              "when": "2026/09/17"
+            },
+            {
+              "price": 41500,
+              "when": "1日前"
+            },
+            {
+              "price": 42800,
+              "when": "1日前"
+            },
+            {
+              "price": 41800,
+              "when": "1日前"
+            },
+            {
+              "price": 42400,
+              "when": "1日前"
+            },
+            {
+              "price": 42300,
+              "when": "1日前"
+            },
+            {
+              "price": 41000,
+              "when": "1日前"
+            },
+            {
+              "price": 42950,
+              "when": "1日前"
+            },
+            {
+              "price": 41500,
+              "when": "1日前"
+            },
+            {
+              "price": 41000,
+              "when": "1日前"
+            },
+            {
+              "price": 40800,
+              "when": "23時間前"
+            },
+            {
+              "price": 41000,
+              "when": "20時間前"
+            },
+            {
+              "price": 41000,
+              "when": "15時間前"
+            },
+            {
+              "price": 42000,
+              "when": "6時間前"
+            },
+            {
+              "price": 40800,
+              "when": "4時間前"
+            },
+            {
+              "price": 40500,
+              "when": "1分前"
+            }
+          ],
+          "sales_note": "Confirmed via PSA10 pill click - all 20 rows PSA10, no discards needed. Active, liquid PSA10 market already established for this recently-added card, with sales tightly clustered ¥40,500-42,950 over roughly the last 3 days. Most recent sale (¥40,500, 1分前) is the lowest in the window, right at the current listing floor.",
+          "lowest_price": 41000,
+          "threshold_115pct_of_lowest": 47150,
+          "listings_within_15pct_of_lowest": [
+            41000,
+            41000,
+            41000,
+            42000,
+            43000,
+            43000,
+            43500,
+            43800,
+            43800,
+            44000,
+            44900,
+            45000,
+            45000,
+            45000
+          ],
+          "count_within_15pct": 14,
+          "count_excluded_over_15pct": 6,
+          "top20_stats": {
+            "count": 20,
+            "min": 41000,
+            "max": 50000,
+            "mean": 45075,
+            "median": 44450.0
+          }
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            20000,
+            20000,
+            20000,
+            20000,
+            20000,
+            20000,
+            21500,
+            21500,
+            22000,
+            23000,
+            24000,
+            40000
+          ],
+          "note": "Baseline run. Thin-ish A-grade supply (12 listings), floor ¥20,000 with six listings tied at that price; one clear outlier listing at ¥40,000 (double the next-highest at ¥24,000) sits at the top of the book - likely an overpriced/aspirational ask rather than a realistic market price, given A-grade sales below are all well under ¥30,000.",
+          "recent_completed_sales": [
+            {
+              "price": 20000,
+              "when": "2026/08/11"
+            },
+            {
+              "price": 23500,
+              "when": "2026/08/13"
+            },
+            {
+              "price": 23499,
+              "when": "2026/08/13"
+            },
+            {
+              "price": 28900,
+              "when": "2026/08/15"
+            },
+            {
+              "price": 28000,
+              "when": "2026/08/18"
+            },
+            {
+              "price": 28000,
+              "when": "2026/08/18"
+            },
+            {
+              "price": 25000,
+              "when": "2026/08/19"
+            },
+            {
+              "price": 25000,
+              "when": "2026/08/20"
+            },
+            {
+              "price": 25000,
+              "when": "2026/08/22"
+            },
+            {
+              "price": 25500,
+              "when": "2026/08/22"
+            },
+            {
+              "price": 25500,
+              "when": "2026/08/22"
+            },
+            {
+              "price": 24999,
+              "when": "2026/08/23"
+            },
+            {
+              "price": 24000,
+              "when": "2026/08/26"
+            },
+            {
+              "price": 24000,
+              "when": "2026/08/26"
+            },
+            {
+              "price": 24000,
+              "when": "2026/08/28"
+            },
+            {
+              "price": 22500,
+              "when": "2026/08/31"
+            },
+            {
+              "price": 21500,
+              "when": "2026/09/15"
+            },
+            {
+              "price": 20000,
+              "when": "19時間前"
+            },
+            {
+              "price": 22000,
+              "when": "8時間前"
+            },
+            {
+              "price": 22000,
+              "when": "2時間前"
+            }
+          ],
+          "sales_note": "All 20 rows confirmed A-grade, no discards needed. A gently declining sale-price trend over the past ~5 weeks (from ~28,000 in mid-August down to a 20,000-22,000 cluster in the most recent few sales), consistent with the current listing floor of ¥20,000.",
+          "lowest_price": 20000,
+          "threshold_115pct_of_lowest": 23000,
+          "listings_within_15pct_of_lowest": [
+            20000,
+            20000,
+            20000,
+            20000,
+            20000,
+            20000,
+            21500,
+            21500,
+            22000,
+            23000
+          ],
+          "count_within_15pct": 10,
+          "count_excluded_over_15pct": 2,
+          "top20_stats": {
+            "count": 12,
+            "min": 20000,
+            "max": 40000,
+            "mean": 22666.67,
+            "median": 20750.0
+          }
+        }
+      }
+    },
+    {
+      "card_name_ja": "ゲンガーex SAR [M6a 131/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/896992",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/c4e43e7c-599c-4a12-bda1-c14fd82e7a1f.webp?size=l",
+      "favorite_count": 607,
+      "altema_url": "https://altema.jp/pokemoncard/card/39464",
+      "psa10_population_error": "no altema PSA10 population page found yet - card not yet graded",
+      "grades": {
+        "psa10": {
+          "error": "No PSA10 listings or sales yet - tile shows 出品待ち (awaiting listings). Expected, card released 2026-09-16, PSA turnaround takes weeks."
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            7650,
+            7750,
+            7777,
+            7800,
+            7999,
+            7999,
+            8000,
+            8000,
+            8000,
+            8000,
+            8000,
+            8000,
+            8099,
+            8100,
+            8200,
+            8288,
+            8300,
+            8400,
+            8490,
+            8500
+          ],
+          "note": "Floor continued rising to ¥7,650 from run13's ¥7,490 - run13's cheaper ¥7,500-cluster listings have sold, replaced by a higher ladder now anchored around ¥8,000. Continued strong bullish momentum for a card just 3 days post-release.",
+          "recent_completed_sales": [
+            {
+              "price": 7999,
+              "when": "2時間前"
+            },
+            {
+              "price": 7999,
+              "when": "2時間前"
+            },
+            {
+              "price": 8000,
+              "when": "2時間前"
+            },
+            {
+              "price": 8000,
+              "when": "2時間前"
+            },
+            {
+              "price": 8000,
+              "when": "2時間前"
+            },
+            {
+              "price": 7999,
+              "when": "2時間前"
+            },
+            {
+              "price": 7980,
+              "when": "2時間前"
+            },
+            {
+              "price": 7980,
+              "when": "2時間前"
+            },
+            {
+              "price": 7999,
+              "when": "2時間前"
+            },
+            {
+              "price": 8000,
+              "when": "2時間前"
+            },
+            {
+              "price": 7777,
+              "when": "2時間前"
+            },
+            {
+              "price": 7750,
+              "when": "1時間前"
+            },
+            {
+              "price": 8500,
+              "when": "54分前"
+            },
+            {
+              "price": 8500,
+              "when": "54分前"
+            },
+            {
+              "price": 7499,
+              "when": "41分前"
+            },
+            {
+              "price": 8000,
+              "when": "35分前"
+            },
+            {
+              "price": 7700,
+              "when": "23分前"
+            },
+            {
+              "price": 7900,
+              "when": "18分前"
+            },
+            {
+              "price": 8000,
+              "when": "10分前"
+            }
+          ],
+          "sales_note": "All 19 rows in the default すべて view were already A-grade (the site returned only 19 rows within the visible recent window, all confirmed A, no discards needed). This is an entirely fresh batch, all within the last ~2 hours - run13's prior sales (which spanned up to ~1 hour) have fully rotated out. Very high turnover continues for a card only 3 days post-release; prices ranged ¥7,499-8,500, with two ¥8,500 sales among the highest yet recorded for this card, consistent with the rising listing floor.",
+          "lowest_price": 7650,
+          "threshold_115pct_of_lowest": 8798,
+          "listings_within_15pct_of_lowest": [
+            7650,
+            7750,
+            7777,
+            7800,
+            7999,
+            7999,
+            8000,
+            8000,
+            8000,
+            8000,
+            8000,
+            8000,
+            8099,
+            8100,
+            8200,
+            8288,
+            8300,
+            8400,
+            8490,
+            8500
+          ],
+          "count_within_15pct": 20,
+          "count_excluded_over_15pct": 0,
+          "top20_stats": {
+            "count": 20,
+            "min": 7650,
+            "max": 8500,
+            "mean": 8067.6,
+            "median": 8000.0
+          }
+        }
+      }
+    },
+    {
+      "card_name_ja": "ミュウex SAR [M6a 129/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/896991",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/a471001c-e055-4f99-8791-f76d9ecaaf43.webp?size=l",
+      "favorite_count": 728,
+      "altema_url": "https://altema.jp/pokemoncard/card/39462",
+      "psa10_population_error": "no altema PSA10 population page found yet - card not yet graded",
+      "grades": {
+        "psa10": {
+          "note": "Still no new PSA10 listing or sale - unchanged from run13, PSA10 tile still shows 出品待ち. Expected given the few-weeks PSA turnaround.",
+          "recent_completed_sales": [],
+          "sales_note": "No PSA10 sales recorded yet for this card in the current period (tile still shows 出品待ち, consistent with run13's two known historical PSA10 sales having aged beyond the visible window, or the site's most-recent-sales view no longer surfacing them under the PSA10 filter). No PSA10 market activity to report this run."
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            10499,
+            10500,
+            10500,
+            10500,
+            10500,
+            10566,
+            10666,
+            10766,
+            10800,
+            10999,
+            10999,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11100
+          ],
+          "note": "Floor rose sharply to ¥10,499 from run13's ¥9,800 - a substantial bullish move, with the entire ladder now clustered ¥10,499-11,100 (much tighter than run13's wider ¥9,800-11,000 spread). Continued strong demand for a card 3 days post-release.",
+          "recent_completed_sales": [
+            {
+              "price": 11000,
+              "when": "3時間前"
+            },
+            {
+              "price": 10999,
+              "when": "3時間前"
+            },
+            {
+              "price": 10499,
+              "when": "3時間前"
+            },
+            {
+              "price": 11111,
+              "when": "3時間前"
+            },
+            {
+              "price": 13000,
+              "when": "3時間前"
+            },
+            {
+              "price": 12000,
+              "when": "3時間前"
+            },
+            {
+              "price": 11000,
+              "when": "2時間前"
+            },
+            {
+              "price": 10300,
+              "when": "2時間前"
+            },
+            {
+              "price": 10500,
+              "when": "1時間前"
+            },
+            {
+              "price": 10500,
+              "when": "57分前"
+            },
+            {
+              "price": 10500,
+              "when": "57分前"
+            },
+            {
+              "price": 10799,
+              "when": "46分前"
+            },
+            {
+              "price": 11050,
+              "when": "46分前"
+            },
+            {
+              "price": 11111,
+              "when": "45分前"
+            },
+            {
+              "price": 11000,
+              "when": "35分前"
+            },
+            {
+              "price": 11111,
+              "when": "29分前"
+            },
+            {
+              "price": 11000,
+              "when": "20分前"
+            },
+            {
+              "price": 12000,
+              "when": "19分前"
+            },
+            {
+              "price": 10300,
+              "when": "18分前"
+            },
+            {
+              "price": 10499,
+              "when": "4分前"
+            }
+          ],
+          "sales_note": "Confirmed via A pill click - all 20 rows now confirmed A-grade (unlike run13's mixed すべて view, which included one B-grade and one C-grade row, and a ¥1,199 pricing-error outlier). The ¥1,199 outlier has fully aged out of the window and does not appear anywhere in this run's clean A-grade sales list - resolved, not a persistent issue. This is an entirely fresh batch, all within the last ~3 hours, with prices ranging ¥10,300-13,000 - notably higher overall than run13's ¥9,200-12,500 band, consistent with the rising listing floor. Very active turnover continues.",
+          "lowest_price": 10499,
+          "threshold_115pct_of_lowest": 12074,
+          "listings_within_15pct_of_lowest": [
+            10499,
+            10500,
+            10500,
+            10500,
+            10500,
+            10566,
+            10666,
+            10766,
+            10800,
+            10999,
+            10999,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11100
+          ],
+          "count_within_15pct": 20,
+          "count_excluded_over_15pct": 0,
+          "top20_stats": {
+            "count": 20,
+            "min": 10499,
+            "max": 11100,
+            "mean": 10819.75,
+            "median": 10999.0
+          }
+        }
+      }
+    },
+    {
+      "card_name_ja": "ジラーチex SAR [M6a 132/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/891195",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/pkmn-tcg-2026-0907-pk012-of.webp?size=l",
+      "favorite_count": 385,
+      "bgs9_5_note": "A BGS9.5-graded listing is still present at ¥4,900~ (unchanged from run13), consistent with prior runs noting BGS9.5 listing activity for this card.",
+      "altema_url": "https://altema.jp/pokemoncard/card/39465",
+      "psa10_population_error": "no altema PSA10 population page found yet - card not yet graded",
+      "grades": {
+        "psa10": {
+          "error": "No PSA10 listings or sales yet - tile shows 出品待ち. Expected, card released 2026-09-16, PSA turnaround takes weeks."
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            4100,
+            4500,
+            4500,
+            4500,
+            4500,
+            4600,
+            4800,
+            4800,
+            4900,
+            4980,
+            4980,
+            4999,
+            4999,
+            4999,
+            4999,
+            5000,
+            5000,
+            5000,
+            5000,
+            5000
+          ],
+          "note": "Floor rose to ¥4,100 from run13's ¥3,867 - run13's cheaper ¥3,867-4,300 cluster listings have sold out, replaced by a substantially higher ladder now clustered ¥4,500-5,000. A strong bullish move for a card 3 days post-release.",
+          "recent_completed_sales": [
+            {
+              "price": 4333,
+              "when": "2時間前"
+            },
+            {
+              "price": 4500,
+              "when": "2時間前"
+            },
+            {
+              "price": 4300,
+              "when": "2時間前"
+            },
+            {
+              "price": 4200,
+              "when": "2時間前"
+            },
+            {
+              "price": 4200,
+              "when": "2時間前"
+            },
+            {
+              "price": 4500,
+              "when": "2時間前"
+            },
+            {
+              "price": 3980,
+              "when": "2時間前"
+            },
+            {
+              "price": 4567,
+              "when": "1時間前"
+            },
+            {
+              "price": 4500,
+              "when": "1時間前"
+            },
+            {
+              "price": 4000,
+              "when": "1時間前"
+            },
+            {
+              "price": 4300,
+              "when": "1時間前"
+            },
+            {
+              "price": 4888,
+              "when": "1時間前"
+            },
+            {
+              "price": 4777,
+              "when": "1時間前"
+            },
+            {
+              "price": 4800,
+              "when": "1時間前"
+            },
+            {
+              "price": 4500,
+              "when": "1時間前"
+            },
+            {
+              "price": 4500,
+              "when": "1時間前"
+            },
+            {
+              "price": 4500,
+              "when": "1時間前"
+            },
+            {
+              "price": 5500,
+              "when": "1時間前"
+            },
+            {
+              "price": 4980,
+              "when": "1時間前"
+            },
+            {
+              "price": 4999,
+              "when": "35分前"
+            }
+          ],
+          "sales_note": "Confirmed via A pill filter (a B-grade row at '29分前 ¥3,500' in the unfiltered すべて view was correctly excluded). All 19 available rows within the visible window are A-grade, all within the last ~2 hours - a fresh batch since run13. Prices ranged ¥3,980-5,500, notably higher overall than run13's ¥3,800-4,600 band, consistent with the rising listing floor. Active turnover continues.",
+          "lowest_price": 4100,
+          "threshold_115pct_of_lowest": 4715,
+          "listings_within_15pct_of_lowest": [
+            4100,
+            4500,
+            4500,
+            4500,
+            4500,
+            4600
+          ],
+          "count_within_15pct": 6,
+          "count_excluded_over_15pct": 14,
+          "top20_stats": {
+            "count": 20,
+            "min": 4100,
+            "max": 5000,
+            "mean": 4807.8,
+            "median": 4980.0
+          }
+        }
+      }
+    },
+    {
+      "card_name_ja": "ミュウツーex SAR [M6a 128/103](拡張パック「30th CELEBRATION」)",
+      "url": "https://snkrdunk.com/apparels/896990",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/7be3f490-752f-4727-805f-2dccfc3a8bf6.webp?size=l",
+      "favorite_count": 472,
+      "altema_url": "https://altema.jp/pokemoncard/card/39461",
+      "psa10_population_error": "no altema PSA10 population page found yet - card not yet graded (note: SNKRDUNK now shows this card's first-ever PSA10 sales, but altema's population page has not yet been updated to reflect any graded population)",
+      "grades": {
+        "psa10": {
+          "note": "NOTABLE: first-ever PSA10 sales now recorded for this card - run13 explicitly reported zero PSA10 listings/sales, but this run's PSA10 pill filter shows two completed PSA10 sales: ¥6,000 (dated 2026/09/16) and ¥5,900 (28分前). No active PSA10 listing exists yet (tile still shows 出品待ち), so this is completed-sale activity with no current book depth - the same pattern run13 flagged for card11 (night Pikachu). First sign of PSA10 grading turnaround surfacing for this card.",
+          "recent_completed_sales": [
+            {
+              "price": 6000,
+              "when": "2026/09/16"
+            },
+            {
+              "price": 5900,
+              "when": "28分前"
+            }
+          ],
+          "sales_note": "Confirmed via the PSA10 pill filter - both rows PSA10. No PSA10 listings are currently for sale."
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            5780,
+            5800,
+            5888,
+            5888,
+            5980,
+            5999,
+            6000,
+            6000,
+            6000,
+            6000,
+            6000,
+            6000,
+            6000,
+            6200,
+            6200,
+            6200,
+            6300,
+            6300,
+            6300,
+            6399
+          ],
+          "note": "Floor rose to ¥5,780 from run13's ¥5,480 - the run13 floor listing and other cheap listings have sold, ladder shifted meaningfully higher, now clustered ¥5,800-6,400. A clear bullish reversal from run13's characterization of 'minor listing churn'.",
+          "recent_completed_sales": [
+            {
+              "price": 6200,
+              "when": "4時間前"
+            },
+            {
+              "price": 5999,
+              "when": "4時間前"
+            },
+            {
+              "price": 6000,
+              "when": "4時間前"
+            },
+            {
+              "price": 5980,
+              "when": "4時間前"
+            },
+            {
+              "price": 5999,
+              "when": "4時間前"
+            },
+            {
+              "price": 5499,
+              "when": "3時間前"
+            },
+            {
+              "price": 5999,
+              "when": "3時間前"
+            },
+            {
+              "price": 6480,
+              "when": "3時間前"
+            },
+            {
+              "price": 5998,
+              "when": "2時間前"
+            },
+            {
+              "price": 6000,
+              "when": "2時間前"
+            },
+            {
+              "price": 5899,
+              "when": "2時間前"
+            },
+            {
+              "price": 5999,
+              "when": "2時間前"
+            },
+            {
+              "price": 6000,
+              "when": "1時間前"
+            },
+            {
+              "price": 6333,
+              "when": "58分前"
+            },
+            {
+              "price": 5990,
+              "when": "58分前"
+            },
+            {
+              "price": 5000,
+              "when": "45分前"
+            },
+            {
+              "price": 6000,
+              "when": "37分前"
+            },
+            {
+              "price": 6480,
+              "when": "32分前"
+            },
+            {
+              "price": 6000,
+              "when": "22分前"
+            },
+            {
+              "price": 6480,
+              "when": "1分前"
+            }
+          ],
+          "sales_note": "Confirmed via A pill click - all 20 rows A-grade, no discards needed. Entirely fresh batch, all within the last ~4 hours, prices mostly ¥5,900-6,480 with one low outlier (¥5,000, 45分前) that looks like a one-off underpriced sale rather than a floor shift given surrounding sales. Overall notably higher than run13's ¥5,500-6,060 band, consistent with the rising listing floor.",
+          "lowest_price": 5780,
+          "threshold_115pct_of_lowest": 6647,
+          "listings_within_15pct_of_lowest": [
+            5780,
+            5800,
+            5888,
+            5888,
+            5980,
+            5999,
+            6000,
+            6000,
+            6000,
+            6000,
+            6000,
+            6000,
+            6000,
+            6200,
+            6200,
+            6200,
+            6300,
+            6300,
+            6300,
+            6399
+          ],
+          "count_within_15pct": 20,
+          "count_excluded_over_15pct": 0,
+          "top20_stats": {
+            "count": 20,
+            "min": 5780,
+            "max": 6399,
+            "mean": 6061.7,
+            "median": 6000.0
+          }
+        }
+      }
+    },
+    {
+      "card_name_ja": "ピカチュウex SAR [M6a 126/103](拡張パック「30th CELEBRATION」) (昼/day version)",
+      "url": "https://snkrdunk.com/apparels/882279",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/a8ae3f3e-aa84-46f6-89c5-b310371979d5.webp?size=l",
+      "favorite_count": 745,
+      "altema_url": "https://altema.jp/pokemoncard/card/39459",
+      "psa10_population_error": "no altema PSA10 population page found yet - card not yet graded",
+      "grades": {
+        "psa10": {
+          "note": "Still no new PSA10 listing or sale - unchanged from run13, exactly the same single known PSA10 sale (¥12,980), still dated '1日前' (interesting that this hasn't aged to '2日前' - the relative-time bucket may be coarse, or this is a slightly newer identical-price sale; treated as unchanged since the price and rough recency match run13 exactly). PSA10 tile still shows 出品待ち. Expected given few-weeks PSA turnaround.",
+          "recent_completed_sales": [
+            {
+              "price": 12980,
+              "when": "1日前"
+            }
+          ],
+          "sales_note": "Only 1 PSA10 sale recorded, confirmed PSA10 via the PSA10 pill, identical to run13 - no new PSA10 market activity since release."
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            10456,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11111,
+            11111,
+            11500,
+            11500,
+            11500,
+            11500,
+            11500,
+            11500,
+            11800,
+            11900,
+            11980,
+            11980,
+            11980,
+            11980
+          ],
+          "note": "Floor dropped slightly to ¥10,456 from run13's ¥10,750 (via a new cheaper listing) - i.e. the floor moved lower than even run13's floor, though the bulk of the ladder shifted up (more 11,500-11,980 listings now, fewer sub-11,000 ones), a mixed/net-neutral read overall.",
+          "recent_completed_sales": [
+            {
+              "price": 11000,
+              "when": "3時間前"
+            },
+            {
+              "price": 11500,
+              "when": "3時間前"
+            },
+            {
+              "price": 11000,
+              "when": "2時間前"
+            },
+            {
+              "price": 10900,
+              "when": "2時間前"
+            },
+            {
+              "price": 10999,
+              "when": "2時間前"
+            },
+            {
+              "price": 11000,
+              "when": "2時間前"
+            },
+            {
+              "price": 10500,
+              "when": "1時間前"
+            },
+            {
+              "price": 10800,
+              "when": "1時間前"
+            },
+            {
+              "price": 11000,
+              "when": "1時間前"
+            },
+            {
+              "price": 10500,
+              "when": "1時間前"
+            },
+            {
+              "price": 10566,
+              "when": "49分前"
+            },
+            {
+              "price": 11111,
+              "when": "44分前"
+            },
+            {
+              "price": 10800,
+              "when": "38分前"
+            },
+            {
+              "price": 11500,
+              "when": "32分前"
+            },
+            {
+              "price": 10500,
+              "when": "31分前"
+            },
+            {
+              "price": 10444,
+              "when": "30分前"
+            },
+            {
+              "price": 10999,
+              "when": "24分前"
+            },
+            {
+              "price": 11000,
+              "when": "23分前"
+            },
+            {
+              "price": 11500,
+              "when": "19分前"
+            },
+            {
+              "price": 11980,
+              "when": "2分前"
+            }
+          ],
+          "sales_note": "Confirmed via A pill click - all 20 rows A-grade (unlike run13's mixed すべて view, which had 2 B-grade rows discarded; this run's clean filter shows no B/C contamination in the top 20). Active turnover over ~3 hours, prices ranging ¥10,444-11,980, broadly similar spread to run13 with a slight upward drift at the top end (newest sale ¥11,980, 2分前, is the highest in the window).",
+          "lowest_price": 10456,
+          "threshold_115pct_of_lowest": 12024,
+          "listings_within_15pct_of_lowest": [
+            10456,
+            11000,
+            11000,
+            11000,
+            11000,
+            11000,
+            11111,
+            11111,
+            11500,
+            11500,
+            11500,
+            11500,
+            11500,
+            11500,
+            11800,
+            11900,
+            11980,
+            11980,
+            11980,
+            11980
+          ],
+          "count_within_15pct": 20,
+          "count_excluded_over_15pct": 0,
+          "top20_stats": {
+            "count": 20,
+            "min": 10456,
+            "max": 11980,
+            "mean": 11414.9,
+            "median": 11500.0
+          }
+        }
+      }
+    },
+    {
+      "card_name_ja": "ピカチュウex SAR [M6a 127/103](拡張パック「30th CELEBRATION」) (夜/night version)",
+      "url": "https://snkrdunk.com/apparels/882280",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/9537cce2-2788-4bd5-ac0f-34aea4318ee6.webp?size=l",
+      "favorite_count": 842,
+      "altema_url": "https://altema.jp/pokemoncard/card/39460",
+      "psa10_population_error": "no altema PSA10 population page found yet - card not yet graded (note: SNKRDUNK shows this card's first-ever PSA10 sale from run13, still just the one sale, but altema's population page has not yet been updated to reflect any graded population)",
+      "grades": {
+        "psa10": {
+          "note": "No new PSA10 sale since run13's first-ever PSA10 sale (¥15,200, dated 2026/09/16) - still exactly the same single sale, no active PSA10 listing yet (tile still shows 出品待ち). No further PSA10 depth has appeared this run.",
+          "recent_completed_sales": [
+            {
+              "price": 15200,
+              "when": "2026/09/16"
+            }
+          ],
+          "sales_note": "Confirmed via the PSA10 pill filter - still just the one PSA10 sale from run13, unchanged. No PSA10 listings are currently for sale."
+        },
+        "raw_a_grade": {
+          "top20_cheapest_listings": [
+            14000,
+            14500,
+            14500,
+            14500,
+            14555,
+            14650,
+            14800,
+            14800,
+            14888,
+            14900,
+            14980,
+            14980,
+            14999,
+            14999,
+            14999,
+            15000,
+            15000,
+            15000,
+            15000,
+            15000
+          ],
+          "note": "Floor rose sharply to ¥14,000 from run13's ¥13,300 - a strong bullish move, continuing this card's trend of the highest A-grade floor among the 6 M6a cards by a wide margin.",
+          "recent_completed_sales": [
+            {
+              "price": 13800,
+              "when": "3時間前"
+            },
+            {
+              "price": 15000,
+              "when": "3時間前"
+            },
+            {
+              "price": 13500,
+              "when": "2時間前"
+            },
+            {
+              "price": 14000,
+              "when": "2時間前"
+            },
+            {
+              "price": 14000,
+              "when": "2時間前"
+            },
+            {
+              "price": 14400,
+              "when": "2時間前"
+            },
+            {
+              "price": 14500,
+              "when": "2時間前"
+            },
+            {
+              "price": 14000,
+              "when": "1時間前"
+            },
+            {
+              "price": 13999,
+              "when": "1時間前"
+            },
+            {
+              "price": 15500,
+              "when": "1時間前"
+            },
+            {
+              "price": 14000,
+              "when": "1時間前"
+            },
+            {
+              "price": 14000,
+              "when": "45分前"
+            },
+            {
+              "price": 13000,
+              "when": "45分前"
+            },
+            {
+              "price": 14900,
+              "when": "44分前"
+            },
+            {
+              "price": 14800,
+              "when": "39分前"
+            },
+            {
+              "price": 14000,
+              "when": "27分前"
+            },
+            {
+              "price": 14000,
+              "when": "24分前"
+            },
+            {
+              "price": 14800,
+              "when": "14分前"
+            },
+            {
+              "price": 14500,
+              "when": "14分前"
+            },
+            {
+              "price": 14500,
+              "when": "11分前"
+            }
+          ],
+          "sales_note": "Confirmed via A pill filter - all 20 rows A-grade (run13's 2 B-grade rows at ¥12,498/¥12,500 correctly excluded). Entirely fresh batch, all within ~3 hours, prices ranging ¥13,000-15,500, notably higher overall than run13's ¥12,999-16,000 band's center of mass, consistent with the rising listing floor. Continued momentum, remains the priciest A-grade floor among the 6 M6a cards.",
+          "lowest_price": 14000,
+          "threshold_115pct_of_lowest": 16100,
+          "listings_within_15pct_of_lowest": [
+            14000,
+            14500,
+            14500,
+            14500,
+            14555,
+            14650,
+            14800,
+            14800,
+            14888,
+            14900,
+            14980,
+            14980,
+            14999,
+            14999,
+            14999,
+            15000,
+            15000,
+            15000,
+            15000,
+            15000
+          ],
+          "count_within_15pct": 20,
+          "count_excluded_over_15pct": 0,
+          "top20_stats": {
+            "count": 20,
+            "min": 14000,
+            "max": 15000,
+            "mean": 14802.5,
+            "median": 14940.0
+          }
+        }
+      }
+    }
+  ],
+  "market_index": {
+    "psa10_index": {
+      "label": "指数チャート（PSA10）",
+      "data_range": "2021/01/30 〜 2026/09/18",
+      "latest_index_value_jpy": 112038,
+      "day_change_jpy": -1581,
+      "day_change_pct": -1.4,
+      "month_change_jpy": -36945,
+      "month_change_pct": -24.8,
+      "year_change_jpy": 12857,
+      "year_change_pct": 13.0,
+      "volume_trend": "flat",
+      "volume_note": "1M view, hovered at multiple points across the window (取引件数 tooltip values): 386, 422, 391, 287 across four sampled x-positions - a fairly variable but roughly level range (~287-422) with no clear directional trend, consistent with run13's 'flat' read and similar magnitude to run13's own 266-444 sample range.",
+      "data_range_note": "Unchanged from run13 (2026/09/18) since run14 occurred on the same JST calendar day as run13 - the index advances once per completed calendar day, per skill note 1c, so no new day-close has been added yet. All headline figures (latest value, day/month/year changes) are identical to run13's."
+    },
+    "raw_index": {
+      "label": "指数チャート（美品）",
+      "data_range": "2020/06/01 〜 2026/09/18",
+      "latest_index_value_jpy": 52827,
+      "day_change_jpy": 447,
+      "day_change_pct": 0.9,
+      "month_change_jpy": -1879,
+      "month_change_pct": -3.4,
+      "year_change_jpy": 12342,
+      "year_change_pct": 30.5,
+      "volume_trend": "flat",
+      "volume_note": "1M view, hovered at multiple points across the window (取引件数 tooltip values): 52, 43, 60, 73, 39, 56 across six sampled x-positions - fluctuating in a tight ~39-60 band with one mid-period spike to 73, no sustained up or down trend (the most-recent right-edge sample, 56, is mid-range, not lower than earlier points). This differs slightly from run13's 'declining' read (run13 sampled only 3 points showing a taper toward the most recent days); this run's denser 6-point sampling shows no clear taper, so it is characterized as 'flat' with one notable spike instead.",
+      "data_range_note": "Unchanged from run13 (2026/09/18) since run14 occurred on the same JST calendar day - no new day-close has been added yet. All headline figures are identical to run13's."
+    },
+    "note": "These are whole-market index figures (100-card baskets), not per-card prices - do not confuse with individual card prices above. All headline figures (latest value, day/month/year changes) are identical to run13 because the index has not advanced to a new day since run13's read earlier the same calendar day; only the volume sampling was independently re-verified this run."
+  },
+  "notes": "Run14 is a same-day follow-up to run13 (~5.5 hours later, both on 2026-09-19, a Saturday). All 11 tracked cards re-verified live via browser automation. Today (2026-09-19) is a Saturday, not Monday, so the weekly PSA Value-tier check was skipped and psa_tier_status is omitted from this output entirely, per the skill's weekly-only schedule. CARD LIST CHANGE since run13: 'ゲンガーVMAX SA [SGG 020/019]' has been REMOVED from tracking per the user's updated favorites list, and 'ゲンガー&ミミッキュGX RR [SM9 038/095]' (拡張パック「タッグボルト」) has been ADDED as the new card5 - this is its first-ever check under this skill, so there is no run13 baseline for it; see its new_card_note field for details. The 11-card list and numbering (card1-11) in this run reflect that change; card4 remains 名探偵ピカチュウ, and the former card4 slot (Gengar VMAX SA) no longer exists in this or any future run's numbering. Key findings vs run13: (1) Established cards 1-4 (unchanged roster members): Card1 (Pikachu VMAX CSR) essentially unchanged - PSA10 floor held at 29,300 (one new 33,800 listing pushed a 43,000 listing out of the top-20 window), A-grade top20 and sales identical to run13 aside from timestamp aging (A-market remains dormant since 08/15). Card2 (Pikachu ex SAR SV8) PSA10 floor held at 80,000 with book churn (new 80,000/85,000 listings in, an 81,000 listing out) plus a genuinely new PSA10 sale at 80,000 (3時間前); A-grade unchanged (59,000 floor, dormant since 08/28). Card3 (Umbreon/Blacky ex SAR) PSA10 floor ROSE to 72,999 from 72,800 with a fresh sales batch including one ¥70,000 outlier sale; A-grade floor DROPPED to 48,888 from 50,000 on a new cheap listing with no matching sale yet - a mixed signal. Card4 (Detective Pikachu promo) PSA10 floor eased slightly to 41,500 from 41,800; using the PSA10 sales pill (more precise than run13's mixed view) surfaced a clean 20-row window including a new ¥43,000 sale; A-grade unchanged (identical top20, one sale's relative timestamp aged from 3分前 to 6時間前, no new sale). (2) Card5 (NEW - Gengar & Mimikyu GX RR): first-ever check, no run13 baseline. Favorite count 712. PSA10 floor 41,000 (3 listings tied); a ¥6,200 stale/already-SOLD PSA10 listing was encountered during data collection and flagged as a pricing/site anomaly, not real market data. A-grade floor 20,000 on a thin 12-listing book; one ¥40,000 A-grade listing stands out as a likely-overpriced outlier relative to the rest of the book. Altema population re-verified unchanged from the pre-run baseline: PSA10相場 41,500円, PSA10総枚数 13,373枚, PSA10取得率 72.0%. (3) The 5 remaining M6a '30th CELEBRATION' cards (cards 6-11 in this run's numbering: Gengar/Mew/Jirachi/Mewtwo/Pikachu-day/Pikachu-night ex SAR) continue actively repricing 4 days post-release, all A-grade floors rising: Card6 (Gengar ex SAR) floor rose to 7,650 from 7,490, PSA10 still 出品待ち. Card7 (Mew ex SAR) floor rose sharply to 10,499 from 9,800; the persistent ¥1,199 pricing-error outlier from run13 has now fully aged out of the clean A-filtered sales list - resolved. Card8 (Jirachi ex SAR) floor rose to 4,100 from 3,867, BGS9.5 listing still present unchanged at ~4,900, PSA10 still 出品待ち. Card9 (Mewtwo ex SAR) is a headline event this run: NOTABLE - first-ever PSA10 sales now recorded (¥6,000 dated 2026/09/16, ¥5,900 at 28分前) where run13 explicitly reported zero PSA10 activity, directly paralleling card11's run13 milestone; no active PSA10 listing exists yet. Its A-grade floor also rose to 5,780 from 5,480. Card10 (Pikachu ex SAR/day) PSA10 unchanged (still the single ¥12,980 sale); A-grade floor dropped slightly to 10,456 from 10,750 (mixed signal - most of the ladder actually shifted higher). Card11 (Pikachu ex SAR/night) PSA10 unchanged - no new sale or listing since run13's first-ever ¥15,200 sale (dated 2026/09/16), confirmed via the PSA10 pill; its A-grade floor rose sharply to 14,000 from 13,300, remaining the highest A-floor among the 6 M6a-set cards by a wide margin. PSA10 remains completely empty (出品待ち, no sales) for cards 6, 7, 8, 10 as expected given the few-weeks PSA turnaround from the 2026-09-16 release; cards 9 and 11 are the only two of the six to have any PSA10 sale history so far. (4) Pokeca-chart.com market index: data_range unchanged at 2026/09/18 for both PSA10 and raw indices, and all headline change figures (day/month/year) identical to run13's, since run14 falls on the same JST calendar day as run13 and the index only advances once per completed day. Volume sampling was independently re-verified this run: PSA10 1M-view samples (386/422/391/287) again read as 'flat', consistent with run13. Raw/美品 1M-view samples (52/43/60/73/39/56, a denser 6-point sample) read as 'flat' with one mid-period spike to 73 - a slightly different characterization from run13's 'declining' read, which was based on only 3 sparser points; this run's fuller sampling does not show a clear taper toward the most recent days. (5) Altema PSA10 population: all 4 remaining established cards' (1-4) population/gem-rate figures UNCHANGED from run13 (10,846/88.0%, 20,026/88.7%, 80,321/86.9%, 49,275/86.6%) - expected, since PSA population updates on a much slower cadence than a same-day interval. New card5's population (13,373/72.0%) was re-verified and also unchanged. All 5 remaining M6a cards still show no PSA10 population data on altema, including card9 despite its brand-new PSA10 sales appearing on SNKRDUNK this run, and card11 despite carrying run13's PSA10 sale - altema's population tracking has not yet caught up for any M6a card, consistent with the few-weeks PSA turnaround expectation."
+}
