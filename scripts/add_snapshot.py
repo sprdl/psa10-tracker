@@ -117,6 +117,74 @@ def normalize_schema(data: dict) -> int:
     return converted
 
 
+def check_timestamp_freshness(data: dict) -> None:
+    """Warns (non-fatal) if collected_at_jst looks stale compared to right now.
+    This happened for real on 2026-09-19: a price-check run committed at 18:53
+    JST claimed collected_at_jst of 09:03 JST (echoed from an earlier run that
+    day instead of the run's actual time), and it turned out to also be using
+    a pre-update tracked-card list — the stale timestamp was an early warning
+    sign that got missed. Assumes the machine running this script is already
+    on JST (true for the user's own Mac), so no timezone conversion needed."""
+    ts = data.get("collected_at_jst", "")
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})", ts)
+    if not m:
+        return
+    y, mo, d, h, mi = (int(x) for x in m.groups())
+    try:
+        claimed = datetime(y, mo, d, h, mi)
+    except ValueError:
+        return
+    now = datetime.now()
+    diff_minutes = abs((now - claimed).total_seconds()) / 60
+    if diff_minutes > 90:
+        print(f"WARNING: collected_at_jst ({ts}) is {diff_minutes:.0f} minutes off from this machine's "
+              f"current local time ({now.strftime('%Y-%m-%dT%H:%M')}). This looks like it might be a "
+              f"stale/echoed timestamp rather than this run's real collection time — double check "
+              f"before trusting this snapshot.", file=sys.stderr)
+
+
+def check_card_set_drift(data: dict, manifest: dict, snapshots_dir: Path) -> None:
+    """Warns (non-fatal) if this run's tracked-card URLs differ from the most
+    recently saved snapshot's. Added/removed cards should be a deliberate,
+    visible event — not something that silently slips in from a run that used
+    a stale copy of the price-check skill's tracked-card list. This happened
+    for real on 2026-09-19: a stale run briefly reintroduced Gengar VMAX SA
+    right after the user asked for it to be removed, and it landed unnoticed
+    because nothing compared the incoming card set to what was already live."""
+    entries = [s for s in manifest.get("snapshots", []) if s.get("collected_at_jst")]
+    if not entries:
+        return
+    entries.sort(key=lambda s: s["collected_at_jst"])
+    latest_path = snapshots_dir / entries[-1]["file"]
+    if not latest_path.exists():
+        return
+    try:
+        latest_data = json.loads(latest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+
+    prev_urls = {c.get("url") for c in latest_data.get("cards", []) if c.get("url")}
+    new_urls = {c.get("url") for c in data.get("cards", []) if c.get("url")}
+    added, removed = new_urls - prev_urls, prev_urls - new_urls
+    if not (added or removed):
+        return
+
+    print(f"\nWARNING: this run's tracked-card set differs from the most recent saved snapshot "
+          f"({entries[-1]['file']}):", file=sys.stderr)
+    if added:
+        print(f"  + {len(added)} card(s) present now that weren't in the last snapshot:", file=sys.stderr)
+        for c in data.get("cards", []):
+            if c.get("url") in added:
+                print(f"      {c.get('card_name_ja', c.get('url'))}", file=sys.stderr)
+    if removed:
+        print(f"  - {len(removed)} card(s) missing that WERE in the last snapshot:", file=sys.stderr)
+        for c in latest_data.get("cards", []):
+            if c.get("url") in removed:
+                print(f"      {c.get('card_name_ja', c.get('url'))}", file=sys.stderr)
+    print("  If you didn't just add/remove a tracked card on purpose, this run may have used a stale "
+          "copy of the price-check skill's tracked-card list — check before trusting it.", file=sys.stderr)
+
+
 def find_repo_root() -> Path:
     here = Path(__file__).resolve().parent
     root = here.parent
@@ -259,8 +327,12 @@ def main():
         print(f"Converted {converted} card(s) from the price-check skill's flat psa10_*/a_* field names "
               f"to the app's nested grades.psa10/raw_a_grade shape.")
 
+    check_timestamp_freshness(data)
+
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest.setdefault("snapshots", [])
+
+    check_card_set_drift(data, manifest, snapshots_dir)
 
     # Guard against saving an exact duplicate under a new filename (e.g. the same
     # run pasted in twice) — compare against any existing snapshot with the same
