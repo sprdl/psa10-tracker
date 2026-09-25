@@ -237,15 +237,22 @@
         }
       },
       "analysis": {
+        "representative_price": 29600,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 74000,
+          "when": "May 2026",
+          "source": "SNKRDUNK PSA10 1枚 trade history, May 2026 monthly median (single-day high ¥90,603 on 2026-05-19; April median ¥66k). The pokeca-chart ¥50,000 on 2026-07-16 figure is contradicted by roughly 50 SNKRDUNK trades in Apr–May and should be retired"
+        },
         "tiers": {
           "definitely_buy": 25000,
           "buy_upper": 29500,
           "ceiling": 35500
         },
-        "peak": {
-          "price": 50000,
-          "when": "2026-07-16",
-          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip); user-cited ¥47,000/August corrected — chart shows ¥50,000 on 2026-07-16 (thin data, 2 trades that day)"
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: sitting on the Buy line",
+          "reasoning": "The last four sales were ¥29,400–29,790, just ¥100 above Buy. It bounced from a ¥26,480 low on 9/16, so the Q4-2025 floor is holding. The order book is thin, with only 4 asks within 15%, and any ask at or below ¥29,500 is a buy. There's about a 35% chance of revisiting ¥25–27k within 3 months, and roughly 10–15% downside if the broad index makes a second leg down."
         },
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2000
@@ -494,6 +501,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 24700,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 81000,
+          "when": "May 2026",
+          "source": "SNKRDUNK PSA10 1枚 trade history, May 2026 monthly median (single-day high ¥101,369 on 2026-05-15)"
+        },
+        "tiers": {
+          "definitely_buy": 20000,
+          "buy_upper": 24000,
+          "ceiling": 30000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: new tiers, still drifting down",
+          "reasoning": "This was the most extreme bubble of the five: ¥30k in Feb, about ¥81k in May, ¥24.7k now (−70%). Sales are still stepping down (¥26.3k on 9/18 to ¥24.4–24.8k on 9/24–25). Buy (≤¥24k) is about 65% likely within 3 months. Definitely-buy (¥20k, the Nov 2025 trough) is about 25–30% likely within 6 months. Buying today carries roughly 40% odds of a further 10–20% drop."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -739,15 +767,22 @@
         }
       },
       "analysis": {
+        "representative_price": 76500,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 150000,
+          "when": "April 2026",
+          "source": "SNKRDUNK PSA10 1枚 trade history, April 2026 monthly median (single-day high ¥171,800 on 2026-05-16); pokeca-chart shows only ¥130,000, so the earlier 'real peak ¥130k' correction understated it"
+        },
         "tiers": {
           "definitely_buy": 59500,
           "buy_upper": 70000,
           "ceiling": 85000
         },
-        "peak": {
-          "price": 130000,
-          "when": "2026-04-12",
-          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip — exact match to prior figure)"
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: still ~10% above Buy, trend still down",
+          "reasoning": "Sales were ¥76,000–77,000 on 9/23–24, down from ¥80k a week earlier, and the price is still well above its Sep–Dec 2025 range of ¥62–69k. It has about a 45% chance of reaching Buy (≤¥70k) within 3 months and about 20% of reaching ¥59.5k within 6. If bought today, expect a roughly 50% chance of another 8–12% decline as the post-release correction finishes. It's your least-wanted target, so there's no reason to pay up."
         },
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2000
@@ -1013,15 +1048,22 @@
         }
       },
       "analysis": {
+        "representative_price": 67500,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 111000,
+          "when": "April 2026",
+          "source": "SNKRDUNK PSA10 1枚 trade history, April 2026 monthly median (single-day high ¥122,945 on 2026-04-14); agrees with pokeca-chart ¥110,000 on 2026-05-17"
+        },
         "tiers": {
           "definitely_buy": 58000,
           "buy_upper": 68500,
           "ceiling": 77500
         },
-        "peak": {
-          "price": 110000,
-          "when": "2026-05-17",
-          "source": "pokeca-chart.com PSA10 index (verified via chart tooltip); user-cited ¥120,000/April corrected — chart shows ¥110,000 on 2026-05-17"
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy: grail at pre-hype Q4-2025 levels",
+          "reasoning": "About 20 sales at ¥65,000–68,500 in the last 24h, with daily averages steady near ¥67k since 9/22. The price is back to its Oct–Dec 2025 range, below the Jan–Feb pre-announcement level. There's roughly a 30% chance of a further 10–15% slide to ¥57–60k by year-end because raw A-rank is still falling fast (¥63k→¥47k in a month), which drags the DIY replacement floor down. Reaching Definitely-buy (¥58k) within 3–6 months is about 25–30% likely."
         },
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2000
@@ -1273,15 +1315,22 @@
         }
       },
       "analysis": {
+        "representative_price": 42000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 55000,
+          "when": "August 2026",
+          "source": "SNKRDUNK PSA10 1枚 trade history, August 2026 monthly median (single-day high ¥57,766 on 2026-07-26); agrees with altema ¥57,100"
+        },
         "tiers": {
           "definitely_buy": 32000,
           "buy_upper": 38000,
           "ceiling": 46000
         },
-        "peak": {
-          "price": 57100,
-          "when": "August 2026",
-          "source": "altema.jp 10-day price table, read 2026-09-19"
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: correction less advanced than peers",
+          "reasoning": "This card peaked 3 months after the others and is only −24% off its peak, versus −40% to −70% for the rest. Its Jun 2025–Mar 2026 plateau was a flat ¥29–33k, which implies another 20–25% of room to fall. Buy (≤¥38k) looks about 45% likely within 3 months and ¥32k about 25% likely within 6. Separately, it still doesn't meet your modern-SAR display rule."
         },
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2000,
