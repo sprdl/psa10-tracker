@@ -2467,6 +2467,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 42750,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 82580,
+          "when": "February 2026",
+          "source": "SNKRDUNK PSA10 1枚 trade history, Feb 2026 monthly median (single-day high ¥85,487 on 2026-02-13); agrees with altema ¥84,700"
+        },
+        "tiers": {
+          "definitely_buy": 38000,
+          "buy_upper": 43000,
+          "ceiling": 49000
+        },
+        "verdict": {
+          "tag": "buy",
+          "label": "Buy: top edge, wait for a ¥40–42k listing",
+          "reasoning": "The price is back to its H1-2025 organic range (¥41–48k), depth is good (12 of 20 asks within 15%), and the slab trades only about 13% above raw A (it was about 45%), so buying the slab is about ¥16k cheaper than grading yourself. It's still falling about 5%/week, likely due to M4 Mega Greninja cannibalization. There's about a 60% chance of ≤¥42k within a month and 30% of ≤¥38k in 3–6 months. Downside is roughly 40% odds of another 8–12%."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     },
     {
@@ -2729,6 +2750,27 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 28000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 118000,
+          "when": "April 2026",
+          "source": "SNKRDUNK PSA10 1枚 trade history, April 2026 monthly median (single-day high ¥164,000 on 2026-04-09; altema cites ¥130,000)"
+        },
+        "tiers": {
+          "definitely_buy": 22000,
+          "buy_upper": 25000,
+          "ceiling": 30000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: at replacement cost, raw still falling",
+          "reasoning": "The card is in print with a 94.7% gem rate and a backlog-suppressed population (6,882 at 6.5 months old). PSA10 now equals DIY cost (about ¥30k), so it tracks raw A, which is still dropping about 25%/month (¥16–17.5k now, buyback ¥12k). The Buy zone is most likely Nov 2026–Feb 2027 as summer PSA submissions return: about 55% odds of ≤¥25k within 3 months and 35% of ≤¥22k within 6. Buying today carries roughly 60% odds of a further 10–25% drop."
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000
       }
     }
   ],
