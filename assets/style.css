@@ -954,3 +954,18 @@ footer.note {
 
 /* "as of MM/DD HH:MM" — values carried from an earlier full check (quick runs) */
 .asof { margin-left: 6px; font-size: 0.68rem; font-weight: 400; color: var(--muted-2); white-space: nowrap; }
+
+/* "+ Add card" → opens the add-card GitHub issue form; the next price check picks it up */
+.add-card-btn {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--gold);
+  text-decoration: none;
+  border: 1px solid var(--gold-line);
+  background: var(--gold-soft);
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+.add-card-btn:hover { border-color: var(--gold); }
+.card-requests { font-size: 0.7rem; color: var(--muted-2); }

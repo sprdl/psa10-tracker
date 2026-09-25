@@ -1,0 +1,25 @@
+{
+  "_about": "Cards tracked in addition to the price-check skill's own references/cards.json. The skill merges this list in at the start of every run. scripts/card_requests.py adds to it (from 'Add card' GitHub issues) and updates fields like image_url / altema_url, so no skill change is needed to track a new card.",
+  "cards": [
+    {
+      "snkrdunk_id": "224087",
+      "card_name_ja": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
+      "url": "https://snkrdunk.com/apparels/224087",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/f5941c92-741f-43c8-a292-ef1e8f876517.webp?size=l",
+      "altema_url": "https://altema.jp/pokemoncard/card/26372",
+      "altema_mode": "daily",
+      "note": "released 2024-03-22, mature population; altema lists it as 'ゲッコウガex SAR(テラスタル)'. Distinct from Mega Greninja (776365)",
+      "added": "2026-09-25"
+    },
+    {
+      "snkrdunk_id": "776365",
+      "card_name_ja": "メガゲッコウガex SAR [M4 114/083](拡張パック「ニンジャスピナー」)",
+      "url": "https://snkrdunk.com/apparels/776365",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/7741933e-2432-47b7-9b3f-6aa150211963.webp?size=l",
+      "altema_url": "https://altema.jp/pokemoncard/card/36855",
+      "altema_mode": "daily",
+      "note": "released 2026-03-13, still in print; PSA10 population is growing fast (6,882 at 94.7% on 2026-09-25). Not the MUR print (M4 120/083)",
+      "added": "2026-09-25"
+    }
+  ]
+}

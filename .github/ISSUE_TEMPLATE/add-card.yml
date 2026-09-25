@@ -1,0 +1,18 @@
+name: Add card
+description: Ask the next price check to start tracking a card
+title: "Add card"
+labels: ["add-card"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: SNKRDUNK URL
+      description: The card's SNKRDUNK product page. Open the card on snkrdunk.com and copy the address.
+      placeholder: https://snkrdunk.com/apparels/387059
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)
+      description: Anything worth remembering about this card, e.g. which print you mean.

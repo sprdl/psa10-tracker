@@ -1033,5 +1033,22 @@
     return thead + '<tbody>' + body + '</tbody>';
   }
 
+  // Pending "Add card" requests (open GitHub issues labeled add-card). Public,
+  // unauthenticated read; if GitHub is unreachable or rate-limited, show nothing.
+  async function loadCardRequests() {
+    const el = document.getElementById('card-requests');
+    if (!el) return;
+    try {
+      const r = await fetch('https://api.github.com/repos/sprdl/psa10-tracker/issues?state=open&labels=add-card&per_page=20',
+        { headers: { Accept: 'application/vnd.github+json' } });
+      if (!r.ok) return;
+      const n = (await r.json()).filter((i) => !i.pull_request).length;
+      if (!n) return;
+      el.textContent = `${n} card request${n === 1 ? '' : 's'} waiting for the next price check`;
+      el.hidden = false;
+    } catch (e) { /* offline or blocked — the button still works */ }
+  }
+
   init();
+  loadCardRequests();
 })();
