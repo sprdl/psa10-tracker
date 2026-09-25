@@ -3,3 +3,6 @@ data/incoming/
 
 # macOS Finder metadata
 .DS_Store
+
+# Python bytecode
+__pycache__/
