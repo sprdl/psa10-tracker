@@ -295,7 +295,10 @@ def main():
 
     snap_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     rel = str(snap_path.relative_to(root))
-    git(root, "add", rel)
+    sys.path.insert(0, str(root / "scripts"))
+    import build_history
+    build_history.build(root)  # representative_price feeds the price-history chart
+    git(root, "add", rel, "data/history.json")
     names = ", ".join(re.sub(r"[\[(].*$", "", c["card_name_ja"]).strip() for c, _, _ in planned)
     commit = git(root, "commit", "-m", f"analysis: update {names}", check=False)
     if commit.returncode != 0:

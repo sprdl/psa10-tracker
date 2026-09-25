@@ -439,7 +439,11 @@ def main():
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Updated {manifest_path.relative_to(root)} ({len(manifest['snapshots'])} snapshot(s) total)")
 
-    subprocess.run(["git", "add", "data/manifest.json", str(dest.relative_to(root))], cwd=root, check=True)
+    # keep the site's compact price-history index in step with the snapshots
+    sys.path.insert(0, str(root / "scripts"))
+    import build_history
+    build_history.build(root)
+    subprocess.run(["git", "add", "data/manifest.json", "data/history.json", str(dest.relative_to(root))], cwd=root, check=True)
     commit_msg = f"snapshot: {data.get('collected_at_jst', filename)}"
     commit = subprocess.run(["git", "commit", "-m", commit_msg], cwd=root)
     if commit.returncode != 0:

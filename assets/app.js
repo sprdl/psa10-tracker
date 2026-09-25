@@ -715,7 +715,27 @@
     return historySnapshotsPromise;
   }
 
+  // Preferred source: data/history.json, a compact per-card series rebuilt by
+  // scripts/build_history.py on every publish, so expanding a card downloads one
+  // small file instead of every snapshot. Falls back to the per-snapshot method
+  // below if the index is missing.
+  let historyIndexPromise = null;
+  function loadHistoryIndex() {
+    if (!historyIndexPromise) historyIndexPromise = fetchJSON('data/history.json').catch(() => null);
+    return historyIndexPromise;
+  }
+
   async function getCardPriceHistory(card) {
+    const idx = await loadHistoryIndex();
+    if (idx && Array.isArray(idx.snapshots)) {
+      const pts = [];
+      idx.snapshots.forEach((s) => {
+        const v = s.p && s.p[card.url];
+        if (v) pts.push({ date: s.d, price: v[0], confirmed: !!v[1] });
+      });
+      pts.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+      return pts;
+    }
     const allSnaps = await loadAllSnapshotsForHistory();
     const points = [];
     allSnaps.forEach((snap) => {

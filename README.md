@@ -51,6 +51,15 @@ The price-check skill has two modes and picks one automatically
   it. Depth, population and the index are carried over and labeled "as of" their
   real time on the site. Quick snapshots are marked "· quick" in the dropdown.
 
+## Adding a card
+
+Tap **+ Add card** on the site (under the snapshot picker) and paste the card's
+SNKRDUNK product URL into the form. That files a GitHub issue labeled
+`add-card`. The next price check sees it, reads the card's name from SNKRDUNK,
+adds it to `data/tracked_cards.json` (cards tracked beyond the skill's own
+list), and closes the issue with a confirmation. `scripts/card_requests.py`
+does the work; run it without arguments for its commands.
+
 ## Applying a new evaluation (tiers, peak, verdict)
 
 When an evaluation gives you a JSON block for one or more cards, copy it and run:
@@ -100,6 +109,10 @@ scripts/add_snapshot.py         the one-command "publish a new run" script
 scripts/apply_analysis.py       apply evaluation JSON (tiers/peak/verdict) to the latest snapshot
 scripts/quick_update.py         publish a quick price check (lowest asks + sales, rest carried)
 scripts/check_status.py         latest snapshot + whether today's full check has run
+scripts/card_requests.py        "Add card" requests (GitHub issues) and data/tracked_cards.json
+scripts/build_history.py        rebuilds data/history.json, the compact index the price-history charts read
+data/tracked_cards.json         cards tracked in addition to the price-check skill's own list
+data/history.json               per-card price series across all snapshots (auto-rebuilt on every publish)
 docs/schema.md                  the full snapshot JSON schema, raw fields + optional analysis overlay
 .github/workflows/deploy.yml    GitHub Actions: deploy to Pages on push
 ```
