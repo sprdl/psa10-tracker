@@ -79,23 +79,18 @@ so no token is needed.
 
 ## Using the app
 
-Open the Pages URL on your phone/tablet (bookmark it or add it to your home
-screen). The snapshot dropdown at the top switches between every run you've ever
-pushed.
+Open the Pages URL on your computer or phone (bookmark it or add it to your home screen). The snapshot dropdown (bottom of the sidebar, top bar on phones) switches between every run you've pushed.
 
-A snapshot with just the raw price-check data renders honestly on its own: market
-strip, per-card price/depth/favorites, and — tap a card to expand it — the full
-listing spread, the 15%-cutoff split, recent completed sales with a labeled trend
-chart (dates and prices), and the raw A-grade comparison. Cards without an
-evaluation yet are labeled "tiers not yet established" rather than guessing.
+The app has one section per job, reached from the sidebar on a computer and the bottom tab bar on a phone (Watching, Track record, Market & notes and Tables sit under **More**). Every section has its own address (`#/overview`, `#/collection`, `#/card/<snkrdunk id>` …), so links and the back button work.
 
-Once you layer on an **analysis overlay** (see `docs/schema.md`) — representative
-price, peak, tiers, verdict — a card also gets the colored price gauge, an
-off-peak %, a verdict tag with reasoning, and rows in the two comparison tables at
-the bottom of the page. Banners at the top surface both your own written notes
-(`banners` in the JSON) and small auto-detected flags the app computes itself by
-diffing against the previous snapshot (depth drops, favorite-count swings, a price
-crossing a tier boundary).
+- **Overview:** index, budget and track-record tiles, buy signals, alerts, and the list of cards with a PSA10 market (limit hits and Buy zones first). On a wide screen, clicking a card opens its details in the side panel. On narrower screens and phones it opens the card page.
+- **Collection:** the same cards as a display case of PSA slabs.
+- **Card page / side panel:** price, off-peak, change since the last check, the price gauge with your limit, the verdict and stats. Tabs show the full price **History**, the **Listings** (spread, 15% cutoff, recent sales for PSA10 and raw A) and the **DIY** grading comparison. **✓ Bought it** and the SNKRDUNK link sit alongside.
+- **Watching:** cards with no PSA10 market yet (raw A price, favorites).
+- **Holdings**, **Budget planner**, **Track record** and **Tables:** see the sections below.
+- **Market & notes:** both pokeca-chart indices, volume notes and the check's methodology notes.
+
+Cards without an evaluation are labeled "tiers not yet established" rather than guessing. Alerts on the overview show your own `banners` from the JSON plus flags the app computes by comparing with the previous snapshot (depth drops, favorite-count swings, a price crossing a tier boundary).
 
 ## My limits and buy signals
 

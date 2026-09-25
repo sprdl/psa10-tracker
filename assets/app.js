@@ -8,18 +8,19 @@
     previousData: null,
     calls: null, // data/calls.json — track record of past calls (scripts/build_calls.py)
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
+    selectedUrl: null, // card shown in the overview's detail drawer (desktop)
+    cardTab: 'overview', // last-used tab of the card detail
+    cardFrom: 'overview', // view a card page was opened from (for the back link)
   };
 
   const els = {
-    snapshotSelect: document.getElementById('snapshot-select'),
+    snapshotSelects: [document.getElementById('snapshot-select'), document.getElementById('snapshot-select-m')],
     collectedAt: document.getElementById('collected-at'),
     marketStrip: document.getElementById('market-strip'),
     banners: document.getElementById('banners'),
     notesBody: document.getElementById('notes-body'),
-    cards: document.getElementById('cards'),
-    watchSection: document.getElementById('watch-section'),
+    cards: document.getElementById('watchlist'),
     watchPanel: document.getElementById('watch-panel'),
-    portfolioSection: document.getElementById('portfolio-section'),
     portfolioSummary: document.getElementById('portfolio-summary'),
     portfolioList: document.getElementById('portfolio-list'),
   };
@@ -136,6 +137,7 @@
       state.manifest = await fetchJSON('data/manifest.json');
     } catch (e) {
       els.cards.innerHTML = `<div class="empty-state">Couldn't load data/manifest.json. Has a snapshot been added yet?</div>`;
+      document.querySelectorAll('.view').forEach((v) => { v.hidden = v.dataset.view !== 'overview'; });
       return;
     }
 
@@ -145,18 +147,21 @@
       return;
     }
 
-    els.snapshotSelect.innerHTML = '';
-    for (let i = snaps.length - 1; i >= 0; i--) {
-      const opt = document.createElement('option');
-      opt.value = String(i);
-      opt.textContent = fmtDateShort(snaps[i].collected_at_jst) + (snaps[i].check_mode === 'quick' ? ' · quick' : '');
-      els.snapshotSelect.appendChild(opt);
-    }
-    els.snapshotSelect.value = String(snaps.length - 1);
-
-    els.snapshotSelect.addEventListener('change', () => {
-      loadIndex(parseInt(els.snapshotSelect.value, 10));
+    els.snapshotSelects.forEach((sel) => {
+      sel.innerHTML = '';
+      for (let i = snaps.length - 1; i >= 0; i--) {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = fmtDateShort(snaps[i].collected_at_jst) + (snaps[i].check_mode === 'quick' ? ' · quick' : '');
+        sel.appendChild(opt);
+      }
+      sel.value = String(snaps.length - 1);
+      sel.addEventListener('change', () => {
+        els.snapshotSelects.forEach((o) => { o.value = sel.value; });
+        loadIndex(parseInt(sel.value, 10));
+      });
     });
+    window.addEventListener('hashchange', () => { applyRoute(); window.scrollTo(0, 0); });
 
     // Holdings are optional and rare to change — a missing file just means
     // nothing's been bought yet, not an error.
@@ -333,13 +338,7 @@
   }
 
   function renderSignals(cards) {
-    let el = document.getElementById('signals');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'signals';
-      el.className = 'signals';
-      els.banners.parentNode.insertBefore(el, els.banners);
-    }
+    const el = document.getElementById('signals');
     const snaps = state.manifest.snapshots || [];
     const isLatest = state.currentIndex === snaps.length - 1;
     const signals = computeSignals(cards);
@@ -356,10 +355,8 @@
         return `<button type="button" class="signal" data-idx="${s.i}">${pill}<span class="sig-name">${escapeHtml(s.name)}</span><span class="sig-text">${escapeHtml(s.text)}</span>${isNew ? '<span class="sig-new">NEW</span>' : ''}</button>`;
       }).join('');
       el.querySelectorAll('.signal').forEach((b) => b.addEventListener('click', () => {
-        const art = document.getElementById('lot-' + b.dataset.idx);
-        if (!art) return;
-        if (!art.classList.contains('expanded')) art.querySelector('.lot-summary').click();
-        art.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const card = cards[Number(b.dataset.idx)];
+        if (card) openCard(card);
       }));
     }
     if (isLatest) store.set('psa10.seenSignals', signals.map((s) => s.key));
@@ -402,6 +399,10 @@
       </div>
       ${fourthCell}
     `;
+    const notes = [['PSA10 index volume', psa10.volume_note], ['Raw A-rank index volume', raw.volume_note]].filter((n) => n[1]);
+    let mn = document.getElementById('market-notes');
+    if (!mn) { mn = document.createElement('div'); mn.id = 'market-notes'; mn.className = 'market-notes'; els.marketStrip.after(mn); }
+    mn.innerHTML = notes.map(([k, v]) => `<div class="panel"><div class="lbl">${escapeHtml(k)}</div><p>${escapeHtml(v)}</p></div>`).join('');
   }
 
   // ---------- render: banners (human-authored + auto-detected) ----------
@@ -457,32 +458,157 @@
     els.banners.innerHTML = html;
   }
 
-  // ---------- render: cards ----------
+  // ---------- app shell: views + routing ----------
+  // Hash routes: #/overview, #/collection, #/watching, #/holdings, #/planner,
+  // #/record, #/market, #/tables, #/more (phone) and #/card/<snkrdunk id>.
+  const VIEWS = {
+    overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
+    planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
+  };
+  const DESKTOP = window.matchMedia('(min-width: 1200px)');
+
+  function cardId(card) { return (card.url || '').replace(/\/+$/, '').split('/').pop(); }
+  function findCardById(id) { return ((state.currentData && state.currentData.cards) || []).find((c) => cardId(c) === id) || null; }
+  function prevCardOf(card) { return ((state.previousData && state.previousData.cards) || []).find((c) => c.url === card.url) || null; }
+  function hasMarket(card) { const p = card.grades && card.grades.psa10; return !!(p && p.lowest_price != null); }
+
+  function parseRoute() {
+    const [v, arg] = location.hash.replace(/^#\/?/, '').split('/');
+    return { view: Object.prototype.hasOwnProperty.call(VIEWS, v) ? v : 'overview', arg: arg ? decodeURIComponent(arg) : null };
+  }
+
+  function applyRoute() {
+    if (!state.currentData) return;
+    const { view, arg } = parseRoute();
+    document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== view; });
+    const navView = view === 'card' ? (state.cardFrom || 'overview') : view;
+    document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
+    const tab = document.querySelector('.tabbar a[data-view="more"]');
+    if (tab && ['watching', 'record', 'market', 'tables'].includes(view)) tab.classList.add('on');
+
+    const back = document.getElementById('back-link');
+    back.hidden = view !== 'card';
+    let title = VIEWS[view];
+    let sub = viewSubtitle(view);
+    if (view === 'card') {
+      const card = findCardById(arg);
+      back.href = '#/' + (state.cardFrom || 'overview');
+      back.querySelector('span').textContent = VIEWS[state.cardFrom || 'overview'];
+      if (card) {
+        const { short, code, pack } = parseCardName(card.card_name_ja);
+        title = short; sub = [code, pack].filter(Boolean).join(' · ');
+        renderCardPage(card);
+      } else {
+        title = 'Card not found'; sub = "This card isn't in the selected snapshot.";
+        document.getElementById('card-page').innerHTML = '';
+      }
+    } else {
+      state.cardFrom = view === 'more' ? 'overview' : view;
+    }
+    document.getElementById('page-title').textContent = title;
+    document.getElementById('page-sub').textContent = sub;
+    document.title = view === 'overview' ? 'PSA10 Tracker' : `${title} · PSA10 Tracker`;
+  }
+
+  function viewSubtitle(view) {
+    const cards = (state.currentData && state.currentData.cards) || [];
+    const market = cards.filter(hasMarket).length;
+    const snap = state.manifest.snapshots[state.currentIndex] || {};
+    const when = state.currentData ? fmtDateJST(state.currentData.collected_at_jst) : '';
+    switch (view) {
+      case 'overview': return `${market} cards with a PSA10 market · ${cards.length - market} watching · checked ${when}${snap.check_mode === 'quick' ? ' (quick)' : ''}`;
+      case 'collection': return `${market} cards with a PSA10 market. Limit hits and Buy zones come first.`;
+      case 'watching': return `${cards.length - market} cards without a PSA10 market yet. They move to the overview once PSA10 listings appear.`;
+      case 'holdings': return 'Cards you bought, valued at today\'s price';
+      case 'planner': return 'Tick cards to see what a shortlist costs against your budget';
+      case 'record': return 'How past calls and stated odds turned out';
+      case 'market': return `pokeca-chart indices · checked ${when}`;
+      case 'tables': return 'Every tracked card side by side';
+      default: return '';
+    }
+  }
+
+  function openCard(card) {
+    if (DESKTOP.matches && parseRoute().view === 'overview') {
+      state.selectedUrl = card.url;
+      renderOverviewList(state.currentData.cards || []);
+      renderDrawer();
+      return;
+    }
+    location.hash = '#/card/' + cardId(card);
+  }
+
+  function updateCounts() {
+    const cards = (state.currentData && state.currentData.cards) || [];
+    const market = cards.filter(hasMarket).length;
+    const tr = state.calls && state.calls.summary;
+    const counts = {
+      collection: market || '', watching: (cards.length - market) || '', holdings: state.holdings.length || '',
+      record: tr && tr.calls_scored ? `${(tr.calls || {}).right || 0}–${(tr.calls || {}).wrong || 0}` : '',
+    };
+    document.querySelectorAll('em[data-count]').forEach((em) => { em.textContent = counts[em.dataset.count] || ''; });
+  }
+
+  // ---------- render ----------
 
   function render() {
     const data = state.currentData;
+    const cards = data.cards || [];
     const prevCards = (state.previousData && state.previousData.cards) || [];
     els.collectedAt.textContent = fmtDateJST(data.collected_at_jst);
     renderMarketStrip(data);
-    renderSignals(data.cards || []);
+    renderKpis(data);
+    renderSignals(cards);
     renderBanners(data, state.previousData);
     els.notesBody.textContent = data.notes || '';
-    renderPortfolio(state.holdings, data.cards || []);
-    renderCards(data.cards || [], prevCards);
-    renderPlanner(data.cards || []);
+    renderPortfolio(state.holdings, cards);
+    renderOverviewList(cards);
+    renderDrawer();
+    renderCollection(cards);
+    renderWatchPanel(cards.filter((c) => !hasMarket(c)), prevCards);
+    renderPlanner(cards);
     renderTrackRecord();
-    renderTables(data.cards || [], prevCards);
+    renderTables(cards, prevCards);
+    updateCounts();
+    applyRoute();
+  }
+
+  // Order used by the list and the display case: cards with a listing at or below
+  // your limit first, then Definitely-buy / Buy zones, otherwise the snapshot's order.
+  function sortedMarketCards(cards) {
+    const rank = (c) => (limitHit(c) ? 0 : 3) + ({ definitely_buy: 0, buy: 1 }[displayTagFor(c)] ?? 2);
+    return cards.filter(hasMarket).map((card, i) => ({ card, i })).sort((a, b) => rank(a.card) - rank(b.card) || a.i - b.i).map((x) => x.card);
+  }
+
+  // ---------- render: key numbers ----------
+
+  function renderKpis(data) {
+    const idx = data.pokeca_chart_index || {};
+    const p = idx.psa10 || {}, r = idx.raw_bihin || {};
+    const st = plannerState();
+    const spent = state.holdings.reduce((a, h) => a + holdingCost(h), 0);
+    const sm = state.calls && state.calls.summary;
+    const c = (sm && sm.calls) || {};
+    const chg = (x) => `<span class="${dirClass(x.day_change_pct)}">${fmtPct(x.day_change_pct)} day</span> · <span class="${dirClass(x.month_change_pct)}">${fmtPct(x.month_change_pct)} month</span>`;
+    const tiles = [
+      { href: '#/market', k: 'PSA10 index', v: fmtYen(p.latest_index_value_jpy), d: chg(p) },
+      { href: '#/market', k: 'Raw A-rank index', v: fmtYen(r.latest_index_value_jpy), d: chg(r) },
+      { href: '#/planner', k: 'Budget left', v: fmtYen(st.budget - spent), d: `of ${fmtYen(st.budget)} · ${fmtYen(spent)} spent` },
+      { href: '#/record', k: 'Track record', v: sm && sm.calls_scored ? `${c.right || 0} right · ${c.wrong || 0} wrong` : '—',
+        d: sm ? `${c.pending || 0} calls pending · ${sm.odds_open || 0} odds open` : 'no calls yet' },
+    ];
+    document.getElementById('kpis').innerHTML = tiles.map((t) =>
+      `<a class="kpi" href="${t.href}"><span class="lbl">${escapeHtml(t.k)}</span><span class="kpi-v display">${escapeHtml(t.v)}</span><span class="kpi-d">${t.d}</span></a>`).join('');
   }
 
   // ---------- render: portfolio (cards you've actually bought) ----------
 
   function renderPortfolio(holdings, currentCards) {
     if (!holdings.length) {
-      els.portfolioSection.hidden = true;
+      els.portfolioSummary.innerHTML = '';
+      els.portfolioList.innerHTML = `<div class="empty-state">No purchases yet. Use <b>✓ Bought it</b> on a card to log one; it shows up here with its profit and loss.</div>`;
       return;
     }
-    els.portfolioSection.hidden = false;
-
     let totalCost = 0;
     let totalValue = 0;
     let matchedCount = 0;
@@ -514,7 +640,7 @@
       els.portfolioSummary.innerHTML = `<div class="pf-stat"><div class="lbl">Status</div><div class="val muted">No current price data for any held card yet</div></div>`;
     }
 
-    els.portfolioList.innerHTML = rows.map(({ h, match, currentPrice, cost, pnl, pnlPct }) => {
+    els.portfolioList.innerHTML = rows.map(({ h, match, currentPrice, pnl, pnlPct }) => {
       const displayName = match ? parseCardName(match.card_name_ja).short : parseCardName(h.card_name_ja || '').short;
       const imgSrc = (match && match.image_url) || h.image_url;
       const thumbHtml = imgSrc ? `<img src="${escapeAttr(imgSrc)}" alt="" loading="lazy" onerror="this.remove();">` : '';
@@ -522,11 +648,12 @@
       const pnlHtml = pnl != null
         ? `<span class="${pnl >= 0 ? 'pos' : 'neg'}">${pnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(pnl))}${pnlPct != null ? ' (' + fmtPct(pnlPct) + ')' : ''}</span>`
         : `<span class="muted">no current price</span>`;
+      const nameHtml = match ? `<a href="#/card/${escapeAttr(cardId(match))}">${escapeHtml(displayName)}</a>` : escapeHtml(displayName);
       return `
         <div class="pf-row">
           <span class="pf-thumb">${thumbHtml}</span>
           <div class="pf-info">
-            <div class="pf-name">${escapeHtml(displayName)}</div>
+            <div class="pf-name">${nameHtml}</div>
             <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
           </div>
           <div class="pf-current">
@@ -537,90 +664,136 @@
     }).join('');
   }
 
-  function renderCards(cards, prevCards) {
-    const wasOpen = new Set([...els.cards.querySelectorAll('article.lot.expanded')].map((a) => a.dataset.url));
-    els.cards.innerHTML = '';
-    const pending = [];
-    let shown = 0;
+  // ---------- render: overview list + detail drawer ----------
 
-    // Cards with a listing at or below your limit float to the top; otherwise keep
-    // the snapshot's order. The original index i stays the card's id everywhere.
-    const order = cards.map((card, i) => ({ card, i }));
-    order.sort((a, b) => (limitHit(b.card) ? 1 : 0) - (limitHit(a.card) ? 1 : 0));
+  function zoneBarHtml(card, cls) {
+    const a = card.analysis || {};
+    const t = a.tiers, peak = a.peak && a.peak.price;
+    if (!t) return `<span class="zb-none">no tiers yet</span>`;
+    const scale = roundToThousand(Math.max(peak || 0, t.ceiling) * 1.08) || t.ceiling;
+    const pct = (v) => Math.min(100, Math.max(0, (v / scale) * 100)).toFixed(1) + '%';
+    const lim = getLimit(card);
+    return `<span class="zb ${cls || ''}"><span class="zb-track"><i class="z-db" style="width:${pct(t.definitely_buy)}"></i><i class="z-bu" style="width:${pct(t.buy_upper - t.definitely_buy)}"></i><i class="z-w" style="width:${pct(t.ceiling - t.buy_upper)}"></i><i class="z-x"></i></span><span class="zb-now" style="left:${pct(getRep(card))}"></span>${lim != null ? `<span class="zb-lim" style="left:${pct(lim)}"></span>` : ''}</span>`;
+  }
 
-    order.forEach(({ card, i }) => {
-      const psa10 = card.grades && card.grades.psa10;
-      if (!psa10 || psa10.lowest_price == null) {
-        pending.push(card);
-        return;
-      }
-      shown++;
+  function tagChip(card) {
+    const tag = displayTagFor(card);
+    return tag ? `<span class="vtag ${tag}">${escapeHtml(tagLabel(tag))}</span>` : `<span class="vtag none">No tiers</span>`;
+  }
 
-      const prevCard = prevCards.find((c) => c.url === card.url) || null;
-      const depth = depthInfo(psa10);
-      const analysis = card.analysis;
+  function slabHtml(card, size) {
+    const code = parseCardName(card.card_name_ja).code;
+    const img = card.image_url ? `<img src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    return `<span class="slab ${size || ''}"><span class="slab-label"><b>${escapeHtml(code)}</b><b>GEM MT 10</b></span><span class="slab-art ${artClassFor(card)}">${img}</span></span>`;
+  }
 
-      let tagClass = 'tag-' + depth.cls;
-      if (analysis && analysis.verdict && analysis.verdict.tag) tagClass = 'tag-' + analysis.verdict.tag;
+  function offPeakText(card) {
+    const peak = card.analysis && card.analysis.peak;
+    if (!peak || !peak.price) return '—';
+    const pct = computeOffPeakPct(peak.price, getRep(card));
+    return `${pct >= 0 ? '−' : '+'}${Math.abs(pct).toFixed(0)}%`;
+  }
 
-      const article = document.createElement('article');
-      article.className = 'lot ' + tagClass + (limitHit(card) ? ' limit-hit' : '');
-      article.id = 'lot-' + i;
-      article.dataset.url = card.url;
-      article.innerHTML = buildCardSummaryHtml(card, prevCard, i, depth);
+  function renderOverviewList(cards) {
+    const el = document.getElementById('watchlist');
+    const list = sortedMarketCards(cards);
+    if (!list.length) { el.innerHTML = `<div class="empty-state">No cards with live market data in this snapshot yet.</div>`; return; }
+    if (!state.selectedUrl || !list.some((c) => c.url === state.selectedUrl)) state.selectedUrl = list[0].url;
+    el.innerHTML = list.map((card) => {
+      const { short, code, pack } = parseCardName(card.card_name_ja);
+      const owned = holdingsFor(card).length;
+      return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
+        ${slabHtml(card, 'xs')}
+        <span class="wl-name"><b class="jp">${escapeHtml(short)}</b><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
+        <span class="wl-price display">${fmtYen(getRep(card))}</span>
+        ${zoneBarHtml(card)}
+        <span class="wl-off">${offPeakText(card)}</span>
+        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}</span>
+      </a>`;
+    }).join('');
+    el.querySelectorAll('.wl-row').forEach((a) => a.addEventListener('click', (e) => {
+      if (!DESKTOP.matches) return; // phones follow the link to the card page
+      e.preventDefault();
+      const card = cards.find((c) => c.url === a.dataset.url);
+      if (card) openCard(card);
+    }));
+  }
 
-      const summary = article.querySelector('.lot-summary');
-      summary.addEventListener('click', () => toggleCard(article, i, card));
-      wireLimitControls(article, card);
-      els.cards.appendChild(article);
-      if (wasOpen.has(card.url)) toggleCard(article, i, card);
-    });
+  function renderDrawer() {
+    const el = document.getElementById('drawer');
+    const card = ((state.currentData && state.currentData.cards) || []).find((c) => c.url === state.selectedUrl);
+    if (!card) { el.innerHTML = ''; return; }
+    el.innerHTML = buildCardDetail(card, prevCardOf(card), 'drawer');
+    wireCardDetail(el, card);
+  }
 
-    if (!shown) {
-      els.cards.innerHTML = `<div class="empty-state">No cards with live market data in this snapshot yet.</div>`;
-    }
+  function renderCardPage(card) {
+    const el = document.getElementById('card-page');
+    el.innerHTML = buildCardDetail(card, prevCardOf(card), 'page');
+    wireCardDetail(el, card);
+  }
 
-    renderWatchPanel(pending, prevCards);
+  // ---------- render: display case ----------
+
+  function renderCollection(cards) {
+    const el = document.getElementById('collection');
+    const list = sortedMarketCards(cards);
+    const reqEl = document.getElementById('card-requests');
+    el.innerHTML = list.map((card) => {
+      const { short, code } = parseCardName(card.card_name_ja);
+      const lim = getLimit(card);
+      const owned = holdingsFor(card).length;
+      const pop = card.psa10_population != null ? card.psa10_population.toLocaleString() : '—';
+      return `<a class="tile${limitHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}">
+        <span class="tile-slab">${slabHtml(card, 'lg')}
+          <span class="tile-chips">${tagChip(card)}</span>
+          ${lim != null ? `<span class="tile-limit">Limit ${fmtYen(lim)}</span>` : ''}
+          ${owned ? '<span class="tile-owned">Owned</span>' : ''}
+        </span>
+        <span class="tile-name jp">${escapeHtml(short)}</span>
+        <span class="tile-price"><b class="display">${fmtYen(getRep(card))}</b><span>${offPeakText(card)} off peak</span></span>
+        ${zoneBarHtml(card, 'thin')}
+        <span class="tile-meta">${escapeHtml(code)} · Pop ${pop}</span>
+      </a>`;
+    }).join('') + `<a class="tile tile-add" href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span class="display">+</span>Add a card to track${reqEl && !reqEl.hidden ? `<small>${escapeHtml(reqEl.textContent)}</small>` : ''}</a>`;
   }
 
   function renderWatchPanel(pending, prevCards) {
     if (!pending.length) {
-      els.watchSection.hidden = true;
-      els.watchPanel.innerHTML = '';
+      els.watchPanel.innerHTML = `<div class="empty-state">Every tracked card has a PSA10 market.</div>`;
       return;
     }
-    els.watchSection.hidden = false;
     els.watchPanel.innerHTML = pending.map((card) => {
       const prev = prevCards.find((c) => c.url === card.url) || null;
-      let state = 'first snapshot on file';
+      let status = 'first snapshot on file';
       if (prev) {
         if (prev.favorite_count != null && card.favorite_count != null && prev.favorite_count !== card.favorite_count) {
-          state = card.favorite_count > prev.favorite_count ? 'favorites rising' : 'favorites falling';
+          status = card.favorite_count > prev.favorite_count ? 'favorites rising' : 'favorites falling';
         } else {
-          state = 'still no market';
+          status = 'still no market';
         }
       }
       const fav = card.favorite_count != null ? card.favorite_count.toLocaleString() : '—';
-      const name = parseCardName(card.card_name_ja).short || card.card_name_ja;
+      const { short, code } = parseCardName(card.card_name_ja);
       const raw = card.grades && card.grades.raw_a_grade;
-      const rawText = raw && raw.lowest_price != null ? 'Raw A ' + fmtYen(raw.lowest_price) : 'Raw A —';
-      const thumbHtml = card.image_url
-        ? `<img src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove();">`
-        : '';
+      const thumbHtml = card.image_url ? `<img src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '';
       return `<a class="watch-row" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">
         <span class="wthumb">${thumbHtml}</span>
-        <span class="wname">${escapeHtml(name)}</span>
-        <span class="wraw">${escapeHtml(rawText)}</span>
+        <span class="wname"><b class="jp">${escapeHtml(short || card.card_name_ja)}</b><small>${escapeHtml(code)}</small></span>
+        <span class="wraw"><small>Raw A</small><b class="display">${raw && raw.lowest_price != null ? fmtYen(raw.lowest_price) : '—'}</b></span>
         <span class="wmeta">♥ ${fav}</span>
-        <span class="wstate">${escapeHtml(state)}</span>
+        <span class="wstate">${escapeHtml(status)}</span>
       </a>`;
     }).join('');
   }
 
-  function buildCardSummaryHtml(card, prevCard, i, depth) {
+  // ---------- card detail (drawer on desktop, full page on phones) ----------
+
+  function buildCardDetail(card, prevCard, mode) {
     const psa10 = card.grades.psa10;
     const analysis = card.analysis || null;
     const repPrice = getRep(card);
+    const depth = depthInfo(psa10);
     const { short: shortName, code, pack } = parseCardName(card.card_name_ja);
 
     let flagHtml = '';
@@ -631,13 +804,13 @@
       flagHtml = `<span class="flag ${cls}">${label}</span>`;
     }
 
-    let offPeakHtml;
     const peak = analysis && analysis.peak;
+    let offPeakHtml;
     if (peak && peak.price) {
       const pct = computeOffPeakPct(peak.price, repPrice);
-      offPeakHtml = `<div class="off-peak">Peak was ${fmtYen(peak.price)}${peak.when ? ' (' + escapeHtml(peak.when) + ')' : ''} — <span class="pct">${pct >= 0 ? '−' : '+'}${Math.abs(pct).toFixed(0)}%</span> off the high</div>`;
+      offPeakHtml = `<span class="pct">${pct >= 0 ? '−' : '+'}${Math.abs(pct).toFixed(0)}%</span> off the ${fmtYen(peak.price)} peak${peak.when ? ' (' + escapeHtml(peak.when) + ')' : ''}`;
     } else {
-      offPeakHtml = `<div class="off-peak">No price history pulled yet — peak unknown</div>`;
+      offPeakHtml = 'No price history pulled yet, peak unknown';
     }
 
     let deltaHtml = '<span class="flat">first snapshot on file</span>';
@@ -647,11 +820,7 @@
         const diff = repPrice - prevRep;
         const pct = prevRep ? (diff / prevRep) * 100 : 0;
         if (diff === 0) deltaHtml = '<span class="flat">unchanged</span> since last check';
-        else {
-          const cls = diff > 0 ? 'up' : 'down';
-          const arrow = diff > 0 ? '▲' : '▼';
-          deltaHtml = `<span class="${cls}">${arrow} ${fmtPct(pct)}</span> since last check (${fmtYen(prevRep)})`;
-        }
+        else deltaHtml = `<span class="${diff > 0 ? 'up' : 'down'}">${diff > 0 ? '▲' : '▼'} ${fmtPct(pct)}</span> since last check (${fmtYen(prevRep)})`;
       }
     }
 
@@ -659,19 +828,20 @@
     const ask = lowestAsk(card);
     const owned = holdingsFor(card);
     const ownedHtml = owned.length
-      ? ` <span class="owned-note">✓ Owned${owned.length > 1 ? ' ×' + owned.length : ''} · bought ${fmtYen(owned[owned.length - 1].purchase_price_jpy)}</span>`
+      ? `<span class="owned-note">✓ Owned${owned.length > 1 ? ' ×' + owned.length : ''} · bought ${fmtYen(owned[owned.length - 1].purchase_price_jpy)}</span>`
       : '';
     const limitRowHtml = `<div class="limit-row">${limit != null
       ? `<span class="limit-lbl">My limit</span> <strong>${fmtYen(limit)}</strong>${limitHit(card)
-          ? ` <span class="limit-hit-note">· a listing is at or below it (${fmtYen(ask)})</span>`
-          : (ask != null ? ` <span class="limit-gap">· lowest ask is ${fmtYen(ask - limit)} above</span>` : '')}
-         <button type="button" class="limit-btn" data-act="edit">Edit</button><button type="button" class="limit-btn" data-act="clear">Clear</button>`
-      : `<button type="button" class="limit-btn" data-act="edit">+ Set my limit</button>`}${ownedHtml}
-         <a class="limit-btn buy-btn" href="${escapeAttr(boughtFormUrl(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a></div>`;
+          ? ` <span class="limit-hit-note">a listing is at or below it (${fmtYen(ask)})</span>`
+          : (ask != null ? ` <span class="limit-gap">lowest ask is ${fmtYen(ask - limit)} above</span>` : '')}
+         <span class="limit-actions"><button type="button" class="limit-btn" data-act="edit">Edit</button><button type="button" class="limit-btn" data-act="clear">Clear</button></span>`
+      : `<button type="button" class="limit-btn" data-act="edit">+ Set my limit</button><span class="limit-gap">get a Buy signal when a listing drops to it</span>`}</div>`;
 
     let gaugeHtml = '';
+    const edge = (pct) => (pct > 86 ? ' edge-r' : pct < 10 ? ' edge-l' : '');
     if (analysis && analysis.tiers && peak && peak.price) {
       const g = computeGauge(analysis.tiers, peak.price, repPrice);
+      const t = analysis.tiers;
       if (g) {
         gaugeHtml = `
           <div class="gauge-wrap">
@@ -681,11 +851,11 @@
                 var(--amber) ${g.buPct.toFixed(1)}%, var(--amber) ${g.watchMidPct.toFixed(1)}%,
                 var(--amber-strong) ${g.watchMidPct.toFixed(1)}%, var(--amber-strong) ${g.ceilPct.toFixed(1)}%,
                 var(--red) ${g.ceilPct.toFixed(1)}%, var(--red) 100%);">
-              <div class="marker" style="left:${g.curPct.toFixed(1)}%"><div class="tag">${fmtYenShort(repPrice)}</div><div class="stem"></div></div>
-              <div class="marker peak" style="left:${g.peakPct.toFixed(1)}%"><div class="tag">${fmtYenShort(peak.price)}</div><div class="stem"></div></div>
-              ${limit != null ? `<div class="marker limit" style="left:${Math.min(100, Math.max(0, (limit / g.scaleMax) * 100)).toFixed(1)}%" title="Drag to adjust your limit"><div class="knob"></div><div class="tag">Limit ${fmtYenShort(limit)}</div></div>` : ''}
+              <div class="marker${edge(g.curPct)}" style="left:${g.curPct.toFixed(1)}%"><div class="tag">${fmtYenShort(repPrice)}</div><div class="stem"></div></div>
+              <div class="marker peak${edge(g.peakPct)}" style="left:${g.peakPct.toFixed(1)}%"><div class="tag">Peak ${fmtYenShort(peak.price)}</div><div class="stem"></div></div>
+              ${limit != null ? `<div class="marker limit${edge((limit / g.scaleMax) * 100)}" style="left:${Math.min(100, Math.max(0, (limit / g.scaleMax) * 100)).toFixed(1)}%" title="Drag to adjust your limit"><div class="knob"></div><div class="tag">Limit ${fmtYenShort(limit)}</div></div>` : ''}
             </div>
-            <div class="gauge-labels"><span>¥0</span><span>${fmtYen(g.scaleMax)}</span></div>
+            <div class="gauge-legend"><span><i class="z-db"></i>Def-buy ≤${fmtYenShort(t.definitely_buy)}</span><span><i class="z-bu"></i>Buy ≤${fmtYenShort(t.buy_upper)}</span><span><i class="z-w"></i>Watch ≤${fmtYenShort(t.ceiling)}</span><span><i class="z-x"></i>Don't buy</span></div>
           </div>`;
       }
     }
@@ -693,105 +863,114 @@
     let favHtml = card.favorite_count != null ? card.favorite_count.toLocaleString() : '—';
     if (prevCard && prevCard.favorite_count != null && card.favorite_count != null) {
       const fdiff = card.favorite_count - prevCard.favorite_count;
-      if (fdiff !== 0) favHtml += ` <span class="${fdiff > 0 ? 'up' : 'down'}" style="font-size:0.85em;">${fdiff > 0 ? '▲' : '▼'}</span>`;
+      if (fdiff !== 0) favHtml += ` <span class="${fdiff > 0 ? 'up' : 'down'}">${fdiff > 0 ? '▲' : '▼'}</span>`;
     }
-
-    const statsHtml = gaugeHtml ? `
-      <div class="lot-stats">
-        <div class="stat"><div class="lbl">Order-book depth</div><div class="val">${depth.within} / ${depth.total}${asOfHtml(psa10.listings_as_of)}</div></div>
-        <div class="stat"><div class="lbl">Recent sales range</div><div class="val">${salesRangeText(psa10.recent_completed_sales)}</div></div>
-        <div class="stat"><div class="lbl">Favorites</div><div class="val">${favHtml}</div></div>
-      </div>` : `
-      <div class="lot-stats">
-        <div class="stat">
-          <div class="lbl">Listing depth (within 15% of lowest)</div>
-          <div class="val">${depth.within} / ${depth.total}${asOfHtml(psa10.listings_as_of)}</div>
-          <div class="depth-bar-track"><div class="depth-bar-fill" style="width:${Math.round(depth.ratio * 100)}%"></div></div>
-        </div>
-        <div class="stat"><div class="lbl">Raw A lowest</div><div class="val">${card.grades.raw_a_grade ? fmtYen(card.grades.raw_a_grade.lowest_price) : '—'}</div></div>
+    const raw = card.grades.raw_a_grade;
+    const popText = `${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'}${card.psa10_gem_rate_pct != null ? ' · ' + card.psa10_gem_rate_pct + '%' : ''}`;
+    const statsHtml = `
+      <div class="cd-stats">
+        <div class="cd-stat"><div class="lbl">Order-book depth</div><div class="val">${depth.within} / ${depth.total}${asOfHtml(psa10.listings_as_of)}</div><div class="depth-bar-track"><div class="depth-bar-fill" style="width:${Math.round(depth.ratio * 100)}%"></div></div></div>
+        <div class="cd-stat"><div class="lbl">Recent sales</div><div class="val">${salesRangeText(psa10.recent_completed_sales)}</div></div>
+        <div class="cd-stat"><div class="lbl">Favorites</div><div class="val">${favHtml}</div></div>
+        <div class="cd-stat"><div class="lbl">Population · gem rate</div><div class="val">${popText}${card.population_as_of ? asOfHtml(card.population_as_of) : ''}</div></div>
+        <div class="cd-stat"><div class="lbl">Raw A lowest</div><div class="val">${raw ? fmtYen(raw.lowest_price) : '—'}</div></div>
       </div>`;
 
     const displayTag = displayTagFor(card);
     let verdictHtml;
     if (analysis && analysis.verdict) {
       const v = analysis.verdict;
-      const pillText = tagLabel(displayTag);
       const headline = verdictHeadline(v.label);
       const refP = analysis.representative_price != null ? analysis.representative_price : analysis.verdict_price_ref;
-      // The verdict text/tag carries forward run-to-run (add_snapshot.py) so it
-      // doesn't vanish on every routine price refresh. When THIS run didn't come
-      // with a fresh price_source, the verdict below is carried from the last
-      // full review — if the live price has since drifted meaningfully from the
-      // price that review was based on (verdict_price_ref), say so rather than
-      // presenting stale reasoning as current.
-      // The pill shows the LIVE zone (price vs. tiers), which can differ from
-      // what the written reasoning concluded. Zone mismatch is the most useful
-      // thing to flag, so it takes precedence over the plain drift note.
+      // The pill shows the LIVE zone (price vs. tiers), which can differ from what the
+      // written reasoning concluded; a zone mismatch is flagged first, then plain drift
+      // from the price the verdict was written against (verdict_price_ref).
       let staleHtml = '';
       if (v.tag && v.tag !== 'defer' && displayTag && v.tag !== displayTag) {
-        staleHtml = `<div class="verdict-stale">Price is now in the ${tagLabel(displayTag)} zone. The written analysis below called it ${tagLabel(v.tag)}${refP != null ? ' at ' + fmtYen(refP) : ''} — worth a fresh look.</div>`;
+        staleHtml = `<div class="verdict-stale">Price is now in the ${tagLabel(displayTag)} zone. The written analysis called it ${tagLabel(v.tag)}${refP != null ? ' at ' + fmtYen(refP) : ''}, worth a fresh look.</div>`;
       } else if (!analysis.price_source && analysis.verdict_price_ref != null && repPrice != null) {
         const ref = analysis.verdict_price_ref;
         const diffPct = ref ? ((repPrice - ref) / ref) * 100 : 0;
         if (Math.abs(diffPct) >= 5) {
-          const dir = diffPct < 0 ? 'fallen' : 'risen';
-          staleHtml = `<div class="verdict-stale">Last fully reviewed at ${fmtYen(ref)} — price has since ${dir} to ${fmtYen(repPrice)} (${diffPct >= 0 ? '+' : '−'}${Math.abs(diffPct).toFixed(0)}%). Worth a fresh look before trusting the call below.</div>`;
+          staleHtml = `<div class="verdict-stale">Last fully reviewed at ${fmtYen(ref)}. The price has since ${diffPct < 0 ? 'fallen' : 'risen'} to ${fmtYen(repPrice)} (${diffPct >= 0 ? '+' : '−'}${Math.abs(diffPct).toFixed(0)}%), worth a fresh look before trusting the call below.</div>`;
         }
       }
-      verdictHtml = `<div class="verdict"><span class="vtag ${displayTag}">${escapeHtml(pillText)}</span><p>${headline ? `<strong>${escapeHtml(headline)}.</strong> ` : ''}${escapeHtml(v.reasoning || '')}</p></div>${staleHtml}`;
+      verdictHtml = `<div class="verdict">${headline ? `<h3 class="verdict-head">${escapeHtml(headline)}</h3>` : ''}<p>${escapeHtml(v.reasoning || '')}</p>${staleHtml}</div>`;
     } else if (gaugeHtml) {
-      // Tiers exist but no verdict was ever written: the zone can still be
-      // computed live, so show the pill with a plain note instead of nothing.
       verdictHtml = displayTag
-        ? `<div class="verdict"><span class="vtag ${displayTag}">${escapeHtml(tagLabel(displayTag))}</span><p>Zone computed from the live price vs. this card's tiers — no written analysis yet.</p></div>`
-        : `<div class="tier-pending needs-review">Tiers carried forward from a previous check — this card hasn't had a verdict written for it yet.</div>`;
+        ? `<div class="verdict"><p>Zone computed from the live price vs. this card's tiers. No written analysis yet.</p></div>`
+        : `<div class="tier-pending needs-review">Tiers carried forward from a previous check. This card hasn't had a verdict written for it yet.</div>`;
     } else {
-      verdictHtml = `<div class="tier-pending">Tiers not yet established for this card — showing raw stats only.</div>`;
+      verdictHtml = `<div class="tier-pending">Tiers not yet established for this card, showing raw stats only.</div>`;
     }
 
-    const metaParts = [];
-    if (code) metaParts.push(escapeHtml(code));
-    if (pack) metaParts.push(escapeHtml(pack));
-    metaParts.push(`♥ ${card.favorite_count != null ? card.favorite_count.toLocaleString() : '—'} favorites`);
+    const rep = getRep(card);
+    const diy = computeDiyEconomics(card, rep);
+    const rt = analysis && analysis.raw_tiers;
+    const diyHtml = diy ? `
+      <div class="cd-stats">
+        <div class="cd-stat"><div class="lbl">Buy the slab</div><div class="val">${fmtYen(rep)}</div></div>
+        <div class="cd-stat"><div class="lbl">Raw A-rank</div><div class="val">${fmtYen(diy.rawPrice)}</div></div>
+        <div class="cd-stat"><div class="lbl">Grade it yourself (expected)</div><div class="val">${fmtYen(diy.diyExpected)}</div></div>
+        <div class="cd-stat"><div class="lbl">vs. buying the slab</div><div class="val ${diy.delta >= 0 ? 'neg' : 'pos'}">${diy.delta >= 0 ? '+' : '−'}${fmtYen(Math.abs(diy.delta))}</div></div>
+      </div>
+      <p class="cd-note">Expected DIY cost = (raw ¥${Math.round(diy.rawPrice).toLocaleString()} + grading ¥${diy.gradingFee.toLocaleString()} + shipping ¥${diy.shipping.toLocaleString()}) ÷ ${card.psa10_gem_rate_pct}% gem rate.</p>
+      ${rt ? `<p class="cd-note">If buying raw anyway (as a PSA hedge, not a saving): definitely buy ≤${fmtYen(rt.definitely_buy)}, buy ≤${fmtYen(rt.buy_upper)}, don't pay over ${fmtYen(rt.ceiling)}.</p>` : ''}`
+      : `<div class="tier-pending">No DIY grading analysis for this card yet.</div>`;
 
-    const popText = `Pop. ${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'}${card.psa10_gem_rate_pct != null ? ' · ' + card.psa10_gem_rate_pct + '%' : ''}`;
-
-    // Prefer the card's real SNKRDUNK photo; fall back to the abstract art-band
-    // gradient (never a hand-drawn character) if there's no image, or if the
-    // photo fails to load.
-    const fallbackArt = artClassFor(card);
-    const artImgHtml = card.image_url
-      ? `<img class="lot-art-img" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="var p=this.parentElement; this.remove(); if(p) p.classList.add('${fallbackArt}');">`
-      : '';
-    const artDivClass = card.image_url ? 'lot-art' : `lot-art ${fallbackArt}`;
+    const tabs = [['overview', 'Overview'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY']];
+    const actionsHtml = `<div class="cd-actions">
+          <a class="btn btn-primary" href="${escapeAttr(boughtFormUrl(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
+          <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
+        </div>`;
+    const cur = state.cardTab || 'overview';
+    const imgSize = mode === 'page' ? 'xl' : 'md';
 
     return `
-      <div class="${artDivClass}">${artImgHtml}<span class="pop"${card.population_as_of ? ` title="PSA10 population as of ${escapeAttr(fmtDateShort(card.population_as_of))} (re-checked weekly for mature cards)"` : ''}>${escapeHtml(popText)}</span></div>
-      <div class="lot-body">
-        <div class="lot-summary" data-idx="${i}">
-          <div class="lot-head">
-            <div>
-              <div class="lot-name">${escapeHtml(shortName)}</div>
-              <div class="lot-meta">${metaParts.join(' · ')}</div>
-            </div>
-            <div class="lot-price">
-              <div class="amt">${fmtYen(repPrice)}</div>
-              <span class="amt-lbl">${analysis && analysis.representative_price != null ? 'representative PSA10' : 'lowest PSA10 ask'}${flagHtml}</span>
-            </div>
-            <button type="button" class="lot-toggle" aria-label="Toggle details">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+      <div class="cd cd-${mode}" data-url="${escapeAttr(card.url)}">
+        <div class="cd-hero">
+          ${slabHtml(card, imgSize)}
+          <div class="cd-info">
+            ${mode === 'drawer' ? `<a class="cd-name jp" href="#/card/${escapeAttr(cardId(card))}">${escapeHtml(shortName)}</a><span class="cd-meta">${escapeHtml([code, pack].filter(Boolean).join(' · '))}</span>` : ''}
+            <span class="cd-price display">${fmtYen(repPrice)}</span>
+            <span class="cd-plabel">${analysis && analysis.representative_price != null ? 'representative PSA10' : 'lowest PSA10 ask'}${flagHtml}</span>
+            <span class="cd-off">${offPeakHtml}</span>
+            <span class="cd-delta">${deltaHtml}</span>
+            <span class="cd-tags">${tagChip(card)}${ownedHtml}</span>
+            ${mode === 'page' ? actionsHtml : ''}
           </div>
-          ${offPeakHtml}
-          <div class="delta">${deltaHtml}</div>${card.quick_note ? `<div class="delta">${escapeHtml(card.quick_note)}</div>` : ''}
+        </div>
+        <div class="cd-tabs" role="tablist" aria-label="Card sections">
+          ${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${k === cur}">${l}</button>`).join('')}
+        </div>
+        <div class="cd-panel" data-panel="overview"${cur === 'overview' ? '' : ' hidden'}>
           ${gaugeHtml}
           ${limitRowHtml}
-          ${statsHtml}
           ${verdictHtml}
+          ${card.quick_note ? `<p class="cd-note">${escapeHtml(card.quick_note)}</p>` : ''}
+          ${statsHtml}
         </div>
-        <div class="lot-detail" id="detail-${i}" hidden></div>
-      </div>
-    `;
+        <div class="cd-panel" data-panel="history"${cur === 'history' ? '' : ' hidden'}><div class="history-block"><div class="loading-inline">Loading full history…</div></div></div>
+        <div class="cd-panel" data-panel="listings"${cur === 'listings' ? '' : ' hidden'}>${buildGradeDetail('PSA10', psa10)}${raw ? buildGradeDetail('Raw A-rank', raw) : ''}</div>
+        <div class="cd-panel" data-panel="diy"${cur === 'diy' ? '' : ' hidden'}>${diyHtml}</div>
+        ${mode === 'page' ? '' : actionsHtml}
+      </div>`;
+  }
+
+  function wireCardDetail(el, card) {
+    wireLimitControls(el, card);
+    let historyLoaded = false;
+    const showTab = (k) => {
+      state.cardTab = k;
+      el.querySelectorAll('.cd-tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === k)));
+      el.querySelectorAll('.cd-panel').forEach((p) => { p.hidden = p.dataset.panel !== k; });
+      if (k === 'history' && !historyLoaded) {
+        historyLoaded = true;
+        renderPriceHistoryInto(card, el.querySelector('.history-block'));
+      }
+    };
+    el.querySelectorAll('.cd-tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    if ((state.cardTab || 'overview') === 'history') showTab('history');
   }
 
   // ---------- budget planner (saved in this browser only) ----------
@@ -808,14 +987,7 @@
   }
 
   function renderPlanner(cards) {
-    let sec = document.getElementById('planner-section');
-    if (!sec) {
-      sec = document.createElement('div');
-      sec.id = 'planner-section';
-      sec.innerHTML = '<h2 class="section-label">Budget planner</h2><div id="planner" class="planner"></div>';
-      els.watchSection.parentNode.insertBefore(sec, els.watchSection);
-    }
-    const box = sec.querySelector('#planner');
+    const box = document.getElementById('planner');
     const st = plannerState();
     const rows = cards.filter((c) => lowestAsk(c) != null).map((card) => {
       const today = lowestAsk(card);
@@ -866,7 +1038,7 @@
       ? toggle + summary + `<div class="pl-list">${list}</div>`
       : '<div class="empty-state">No cards with a PSA10 market in this snapshot.</div>';
 
-    const save = (patch) => { store.set(PLANNER_KEY, Object.assign(plannerState(), patch)); renderPlanner(cards); };
+    const save = (patch) => { store.set(PLANNER_KEY, Object.assign(plannerState(), patch)); renderPlanner(cards); renderKpis(state.currentData); };
     box.querySelectorAll('.pl-mode button').forEach((b) => b.addEventListener('click', () => save({ mode: b.dataset.mode })));
     box.querySelectorAll('.pl-row input[type=checkbox]').forEach((cb) => cb.addEventListener('change', () => {
       const sel = new Set(plannerState().selected);
@@ -893,17 +1065,9 @@
   function trDate(iso) { const d = (iso || '').slice(5, 10).split('-'); return d.length === 2 ? `${+d[0]}/${+d[1]}` : '—'; }
 
   function renderTrackRecord() {
-    let sec = document.getElementById('track-section');
+    const sec = document.getElementById('track');
     const tr = state.calls;
-    if (!tr || !(tr.calls || []).length) { if (sec) sec.hidden = true; return; }
-    if (!sec) {
-      sec = document.createElement('div');
-      sec.id = 'track-section';
-      const planner = document.getElementById('planner-section');
-      (planner || els.watchSection).parentNode.insertBefore(sec, planner ? planner.nextSibling : els.watchSection);
-    }
-    sec.hidden = false;
-    const wasOpen = sec.querySelector('details') ? sec.querySelector('details').open : false;
+    if (!tr || !(tr.calls || []).length) { sec.innerHTML = '<div class="empty-state">No calls recorded yet. The track record fills in as evaluations are published.</div>'; return; }
     const sm = tr.summary || {};
     const c = sm.calls || {};
     const win = tr.window_days || 30, th = Math.round((tr.threshold || 0.05) * 100);
@@ -941,9 +1105,7 @@
       </div>`;
     }).join('');
 
-    sec.innerHTML = `<details class="track"${wasOpen ? ' open' : ''}>
-      <summary><h2 class="section-label">Track record</h2><span class="tr-headline">${escapeHtml(headline)}${c.pending ? ` · ${c.pending} pending` : ''}</span></summary>
-      <div class="planner">
+    sec.innerHTML = `
         <div class="pl-summary">
           <div class="pl-stat"><div class="lbl">Buy / Watch calls</div><div class="val">${escapeHtml(headline)}</div><div class="tr-hint">${c.pending || 0} still inside their ${win}-day window</div></div>
           ${brier}
@@ -955,13 +1117,11 @@
           A <b>Buy</b> is wrong if the price drops more than ${th}% below the call price (you could have bought cheaper), otherwise right.
           A <b>Watch</b> is right if it drops more than ${th}% (waiting paid off), wrong if it ends more than ${th}% higher without a dip, otherwise neutral.
           Stated odds are checked against their deadline; the Brier score rewards odds that match how often things actually happen.
-          Updated with every price check (as of ${escapeHtml(fmtDateShort(tr.as_of))}).</p>
-      </div>
-    </details>`;
+          Updated with every price check (as of ${escapeHtml(fmtDateShort(tr.as_of))}).</p>`;
   }
 
-  // Limit controls live inside the clickable card summary, so every interaction
-  // stops propagation — otherwise editing a limit would also open/close the card.
+  // Limit controls in a card detail (drawer or card page). Clicks stop propagating
+  // so nothing around them reacts; every change re-renders the whole app.
   function wireLimitControls(article, card) {
     const row = article.querySelector('.limit-row');
     const stop = (e) => e.stopPropagation();
@@ -1017,34 +1177,6 @@
     row.querySelector('[data-act="save"]').addEventListener('click', (e) => { e.stopPropagation(); save(); });
     row.querySelector('[data-act="cancel"]').addEventListener('click', (e) => { e.stopPropagation(); render(); });
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') render(); });
-  }
-
-  function toggleCard(article, i, card) {
-    const detail = article.querySelector('.lot-detail');
-    const isOpen = article.classList.contains('expanded');
-    if (isOpen) {
-      article.classList.remove('expanded');
-      detail.hidden = true;
-      return;
-    }
-    if (!detail.dataset.built) {
-      detail.innerHTML = `<div class="history-block" id="history-${i}"><div class="lbl">Price history</div><div class="loading-inline">Loading full history…</div></div>` + buildDetailHtml(card);
-      detail.dataset.built = '1';
-      const historyEl = detail.querySelector(`#history-${i}`);
-      renderPriceHistoryInto(card, historyEl);
-    }
-    article.classList.add('expanded');
-    detail.hidden = false;
-  }
-
-  function buildDetailHtml(card) {
-    const psa10 = card.grades.psa10;
-    const raw = card.grades.raw_a_grade;
-    let html = '';
-    html += buildGradeDetail('PSA10', psa10);
-    if (raw) html += buildGradeDetail('Raw A-rank', raw);
-    html += `<a class="lot-link" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">View on SNKRDUNK ↗</a>`;
-    return html;
   }
 
   // ---------- price history (across every snapshot on file, not just this one) ----------
@@ -1424,8 +1556,8 @@
       if (buys.length - stuck.length) parts.push('Recording a purchase… reload in a minute');
       if (stuck.length) parts.push(`<a href="${escapeAttr(stuck[0].html_url)}" target="_blank" rel="noopener">A purchase couldn't be recorded. See why ↗</a>`);
       if (!parts.length) return;
-      el.innerHTML = parts.join(' · ');
-      el.hidden = false;
+      [el, document.getElementById('card-requests-m')].forEach((x) => { if (x) { x.innerHTML = parts.join(' · '); x.hidden = false; } });
+      if (state.currentData) renderCollection(state.currentData.cards || []);
     } catch (e) { /* offline or blocked — the button still works */ }
   }
 
