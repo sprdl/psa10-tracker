@@ -87,6 +87,12 @@
     return `${months[parseInt(mo, 10) - 1]} ${parseInt(d, 10)}, ${y} ${h}:${mi} JST`;
   }
 
+  // Values carried from an earlier full check (quick runs) carry the time they were
+  // really measured; show it so old numbers never pass for new ones.
+  function asOfHtml(iso) {
+    return iso ? `<span class="asof">as of ${escapeHtml(fmtDateShort(iso).slice(5))}</span>` : '';
+  }
+
   function fmtDateShort(iso) {
     const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
     if (!m) return iso;
@@ -142,7 +148,7 @@
     for (let i = snaps.length - 1; i >= 0; i--) {
       const opt = document.createElement('option');
       opt.value = String(i);
-      opt.textContent = fmtDateShort(snaps[i].collected_at_jst);
+      opt.textContent = fmtDateShort(snaps[i].collected_at_jst) + (snaps[i].check_mode === 'quick' ? ' · quick' : '');
       els.snapshotSelect.appendChild(opt);
     }
     els.snapshotSelect.value = String(snaps.length - 1);
@@ -283,12 +289,12 @@
       <div class="cell">
         <div class="k">PSA10 index</div>
         <div class="v">${fmtYen(psa10.latest_index_value_jpy)}</div>
-        <div class="d ${dirClass(psa10.day_change_pct)}">${fmtPct(psa10.day_change_pct)} day</div>
+        <div class="d ${dirClass(psa10.day_change_pct)}">${fmtPct(psa10.day_change_pct)} day${asOfHtml(psa10.as_of)}</div>
       </div>
       <div class="cell">
         <div class="k">Raw A-rank index</div>
         <div class="v">${fmtYen(raw.latest_index_value_jpy)}</div>
-        <div class="d ${dirClass(raw.day_change_pct)}">${fmtPct(raw.day_change_pct)} day</div>
+        <div class="d ${dirClass(raw.day_change_pct)}">${fmtPct(raw.day_change_pct)} day${asOfHtml(raw.as_of)}</div>
       </div>
       <div class="cell">
         <div class="k">Both indices' volume</div>
@@ -568,14 +574,14 @@
 
     const statsHtml = gaugeHtml ? `
       <div class="lot-stats">
-        <div class="stat"><div class="lbl">Order-book depth</div><div class="val">${depth.within} / ${depth.total}</div></div>
+        <div class="stat"><div class="lbl">Order-book depth</div><div class="val">${depth.within} / ${depth.total}${asOfHtml(psa10.listings_as_of)}</div></div>
         <div class="stat"><div class="lbl">Recent sales range</div><div class="val">${salesRangeText(psa10.recent_completed_sales)}</div></div>
         <div class="stat"><div class="lbl">Favorites</div><div class="val">${favHtml}</div></div>
       </div>` : `
       <div class="lot-stats">
         <div class="stat">
           <div class="lbl">Listing depth (within 15% of lowest)</div>
-          <div class="val">${depth.within} / ${depth.total}</div>
+          <div class="val">${depth.within} / ${depth.total}${asOfHtml(psa10.listings_as_of)}</div>
           <div class="depth-bar-track"><div class="depth-bar-fill" style="width:${Math.round(depth.ratio * 100)}%"></div></div>
         </div>
         <div class="stat"><div class="lbl">Raw A lowest</div><div class="val">${card.grades.raw_a_grade ? fmtYen(card.grades.raw_a_grade.lowest_price) : '—'}</div></div>
@@ -653,7 +659,7 @@
             </button>
           </div>
           ${offPeakHtml}
-          <div class="delta">${deltaHtml}</div>
+          <div class="delta">${deltaHtml}</div>${card.quick_note ? `<div class="delta">${escapeHtml(card.quick_note)}</div>` : ''}
           ${gaugeHtml}
           ${statsHtml}
           ${verdictHtml}

@@ -951,3 +951,6 @@ footer.note {
   padding: 40px 0;
   text-align: center;
 }
+
+/* "as of MM/DD HH:MM" — values carried from an earlier full check (quick runs) */
+.asof { margin-left: 6px; font-size: 0.68rem; font-weight: 400; color: var(--muted-2); white-space: nowrap; }

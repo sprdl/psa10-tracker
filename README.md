@@ -38,6 +38,19 @@ That one command:
 
 Add `--no-push` if you want to commit locally without pushing yet.
 
+## Quick vs. full price checks
+
+The price-check skill has two modes and picks one automatically
+(`python3 scripts/check_status.py` shows which it would pick):
+
+- **Full** (first run of each JST day, or when you ask for one): listing depth,
+  top-20 asks, PSA10 population and the pokeca-chart index, as before.
+- **Quick** (any later run that day, or when you ask for a quick check): one page
+  per card, giving the lowest ask from the grade tiles plus recent completed sales.
+  `scripts/quick_update.py` builds the snapshot from the latest one and publishes
+  it. Depth, population and the index are carried over and labeled "as of" their
+  real time on the site. Quick snapshots are marked "· quick" in the dropdown.
+
 ## Applying a new evaluation (tiers, peak, verdict)
 
 When an evaluation gives you a JSON block for one or more cards, copy it and run:
@@ -85,6 +98,8 @@ data/manifest.json              list of snapshots, in chronological order
 data/snapshots/*.json           one file per run — see docs/schema.md for the shape
 scripts/add_snapshot.py         the one-command "publish a new run" script
 scripts/apply_analysis.py       apply evaluation JSON (tiers/peak/verdict) to the latest snapshot
+scripts/quick_update.py         publish a quick price check (lowest asks + sales, rest carried)
+scripts/check_status.py         latest snapshot + whether today's full check has run
 docs/schema.md                  the full snapshot JSON schema, raw fields + optional analysis overlay
 .github/workflows/deploy.yml    GitHub Actions: deploy to Pages on push
 ```

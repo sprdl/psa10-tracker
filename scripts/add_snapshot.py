@@ -401,6 +401,8 @@ def main():
     manifest["snapshots"].append({
         "file": filename,
         "collected_at_jst": data.get("collected_at_jst", ""),
+        # "quick" (lowest asks + sales only) or "full"; entries without it are full checks
+        "check_mode": data.get("check_mode", "full"),
     })
     manifest["snapshots"].sort(key=lambda s: s.get("collected_at_jst", ""))
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
