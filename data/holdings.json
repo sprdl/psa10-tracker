@@ -1,14 +1,3 @@
 {
-  "holdings": [
-    {
-      "id": "p4",
-      "card_url": "https://snkrdunk.com/apparels/138599",
-      "card_name_ja": "ピカチュウVMAX CSR[s8b 223/184](ハイクラスパック「VMAXクライマックス」)",
-      "condition": "psa10",
-      "purchase_price_jpy": 29500,
-      "purchase_date": "2026-09-25",
-      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230913100335-0.webp?size=l",
-      "notes": "TEST by Claude, will be removed"
-    }
-  ]
+  "holdings": []
 }
