@@ -79,6 +79,11 @@
     {
       "file": "20260925-1515.json",
       "collected_at_jst": "2026-09-25T15:15:03+09:00"
+    },
+    {
+      "file": "20260925-1933.json",
+      "collected_at_jst": "2026-09-25T19:33:07+09:00",
+      "check_mode": "quick"
     }
   ]
 }
