@@ -38,6 +38,23 @@ That one command:
 
 Add `--no-push` if you want to commit locally without pushing yet.
 
+## Applying a new evaluation (tiers, peak, verdict)
+
+When an evaluation gives you a JSON block for one or more cards, copy it and run:
+
+```bash
+python3 scripts/apply_analysis.py              # reads the clipboard
+python3 scripts/apply_analysis.py --dry-run    # preview first, writes nothing
+```
+
+It pulls the latest repo state, matches each card in the latest snapshot (by
+SNKRDUNK url, name, or the set code in brackets like `[SV5a 090/066]`), merges the
+new analysis over the old one, prints what changed (including the live price zone),
+then commits and pushes. It refuses to guess when a name is ambiguous or missing.
+If the JSON is a single bare block with no card name, add
+`--card "SV5a 090/066"`. Pushing uses the credential file configured for this repo,
+so no token is needed.
+
 ## Using the app
 
 Open the Pages URL on your phone/tablet (bookmark it or add it to your home
@@ -67,6 +84,7 @@ assets/app.js                   all client-side logic (fetches data/, renders ca
 data/manifest.json              list of snapshots, in chronological order
 data/snapshots/*.json           one file per run — see docs/schema.md for the shape
 scripts/add_snapshot.py         the one-command "publish a new run" script
+scripts/apply_analysis.py       apply evaluation JSON (tiers/peak/verdict) to the latest snapshot
 docs/schema.md                  the full snapshot JSON schema, raw fields + optional analysis overlay
 .github/workflows/deploy.yml    GitHub Actions: deploy to Pages on push
 ```
