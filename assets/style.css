@@ -1027,3 +1027,33 @@ footer.note {
   margin-left: auto; font: 700 0.62rem var(--sans); letter-spacing: 0.06em; color: var(--bg);
   background: var(--gold); border-radius: 4px; padding: 2px 6px;
 }
+
+/* ---------- Budget planner (per-browser) ---------- */
+.planner { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 28px; }
+.pl-mode { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+.pl-mode button { font: 600 0.76rem var(--sans); color: var(--muted); background: transparent; border: 0; padding: 6px 12px; cursor: pointer; }
+.pl-mode button.on { background: var(--gold-soft); color: var(--gold); }
+.pl-note { font-size: 0.72rem; color: var(--amber-strong); margin: -4px 0 10px; }
+.pl-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px 18px; }
+.pl-stat .lbl { font-size: 0.66rem; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+.pl-stat .val { font: 600 1.05rem var(--serif); font-variant-numeric: tabular-nums; }
+.pl-stat .val.pos { color: var(--green); }
+.pl-stat .val.neg { color: var(--red); }
+.pl-yen { font-size: 0.95rem; }
+.pl-budget { width: 110px; font: 600 1rem var(--serif); color: var(--text); background: transparent; border: 0; border-bottom: 1px dashed var(--line); padding: 0 2px; }
+.pl-bar { height: 6px; background: var(--panel-2); border-radius: 3px; margin: 12px 0 14px; overflow: hidden; }
+.pl-bar-fill { height: 100%; background: var(--gold); }
+.pl-bar-fill.over { background: var(--red); }
+.pl-list { display: flex; flex-direction: column; gap: 6px; }
+.pl-row {
+  display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "cb name price" "cb sub sub";
+  gap: 2px 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+}
+.pl-row.on { border-color: var(--gold-line); background: var(--gold-soft); }
+.pl-row input { grid-area: cb; accent-color: var(--gold); width: 16px; height: 16px; }
+.pl-name { grid-area: name; font-weight: 600; font-size: 0.84rem; }
+.pl-name .vtag { margin-left: 6px; vertical-align: 1px; }
+.pl-price { grid-area: price; font: 600 0.9rem var(--sans); font-variant-numeric: tabular-nums; text-align: right; }
+.pl-src { display: block; font: 500 0.64rem var(--sans); color: var(--muted-2); }
+.pl-sub { grid-area: sub; font-size: 0.7rem; color: var(--muted-2); }
+.pl-fits { color: var(--green); font-weight: 600; }

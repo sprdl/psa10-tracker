@@ -443,6 +443,7 @@
     els.notesBody.textContent = data.notes || '';
     renderPortfolio(state.holdings, data.cards || []);
     renderCards(data.cards || [], prevCards);
+    renderPlanner(data.cards || []);
     renderTables(data.cards || [], prevCards);
   }
 
@@ -762,6 +763,86 @@
         <div class="lot-detail" id="detail-${i}" hidden></div>
       </div>
     `;
+  }
+
+  // ---------- budget planner (saved in this browser only) ----------
+  // Tick cards to see what the shortlist costs against the budget, priced either at
+  // today's lowest PSA10 ask (what a listing costs right now) or at your own limits.
+  // Only cards with a live PSA10 market are listed — no-market cards can't be bought
+  // graded yet.
+  const PLANNER_KEY = 'psa10.planner';
+  function plannerState() {
+    const st = store.get(PLANNER_KEY, {});
+    return { budget: typeof st.budget === 'number' ? st.budget : 200000,
+             mode: st.mode === 'limits' ? 'limits' : 'today',
+             selected: Array.isArray(st.selected) ? st.selected : [] };
+  }
+
+  function renderPlanner(cards) {
+    let sec = document.getElementById('planner-section');
+    if (!sec) {
+      sec = document.createElement('div');
+      sec.id = 'planner-section';
+      sec.innerHTML = '<h2 class="section-label">Budget planner</h2><div id="planner" class="planner"></div>';
+      els.watchSection.parentNode.insertBefore(sec, els.watchSection);
+    }
+    const box = sec.querySelector('#planner');
+    const st = plannerState();
+    const rows = cards.filter((c) => lowestAsk(c) != null).map((card) => {
+      const today = lowestAsk(card);
+      const lim = getLimit(card);
+      const useLimit = st.mode === 'limits' && lim != null;
+      return { card, name: parseCardName(card.card_name_ja).short, today, lim,
+               price: useLimit ? lim : today, fromLimit: useLimit,
+               buyLine: card.analysis && card.analysis.tiers ? card.analysis.tiers.buy_upper : null,
+               tag: displayTagFor(card), on: st.selected.includes(card.url) };
+    });
+    const picked = rows.filter((r) => r.on);
+    const total = picked.reduce((a, r) => a + r.price, 0);
+    const totalToday = picked.reduce((a, r) => a + r.today, 0);
+    const left = st.budget - total;
+    const missingLimit = st.mode === 'limits' ? picked.filter((r) => !r.fromLimit).length : 0;
+
+    const summary = `
+      <div class="pl-summary">
+        <div class="pl-stat"><div class="lbl">Selected (${picked.length})</div><div class="val">${fmtYen(total)}</div></div>
+        <div class="pl-stat"><div class="lbl">Budget</div><div class="val"><span class="pl-yen">¥</span><input type="number" class="pl-budget" inputmode="numeric" step="10000" min="0" value="${st.budget}"></div></div>
+        <div class="pl-stat"><div class="lbl">${left >= 0 ? 'Left' : 'Over budget'}</div><div class="val ${left >= 0 ? 'pos' : 'neg'}">${fmtYen(Math.abs(left))}</div></div>
+        ${st.mode === 'limits' && picked.length ? `<div class="pl-stat"><div class="lbl">vs. buying today</div><div class="val ${totalToday - total >= 0 ? 'pos' : 'neg'}">${totalToday - total >= 0 ? 'saves ' : 'costs '}${fmtYen(Math.abs(totalToday - total))}</div></div>` : ''}
+      </div>
+      <div class="pl-bar"><div class="pl-bar-fill ${left < 0 ? 'over' : ''}" style="width:${Math.min(100, st.budget ? (total / st.budget) * 100 : 0).toFixed(1)}%"></div></div>`;
+
+    const toggle = `
+      <div class="pl-mode" role="group" aria-label="Price basis">
+        <button type="button" data-mode="today" class="${st.mode === 'today' ? 'on' : ''}">Today's prices</button>
+        <button type="button" data-mode="limits" class="${st.mode === 'limits' ? 'on' : ''}">My limits</button>
+      </div>
+      ${missingLimit ? `<div class="pl-note">${missingLimit} selected card${missingLimit === 1 ? ' has' : 's have'} no limit set, so ${missingLimit === 1 ? 'it uses' : 'they use'} today's price.</div>` : ''}`;
+
+    const list = rows.map((r) => {
+      const fits = !r.on && r.price <= left;
+      const sub = [`today ${fmtYen(r.today)}`, r.lim != null ? `limit ${fmtYen(r.lim)}` : 'no limit', r.buyLine != null ? `Buy ≤${fmtYen(r.buyLine)}` : null].filter(Boolean).join(' · ');
+      return `<label class="pl-row ${r.on ? 'on' : ''}">
+        <input type="checkbox" data-url="${escapeAttr(r.card.url)}" ${r.on ? 'checked' : ''}>
+        <span class="pl-name">${escapeHtml(r.name)}${r.tag ? ` <span class="vtag ${r.tag}">${escapeHtml(tagLabel(r.tag))}</span>` : ''}</span>
+        <span class="pl-price">${fmtYen(r.price)}${st.mode === 'limits' ? `<span class="pl-src">${r.fromLimit ? 'my limit' : 'today'}</span>` : ''}</span>
+        <span class="pl-sub">${escapeHtml(sub)}${fits ? ' <span class="pl-fits">fits</span>' : ''}</span>
+      </label>`;
+    }).join('');
+
+    box.innerHTML = rows.length
+      ? toggle + summary + `<div class="pl-list">${list}</div>`
+      : '<div class="empty-state">No cards with a PSA10 market in this snapshot.</div>';
+
+    const save = (patch) => { store.set(PLANNER_KEY, Object.assign(plannerState(), patch)); renderPlanner(cards); };
+    box.querySelectorAll('.pl-mode button').forEach((b) => b.addEventListener('click', () => save({ mode: b.dataset.mode })));
+    box.querySelectorAll('.pl-row input[type=checkbox]').forEach((cb) => cb.addEventListener('change', () => {
+      const sel = new Set(plannerState().selected);
+      if (cb.checked) sel.add(cb.dataset.url); else sel.delete(cb.dataset.url);
+      save({ selected: [...sel] });
+    }));
+    const bud = box.querySelector('.pl-budget');
+    if (bud) bud.addEventListener('change', () => { const v = Number(bud.value); save({ budget: v >= 0 ? v : 0 }); });
   }
 
   // Limit controls live inside the clickable card summary, so every interaction

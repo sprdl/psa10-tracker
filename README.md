@@ -109,6 +109,16 @@ a Buy / Definitely-buy zone. Items new since your last visit are marked NEW, and
 tapping one opens that card. Limits are saved in the browser you set them in, so
 they're per device.
 
+## Budget planner
+
+Below the cards, tick the cards you want to buy and set your budget (default ¥200,000). The planner adds up the selection, shows what's left or how far over you are, and marks unticked cards that would still fit ("fits").
+
+The **Today's prices / My limits** switch changes which price each card uses:
+- **Today's prices**: the current lowest PSA10 ask.
+- **My limits**: your limit for the card (set with the limit marker on the card). Cards without a limit fall back to today's price, and a note says how many. The summary also shows how much buying at your limits would save compared with buying today.
+
+Like limits, the selection, budget and switch position are saved in this browser only.
+
 ## Project layout
 
 ```
