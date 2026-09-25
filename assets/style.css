@@ -515,6 +515,15 @@ header.top .title-block p {
   font-style: normal;
 }
 
+.verdict-stale {
+  margin-top: 8px;
+  padding-left: 10px;
+  border-left: 2px solid var(--amber-strong);
+  font-size: 0.72rem;
+  color: var(--amber-strong);
+  line-height: 1.5;
+}
+
 /* ---------- Expanded detail ---------- */
 
 .lot-detail {

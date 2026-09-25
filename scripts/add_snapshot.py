@@ -11,13 +11,18 @@ Usage:
 By default this script:
   1. Reads the snapshot JSON (clipboard or file argument)
   2. Saves it to data/snapshots/<YYYYMMDD-HHMM>.json (derived from collected_at_jst)
-  3. Carries forward each card's `analysis.tiers`, `analysis.peak`, and DIY-grading fields
-     (grading_fee_jpy / shipping_insurance_jpy / raw_tiers) from the previous snapshot, matched
-     by card `url` — so a fresh price check never regresses a tracked card back to "tiers not
-     yet established". representative_price, price_source, and verdict are NOT carried forward:
-     those describe *this* snapshot's own price action and would be actively misleading if
-     copied from an older run, so those three are left for a human/Claude review pass after
-     each check. The script prints exactly which cards were touched and what still needs review.
+  3. Carries forward each card's `analysis.tiers`, `analysis.peak`, `analysis.verdict`, and
+     DIY-grading fields (grading_fee_jpy / shipping_insurance_jpy / raw_tiers) from the previous
+     snapshot, matched by card `url` — so a fresh price check never regresses a tracked card back
+     to "tiers not yet established", and the verdict pill/reasoning never just disappears off the
+     site because a routine run didn't come with a fresh review. representative_price and
+     price_source are NOT carried forward — those describe *this* snapshot's own price action and
+     would be actively misleading if copied from an older run — so those two are left for a
+     human/Claude review pass after each check. When a verdict is carried without a fresh
+     representative_price, its `verdict_price_ref` (the price it was actually based on) carries
+     with it, and the app itself flags the verdict as possibly stale once the live price has
+     drifted far enough from that reference. The script prints exactly which cards were touched
+     and which still need a fresh review.
   4. Adds/updates the entry in data/manifest.json, keeping it sorted chronologically
   5. Runs `git add`, `git commit`, and `git push` so the site updates automatically
      (GitHub Actions redeploys Pages on every push to main)
@@ -35,13 +40,20 @@ from pathlib import Path
 from typing import Optional
 
 # analysis.* keys treated as durable judgment that should carry forward run-to-run
-# until a human/Claude revises them (tier boundaries, the reference peak, and the
-# DIY-grading economics inputs rarely change day to day).
-CARRY_FORWARD_KEYS = ("tiers", "peak", "grading_fee_jpy", "shipping_insurance_jpy", "raw_tiers")
+# until a human/Claude revises them (tier boundaries, the reference peak, the
+# DIY-grading economics inputs, and the verdict call itself — see note below on
+# why `verdict` moved here from SNAPSHOT_SPECIFIC_KEYS).
+CARRY_FORWARD_KEYS = ("tiers", "peak", "grading_fee_jpy", "shipping_insurance_jpy", "raw_tiers", "verdict")
 
 # analysis.* keys that describe *this specific snapshot's* observed price action and
 # must NOT be silently reused from an older run — they need a fresh look each time.
-SNAPSHOT_SPECIFIC_KEYS = ("representative_price", "price_source", "verdict")
+# `verdict` used to live here too, but that made the tracker's whole "why" text
+# disappear on every routine price refresh that didn't come with a fresh human/
+# Claude review — annoying, since a plain price-check run doesn't touch these.
+# It's carried forward instead (see CARRY_FORWARD_KEYS), and the app itself flags
+# when the carried verdict's reference price has drifted meaningfully from the
+# live price, via `verdict_price_ref` below.
+SNAPSHOT_SPECIFIC_KEYS = ("representative_price", "price_source")
 
 # The pokemon-card-price-check skill's native output uses flat psa10_*/a_* field
 # names on each card. The app (assets/app.js) and docs/schema.md instead expect a
@@ -287,20 +299,34 @@ def carry_forward_analysis(data: dict, prev_path: Optional[Path]) -> None:
             untouched_new.append(name)
             continue
 
+        # If a verdict is being carried forward, also carry the price it was
+        # actually based on (verdict_price_ref) — either the previous run's own
+        # fresh representative_price, if that run was a full review, or whatever
+        # reference price was already being carried from an earlier full review.
+        # The app uses this to flag when the live price has drifted enough from
+        # that reference that the carried verdict may no longer hold up.
+        if "verdict" in forwarded:
+            ref = prev_analysis.get("representative_price", prev_analysis.get("verdict_price_ref"))
+            if ref is not None:
+                forwarded["verdict_price_ref"] = ref
+
         card["analysis"] = forwarded
         carried.append(name)
         if any(k in prev_analysis for k in SNAPSHOT_SPECIFIC_KEYS):
             needs_review.append(name)
 
-    print(f"Carried forward tiers/peak/DIY-fields from {prev_path.name} for {len(carried)} card(s).")
+    print(f"Carried forward tiers/peak/DIY-fields/verdict from {prev_path.name} for {len(carried)} card(s).")
     if carried:
         for n in carried:
             print(f"  - {n}")
     if needs_review:
-        print("\nThese cards had a representative_price/price_source/verdict in the previous snapshot "
-              "that was intentionally NOT carried forward (it describes the old run's price action, "
-              "not this one). Review this run's own numbers and re-add those three fields before "
-              "trusting the verdict shown:")
+        print("\nThese cards had a representative_price/price_source in the previous snapshot that was "
+              "intentionally NOT carried forward (it describes the old run's price action, not this "
+              "one's). Their verdict text/tag WAS carried forward as-is, so nothing disappears from the "
+              "site, but it's still describing the old price until you give it a fresh look — the app "
+              "will show a 'may be stale' note once the live price has drifted far enough from the price "
+              "that verdict was based on. Review and re-add representative_price/price_source/verdict "
+              "for these when you get a chance:")
         for n in needs_review:
             print(f"  - {n}")
     if untouched_new:

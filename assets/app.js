@@ -560,12 +560,27 @@
       const v = analysis.verdict;
       const pillText = VERDICT_TAG_LABELS[v.tag] || (v.tag || '').replace(/_/g, ' ');
       const headline = verdictHeadline(v.label);
-      verdictHtml = `<div class="verdict"><span class="vtag ${v.tag}">${escapeHtml(pillText)}</span><p>${headline ? `<strong>${escapeHtml(headline)}.</strong> ` : ''}${escapeHtml(v.reasoning || '')}</p></div>`;
+      // The verdict text/tag carries forward run-to-run (add_snapshot.py) so it
+      // doesn't vanish on every routine price refresh. When THIS run didn't come
+      // with a fresh price_source, the verdict below is carried from the last
+      // full review — if the live price has since drifted meaningfully from the
+      // price that review was based on (verdict_price_ref), say so rather than
+      // presenting stale reasoning as current.
+      let staleHtml = '';
+      if (!analysis.price_source && analysis.verdict_price_ref != null && repPrice != null) {
+        const refP = analysis.verdict_price_ref;
+        const diffPct = refP ? ((repPrice - refP) / refP) * 100 : 0;
+        if (Math.abs(diffPct) >= 5) {
+          const dir = diffPct < 0 ? 'fallen' : 'risen';
+          staleHtml = `<div class="verdict-stale">Last fully reviewed at ${fmtYen(refP)} — price has since ${dir} to ${fmtYen(repPrice)} (${diffPct >= 0 ? '+' : '−'}${Math.abs(diffPct).toFixed(0)}%). Worth a fresh look before trusting the call below.</div>`;
+        }
+      }
+      verdictHtml = `<div class="verdict"><span class="vtag ${v.tag}">${escapeHtml(pillText)}</span><p>${headline ? `<strong>${escapeHtml(headline)}.</strong> ` : ''}${escapeHtml(v.reasoning || '')}</p></div>${staleHtml}`;
     } else if (gaugeHtml) {
-      // tiers/peak carried forward from a previous snapshot, but this run's own
-      // representative_price/price_source/verdict haven't been reviewed yet —
-      // distinct from "no analysis at all" below.
-      verdictHtml = `<div class="tier-pending needs-review">Tiers carried forward from a previous check — this run's price and verdict haven't been reviewed yet.</div>`;
+      // tiers/peak carried forward from a previous snapshot, but this card has
+      // never had a verdict written for it at all — distinct from "no analysis
+      // at all" below.
+      verdictHtml = `<div class="tier-pending needs-review">Tiers carried forward from a previous check — this card hasn't had a verdict written for it yet.</div>`;
     } else {
       verdictHtml = `<div class="tier-pending">Tiers not yet established for this card — showing raw stats only.</div>`;
     }
