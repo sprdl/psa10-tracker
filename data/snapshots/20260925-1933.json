@@ -256,7 +256,17 @@
         "verdict": {
           "tag": "watch",
           "label": "Watch: sitting on the Buy line",
-          "reasoning": "The last four sales were ¥29,400–29,790, just ¥100 above Buy. It bounced from a ¥26,480 low on 9/16, so the Q4-2025 floor is holding. The order book is thin, with only 4 asks within 15%, and any ask at or below ¥29,500 is a buy. There's about a 35% chance of revisiting ¥25–27k within 3 months, and roughly 10–15% downside if the broad index makes a second leg down."
+          "reasoning": "The last four sales were ¥29,400–29,790, just ¥100 above Buy. It bounced from a ¥26,480 low on 9/16, so the Q4-2025 floor is holding. The order book is thin, with only 4 asks within 15%, and any ask at or below ¥29,500 is a buy. There's about a 35% chance of revisiting ¥25–27k within 3 months, and roughly 10–15% downside if the broad index makes a second leg down.",
+          "predictions": [
+            {
+              "text": "Revisits ¥25–27k within 3 months",
+              "p": 0.35,
+              "type": "touch_below",
+              "price": 27000,
+              "by": "2026-12-25",
+              "made": "2026-09-25T10:03:18+09:00"
+            }
+          ]
         },
         "verdict_price_ref": 29600
       }
@@ -525,7 +535,25 @@
         "verdict": {
           "tag": "watch",
           "label": "Watch: new tiers, still drifting down",
-          "reasoning": "This was the most extreme bubble of the five: ¥30k in Feb, about ¥81k in May, ¥24.7k now (−70%). Sales are still stepping down (¥26.3k on 9/18 to ¥24.4–24.8k on 9/24–25). Buy (≤¥24k) is about 65% likely within 3 months. Definitely-buy (¥20k, the Nov 2025 trough) is about 25–30% likely within 6 months. Buying today carries roughly 40% odds of a further 10–20% drop."
+          "reasoning": "This was the most extreme bubble of the five: ¥30k in Feb, about ¥81k in May, ¥24.7k now (−70%). Sales are still stepping down (¥26.3k on 9/18 to ¥24.4–24.8k on 9/24–25). Buy (≤¥24k) is about 65% likely within 3 months. Definitely-buy (¥20k, the Nov 2025 trough) is about 25–30% likely within 6 months. Buying today carries roughly 40% odds of a further 10–20% drop.",
+          "predictions": [
+            {
+              "text": "Reaches Buy (≤¥24k) within 3 months",
+              "p": 0.65,
+              "type": "touch_below",
+              "price": 24000,
+              "by": "2026-12-25",
+              "made": "2026-09-25T10:03:18+09:00"
+            },
+            {
+              "text": "Reaches Definitely-buy (¥20k) within 6 months",
+              "p": 0.275,
+              "type": "touch_below",
+              "price": 20000,
+              "by": "2027-03-25",
+              "made": "2026-09-25T10:03:18+09:00"
+            }
+          ]
         },
         "verdict_price_ref": 24700
       }
@@ -792,7 +820,25 @@
         "verdict": {
           "tag": "watch",
           "label": "Watch: still ~10% above Buy, trend still down",
-          "reasoning": "Sales were ¥76,000–77,000 on 9/23–24, down from ¥80k a week earlier, and the price is still well above its Sep–Dec 2025 range of ¥62–69k. It has about a 45% chance of reaching Buy (≤¥70k) within 3 months and about 20% of reaching ¥59.5k within 6. If bought today, expect a roughly 50% chance of another 8–12% decline as the post-release correction finishes. It's your least-wanted target, so there's no reason to pay up."
+          "reasoning": "Sales were ¥76,000–77,000 on 9/23–24, down from ¥80k a week earlier, and the price is still well above its Sep–Dec 2025 range of ¥62–69k. It has about a 45% chance of reaching Buy (≤¥70k) within 3 months and about 20% of reaching ¥59.5k within 6. If bought today, expect a roughly 50% chance of another 8–12% decline as the post-release correction finishes. It's your least-wanted target, so there's no reason to pay up.",
+          "predictions": [
+            {
+              "text": "Reaches Buy (≤¥70k) within 3 months",
+              "p": 0.45,
+              "type": "touch_below",
+              "price": 70000,
+              "by": "2026-12-25",
+              "made": "2026-09-25T10:03:18+09:00"
+            },
+            {
+              "text": "Reaches ¥59.5k within 6 months",
+              "p": 0.2,
+              "type": "touch_below",
+              "price": 59500,
+              "by": "2027-03-25",
+              "made": "2026-09-25T10:03:18+09:00"
+            }
+          ]
         },
         "verdict_price_ref": 76500
       }
@@ -1070,7 +1116,25 @@
         "verdict": {
           "tag": "buy",
           "label": "Buy: grail at pre-hype Q4-2025 levels",
-          "reasoning": "About 20 sales at ¥65,000–68,500 in the last 24h, with daily averages steady near ¥67k since 9/22. The price is back to its Oct–Dec 2025 range, below the Jan–Feb pre-announcement level. There's roughly a 30% chance of a further 10–15% slide to ¥57–60k by year-end because raw A-rank is still falling fast (¥63k→¥47k in a month), which drags the DIY replacement floor down. Reaching Definitely-buy (¥58k) within 3–6 months is about 25–30% likely."
+          "reasoning": "About 20 sales at ¥65,000–68,500 in the last 24h, with daily averages steady near ¥67k since 9/22. The price is back to its Oct–Dec 2025 range, below the Jan–Feb pre-announcement level. There's roughly a 30% chance of a further 10–15% slide to ¥57–60k by year-end because raw A-rank is still falling fast (¥63k→¥47k in a month), which drags the DIY replacement floor down. Reaching Definitely-buy (¥58k) within 3–6 months is about 25–30% likely.",
+          "predictions": [
+            {
+              "text": "Slides to ¥57–60k by year-end",
+              "p": 0.3,
+              "type": "touch_below",
+              "price": 60000,
+              "by": "2026-12-31",
+              "made": "2026-09-25T10:03:18+09:00"
+            },
+            {
+              "text": "Reaches Definitely-buy (¥58k) within 3–6 months",
+              "p": 0.275,
+              "type": "touch_below",
+              "price": 58000,
+              "by": "2027-03-25",
+              "made": "2026-09-25T10:03:18+09:00"
+            }
+          ]
         },
         "verdict_price_ref": 67500
       }
@@ -1341,7 +1405,25 @@
         "verdict": {
           "tag": "watch",
           "label": "Watch: correction less advanced than peers",
-          "reasoning": "This card peaked 3 months after the others and is only −24% off its peak, versus −40% to −70% for the rest. Its Jun 2025–Mar 2026 plateau was a flat ¥29–33k, which implies another 20–25% of room to fall. Buy (≤¥38k) looks about 45% likely within 3 months and ¥32k about 25% likely within 6. Separately, it still doesn't meet your modern-SAR display rule."
+          "reasoning": "This card peaked 3 months after the others and is only −24% off its peak, versus −40% to −70% for the rest. Its Jun 2025–Mar 2026 plateau was a flat ¥29–33k, which implies another 20–25% of room to fall. Buy (≤¥38k) looks about 45% likely within 3 months and ¥32k about 25% likely within 6. Separately, it still doesn't meet your modern-SAR display rule.",
+          "predictions": [
+            {
+              "text": "Reaches Buy (≤¥38k) within 3 months",
+              "p": 0.45,
+              "type": "touch_below",
+              "price": 38000,
+              "by": "2026-12-25",
+              "made": "2026-09-25T10:03:18+09:00"
+            },
+            {
+              "text": "Reaches ¥32k within 6 months",
+              "p": 0.25,
+              "type": "touch_below",
+              "price": 32000,
+              "by": "2027-03-25",
+              "made": "2026-09-25T10:03:18+09:00"
+            }
+          ]
         },
         "verdict_price_ref": 42000
       }
@@ -2508,7 +2590,25 @@
         "verdict": {
           "tag": "buy",
           "label": "Buy: top edge, wait for a ¥40–42k listing",
-          "reasoning": "The price is back to its H1-2025 organic range (¥41–48k), depth is good (12 of 20 asks within 15%), and the slab trades only about 13% above raw A (it was about 45%), so buying the slab is about ¥16k cheaper than grading yourself. It's still falling about 5%/week, likely due to M4 Mega Greninja cannibalization. There's about a 60% chance of ≤¥42k within a month and 30% of ≤¥38k in 3–6 months. Downside is roughly 40% odds of another 8–12%."
+          "reasoning": "The price is back to its H1-2025 organic range (¥41–48k), depth is good (12 of 20 asks within 15%), and the slab trades only about 13% above raw A (it was about 45%), so buying the slab is about ¥16k cheaper than grading yourself. It's still falling about 5%/week, likely due to M4 Mega Greninja cannibalization. There's about a 60% chance of ≤¥42k within a month and 30% of ≤¥38k in 3–6 months. Downside is roughly 40% odds of another 8–12%.",
+          "predictions": [
+            {
+              "text": "A listing at ≤¥42k within a month",
+              "p": 0.6,
+              "type": "touch_below",
+              "price": 42000,
+              "by": "2026-10-25",
+              "made": "2026-09-25T15:15:03+09:00"
+            },
+            {
+              "text": "Reaches ≤¥38k within 3–6 months",
+              "p": 0.3,
+              "type": "touch_below",
+              "price": 38000,
+              "by": "2027-03-25",
+              "made": "2026-09-25T15:15:03+09:00"
+            }
+          ]
         },
         "verdict_price_ref": 42750
       }
@@ -2793,7 +2893,25 @@
         "verdict": {
           "tag": "watch",
           "label": "Watch: at replacement cost, raw still falling",
-          "reasoning": "The card is in print with a 94.7% gem rate and a backlog-suppressed population (6,882 at 6.5 months old). PSA10 now equals DIY cost (about ¥30k), so it tracks raw A, which is still dropping about 25%/month (¥16–17.5k now, buyback ¥12k). The Buy zone is most likely Nov 2026–Feb 2027 as summer PSA submissions return: about 55% odds of ≤¥25k within 3 months and 35% of ≤¥22k within 6. Buying today carries roughly 60% odds of a further 10–25% drop."
+          "reasoning": "The card is in print with a 94.7% gem rate and a backlog-suppressed population (6,882 at 6.5 months old). PSA10 now equals DIY cost (about ¥30k), so it tracks raw A, which is still dropping about 25%/month (¥16–17.5k now, buyback ¥12k). The Buy zone is most likely Nov 2026–Feb 2027 as summer PSA submissions return: about 55% odds of ≤¥25k within 3 months and 35% of ≤¥22k within 6. Buying today carries roughly 60% odds of a further 10–25% drop.",
+          "predictions": [
+            {
+              "text": "Reaches Buy (≤¥25k) within 3 months",
+              "p": 0.55,
+              "type": "touch_below",
+              "price": 25000,
+              "by": "2026-12-25",
+              "made": "2026-09-25T15:15:03+09:00"
+            },
+            {
+              "text": "Reaches ≤¥22k within 6 months",
+              "p": 0.35,
+              "type": "touch_below",
+              "price": 22000,
+              "by": "2027-03-25",
+              "made": "2026-09-25T15:15:03+09:00"
+            }
+          ]
         },
         "verdict_price_ref": 28000
       }

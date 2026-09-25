@@ -1067,3 +1067,27 @@ footer.note {
 .pf-remove:hover { color: var(--red); }
 .pl-owned { font: 600 0.62rem var(--sans); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 45%, transparent); border-radius: 4px; padding: 1px 5px; text-transform: uppercase; letter-spacing: 0.04em; }
 .card-requests a { color: var(--red); }
+
+/* ---------- track record ---------- */
+details.track > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+details.track > summary::-webkit-details-marker { display: none; }
+details.track > summary .section-label { flex: 1; margin: 0; }
+details.track > summary .section-label::before { content: "▸ "; color: var(--muted-2); }
+details.track[open] > summary .section-label::before { content: "▾ "; }
+.tr-headline { font-size: 0.74rem; color: var(--muted); }
+details.track > .planner { margin-top: 10px; }
+.tr-hint { font-size: 0.66rem; color: var(--muted-2); margin-top: 2px; }
+.tr-h { font: 600 0.72rem var(--sans); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-2); margin: 16px 0 6px; }
+.tr-list { display: flex; flex-direction: column; gap: 6px; }
+.tr-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
+.tr-main { font-size: 0.86rem; font-weight: 600; }
+.tr-meta { font-weight: 400; font-size: 0.74rem; color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
+.tr-odds { color: var(--gold); font-variant-numeric: tabular-nums; }
+.tr-res { text-align: right; }
+.tr-sub { grid-column: 1 / -1; font-size: 0.72rem; color: var(--muted-2); line-height: 1.45; font-variant-numeric: tabular-nums; }
+.tr-pill { font: 600 0.66rem var(--sans); padding: 2px 7px; border-radius: 4px; border: 1px solid var(--line); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+.tr-pill.pos { color: var(--green); border-color: color-mix(in srgb, var(--green) 45%, transparent); }
+.tr-pill.neg { color: var(--red); border-color: color-mix(in srgb, var(--red) 45%, transparent); }
+.tr-pill.pend { color: var(--gold); border-color: var(--gold-line); }
+.tr-pill.muted { color: var(--muted-2); }
+.tr-note { font-size: 0.7rem; color: var(--muted-2); line-height: 1.5; margin: 14px 0 0; }

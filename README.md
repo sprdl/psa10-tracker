@@ -128,6 +128,16 @@ Each card has a **✓ Bought it** button. It opens a GitHub form pre-filled with
 - If a form can't be read (e.g. the price isn't a number), the Action comments what's wrong and leaves the issue open. The site links to it. Edit the issue and it retries.
 - Only issues you open are processed. `scripts/add_holding.py` still works for bulk entry from the Mac.
 
+## Track record (how the calls turned out)
+
+The collapsible **Track record** section scores the tracker's own advice against what prices did afterwards. `scripts/build_calls.py` writes it to `data/calls.json`; `build_history.py` runs it on every published check, so nothing needs doing by hand.
+
+- **Calls:** each change of verdict tag (Buy ↔ Watch …) is one call. Rewrites with the same tag count as "reaffirmed". A call is measured on the lowest PSA10 ask over the next 30 days:
+  - A **Buy** is wrong once the ask drops more than 5% below the call price, and right if that never happens.
+  - A **Watch** is right once it drops more than 5%. It's wrong if the window ends more than 5% higher with no dip, and neutral otherwise.
+  - A lone reading more than 15% below both neighbours counts as a mispriced listing and is ignored.
+- **Stated odds:** evaluations include `verdict.predictions`, e.g. `{"text": "Reaches Buy (≤¥70k) within 3 months", "p": 0.45, "type": "touch_below", "price": 70000, "by": "2026-12-25"}`. Each resolves as happened, didn't happen (deadline passed) or void (already true when made). The Brier score shows how well the odds are calibrated (0 = perfect, 0.25 = always saying 50%). `apply_analysis.py` validates predictions and warns when a reasoning text states odds without them.
+
 ## Project layout
 
 ```

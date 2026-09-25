@@ -46,6 +46,12 @@ def build(root: Path = ROOT) -> Path:
     out = root / "data" / "history.json"
     out.write_text(json.dumps({"snapshots": series}, ensure_ascii=False, separators=(",", ":")) + "\n",
                    encoding="utf-8")
+    # The track record (data/calls.json) is derived from the same snapshots.
+    try:
+        import build_calls
+        build_calls.build(root)
+    except Exception as e:  # never block publishing a price check over it
+        print(f"warning: couldn't rebuild data/calls.json: {e}")
     return out
 
 

@@ -443,7 +443,7 @@ def main():
     sys.path.insert(0, str(root / "scripts"))
     import build_history
     build_history.build(root)
-    subprocess.run(["git", "add", "data/manifest.json", "data/history.json", str(dest.relative_to(root))], cwd=root, check=True)
+    subprocess.run(["git", "add", "data/manifest.json", "data/history.json", "data/calls.json", str(dest.relative_to(root))], cwd=root, check=True)
     commit_msg = f"snapshot: {data.get('collected_at_jst', filename)}"
     commit = subprocess.run(["git", "commit", "-m", commit_msg], cwd=root)
     if commit.returncode != 0:

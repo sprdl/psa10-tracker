@@ -6,6 +6,7 @@
     currentIndex: -1, // index into manifest.snapshots (chronological ascending)
     currentData: null,
     previousData: null,
+    calls: null, // data/calls.json — track record of past calls (scripts/build_calls.py)
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
   };
 
@@ -165,6 +166,8 @@
     } catch (e) {
       state.holdings = [];
     }
+
+    try { state.calls = await fetchJSON('data/calls.json'); } catch (e) { state.calls = null; }
 
     await loadIndex(snaps.length - 1);
   }
@@ -467,6 +470,7 @@
     renderPortfolio(state.holdings, data.cards || []);
     renderCards(data.cards || [], prevCards);
     renderPlanner(data.cards || []);
+    renderTrackRecord();
     renderTables(data.cards || [], prevCards);
   }
 
@@ -871,6 +875,89 @@
     }));
     const bud = box.querySelector('.pl-budget');
     if (bud) bud.addEventListener('change', () => { const v = Number(bud.value); save({ budget: v >= 0 ? v : 0 }); });
+  }
+
+  // ---------- track record: how past calls and stated odds turned out ----------
+  // Everything is computed by scripts/build_calls.py when a check is published;
+  // this only displays data/calls.json.
+  const TR_STATUS = {
+    right: ['Right', 'pos'], wrong: ['Wrong', 'neg'], neutral: ['Neutral', 'muted'], pending: ['Pending', 'pend'],
+    unscored: ['Not scored', 'muted'], yes: ['Happened', 'pos'], no: ["Didn't happen", 'neg'],
+    open: ['Open', 'pend'], void: ['Void', 'muted'],
+  };
+  function trPill(status) {
+    const [label, cls] = TR_STATUS[status] || [status, 'muted'];
+    return `<span class="tr-pill ${cls}">${escapeHtml(label)}</span>`;
+  }
+  function trPct(n) { return n == null ? '—' : (Math.abs(n) < 0.05 ? '±0%' : fmtPct(n)); }
+  function trDate(iso) { const d = (iso || '').slice(5, 10).split('-'); return d.length === 2 ? `${+d[0]}/${+d[1]}` : '—'; }
+
+  function renderTrackRecord() {
+    let sec = document.getElementById('track-section');
+    const tr = state.calls;
+    if (!tr || !(tr.calls || []).length) { if (sec) sec.hidden = true; return; }
+    if (!sec) {
+      sec = document.createElement('div');
+      sec.id = 'track-section';
+      const planner = document.getElementById('planner-section');
+      (planner || els.watchSection).parentNode.insertBefore(sec, planner ? planner.nextSibling : els.watchSection);
+    }
+    sec.hidden = false;
+    const wasOpen = sec.querySelector('details') ? sec.querySelector('details').open : false;
+    const sm = tr.summary || {};
+    const c = sm.calls || {};
+    const win = tr.window_days || 30, th = Math.round((tr.threshold || 0.05) * 100);
+    const brier = sm.brier != null
+      ? `<div class="pl-stat"><div class="lbl">Odds accuracy (Brier)</div><div class="val ${sm.brier <= 0.2 ? 'pos' : sm.brier > 0.25 ? 'neg' : ''}">${sm.brier.toFixed(2)}</div><div class="tr-hint">0 = perfect · 0.25 = always saying 50%</div></div>
+         <div class="pl-stat"><div class="lbl">Expected vs happened</div><div class="val">${sm.expected_yes} vs ${sm.actual_yes}</div><div class="tr-hint">of ${sm.odds_resolved} resolved</div></div>`
+      : `<div class="pl-stat"><div class="lbl">Stated odds</div><div class="val muted">${sm.odds_open || 0} open</div><div class="tr-hint">none resolved yet</div></div>`;
+    const headline = sm.calls_scored
+      ? `${c.right || 0} right · ${c.wrong || 0} wrong${c.neutral ? ` · ${c.neutral} neutral` : ''}`
+      : 'no calls scored yet';
+
+    const callRows = tr.calls.map((k) => {
+      const name = parseCardName(k.name).short;
+      const so = k.status === 'pending'
+        ? `day ${k.days_in}/${win} · low so far ${k.low != null ? fmtYen(k.low) + ' (' + trPct(k.low_pct) + ')' : '—'} · now ${k.now != null ? fmtYen(k.now) + ' (' + trPct(k.now_pct) + ')' : '—'}`
+        : escapeHtml(k.why);
+      return `<div class="tr-row">
+        <div class="tr-main"><span class="tr-name">${escapeHtml(name)}</span> <span class="vtag ${k.tag}">${escapeHtml(tagLabel(k.tag))}</span>
+          <span class="tr-meta">${trDate(k.made)} at ${fmtYen(k.price)}${k.reaffirmed ? ` · reaffirmed ${k.reaffirmed}×` : ''}</span></div>
+        <div class="tr-res">${trPill(k.status)}</div>
+        <div class="tr-sub">${escapeHtml(k.label || '')}<br>${so}</div>
+      </div>`;
+    }).join('');
+
+    const predRows = (tr.predictions || []).map((p) => {
+      const name = parseCardName(p.name).short;
+      const detail = p.status === 'open'
+        ? `now ${p.now != null ? fmtYen(p.now) : '—'}${p.gap_pct != null ? ` · needs ${trPct(p.gap_pct)}` : ''} · ${escapeHtml(p.why)}`
+        : escapeHtml(p.why);
+      return `<div class="tr-row">
+        <div class="tr-main"><span class="tr-odds">${Math.round(p.p * 100)}%</span> <span class="tr-name">${escapeHtml(name)}</span>
+          <span class="tr-meta">${p.type === 'touch_below' ? '≤' : '≥'}${fmtYen(p.price)} by ${trDate(p.by)}</span></div>
+        <div class="tr-res">${trPill(p.status)}</div>
+        <div class="tr-sub">${escapeHtml(p.text)} (said ${trDate(p.made)})<br>${detail}</div>
+      </div>`;
+    }).join('');
+
+    sec.innerHTML = `<details class="track"${wasOpen ? ' open' : ''}>
+      <summary><h2 class="section-label">Track record</h2><span class="tr-headline">${escapeHtml(headline)}${c.pending ? ` · ${c.pending} pending` : ''}</span></summary>
+      <div class="planner">
+        <div class="pl-summary">
+          <div class="pl-stat"><div class="lbl">Buy / Watch calls</div><div class="val">${escapeHtml(headline)}</div><div class="tr-hint">${c.pending || 0} still inside their ${win}-day window</div></div>
+          ${brier}
+        </div>
+        <h3 class="tr-h">Calls</h3>
+        <div class="tr-list">${callRows}</div>
+        ${predRows ? `<h3 class="tr-h">Stated odds</h3><div class="tr-list">${predRows}</div>` : ''}
+        <p class="tr-note">How it's scored: each change of verdict is one call, measured on the lowest PSA10 ask over the next ${win} days.
+          A <b>Buy</b> is wrong if the price drops more than ${th}% below the call price (you could have bought cheaper), otherwise right.
+          A <b>Watch</b> is right if it drops more than ${th}% (waiting paid off), wrong if it ends more than ${th}% higher without a dip, otherwise neutral.
+          Stated odds are checked against their deadline; the Brier score rewards odds that match how often things actually happen.
+          Updated with every price check (as of ${escapeHtml(fmtDateShort(tr.as_of))}).</p>
+      </div>
+    </details>`;
   }
 
   // Limit controls live inside the clickable card summary, so every interaction

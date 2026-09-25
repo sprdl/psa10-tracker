@@ -37,6 +37,7 @@ import subprocess
 import sys
 import unicodedata
 from pathlib import Path
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 VALID_TAGS = {"definitely_buy", "buy", "watch", "dont_buy", "defer"}
@@ -162,6 +163,28 @@ def validate(key: str, a: dict) -> List[str]:
             die(f"{key}: verdict.tag '{v.get('tag')}' isn't one of {sorted(VALID_TAGS)}.")
         if not v.get("reasoning"):
             warn.append("verdict has no reasoning text")
+        preds = v.get("predictions")
+        if preds is not None:
+            if not isinstance(preds, list):
+                die(f"{key}: verdict.predictions must be a list.")
+            for i, p in enumerate(preds):
+                where = f"{key}: verdict.predictions[{i}]"
+                if not isinstance(p, dict):
+                    die(f"{where} must be an object.")
+                if p.get("type") not in ("touch_below", "touch_above"):
+                    die(f"{where}.type must be touch_below or touch_above.")
+                if not isinstance(p.get("p"), (int, float)) or not 0 < p["p"] < 1:
+                    die(f"{where}.p must be a probability between 0 and 1 (e.g. 0.45).")
+                if not isinstance(p.get("price"), (int, float)):
+                    die(f"{where}.price must be a number.")
+                try:
+                    datetime.strptime(str(p.get("by")), "%Y-%m-%d")
+                except ValueError:
+                    die(f"{where}.by must be a date like 2026-12-25.")
+                if not p.get("text"):
+                    warn.append(f"predictions[{i}] has no text")
+        elif v.get("reasoning") and "%" in v.get("reasoning", ""):
+            warn.append("reasoning states odds but verdict.predictions is missing, so they won't be scored")
     src = a.get("price_source")
     if src is not None and src not in VALID_SOURCES:
         warn.append(f"price_source '{src}' is unusual (expected one of {sorted(VALID_SOURCES)})")
@@ -298,7 +321,7 @@ def main():
     sys.path.insert(0, str(root / "scripts"))
     import build_history
     build_history.build(root)  # representative_price feeds the price-history chart
-    git(root, "add", rel, "data/history.json")
+    git(root, "add", rel, "data/history.json", "data/calls.json")
     names = ", ".join(re.sub(r"[\[(].*$", "", c["card_name_ja"]).strip() for c, _, _ in planned)
     commit = git(root, "commit", "-m", f"analysis: update {names}", check=False)
     if commit.returncode != 0:
