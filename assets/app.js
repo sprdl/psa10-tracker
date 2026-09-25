@@ -642,7 +642,7 @@
     const artDivClass = card.image_url ? 'lot-art' : `lot-art ${fallbackArt}`;
 
     return `
-      <div class="${artDivClass}">${artImgHtml}<span class="pop">${escapeHtml(popText)}</span></div>
+      <div class="${artDivClass}">${artImgHtml}<span class="pop"${card.population_as_of ? ` title="PSA10 population as of ${escapeAttr(fmtDateShort(card.population_as_of))} (re-checked weekly for mature cards)"` : ''}>${escapeHtml(popText)}</span></div>
       <div class="lot-body">
         <div class="lot-summary" data-idx="${i}">
           <div class="lot-head">

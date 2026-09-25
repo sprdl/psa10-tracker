@@ -337,6 +337,36 @@ def carry_forward_analysis(data: dict, prev_path: Optional[Path]) -> None:
             print(f"  - {n}")
 
 
+def carry_forward_population(data: dict, prev_path: Optional[Path]) -> None:
+    """PSA10 population barely moves for mature cards, so the price check only
+    re-reads it weekly for those (and quick checks never do). When this run has
+    no population for a card, carry the previous snapshot's value forward and
+    stamp population_as_of with when it was really measured, instead of letting
+    the site fall back to "Pop. —"."""
+    if prev_path is None:
+        return
+    try:
+        prev = json.loads(prev_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    prev_ts = prev.get("collected_at_jst", "")
+    prev_by_url = {c.get("url"): c for c in prev.get("cards", []) if c.get("url")}
+    carried = []
+    for card in data.get("cards", []):
+        if card.get("psa10_population") is not None:
+            continue
+        p = prev_by_url.get(card.get("url"))
+        if not p or p.get("psa10_population") is None:
+            continue
+        card["psa10_population"] = p["psa10_population"]
+        if card.get("psa10_gem_rate_pct") is None and p.get("psa10_gem_rate_pct") is not None:
+            card["psa10_gem_rate_pct"] = p["psa10_gem_rate_pct"]
+        card["population_as_of"] = p.get("population_as_of") or prev_ts
+        carried.append(card.get("card_name_ja", card.get("url")))
+    if carried:
+        print(f"Carried PSA10 population forward (not re-checked this run) for {len(carried)} card(s).")
+
+
 def main():
     args = sys.argv[1:]
     no_push = "--no-push" in args
@@ -383,6 +413,7 @@ def main():
     else:
         prev_path = find_previous_snapshot(manifest, snapshots_dir, data.get("collected_at_jst", ""))
         carry_forward_analysis(data, prev_path)
+        carry_forward_population(data, prev_path)
     print()
 
     slug = slug_from_timestamp(data.get("collected_at_jst", ""))
