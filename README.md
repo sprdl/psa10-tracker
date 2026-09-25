@@ -97,6 +97,18 @@ the bottom of the page. Banners at the top surface both your own written notes
 diffing against the previous snapshot (depth drops, favorite-count swings, a price
 crossing a tier boundary).
 
+## My limits and buy signals
+
+Each tracked card has a **+ Set my limit** button under its price bar. Type the
+price you're willing to pay, then fine-tune it by dragging the gold handle on
+the bar. When the lowest PSA10 ask is at or below your limit, the card gets a
+gold outline and moves to the top.
+
+The **Buy signals** strip at the top lists every card that's at your limit or in
+a Buy / Definitely-buy zone. Items new since your last visit are marked NEW, and
+tapping one opens that card. Limits are saved in the browser you set them in, so
+they're per device.
+
 ## Project layout
 
 ```

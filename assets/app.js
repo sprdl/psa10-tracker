@@ -266,6 +266,79 @@
     return VERDICT_TAG_LABELS[tag] || (tag || '').replace(/_/g, ' ');
   }
 
+  // ---------- my limit prices + buy signals (saved in this browser only) ----------
+  // Storage can be unavailable (private mode, blocked site data): every read falls
+  // back to a default and every write is best-effort, so the site still works.
+  const store = {
+    get(key, dflt) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : dflt; } catch (e) { return dflt; } },
+    set(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* not persisted */ } },
+  };
+  let limits = store.get('psa10.limits', {});
+  const LIMIT_STEP = 500;
+
+  function getLimit(card) { const v = limits[card.url]; return typeof v === 'number' ? v : null; }
+  function setLimit(card, v) {
+    if (v == null) delete limits[card.url];
+    else limits[card.url] = Math.max(LIMIT_STEP, Math.round(v / LIMIT_STEP) * LIMIT_STEP);
+    store.set('psa10.limits', limits);
+  }
+  // A limit is "hit" when a PSA10 listing you could buy right now is at or below it —
+  // so this compares the lowest ask, not the representative (sales) price.
+  function lowestAsk(card) { const p = card.grades && card.grades.psa10; return p ? p.lowest_price : null; }
+  function limitHit(card) { const l = getLimit(card), a = lowestAsk(card); return l != null && a != null && a <= l; }
+
+  function computeSignals(cards) {
+    const out = [];
+    cards.forEach((card, i) => {
+      if (lowestAsk(card) == null) return;
+      const name = parseCardName(card.card_name_ja).short;
+      if (limitHit(card)) {
+        out.push({ key: card.url + '|limit', i, card, name, kind: 'limit', rank: 0,
+          text: `Lowest ask ${fmtYen(lowestAsk(card))} is at or below your limit ${fmtYen(getLimit(card))}` });
+      }
+      const tag = displayTagFor(card);
+      if (tag === 'definitely_buy' || tag === 'buy') {
+        const t = card.analysis.tiers;
+        out.push({ key: card.url + '|' + tag, i, card, name, kind: tag, rank: tag === 'definitely_buy' ? 1 : 2,
+          text: `${fmtYen(getRep(card))} is in the ${tagLabel(tag)} zone (≤${fmtYen(tag === 'buy' ? t.buy_upper : t.definitely_buy)})` });
+      }
+    });
+    return out.sort((a, b) => a.rank - b.rank);
+  }
+
+  function renderSignals(cards) {
+    let el = document.getElementById('signals');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'signals';
+      el.className = 'signals';
+      els.banners.parentNode.insertBefore(el, els.banners);
+    }
+    const snaps = state.manifest.snapshots || [];
+    const isLatest = state.currentIndex === snaps.length - 1;
+    const signals = computeSignals(cards);
+    // "NEW" = not shown on this browser's previous visit to the latest snapshot.
+    const seen = new Set(store.get('psa10.seenSignals', []));
+    const tracked = cards.filter((c) => lowestAsk(c) != null).length;
+
+    if (!signals.length) {
+      el.innerHTML = `<div class="signals-head">Buy signals</div><div class="signals-empty">None right now. No card is in a Buy zone or at your limit (${tracked} tracked).</div>`;
+    } else {
+      el.innerHTML = `<div class="signals-head">Buy signals</div>` + signals.map((s) => {
+        const isNew = isLatest && !seen.has(s.key);
+        const pill = s.kind === 'limit' ? '<span class="sig-pill limit">My limit</span>' : `<span class="vtag ${s.kind}">${escapeHtml(tagLabel(s.kind))}</span>`;
+        return `<button type="button" class="signal" data-idx="${s.i}">${pill}<span class="sig-name">${escapeHtml(s.name)}</span><span class="sig-text">${escapeHtml(s.text)}</span>${isNew ? '<span class="sig-new">NEW</span>' : ''}</button>`;
+      }).join('');
+      el.querySelectorAll('.signal').forEach((b) => b.addEventListener('click', () => {
+        const art = document.getElementById('lot-' + b.dataset.idx);
+        if (!art) return;
+        if (!art.classList.contains('expanded')) art.querySelector('.lot-summary').click();
+        art.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }));
+    }
+    if (isLatest) store.set('psa10.seenSignals', signals.map((s) => s.key));
+  }
+
   // ---------- render: market strip ----------
 
   function renderMarketStrip(data) {
@@ -365,6 +438,7 @@
     const prevCards = (state.previousData && state.previousData.cards) || [];
     els.collectedAt.textContent = fmtDateJST(data.collected_at_jst);
     renderMarketStrip(data);
+    renderSignals(data.cards || []);
     renderBanners(data, state.previousData);
     els.notesBody.textContent = data.notes || '';
     renderPortfolio(state.holdings, data.cards || []);
@@ -439,11 +513,17 @@
   }
 
   function renderCards(cards, prevCards) {
+    const wasOpen = new Set([...els.cards.querySelectorAll('article.lot.expanded')].map((a) => a.dataset.url));
     els.cards.innerHTML = '';
     const pending = [];
     let shown = 0;
 
-    cards.forEach((card, i) => {
+    // Cards with a listing at or below your limit float to the top; otherwise keep
+    // the snapshot's order. The original index i stays the card's id everywhere.
+    const order = cards.map((card, i) => ({ card, i }));
+    order.sort((a, b) => (limitHit(b.card) ? 1 : 0) - (limitHit(a.card) ? 1 : 0));
+
+    order.forEach(({ card, i }) => {
       const psa10 = card.grades && card.grades.psa10;
       if (!psa10 || psa10.lowest_price == null) {
         pending.push(card);
@@ -459,12 +539,16 @@
       if (analysis && analysis.verdict && analysis.verdict.tag) tagClass = 'tag-' + analysis.verdict.tag;
 
       const article = document.createElement('article');
-      article.className = 'lot ' + tagClass;
+      article.className = 'lot ' + tagClass + (limitHit(card) ? ' limit-hit' : '');
+      article.id = 'lot-' + i;
+      article.dataset.url = card.url;
       article.innerHTML = buildCardSummaryHtml(card, prevCard, i, depth);
 
       const summary = article.querySelector('.lot-summary');
       summary.addEventListener('click', () => toggleCard(article, i, card));
+      wireLimitControls(article, card);
       els.cards.appendChild(article);
+      if (wasOpen.has(card.url)) toggleCard(article, i, card);
     });
 
     if (!shown) {
@@ -546,13 +630,22 @@
       }
     }
 
+    const limit = getLimit(card);
+    const ask = lowestAsk(card);
+    const limitRowHtml = `<div class="limit-row">${limit != null
+      ? `<span class="limit-lbl">My limit</span> <strong>${fmtYen(limit)}</strong>${limitHit(card)
+          ? ` <span class="limit-hit-note">· a listing is at or below it (${fmtYen(ask)})</span>`
+          : (ask != null ? ` <span class="limit-gap">· lowest ask is ${fmtYen(ask - limit)} above</span>` : '')}
+         <button type="button" class="limit-btn" data-act="edit">Edit</button><button type="button" class="limit-btn" data-act="clear">Clear</button>`
+      : `<button type="button" class="limit-btn" data-act="edit">+ Set my limit</button>`}</div>`;
+
     let gaugeHtml = '';
     if (analysis && analysis.tiers && peak && peak.price) {
       const g = computeGauge(analysis.tiers, peak.price, repPrice);
       if (g) {
         gaugeHtml = `
           <div class="gauge-wrap">
-            <div class="gauge-track" style="background: linear-gradient(to right,
+            <div class="gauge-track" data-scale="${g.scaleMax}" style="background: linear-gradient(to right,
                 var(--green-strong) 0%, var(--green-strong) ${g.dbPct.toFixed(1)}%,
                 var(--green) ${g.dbPct.toFixed(1)}%, var(--green) ${g.buPct.toFixed(1)}%,
                 var(--amber) ${g.buPct.toFixed(1)}%, var(--amber) ${g.watchMidPct.toFixed(1)}%,
@@ -560,6 +653,7 @@
                 var(--red) ${g.ceilPct.toFixed(1)}%, var(--red) 100%);">
               <div class="marker" style="left:${g.curPct.toFixed(1)}%"><div class="tag">${fmtYenShort(repPrice)}</div><div class="stem"></div></div>
               <div class="marker peak" style="left:${g.peakPct.toFixed(1)}%"><div class="tag">${fmtYenShort(peak.price)}</div><div class="stem"></div></div>
+              ${limit != null ? `<div class="marker limit" style="left:${Math.min(100, Math.max(0, (limit / g.scaleMax) * 100)).toFixed(1)}%" title="Drag to adjust your limit"><div class="knob"></div><div class="tag">Limit ${fmtYenShort(limit)}</div></div>` : ''}
             </div>
             <div class="gauge-labels"><span>¥0</span><span>${fmtYen(g.scaleMax)}</span></div>
           </div>`;
@@ -661,12 +755,72 @@
           ${offPeakHtml}
           <div class="delta">${deltaHtml}</div>${card.quick_note ? `<div class="delta">${escapeHtml(card.quick_note)}</div>` : ''}
           ${gaugeHtml}
+          ${limitRowHtml}
           ${statsHtml}
           ${verdictHtml}
         </div>
         <div class="lot-detail" id="detail-${i}" hidden></div>
       </div>
     `;
+  }
+
+  // Limit controls live inside the clickable card summary, so every interaction
+  // stops propagation — otherwise editing a limit would also open/close the card.
+  function wireLimitControls(article, card) {
+    const row = article.querySelector('.limit-row');
+    const stop = (e) => e.stopPropagation();
+    row.addEventListener('click', stop);
+
+    row.addEventListener('click', (e) => {
+      const btn = e.target.closest('.limit-btn');
+      if (!btn) return;
+      if (btn.dataset.act === 'clear') { setLimit(card, null); render(); return; }
+      if (btn.dataset.act === 'edit') openLimitEditor(row, card);
+    });
+
+    const marker = article.querySelector('.marker.limit');
+    const track = article.querySelector('.gauge-track');
+    if (!marker || !track) return;
+    const wrap = article.querySelector('.gauge-wrap');
+    wrap.addEventListener('click', stop);
+    const scale = Number(track.dataset.scale);
+    const priceAt = (clientX) => {
+      const r = track.getBoundingClientRect();
+      const pct = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+      return Math.max(LIMIT_STEP, Math.round((pct * scale) / LIMIT_STEP) * LIMIT_STEP);
+    };
+    let dragging = false, value = getLimit(card);
+    marker.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dragging = true; marker.setPointerCapture(e.pointerId); marker.classList.add('dragging');
+    });
+    marker.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      value = priceAt(e.clientX);
+      marker.style.left = ((value / scale) * 100).toFixed(1) + '%';
+      marker.querySelector('.tag').textContent = 'Limit ' + fmtYenShort(value);
+    });
+    const end = (e) => {
+      if (!dragging) return;
+      dragging = false; marker.classList.remove('dragging');
+      setLimit(card, value); render();
+    };
+    marker.addEventListener('pointerup', end);
+    marker.addEventListener('pointercancel', end);
+  }
+
+  function openLimitEditor(row, card) {
+    const t = card.analysis && card.analysis.tiers;
+    const start = getLimit(card) || (t && t.buy_upper) || lowestAsk(card) || '';
+    row.innerHTML = `<span class="limit-lbl">My limit</span> ¥<input type="number" class="limit-input" inputmode="numeric" min="${LIMIT_STEP}" step="${LIMIT_STEP}" value="${start}">
+      <button type="button" class="limit-btn primary" data-act="save">Save</button><button type="button" class="limit-btn" data-act="cancel">Cancel</button>
+      <span class="limit-hint">${t ? `Buy line is ${fmtYen(t.buy_upper)}. ` : ''}Rounded to ¥${LIMIT_STEP}; drag the gold handle on the bar to fine-tune.</span>`;
+    const input = row.querySelector('.limit-input');
+    input.focus(); input.select();
+    const save = () => { const v = Number(input.value); if (v > 0) setLimit(card, v); render(); };
+    row.querySelector('[data-act="save"]').addEventListener('click', (e) => { e.stopPropagation(); save(); });
+    row.querySelector('[data-act="cancel"]').addEventListener('click', (e) => { e.stopPropagation(); render(); });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') render(); });
   }
 
   function toggleCard(article, i, card) {
