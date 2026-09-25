@@ -234,6 +234,32 @@
     return "don't-buy";
   }
 
+  // Same four zones as zoneOf, but keyed like verdict.tag (definitely_buy /
+  // buy / watch / dont_buy) so the verdict pill can be computed live from the
+  // current price vs. the card's tiers on every refresh — no Claude review
+  // needed for the pill itself, only for the written reasoning.
+  function liveTagOf(tiers, price) {
+    if (!tiers || price == null) return null;
+    if (price <= tiers.definitely_buy) return 'definitely_buy';
+    if (price <= tiers.buy_upper) return 'buy';
+    if (price <= tiers.ceiling) return 'watch';
+    return 'dont_buy';
+  }
+
+  // A written "defer" is a deliberate human call ("don't act regardless of
+  // price"), so it wins over the computed zone; otherwise the live zone wins.
+  function displayTagFor(card) {
+    const a = card.analysis;
+    if (!a) return null;
+    const written = a.verdict && a.verdict.tag;
+    if (written === 'defer') return 'defer';
+    return liveTagOf(a.tiers, getRep(card)) || written || null;
+  }
+
+  function tagLabel(tag) {
+    return VERDICT_TAG_LABELS[tag] || (tag || '').replace(/_/g, ' ');
+  }
+
   // ---------- render: market strip ----------
 
   function renderMarketStrip(data) {
@@ -555,32 +581,40 @@
         <div class="stat"><div class="lbl">Raw A lowest</div><div class="val">${card.grades.raw_a_grade ? fmtYen(card.grades.raw_a_grade.lowest_price) : '—'}</div></div>
       </div>`;
 
+    const displayTag = displayTagFor(card);
     let verdictHtml;
     if (analysis && analysis.verdict) {
       const v = analysis.verdict;
-      const pillText = VERDICT_TAG_LABELS[v.tag] || (v.tag || '').replace(/_/g, ' ');
+      const pillText = tagLabel(displayTag);
       const headline = verdictHeadline(v.label);
+      const refP = analysis.representative_price != null ? analysis.representative_price : analysis.verdict_price_ref;
       // The verdict text/tag carries forward run-to-run (add_snapshot.py) so it
       // doesn't vanish on every routine price refresh. When THIS run didn't come
       // with a fresh price_source, the verdict below is carried from the last
       // full review — if the live price has since drifted meaningfully from the
       // price that review was based on (verdict_price_ref), say so rather than
       // presenting stale reasoning as current.
+      // The pill shows the LIVE zone (price vs. tiers), which can differ from
+      // what the written reasoning concluded. Zone mismatch is the most useful
+      // thing to flag, so it takes precedence over the plain drift note.
       let staleHtml = '';
-      if (!analysis.price_source && analysis.verdict_price_ref != null && repPrice != null) {
-        const refP = analysis.verdict_price_ref;
-        const diffPct = refP ? ((repPrice - refP) / refP) * 100 : 0;
+      if (v.tag && v.tag !== 'defer' && displayTag && v.tag !== displayTag) {
+        staleHtml = `<div class="verdict-stale">Price is now in the ${tagLabel(displayTag)} zone. The written analysis below called it ${tagLabel(v.tag)}${refP != null ? ' at ' + fmtYen(refP) : ''} — worth a fresh look.</div>`;
+      } else if (!analysis.price_source && analysis.verdict_price_ref != null && repPrice != null) {
+        const ref = analysis.verdict_price_ref;
+        const diffPct = ref ? ((repPrice - ref) / ref) * 100 : 0;
         if (Math.abs(diffPct) >= 5) {
           const dir = diffPct < 0 ? 'fallen' : 'risen';
-          staleHtml = `<div class="verdict-stale">Last fully reviewed at ${fmtYen(refP)} — price has since ${dir} to ${fmtYen(repPrice)} (${diffPct >= 0 ? '+' : '−'}${Math.abs(diffPct).toFixed(0)}%). Worth a fresh look before trusting the call below.</div>`;
+          staleHtml = `<div class="verdict-stale">Last fully reviewed at ${fmtYen(ref)} — price has since ${dir} to ${fmtYen(repPrice)} (${diffPct >= 0 ? '+' : '−'}${Math.abs(diffPct).toFixed(0)}%). Worth a fresh look before trusting the call below.</div>`;
         }
       }
-      verdictHtml = `<div class="verdict"><span class="vtag ${v.tag}">${escapeHtml(pillText)}</span><p>${headline ? `<strong>${escapeHtml(headline)}.</strong> ` : ''}${escapeHtml(v.reasoning || '')}</p></div>${staleHtml}`;
+      verdictHtml = `<div class="verdict"><span class="vtag ${displayTag}">${escapeHtml(pillText)}</span><p>${headline ? `<strong>${escapeHtml(headline)}.</strong> ` : ''}${escapeHtml(v.reasoning || '')}</p></div>${staleHtml}`;
     } else if (gaugeHtml) {
-      // tiers/peak carried forward from a previous snapshot, but this card has
-      // never had a verdict written for it at all — distinct from "no analysis
-      // at all" below.
-      verdictHtml = `<div class="tier-pending needs-review">Tiers carried forward from a previous check — this card hasn't had a verdict written for it yet.</div>`;
+      // Tiers exist but no verdict was ever written: the zone can still be
+      // computed live, so show the pill with a plain note instead of nothing.
+      verdictHtml = displayTag
+        ? `<div class="verdict"><span class="vtag ${displayTag}">${escapeHtml(tagLabel(displayTag))}</span><p>Zone computed from the live price vs. this card's tiers — no written analysis yet.</p></div>`
+        : `<div class="tier-pending needs-review">Tiers carried forward from a previous check — this card hasn't had a verdict written for it yet.</div>`;
     } else {
       verdictHtml = `<div class="tier-pending">Tiers not yet established for this card — showing raw stats only.</div>`;
     }
@@ -983,10 +1017,9 @@
     body += tierRow("Don't-buy ceiling", (t) => fmtYen(t.ceiling));
 
     body += `<tr><td>Verdict</td>${cards.map((c) => {
-      if (c.analysis && c.analysis.verdict) {
-        const tag = c.analysis.verdict.tag;
-        const pillText = VERDICT_TAG_LABELS[tag] || (tag || '').replace(/_/g, ' ');
-        return `<td><span class="pill ${tag}">${escapeHtml(pillText)}</span></td>`;
+      const tag = displayTagFor(c);
+      if (tag) {
+        return `<td><span class="pill ${tag}">${escapeHtml(tagLabel(tag))}</span></td>`;
       }
       return '<td>—</td>';
     }).join('')}</tr>`;
