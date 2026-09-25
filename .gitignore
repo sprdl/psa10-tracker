@@ -1,0 +1,5 @@
+# price-check skill drops each run here before add_snapshot.py saves it as a snapshot
+data/incoming/
+
+# macOS Finder metadata
+.DS_Store

@@ -35,9 +35,11 @@ import json
 import re
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
+
+JST = timezone(timedelta(hours=9))
 
 # analysis.* keys treated as durable judgment that should carry forward run-to-run
 # until a human/Claude revises them (tier boundaries, the reference peak, the
@@ -135,22 +137,22 @@ def check_timestamp_freshness(data: dict) -> None:
     JST claimed collected_at_jst of 09:03 JST (echoed from an earlier run that
     day instead of the run's actual time), and it turned out to also be using
     a pre-update tracked-card list — the stale timestamp was an early warning
-    sign that got missed. Assumes the machine running this script is already
-    on JST (true for the user's own Mac), so no timezone conversion needed."""
+    sign that got missed. Timezone-aware: the timestamp's own +09:00 offset is
+    honored and compared against real UTC now, so this works the same on the
+    user's JST Mac and in a UTC shell (e.g. when the price-check skill runs
+    this script itself)."""
     ts = data.get("collected_at_jst", "")
-    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})", ts)
-    if not m:
-        return
-    y, mo, d, h, mi = (int(x) for x in m.groups())
     try:
-        claimed = datetime(y, mo, d, h, mi)
-    except ValueError:
+        claimed = datetime.fromisoformat(ts)
+    except (TypeError, ValueError):
         return
-    now = datetime.now()
+    if claimed.tzinfo is None:
+        claimed = claimed.replace(tzinfo=JST)  # the field is JST by definition
+    now = datetime.now(timezone.utc)
     diff_minutes = abs((now - claimed).total_seconds()) / 60
     if diff_minutes > 90:
-        print(f"WARNING: collected_at_jst ({ts}) is {diff_minutes:.0f} minutes off from this machine's "
-              f"current local time ({now.strftime('%Y-%m-%dT%H:%M')}). This looks like it might be a "
+        print(f"WARNING: collected_at_jst ({ts}) is {diff_minutes:.0f} minutes off from the current "
+              f"time ({now.astimezone(JST).strftime('%Y-%m-%dT%H:%M')} JST). This looks like it might be a "
               f"stale/echoed timestamp rather than this run's real collection time — double check "
               f"before trusting this snapshot.", file=sys.stderr)
 
@@ -239,7 +241,7 @@ def slug_from_timestamp(collected_at_jst: str) -> str:
     m = re.match(r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})", collected_at_jst or "")
     if not m:
         # fall back to current time if the field is missing/malformed
-        now = datetime.now()
+        now = datetime.now(JST)
         return now.strftime("%Y%m%d-%H%M")
     y, mo, d, h, mi = m.groups()
     return f"{y}{mo}{d}-{h}{mi}"
