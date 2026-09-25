@@ -549,6 +549,64 @@
     document.querySelectorAll('em[data-count]').forEach((em) => { em.textContent = counts[em.dataset.count] || ''; });
   }
 
+  // ---------- card photos: zoom each one so the card fills its frame ----------
+  // SNKRDUNK's cut-out photos sit on a transparent canvas with a different amount of
+  // empty margin per upload. Measure the card's bounding box once per photo (from the
+  // alpha channel, on a small canvas) and size/center the <img> so the card itself
+  // takes ~92% of the frame height. Measuring needs CORS; if the CDN refuses, the
+  // photo keeps a default zoom that fits SNKRDUNK's usual margin. Results are cached
+  // in this browser.
+  const TRIM_KEY = 'psa10.imgTrim.v1';
+  const trimCache = store.get(TRIM_KEY, {});
+  const trimPending = {};
+  function measureTrim(url) {
+    return new Promise((resolve) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => {
+        try {
+          const W = 160, H = Math.max(1, Math.round((W * im.naturalHeight) / im.naturalWidth));
+          const cv = document.createElement('canvas');
+          cv.width = W; cv.height = H;
+          const g = cv.getContext('2d');
+          g.drawImage(im, 0, 0, W, H);
+          const d = g.getImageData(0, 0, W, H).data;
+          let x0 = W, y0 = H, x1 = -1, y1 = -1;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              if (d[(y * W + x) * 4 + 3] > 24) {
+                if (x < x0) x0 = x; if (x > x1) x1 = x;
+                if (y < y0) y0 = y; if (y > y1) y1 = y;
+              }
+            }
+          }
+          if (x1 < 0 || (y1 - y0) < H * 0.2) return resolve(null);
+          resolve({ x0: x0 / W, y0: y0 / H, x1: (x1 + 1) / W, y1: (y1 + 1) / H });
+        } catch (e) { resolve(null); } // canvas tainted: no CORS on the CDN
+      };
+      im.onerror = () => resolve(null);
+      im.src = url;
+    });
+  }
+  function applyTrim(img, t) {
+    img.style.setProperty('--h', (92 / (t.y1 - t.y0)).toFixed(1) + '%');
+    img.style.setProperty('--cx', ((t.x0 + t.x1) / 2).toFixed(4));
+    img.style.setProperty('--cy', ((t.y0 + t.y1) / 2).toFixed(4));
+  }
+  function trimImages(root) {
+    (root || document).querySelectorAll('img.card-img').forEach((img) => {
+      const url = img.getAttribute('src');
+      if (!url) return;
+      if (trimCache[url]) { applyTrim(img, trimCache[url]); return; }
+      (trimPending[url] = trimPending[url] || measureTrim(url)).then((t) => {
+        if (!t) return;
+        if (!trimCache[url]) { trimCache[url] = t; store.set(TRIM_KEY, trimCache); }
+        if (img.isConnected) applyTrim(img, t);
+        document.querySelectorAll('img.card-img').forEach((o) => { if (o.getAttribute('src') === url) applyTrim(o, t); });
+      });
+    });
+  }
+
   // ---------- render ----------
 
   function render() {
@@ -571,6 +629,7 @@
     renderTables(cards, prevCards);
     updateCounts();
     applyRoute();
+    trimImages(document);
   }
 
   // Order used by the list and the display case: cards with a listing at or below
@@ -643,7 +702,7 @@
     els.portfolioList.innerHTML = rows.map(({ h, match, currentPrice, pnl, pnlPct }) => {
       const displayName = match ? parseCardName(match.card_name_ja).short : parseCardName(h.card_name_ja || '').short;
       const imgSrc = (match && match.image_url) || h.image_url;
-      const thumbHtml = imgSrc ? `<img src="${escapeAttr(imgSrc)}" alt="" loading="lazy" onerror="this.remove();">` : '';
+      const thumbHtml = imgSrc ? `<img class="card-img" src="${escapeAttr(imgSrc)}" alt="" loading="lazy" onerror="this.remove();">` : '';
       const costNote = h.condition === 'raw_to_grade' ? ' + grading' : '';
       const pnlHtml = pnl != null
         ? `<span class="${pnl >= 0 ? 'pos' : 'neg'}">${pnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(pnl))}${pnlPct != null ? ' (' + fmtPct(pnlPct) + ')' : ''}</span>`
@@ -683,7 +742,7 @@
 
   function slabHtml(card, size) {
     const code = parseCardName(card.card_name_ja).code;
-    const img = card.image_url ? `<img src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const img = card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : '';
     return `<span class="slab ${size || ''}"><span class="slab-label"><b>${escapeHtml(code)}</b><b>GEM MT 10</b></span><span class="slab-art ${artClassFor(card)}">${img}</span></span>`;
   }
 
@@ -725,12 +784,14 @@
     if (!card) { el.innerHTML = ''; return; }
     el.innerHTML = buildCardDetail(card, prevCardOf(card), 'drawer');
     wireCardDetail(el, card);
+    trimImages(el);
   }
 
   function renderCardPage(card) {
     const el = document.getElementById('card-page');
     el.innerHTML = buildCardDetail(card, prevCardOf(card), 'page');
     wireCardDetail(el, card);
+    trimImages(el);
   }
 
   // ---------- render: display case ----------
@@ -776,7 +837,7 @@
       const fav = card.favorite_count != null ? card.favorite_count.toLocaleString() : '—';
       const { short, code } = parseCardName(card.card_name_ja);
       const raw = card.grades && card.grades.raw_a_grade;
-      const thumbHtml = card.image_url ? `<img src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '';
+      const thumbHtml = card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '';
       return `<a class="watch-row" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">
         <span class="wthumb">${thumbHtml}</span>
         <span class="wname"><b class="jp">${escapeHtml(short || card.card_name_ja)}</b><small>${escapeHtml(code)}</small></span>
