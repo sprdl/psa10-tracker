@@ -1,0 +1,47 @@
+name: Log a purchase
+description: Record a card you bought. It's added to "Your holdings" on the site automatically.
+title: "Bought: "
+labels: ["bought"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: SNKRDUNK URL
+      description: The card's SNKRDUNK product page (filled in when you use the Bought it button on the site).
+      placeholder: https://snkrdunk.com/apparels/455596
+    validations:
+      required: true
+  - type: input
+    id: price
+    attributes:
+      label: Price paid (¥)
+      description: What you paid for the card itself, e.g. 65000.
+      placeholder: "65000"
+    validations:
+      required: true
+  - type: input
+    id: date
+    attributes:
+      label: Date bought
+      description: YYYY-MM-DD. Leave empty for today.
+      placeholder: "2026-09-25"
+  - type: dropdown
+    id: condition
+    attributes:
+      label: Condition
+      options:
+        - Graded PSA10 (bought as a slab)
+        - Raw, I'm sending it to PSA myself
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: grading_fee
+    attributes:
+      label: Grading fee (¥, raw only)
+      description: Leave empty for the PSA Standard fee (¥9,980). ¥2,000 shipping is added automatically.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)
+      description: e.g. where you bought it.

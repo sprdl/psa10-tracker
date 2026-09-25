@@ -1041,7 +1041,8 @@ footer.note {
 .pl-stat .val.neg { color: var(--red); }
 .pl-yen { font-size: 0.95rem; }
 .pl-budget { width: 110px; font: 600 1rem var(--serif); color: var(--text); background: transparent; border: 0; border-bottom: 1px dashed var(--line); padding: 0 2px; }
-.pl-bar { height: 6px; background: var(--panel-2); border-radius: 3px; margin: 12px 0 14px; overflow: hidden; }
+.pl-bar { display: flex; height: 6px; background: var(--panel-2); border-radius: 3px; margin: 12px 0 14px; overflow: hidden; }
+.pl-bar-spent { height: 100%; background: var(--muted-2); }
 .pl-bar-fill { height: 100%; background: var(--gold); }
 .pl-bar-fill.over { background: var(--red); }
 .pl-list { display: flex; flex-direction: column; gap: 6px; }
@@ -1057,3 +1058,12 @@ footer.note {
 .pl-src { display: block; font: 500 0.64rem var(--sans); color: var(--muted-2); }
 .pl-sub { grid-area: sub; font-size: 0.7rem; color: var(--muted-2); }
 .pl-fits { color: var(--green); font-weight: 600; }
+
+/* ---------- purchases ---------- */
+.limit-btn.buy-btn { margin-left: auto; text-decoration: none; color: var(--green); border-color: color-mix(in srgb, var(--green) 45%, transparent); }
+.limit-btn.buy-btn:hover { border-color: var(--green); }
+.owned-note { color: var(--green); font-weight: 600; }
+.pf-remove { color: var(--muted-2); text-decoration: underline; }
+.pf-remove:hover { color: var(--red); }
+.pl-owned { font: 600 0.62rem var(--sans); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 45%, transparent); border-radius: 4px; padding: 1px 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+.card-requests a { color: var(--red); }

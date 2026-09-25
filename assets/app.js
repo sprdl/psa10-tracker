@@ -287,6 +287,29 @@
   function lowestAsk(card) { const p = card.grades && card.grades.psa10; return p ? p.lowest_price : null; }
   function limitHit(card) { const l = getLimit(card), a = lowestAsk(card); return l != null && a != null && a <= l; }
 
+  // ---------- purchases (data/holdings.json, written by GitHub Actions) ----------
+  // "Bought it" / "Remove" open a pre-filled GitHub issue form; .github/workflows/purchases.yml
+  // turns it into a holdings.json change and redeploys the site. Nothing is stored here.
+  const REPO_URL = 'https://github.com/sprdl/psa10-tracker';
+  function todayJST() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
+  function holdingCost(h) {
+    const grading = h.condition === 'raw_to_grade'
+      ? (h.grading_fee_jpy || 0) + (h.shipping_insurance_jpy != null ? h.shipping_insurance_jpy : 2000)
+      : 0;
+    return (h.purchase_price_jpy || 0) + grading;
+  }
+  function holdingsFor(card) { return state.holdings.filter((h) => h.card_url === card.url); }
+  function boughtFormUrl(card) {
+    const q = new URLSearchParams({ template: 'bought.yml', title: 'Bought: ' + parseCardName(card.card_name_ja).short,
+      url: card.url, price: String(lowestAsk(card) || ''), date: todayJST() });
+    return `${REPO_URL}/issues/new?${q}`;
+  }
+  function removeFormUrl(h) {
+    const q = new URLSearchParams({ template: 'remove-purchase.yml',
+      title: 'Remove purchase: ' + parseCardName(h.card_name_ja || '').short, id: h.id });
+    return `${REPO_URL}/issues/new?${q}`;
+  }
+
   function computeSignals(cards) {
     const out = [];
     cards.forEach((card, i) => {
@@ -463,10 +486,7 @@
     const rows = holdings.map((h) => {
       const match = currentCards.find((c) => c.url === h.card_url);
       const currentPrice = match ? getRep(match) : null;
-      const gradingCost = h.condition === 'raw_to_grade'
-        ? (h.grading_fee_jpy || 0) + (h.shipping_insurance_jpy != null ? h.shipping_insurance_jpy : 2000)
-        : 0;
-      const cost = (h.purchase_price_jpy || 0) + gradingCost;
+      const cost = holdingCost(h);
       const pnl = currentPrice != null ? currentPrice - cost : null;
       const pnlPct = currentPrice != null && cost ? (pnl / cost) * 100 : null;
       if (currentPrice != null) {
@@ -503,7 +523,7 @@
           <span class="pf-thumb">${thumbHtml}</span>
           <div class="pf-info">
             <div class="pf-name">${escapeHtml(displayName)}</div>
-            <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}</div>
+            <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
           </div>
           <div class="pf-current">
             <div class="val">${currentPrice != null ? fmtYen(currentPrice) : '—'}</div>
@@ -633,12 +653,17 @@
 
     const limit = getLimit(card);
     const ask = lowestAsk(card);
+    const owned = holdingsFor(card);
+    const ownedHtml = owned.length
+      ? ` <span class="owned-note">✓ Owned${owned.length > 1 ? ' ×' + owned.length : ''} · bought ${fmtYen(owned[owned.length - 1].purchase_price_jpy)}</span>`
+      : '';
     const limitRowHtml = `<div class="limit-row">${limit != null
       ? `<span class="limit-lbl">My limit</span> <strong>${fmtYen(limit)}</strong>${limitHit(card)
           ? ` <span class="limit-hit-note">· a listing is at or below it (${fmtYen(ask)})</span>`
           : (ask != null ? ` <span class="limit-gap">· lowest ask is ${fmtYen(ask - limit)} above</span>` : '')}
          <button type="button" class="limit-btn" data-act="edit">Edit</button><button type="button" class="limit-btn" data-act="clear">Clear</button>`
-      : `<button type="button" class="limit-btn" data-act="edit">+ Set my limit</button>`}</div>`;
+      : `<button type="button" class="limit-btn" data-act="edit">+ Set my limit</button>`}${ownedHtml}
+         <a class="limit-btn buy-btn" href="${escapeAttr(boughtFormUrl(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a></div>`;
 
     let gaugeHtml = '';
     if (analysis && analysis.tiers && peak && peak.price) {
@@ -800,17 +825,20 @@
     const picked = rows.filter((r) => r.on);
     const total = picked.reduce((a, r) => a + r.price, 0);
     const totalToday = picked.reduce((a, r) => a + r.today, 0);
-    const left = st.budget - total;
+    const spent = state.holdings.reduce((a, h) => a + holdingCost(h), 0);
+    const ownedUrls = new Set(state.holdings.map((h) => h.card_url));
+    const left = st.budget - spent - total;
     const missingLimit = st.mode === 'limits' ? picked.filter((r) => !r.fromLimit).length : 0;
 
     const summary = `
       <div class="pl-summary">
         <div class="pl-stat"><div class="lbl">Selected (${picked.length})</div><div class="val">${fmtYen(total)}</div></div>
+        ${spent ? `<div class="pl-stat"><div class="lbl">Spent so far</div><div class="val">${fmtYen(spent)}</div></div>` : ''}
         <div class="pl-stat"><div class="lbl">Budget</div><div class="val"><span class="pl-yen">¥</span><input type="number" class="pl-budget" inputmode="numeric" step="10000" min="0" value="${st.budget}"></div></div>
         <div class="pl-stat"><div class="lbl">${left >= 0 ? 'Left' : 'Over budget'}</div><div class="val ${left >= 0 ? 'pos' : 'neg'}">${fmtYen(Math.abs(left))}</div></div>
         ${st.mode === 'limits' && picked.length ? `<div class="pl-stat"><div class="lbl">vs. buying today</div><div class="val ${totalToday - total >= 0 ? 'pos' : 'neg'}">${totalToday - total >= 0 ? 'saves ' : 'costs '}${fmtYen(Math.abs(totalToday - total))}</div></div>` : ''}
       </div>
-      <div class="pl-bar"><div class="pl-bar-fill ${left < 0 ? 'over' : ''}" style="width:${Math.min(100, st.budget ? (total / st.budget) * 100 : 0).toFixed(1)}%"></div></div>`;
+      <div class="pl-bar">${spent ? `<div class="pl-bar-spent" style="width:${Math.min(100, st.budget ? (spent / st.budget) * 100 : 0).toFixed(1)}%" title="Spent so far"></div>` : ''}<div class="pl-bar-fill ${left < 0 ? 'over' : ''}" style="width:${Math.min(100, st.budget ? (total / st.budget) * 100 : 0).toFixed(1)}%"></div></div>`;
 
     const toggle = `
       <div class="pl-mode" role="group" aria-label="Price basis">
@@ -820,11 +848,11 @@
       ${missingLimit ? `<div class="pl-note">${missingLimit} selected card${missingLimit === 1 ? ' has' : 's have'} no limit set, so ${missingLimit === 1 ? 'it uses' : 'they use'} today's price.</div>` : ''}`;
 
     const list = rows.map((r) => {
-      const fits = !r.on && r.price <= left;
+      const fits = !r.on && !ownedUrls.has(r.card.url) && r.price <= left;
       const sub = [`today ${fmtYen(r.today)}`, r.lim != null ? `limit ${fmtYen(r.lim)}` : 'no limit', r.buyLine != null ? `Buy ≤${fmtYen(r.buyLine)}` : null].filter(Boolean).join(' · ');
       return `<label class="pl-row ${r.on ? 'on' : ''}">
         <input type="checkbox" data-url="${escapeAttr(r.card.url)}" ${r.on ? 'checked' : ''}>
-        <span class="pl-name">${escapeHtml(r.name)}${r.tag ? ` <span class="vtag ${r.tag}">${escapeHtml(tagLabel(r.tag))}</span>` : ''}</span>
+        <span class="pl-name">${escapeHtml(r.name)}${r.tag ? ` <span class="vtag ${r.tag}">${escapeHtml(tagLabel(r.tag))}</span>` : ''}${ownedUrls.has(r.card.url) ? ' <span class="pl-owned">owned</span>' : ''}</span>
         <span class="pl-price">${fmtYen(r.price)}${st.mode === 'limits' ? `<span class="pl-src">${r.fromLimit ? 'my limit' : 'today'}</span>` : ''}</span>
         <span class="pl-sub">${escapeHtml(sub)}${fits ? ' <span class="pl-fits">fits</span>' : ''}</span>
       </label>`;
@@ -1294,12 +1322,22 @@
     const el = document.getElementById('card-requests');
     if (!el) return;
     try {
-      const r = await fetch('https://api.github.com/repos/sprdl/psa10-tracker/issues?state=open&labels=add-card&per_page=20',
+      const r = await fetch('https://api.github.com/repos/sprdl/psa10-tracker/issues?state=open&per_page=50',
         { headers: { Accept: 'application/vnd.github+json' } });
       if (!r.ok) return;
-      const n = (await r.json()).filter((i) => !i.pull_request).length;
-      if (!n) return;
-      el.textContent = `${n} card request${n === 1 ? '' : 's'} waiting for the next price check`;
+      const issues = (await r.json()).filter((i) => !i.pull_request);
+      const has = (i, name) => (i.labels || []).some((l) => l.name === name);
+      const cards = issues.filter((i) => has(i, 'add-card')).length;
+      // Purchases are handled by GitHub Actions within a minute or so; one still open
+      // after 5 minutes couldn't be read and has a comment saying what to fix.
+      const buys = issues.filter((i) => has(i, 'bought') || has(i, 'remove-purchase'));
+      const stuck = buys.filter((i) => Date.now() - new Date(i.updated_at).getTime() > 5 * 60e3);
+      const parts = [];
+      if (cards) parts.push(escapeHtml(`${cards} card request${cards === 1 ? '' : 's'} waiting for the next price check`));
+      if (buys.length - stuck.length) parts.push('Recording a purchase… reload in a minute');
+      if (stuck.length) parts.push(`<a href="${escapeAttr(stuck[0].html_url)}" target="_blank" rel="noopener">A purchase couldn't be recorded. See why ↗</a>`);
+      if (!parts.length) return;
+      el.innerHTML = parts.join(' · ');
       el.hidden = false;
     } catch (e) { /* offline or blocked — the button still works */ }
   }

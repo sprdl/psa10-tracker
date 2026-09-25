@@ -162,6 +162,8 @@ never hand-write those numbers here.
 {
   "holdings": [
     {
+      "id": "p12",                                       // "p" + the GitHub issue number that logged it;
+                                                           // used by the site's Remove link
       "card_url": "https://snkrdunk.com/apparels/...",  // must match a tracked card's `url`
       "card_name_ja": "...",                             // denormalized label — kept even if
                                                            // the card later drops out of tracking
@@ -178,7 +180,7 @@ never hand-write those numbers here.
 }
 ```
 
-Add holdings with `python3 scripts/add_holding.py` (same clipboard-or-file-argument
+Normally purchases are logged from the site (✓ Bought it → GitHub issue → `scripts/log_purchase.py` in Actions; see README). For bulk entry, add holdings with `python3 scripts/add_holding.py` (same clipboard-or-file-argument
 pattern as `add_snapshot.py`) rather than hand-editing the file, so the commit
 message and validation stay consistent. The "Your holdings" section on the site is
 hidden entirely whenever `data/holdings.json` has no entries.

@@ -1,0 +1,16 @@
+name: Remove a purchase
+description: Delete a purchase from "Your holdings" (e.g. one logged by mistake).
+title: "Remove purchase"
+labels: ["remove-purchase"]
+body:
+  - type: input
+    id: id
+    attributes:
+      label: Purchase id
+      description: Filled in by the Remove link on the site, e.g. p12.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)

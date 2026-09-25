@@ -1,0 +1,31 @@
+name: Log purchase
+
+# Runs when you submit the site's "Bought it" or "Remove" form (a GitHub issue).
+# Only issues opened by the repo owner are processed.
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: holdings
+  cancel-in-progress: false
+
+jobs:
+  log:
+    if: >-
+      github.event.issue.state == 'open' &&
+      github.event.issue.user.login == github.repository_owner &&
+      (contains(github.event.issue.labels.*.name, 'bought') ||
+       contains(github.event.issue.labels.*.name, 'remove-purchase'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update data/holdings.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/log_purchase.py "$GITHUB_EVENT_PATH"

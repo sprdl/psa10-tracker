@@ -119,6 +119,15 @@ The **Today's prices / My limits** switch changes which price each card uses:
 
 Like limits, the selection, budget and switch position are saved in this browser only.
 
+## Logging purchases
+
+Each card has a **✓ Bought it** button. It opens a GitHub form pre-filled with the card, today's lowest ask and today's date (JST). Correct the price if you paid something else, pick "Raw" if you're grading it yourself, and submit. A GitHub Action (`.github/workflows/purchases.yml` → `scripts/log_purchase.py`) adds it to `data/holdings.json`, redeploys the site and closes the issue, usually within a minute or two. It works from your phone, and nothing runs on your Mac.
+
+- **Your holdings** shows cost, current value and P&L. The card shows "✓ Owned", and the budget planner subtracts what you've spent from your budget.
+- **Mistakes:** each purchase has a **Remove** link (same flow, `remove-purchase` form). You can also edit a purchase issue before it's processed.
+- If a form can't be read (e.g. the price isn't a number), the Action comments what's wrong and leaves the issue open. The site links to it. Edit the issue and it retries.
+- Only issues you open are processed. `scripts/add_holding.py` still works for bulk entry from the Mac.
+
 ## Project layout
 
 ```
