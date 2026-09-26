@@ -1357,8 +1357,9 @@
         <div class="tr-list">${callRows}</div>
         ${predRows ? `<h3 class="tr-h">Stated odds</h3><div class="tr-list">${predRows}</div>` : ''}
         <p class="tr-note">How it's scored: each change of verdict is one call, measured on the lowest PSA10 ask over the next ${win} days.
-          A <b>Buy</b> is wrong if the price drops more than ${th}% below the call price (you could have bought cheaper), otherwise right.
-          A <b>Watch</b> is right if it drops more than ${th}% (waiting paid off), wrong if it ends more than ${th}% higher without a dip, otherwise neutral.
+          A <b>Buy</b> is wrong if the price drops more than the card's threshold below the call price (you could have bought cheaper), otherwise right.
+          A <b>Watch</b> is right if it drops more than the threshold (waiting paid off), wrong if it ends more than the threshold higher without a dip, otherwise neutral.
+          The threshold is ${th}% or the card's own normal swing between checks if larger (up to ${Math.round((tr.noise_threshold_cap || 0.1) * 100)}%), and a drop only counts after ${tr.confirm_readings || 2} checks in a row below it, so one stray cheap listing can't decide a call.
           Stated odds are checked against their deadline; the Brier score rewards odds that match how often things actually happen.
           Updated with every price check (as of ${escapeHtml(fmtDateShort(tr.as_of))}).</p>`;
   }

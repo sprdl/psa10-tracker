@@ -2,14 +2,17 @@
  "as_of": "2026-09-26T09:04:31+09:00",
  "window_days": 30,
  "threshold": 0.05,
+ "confirm_readings": 2,
+ "noise_threshold_pctl": 0.9,
+ "noise_threshold_cap": 0.1,
  "summary": {
   "calls": {
    "right": 1,
-   "wrong": 2,
+   "wrong": 1,
    "neutral": 0,
-   "pending": 10
+   "pending": 11
   },
-  "calls_scored": 3,
+  "calls_scored": 2,
   "odds_resolved": 0,
   "odds_open": 15,
   "brier": null,
@@ -33,7 +36,8 @@
    "now": null,
    "now_pct": null,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.05
   },
   {
    "url": "https://snkrdunk.com/apparels/224087",
@@ -51,7 +55,8 @@
    "now": 41999,
    "now_pct": 0.0,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.05
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
@@ -69,7 +74,8 @@
    "now": 26800,
    "now_pct": -2.9,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.05
   },
   {
    "url": "https://snkrdunk.com/apparels/138599",
@@ -87,7 +93,8 @@
    "now": 29800,
    "now_pct": 0.0,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.051
   },
   {
    "url": "https://snkrdunk.com/apparels/96712",
@@ -105,7 +112,8 @@
    "now": 24980,
    "now_pct": 0.4,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.05
   },
   {
    "url": "https://snkrdunk.com/apparels/387059",
@@ -123,7 +131,8 @@
    "now": 43000,
    "now_pct": 6.2,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.05
   },
   {
    "url": "https://snkrdunk.com/apparels/91178",
@@ -141,7 +150,8 @@
    "now": 325000,
    "now_pct": 14.0,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.1
   },
   {
    "url": "https://snkrdunk.com/apparels/135232",
@@ -159,7 +169,8 @@
    "now": 44700,
    "now_pct": 6.4,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.05
   },
   {
    "url": "https://snkrdunk.com/apparels/138599",
@@ -177,7 +188,8 @@
    "now": 29800,
    "now_pct": 10.4,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.051
   },
   {
    "url": "https://snkrdunk.com/apparels/408333",
@@ -195,7 +207,8 @@
    "now": 77999,
    "now_pct": -1.3,
    "status": "right",
-   "why": "dropped to ¥74,500 on 2026-09-17"
+   "why": "dropped to ¥73,500 on 2026-09-17 (held under −5% for 2 checks)",
+   "threshold": 0.05
   },
   {
    "url": "https://snkrdunk.com/apparels/455596",
@@ -212,8 +225,9 @@
    "low_pct": -5.2,
    "now": 70000,
    "now_pct": 3.7,
-   "status": "wrong",
-   "why": "dropped to ¥64,000 on 2026-09-16"
+   "status": "pending",
+   "why": "",
+   "threshold": 0.062
   },
   {
    "url": "https://snkrdunk.com/apparels/91178",
@@ -231,7 +245,8 @@
    "now": 325000,
    "now_pct": 1.6,
    "status": "wrong",
-   "why": "dropped to ¥299,999 on 2026-09-16"
+   "why": "dropped to ¥280,000 on 2026-09-17 (held under −10% for 2 checks)",
+   "threshold": 0.1
   },
   {
    "url": "https://snkrdunk.com/apparels/135232",
@@ -249,7 +264,8 @@
    "now": 44700,
    "now_pct": 4.4,
    "status": "pending",
-   "why": ""
+   "why": "",
+   "threshold": 0.05
   }
  ],
  "predictions": [
