@@ -40,7 +40,8 @@ JS = r"""await (async () => {
   let prevH = 0;
   for (let i = 0; i < 20; i++) { const h = document.body.scrollHeight; if (h > 5000 && h === prevH) break; prevH = h; await sleep(300); }
   for (let y = 0; y <= document.body.scrollHeight + 1200; y += 600) {
-    window.scrollTo(0, y); await sleep(120);
+    // dispatching scroll events keeps the virtualised list rendering even when the browser tab is hidden
+    window.scrollTo(0, y); window.dispatchEvent(new Event('scroll')); document.dispatchEvent(new Event('scroll')); await sleep(200);
     const t = document.querySelector('main').innerText; let m;
     while ((m = re.exec(t))) seen[m[1].toLowerCase()] = m[2];
   }

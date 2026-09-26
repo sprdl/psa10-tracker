@@ -10,9 +10,9 @@ window.__oddsBuilder = async (step) => {
   if (step === 'list') {
     if (!location.pathname.startsWith('/gr/all-card')) { location.href = '/gr/all-card/?sort=newest'; return 'navigating to the card list; run list again once it has loaded'; }
     await sleep(1500);
-    const seen = {}; const H = document.body.scrollHeight;
-    for (let y = 0; y <= H + 1200; y += 600) {
-      window.scrollTo(0, y); await sleep(110);
+    const seen = {};
+    for (let y = 0; y <= document.body.scrollHeight + 1200; y += 600) {
+      window.scrollTo(0, y); window.dispatchEvent(new Event('scroll')); document.dispatchEvent(new Event('scroll')); await sleep(200);
       for (const a of document.querySelectorAll('main a[href*="/gr/"]')) {
         const m = a.innerText.match(/\n?([^\n]+\[([^\]]+)\])\n\n([^\n]*)\n\nPSA10価格\n\n([^\n]+)\n\n(\d{4}-\d{2})/);
         if (m) seen[m[2]] = { name: m[1], set: m[3], price: Number(m[4].replace(/[^\d]/g, '')) || null, date: m[5], href: a.getAttribute('href') };
