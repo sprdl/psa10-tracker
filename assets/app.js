@@ -1113,6 +1113,7 @@
     name: { label: 'Card name', dir: 1, v: (c) => parseCardName(c.card_name_ja).short },
     price: { label: 'Price', dir: -1, v: (c) => getRep(c) },
     zone: { label: 'Closest to Buy', dir: 1, v: (c) => { const t = c.analysis && c.analysis.tiers; const p = getRep(c); return t && p != null ? p / t.buy_upper : null; } },
+    chgLast: { label: 'Change since last check', dir: 1, v: (c) => (priceChangeLast(c) || {}).pct ?? null },
     chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeAgo(c, 7) || {}).pct ?? null },
     chg30: { label: '30-day change', dir: 1, v: (c) => (priceChangeAgo(c, 30) || {}).pct ?? null },
     verdict: { label: 'Verdict', dir: 1, v: (c) => (limitHit(c) ? -1 : VERDICT_RANK[displayTagFor(c)] ?? 5) },
@@ -1415,6 +1416,17 @@
     const old = then.p[card.url][0];
     return old ? { pct: (now / old - 1) * 100, from: then.d.slice(0, 10), old } : null;
   }
+  // Change vs the previous snapshot (the check before the one being shown).
+  function priceChangeLast(card) {
+    const prev = prevCardOf(card), now = getRep(card), old = prev ? getRep(prev) : null;
+    if (old == null || now == null || !old) return null;
+    return { pct: (now / old - 1) * 100, old, from: ((state.previousData && state.previousData.collected_at_jst) || '').slice(0, 16).replace('T', ' ') };
+  }
+  function changeLastCell(card, cls) {
+    const c = priceChangeLast(card);
+    if (!c) return `<span class="${cls} muted" title="No earlier snapshot for this card">—</span>`;
+    return `<span class="${cls} ${dirClass(c.pct)}" title="${fmtYen(c.old)} at the previous check (${escapeHtml(c.from)} JST)">${c.pct === 0 ? '±0' : fmtPct(c.pct)}</span>`;
+  }
   function changeCell(card, days, cls) {
     const c = priceChangeAgo(card, days);
     if (!c) return `<span class="${cls} muted" title="No snapshot from ${days} days ago yet (history starts 2026-09-15)">—</span>`;
@@ -1441,7 +1453,7 @@
         <span class="wl-name"><b class="jp">${escapeHtml(short)}</b><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
-        ${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg')}
+        ${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg')}
         <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
         <span class="wl-heat">${heatChip(card)}</span>
       </a>`;

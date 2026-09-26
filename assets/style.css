@@ -209,7 +209,7 @@ img.card-img {
 /* ---------- overview: list + drawer ---------- */
 .split { display: flex; gap: 18px; align-items: flex-start; }
 .watchlist { flex-grow: 1; min-width: 0; overflow: hidden; }
-.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 100px minmax(70px, 130px) 52px 52px 92px 82px; gap: 10px; align-items: center; padding: 0 18px; }
+.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 100px minmax(70px, 120px) 50px 50px 50px 92px 82px; gap: 10px; align-items: center; padding: 0 18px; }
 .wl-head { padding-top: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font: 15px var(--display); letter-spacing: 0.1em; color: var(--muted-2); }
 .wl-head .r, .wl-price, .wl-off, .wl-chg { text-align: right; }
 .wl-head span { white-space: nowrap; }
