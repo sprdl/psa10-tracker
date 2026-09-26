@@ -22,7 +22,10 @@ const C = {
   text: new Color('#f4f4f5'), soft: new Color('#d4d4d8'), muted: new Color('#8e8e96'),
   accent: new Color('#ffd23f'), green: new Color('#45d483'), greenStrong: new Color('#1f9d61'),
   amber: new Color('#f5a524'), red: new Color('#ff6b63'), ice: new Color('#8fd3ff'),
+  zoneRed: new Color('#f0524d'), slab: new Color('#e9e9ec'), psaRed: new Color('#b8322c'), white: new Color('#ffffff'),
 };
+// The web app uses Bebas Neue for display type; DIN Condensed (built into iOS) is the closest match.
+const display = (size) => new Font('DINCondensed-Bold', size);
 
 // ---------------------------------------------------------------- data
 const fm = FileManager.local();
@@ -170,6 +173,82 @@ function pill(stack, label, color, filled) {
   const t = p.addText(label); t.font = Font.boldSystemFont(10); t.textColor = filled ? C.bg : color;
   return p;
 }
+function tagPill(stack, x, short) {
+  if (x.limitHit) return pill(stack, short ? 'LIMIT' : 'LIMIT HIT', C.accent, true);
+  if (TAG[x.tag]) return pill(stack, ...TAG[x.tag]);
+  return null;
+}
+function dtxt(stack, s, size, color) {
+  const t = stack.addText(String(s)); t.font = display(size); t.textColor = color || C.text; t.lineLimit = 1; t.minimumScaleFactor = 0.6;
+  return t;
+}
+
+// PSA slab like the app's: light grey case, white label with a red top edge, card art below.
+function slabImage(art, w, h) {
+  const d = new DrawContext(); d.size = new Size(w, h); d.opaque = false; d.respectScreenScale = true;
+  const all = new Path(); all.addRoundedRect(new Rect(0, 0, w, h), 3, 3); d.addPath(all); d.setFillColor(C.slab); d.fillPath();
+  const lh = Math.round(h * 0.13);
+  d.setFillColor(C.white); d.fillRect(new Rect(2, 2, w - 4, lh));
+  d.setFillColor(C.psaRed); d.fillRect(new Rect(2, 2, w - 4, 1.2));
+  const ay = 2 + lh + 2, aw = w - 4, ah = h - ay - 2;
+  d.setFillColor(new Color('#26262b')); d.fillRect(new Rect(2, ay, aw, ah));
+  if (art) {
+    const r = Math.min(aw / art.size.width, ah / art.size.height);
+    const iw = art.size.width * r, ih = art.size.height * r;
+    d.drawImageInRect(art, new Rect(2 + (aw - iw) / 2, ay + (ah - ih) / 2, iw, ih));
+  }
+  return d.getImage();
+}
+
+// Zone bar like the app's: green (definitely buy) / light green (buy) / amber (watch) / red, white tick = price, yellow dot = your limit.
+function zoneBarImage(x, w) {
+  const h = 10, d = new DrawContext(); d.size = new Size(w, h); d.opaque = false; d.respectScreenScale = true;
+  const t = x.tiers;
+  if (!t) return null;
+  const peak = (x.c.analysis && x.c.analysis.peak && x.c.analysis.peak.price) || 0;
+  const scale = Math.round(Math.max(peak, t.ceiling) * 1.08 / 1000) * 1000 || t.ceiling;
+  const X = (v) => Math.max(0, Math.min(w, (v / scale) * w));
+  const y = 3, th = 4;
+  const seg = (a, b, col) => { d.setFillColor(col); d.fillRect(new Rect(X(a), y, Math.max(0, X(b) - X(a)), th)); };
+  seg(0, t.definitely_buy, C.greenStrong); seg(t.definitely_buy, t.buy_upper, C.green); seg(t.buy_upper, t.ceiling, C.amber); seg(t.ceiling, scale, C.zoneRed);
+  if (x.lim != null) { d.setFillColor(C.accent); d.fillEllipse(new Rect(X(x.lim) - 3.5, h / 2 - 3.5, 7, 7)); }
+  d.setFillColor(C.text); d.fillRect(new Rect(X(x.price) - 1, 0, 2, h));
+  return d.getImage();
+}
+
+// My-tier index sparkline (last 120 days of data/custom_index.json).
+function sparkImage(ci, w, h) {
+  const ser = ((ci && ci.series) || []);
+  if (ser.length < 2) return null;
+  const end = Date.parse(ser[ser.length - 1].d), pts = ser.filter((e) => Date.parse(e.d) >= end - 120 * 864e5);
+  const vals = pts.map((e) => e.level), lo = Math.min(...vals), hi = Math.max(...vals), t0 = Date.parse(pts[0].d);
+  const d = new DrawContext(); d.size = new Size(w, h); d.opaque = false; d.respectScreenScale = true;
+  const path = new Path();
+  pts.forEach((e, i) => {
+    const px = ((Date.parse(e.d) - t0) / (end - t0 || 1)) * (w - 2) + 1, py = h - 1 - ((e.level - lo) / (hi - lo || 1)) * (h - 2);
+    i ? path.addLine(new Point(px, py)) : path.move(new Point(px, py));
+  });
+  d.addPath(path); d.setStrokeColor(C.accent); d.setLineWidth(1.5); d.strokePath();
+  return d.getImage();
+}
+
+function header(w, m, ci) {
+  const head = w.addStack(); head.centerAlignContent();
+  const logo = head.addStack(); logo.backgroundColor = C.accent; logo.cornerRadius = 3; logo.setPadding(2, 4, 0, 4);
+  dtxt(logo, 'PSA10', 15, C.bg);
+  head.addSpacer(5);
+  dtxt(head, 'TRACKER', 15, C.text);
+  head.addSpacer();
+  if (m.corr.level != null) {
+    const sp = sparkImage(ci, 46, 16);
+    if (sp) { const i = head.addImage(sp); i.imageSize = new Size(46, 16); head.addSpacer(6); }
+    const col = head.addStack(); col.layoutVertically();
+    const r1 = col.addStack(); r1.addSpacer(); txt(r1, 'MY TIER', 8, C.muted, true);
+    const r2 = col.addStack(); r2.addSpacer(); r2.bottomAlignContent();
+    dtxt(r2, m.corr.level.toFixed(1), 15, C.text); r2.addSpacer(4); dtxt(r2, pct(m.corr.pct), 12, pctColor(m.corr.pct));
+  }
+}
+
 async function cardImage(url) {
   if (!url) return null;
   const file = fm.joinPath(cacheDir, 'img_' + url.replace(/[^a-z0-9]/gi, '').slice(-60));
@@ -190,40 +269,30 @@ async function small(w, m) {
   const slot = Math.floor(Date.now() / (ROTATE_MINUTES * 6e4));
   w.refreshAfterDate = new Date((slot + 1) * ROTATE_MINUTES * 6e4);
 
-  if (!pool.length) {
-    const top = w.addStack(); top.centerAlignContent();
-    txt(top, 'NO BUY SIGNALS', 11, C.muted, true);
-    w.addSpacer(6);
-    const x = m.closest[0];
-    if (x) {
-      txt(w, 'Closest', 10, C.muted);
-      txt(w, x.name.short, 14, C.text, true, 2);
-      txt(w, yen(x.ask), 20, C.text, true);
-      const g = m.gap(x);
-      txt(w, isFinite(g) ? `${(g * 100).toFixed(0)}% above ${x.lim != null ? 'your limit' : 'Buy'}` : '', 10, C.soft);
-      w.url = BASE + '#/card/' + x.id;
-    }
-    footer(w, m);
-    return;
+  const closest = !pool.length;
+  if (closest) {
+    if (!m.closest.length) { txt(w, 'No tracked cards with a PSA10 market yet.', 10, C.muted, false, 3); footer(w, m); return; }
+    pool = [m.closest[0]];
   }
   const x = pool[slot % pool.length];
   w.url = BASE + '#/card/' + x.id;
   const top = w.addStack(); top.centerAlignContent();
-  if (x.limitHit) pill(top, 'LIMIT HIT', C.accent, true);
-  else if (TAG[x.tag]) pill(top, ...TAG[x.tag]);
+  if (closest) txt(top, 'NO SIGNALS · CLOSEST', 9, C.muted, true); else tagPill(top, x);
   top.addSpacer();
   if (pool.length > 1) txt(top, `${(slot % pool.length) + 1}/${pool.length}`, 10, C.muted);
   w.addSpacer(6);
   const row = w.addStack(); row.topAlignContent();
-  const img = await cardImage(x.c.image_url);
-  if (img) { const i = row.addImage(img); i.imageSize = new Size(34, 48); i.cornerRadius = 3; row.addSpacer(6); }
+  const i = row.addImage(slabImage(await cardImage(x.c.image_url), 34, 49)); i.imageSize = new Size(34, 49); row.addSpacer(6);
   const col = row.addStack(); col.layoutVertically();
   txt(col, x.name.short, 13, C.text, true, 2);
   txt(col, x.name.code, 9, C.muted, false, 1);
   w.addSpacer(4);
-  txt(w, yen(x.ask), 22, x.limitHit ? C.accent : C.text, true);
+  dtxt(w, yen(x.ask), 26, x.limitHit ? C.accent : C.text);
+  const zb = zoneBarImage(x, 130);
+  if (zb) { const zi = w.addImage(zb); zi.imageSize = new Size(130, 10); }
   const sub = w.addStack(); sub.centerAlignContent();
-  if (x.lim != null) txt(sub, 'limit ' + yen(x.lim), 10, C.soft);
+  if (closest) { const g = m.gap(x); txt(sub, isFinite(g) ? `+${(g * 100).toFixed(0)}% to ${x.lim != null ? 'limit' : 'Buy'}` : '', 10, C.ice, true); }
+  else if (x.lim != null) txt(sub, 'limit ' + yen(x.lim), 10, C.soft);
   else if (x.tiers) txt(sub, 'buy ≤ ' + yen(x.tiers.buy_upper), 10, C.soft);
   sub.addSpacer(6);
   txt(sub, '7d ' + pct(x.chg7), 10, pctColor(x.chg7));
@@ -231,38 +300,48 @@ async function small(w, m) {
 }
 
 // ---------------------------------------------------------------- medium: signals + index
-async function medium(w, m) {
+async function medium(w, m, ci) {
   w.url = BASE + '#/overview';
-  const head = w.addStack(); head.centerAlignContent();
-  txt(head, 'PSA10 TRACKER', 12, C.accent, true);
-  head.addSpacer();
-  if (m.corr.level != null) txt(head, `My tier ${m.corr.level.toFixed(1)} · 30d ${pct(m.corr.pct)}`, 10, pctColor(m.corr.pct));
+  header(w, m, ci);
   w.addSpacer(6);
   const sig = m.limitHits.concat(m.buys);
-  const rows = sig.length ? sig.slice(0, 3) : m.closest.slice(0, 3);
-  if (!sig.length) txt(w, 'No buy signals · closest to a buy:', 10, C.muted);
-  for (const x of rows) {
-    const r = w.addStack(); r.centerAlignContent();
-    const nm = r.addStack(); nm.layoutVertically(); nm.size = new Size(150, 0);
-    txt(nm, x.name.short, 12, C.text, true, 1);
-    r.addSpacer();
-    txt(r, yen(x.ask), 13, x.limitHit ? C.accent : C.text, true);
-    r.addSpacer(8);
-    if (x.limitHit) pill(r, 'LIMIT', C.accent, true);
-    else if (sig.length && TAG[x.tag]) pill(r, ...TAG[x.tag]);
-    else { const g = m.gap(x); txt(r, isFinite(g) ? `+${(g * 100).toFixed(0)}%` : '', 11, C.soft); }
-    w.addSpacer(4);
+  // signals first; free slots are filled with the cards closest to a buy
+  const list = sig.slice(0, 3).concat(m.closest.slice(0, Math.max(0, 3 - sig.length)));
+  const sub = w.addStack(); sub.centerAlignContent();
+  txt(sub, m.limitHits.length ? 'AT YOUR LIMIT' : sig.length ? 'BUY SIGNALS' : 'NO BUY SIGNALS · CLOSEST', 9, m.limitHits.length ? C.accent : C.muted, true);
+  if (sig.length > 3) { sub.addSpacer(4); txt(sub, `+${sig.length - 3} more`, 9, C.muted); }
+  sub.addSpacer();
+  txt(sub, (m.corr.on ? 'correction on · ' : '') + m.when.slice(5, 16).replace('-', '/').replace('T', ' '), 9, C.muted);
+  w.addSpacer(6);
+  const row = w.addStack(); row.topAlignContent();
+  for (let k = 0; k < list.length; k++) {
+    const x = list[k];
+    if (k) row.addSpacer(7);
+    const tile = row.addStack(); tile.layoutVertically(); tile.size = new Size(93, 0);
+    tile.url = BASE + '#/card/' + x.id;
+    const top = tile.addStack(); top.topAlignContent();
+    const slab = top.addImage(slabImage(await cardImage(x.c.image_url), 33, 48)); slab.imageSize = new Size(33, 48);
+    top.addSpacer(5);
+    const col = top.addStack(); col.layoutVertically();
+    dtxt(col, yen(x.ask), 17, x.limitHit ? C.accent : C.text);
+    txt(col, x.name.short, 8.5, C.soft, true, 2);
+    col.addSpacer(3);
+    if (sig.includes(x)) tagPill(col, x, true);
+    else { const g = m.gap(x); txt(col, isFinite(g) ? `+${(g * 100).toFixed(0)}% to ${x.lim != null ? 'limit' : 'Buy'}` : '', 9, C.ice, true); }
+    tile.addSpacer(4);
+    const zb = zoneBarImage(x, 93);
+    if (zb) { const i = tile.addImage(zb); i.imageSize = new Size(93, 10); }
+    const ch = tile.addStack();
+    txt(ch, '7d ' + pct(x.chg7), 8, pctColor(x.chg7));
+    if (x.heat) { ch.addSpacer(); txt(ch, x.heat[0], 8, x.heat[1], true); }
   }
-  footer(w, m, m.corr.on ? 'correction rule on' : '');
+  if (!list.length) txt(w, 'No tracked cards with a PSA10 market yet.', 10, C.muted);
 }
 
 // ---------------------------------------------------------------- large: overview list
-async function large(w, m) {
+async function large(w, m, ci) {
   w.url = BASE + '#/overview';
-  const head = w.addStack(); head.centerAlignContent();
-  txt(head, 'PSA10 TRACKER', 13, C.accent, true);
-  head.addSpacer();
-  if (m.corr.level != null) txt(head, `My tier ${m.corr.level.toFixed(1)} · 30d ${pct(m.corr.pct)}`, 10, pctColor(m.corr.pct));
+  header(w, m, ci);
   w.addSpacer(8);
   const list = m.limitHits.concat(m.buys, m.cards.filter((x) => !m.limitHits.includes(x) && !m.buys.includes(x)));
   for (const x of list.slice(0, 10)) {
@@ -270,7 +349,7 @@ async function large(w, m) {
     const nm = r.addStack(); nm.size = new Size(125, 0);
     txt(nm, x.name.short, 11, C.text, true, 1);
     r.addSpacer();
-    txt(r, yen(x.ask), 12, x.limitHit ? C.accent : C.text, true);
+    dtxt(r, yen(x.ask), 15, x.limitHit ? C.accent : C.text);
     r.addSpacer(6);
     const ch = r.addStack(); ch.size = new Size(44, 0);
     txt(ch, pct(x.chg7), 10, pctColor(x.chg7));
@@ -284,14 +363,16 @@ async function large(w, m) {
 
 // ---------------------------------------------------------------- main
 const w = new ListWidget();
-w.backgroundColor = C.bg;
+const bgGrad = new LinearGradient(); bgGrad.colors = [new Color('#141417'), C.bg]; bgGrad.locations = [0, 1];
+w.backgroundGradient = bgGrad;
 w.setPadding(12, 12, 10, 12);
 try {
-  const m = buildModel(await loadData());
+  const data = await loadData();
+  const m = buildModel(data);
   const fam = config.widgetFamily || 'medium';
   if (fam === 'small') await small(w, m);
-  else if (fam === 'large' || fam === 'extraLarge') await large(w, m);
-  else await medium(w, m);
+  else if (fam === 'large' || fam === 'extraLarge') await large(w, m, data.ci);
+  else await medium(w, m, data.ci);
 } catch (e) {
   txt(w, 'PSA10 Tracker', 12, C.accent, true);
   txt(w, "Couldn't load the tracker data: " + e.message, 10, C.soft, false, 4);
