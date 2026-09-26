@@ -7,6 +7,7 @@
     currentData: null,
     previousData: null,
     calls: null, // data/calls.json — track record of past calls (scripts/build_calls.py)
+    hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
     selectedUrl: null, // card shown in the overview's detail drawer (desktop)
@@ -175,6 +176,7 @@
 
     try { state.calls = await fetchJSON('data/calls.json'); } catch (e) { state.calls = null; }
     try { state.customIndex = await fetchJSON('data/custom_index.json'); } catch (e) { state.customIndex = null; }
+    state.hist = await loadHistoryIndex();
 
     await loadIndex(snaps.length - 1);
   }
@@ -488,6 +490,96 @@
       </div>
       ${chart}
       ${table}`;
+  }
+
+  // ---------- tier review status + card vs market ----------
+  // Tiers are fixed yen amounts. They're flagged for review when they are more than
+  // TIER_MAX_AGE_DAYS old, or when the market has moved TIER_MAX_INDEX_MOVE since
+  // they were set (My-tier index if it existed then, else the pokeca-chart PSA10
+  // index). The flag only asks for a human review; nothing moves the tiers itself.
+  const TIER_MAX_AGE_DAYS = 30;
+  const TIER_MAX_INDEX_MOVE = 10; // percent
+
+  function refTime() { return (state.currentData && state.currentData.collected_at_jst) || new Date().toISOString(); }
+  function daysBetween(a, b) { return (new Date(b) - new Date(a)) / 86400000; }
+
+  function myTierAt(ts) {
+    const ser = (state.customIndex && state.customIndex.series) || [];
+    const day = ts.slice(0, 10);
+    let hit = null;
+    for (const e of ser) if (e.d <= day) hit = e;
+    return hit;
+  }
+  function pokecaAt(ts) {
+    const snaps = (state.hist && state.hist.snapshots) || [];
+    let v = null;
+    for (const e of snaps) if (e.d <= ts && e.i) v = e.i;
+    return v;
+  }
+
+  // Market move between two times: My-tier index when it covers both, else pokeca PSA10.
+  function marketMove(from, to, fromPokeca) {
+    const a = myTierAt(from), b = myTierAt(to);
+    if (a && b) return { pct: (b.level / a.level - 1) * 100, name: 'My-tier index' };
+    const pa = fromPokeca || pokecaAt(from), pb = pokecaAt(to);
+    if (pa && pb) return { pct: (pb / pa - 1) * 100, name: 'PSA10 index' };
+    return null;
+  }
+
+  function tierReview(card) {
+    const t = state.hist && state.hist.tiers && state.hist.tiers[card.url];
+    if (!t || !(card.analysis && card.analysis.tiers)) return null;
+    const now = refTime();
+    const days = Math.max(0, daysBetween(t.since, now));
+    const mv = marketMove(t.since, now, t.i);
+    const reasons = [];
+    if (days > TIER_MAX_AGE_DAYS) reasons.push(`over ${TIER_MAX_AGE_DAYS} days old`);
+    if (mv && Math.abs(mv.pct) >= TIER_MAX_INDEX_MOVE) reasons.push(`market moved more than ${TIER_MAX_INDEX_MOVE}%`);
+    return { since: t.since, days, move: mv, due: reasons.length > 0, reasons };
+  }
+
+  function tierReviewHtml(card) {
+    const r = tierReview(card);
+    if (!r) return '';
+    const d = Math.floor(r.days);
+    const age = d === 0 ? 'today' : d === 1 ? '1 day ago' : `${d} days ago`;
+    const mv = r.move ? ` · ${escapeHtml(r.move.name)} <span class="${dirClass(r.move.pct)}">${fmtPct(r.move.pct)}</span> since` : '';
+    return `<div class="tier-age${r.due ? ' due' : ''}">Tiers set ${escapeHtml(fmtDateShort(r.since).slice(0, 10))} (${age})${mv}${r.due
+      ? ` · <b>Review due</b>: ${escapeHtml(r.reasons.join(', '))}`
+      : ` · review due after ${TIER_MAX_AGE_DAYS} days or a ${TIER_MAX_INDEX_MOVE}% market move`}</div>`;
+  }
+
+  // Card price change vs the market over a window, from data/history.json.
+  function cardPriceAt(card, ts) {
+    const snaps = (state.hist && state.hist.snapshots) || [];
+    let v = null;
+    for (const e of snaps) if (e.d <= ts && e.p && e.p[card.url]) v = { d: e.d, price: e.p[card.url][0] };
+    return v;
+  }
+
+  function vsMarketHtml(card) {
+    if (!state.hist || !hasMarket(card)) return '';
+    const now = refTime();
+    const cur = cardPriceAt(card, now);
+    if (!cur) return '';
+    const rows = [7, 30].map((days) => {
+      const from = new Date(new Date(now).getTime() - days * 86400000).toISOString();
+      const past = cardPriceAt(card, from);
+      if (!past) return { days, empty: true };
+      const c = (cur.price / past.price - 1) * 100;
+      const m = marketMove(past.d, now);
+      return { days, c, m, gap: m ? c - m.pct : null };
+    });
+    if (rows.every((r) => r.empty)) {
+      return `<div class="vs-mkt"><span class="lbl">Vs. the market</span><span class="muted">Needs at least 7 days of price history.</span></div>`;
+    }
+    const cell = (r) => r.empty
+      ? `<div class="vs-row"><span>${r.days} days</span><span class="muted">not enough history yet</span></div>`
+      : `<div class="vs-row"><span>${r.days} days</span><span>card <b class="${dirClass(r.c)}">${fmtPct(r.c)}</b></span>${r.m
+          ? `<span>${escapeHtml(r.m.name)} <b class="${dirClass(r.m.pct)}">${fmtPct(r.m.pct)}</b></span><span class="vs-gap ${dirClass(r.gap)}">${Math.abs(r.gap) < 1 ? 'in line with the market' : `${Math.abs(r.gap).toFixed(1)} pts ${r.gap > 0 ? 'stronger' : 'weaker'}`}</span>`
+          : '<span class="muted">no index data</span>'}</div>`;
+    return `<div class="vs-mkt"><span class="lbl">Vs. the market</span>${rows.map(cell).join('')}
+      <p class="cd-note">Weaker than the market means the card is falling for its own reasons (new supply, fading interest); in line means it is moving with a market-wide dip.</p></div>`;
   }
 
   // ---------- render: banners (human-authored + auto-detected) ----------
@@ -855,7 +947,7 @@
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
         <span class="wl-off">${offPeakText(card)}</span>
-        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}</span>
+        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
       </a>`;
     }).join('');
     el.querySelectorAll('.wl-row').forEach((a) => a.addEventListener('click', (e) => {
@@ -1094,7 +1186,9 @@
         </div>
         <div class="cd-panel" data-panel="overview"${cur === 'overview' ? '' : ' hidden'}>
           ${gaugeHtml}
+          ${tierReviewHtml(card)}
           ${limitRowHtml}
+          ${vsMarketHtml(card)}
           ${verdictHtml}
           ${card.quick_note ? `<p class="cd-note">${escapeHtml(card.quick_note)}</p>` : ''}
           ${statsHtml}

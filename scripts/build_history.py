@@ -9,7 +9,13 @@ a few hundred bytes per snapshot.
 
     python3 scripts/build_history.py          # rebuild (add_snapshot / apply_analysis call this)
 
-Per snapshot: {"d": collected_at_jst, "m": check_mode, "p": {url: [price, confirmed]}}
+Per snapshot: {"d": collected_at_jst, "m": check_mode, "i": pokeca PSA10 index, "p": {url: [price, confirmed]}}
+
+Top-level "tiers": {url: {"since": review date, "i": pokeca PSA10 index then}} — when each
+card's current tiers were last set or reviewed: the later of the snapshot where the
+tier numbers last changed and the newest verdict prediction's "made" time (a
+re-evaluation that keeps the same tiers still counts as a review). The site uses it
+to flag tiers that are old or were set before a big market move.
 where price follows the site's own rule (analysis.representative_price if set,
 else the PSA10 lowest ask; cards with no PSA10 ask are left out) and confirmed
 is 1 when price_source is sales_confirmed.
@@ -25,6 +31,7 @@ def build(root: Path = ROOT) -> Path:
     snaps = sorted([s for s in manifest.get("snapshots", []) if s.get("collected_at_jst")],
                    key=lambda s: s["collected_at_jst"])
     series = []
+    tier_state = {}  # url -> [tiers tuple, changed_at, index_then, reviewed_at]
     for s in snaps:
         path = root / "data" / "snapshots" / s["file"]
         try:
@@ -32,7 +39,21 @@ def build(root: Path = ROOT) -> Path:
         except (OSError, json.JSONDecodeError):
             continue
         points = {}
+        idx = (((d.get("pokeca_chart_index") or {}).get("psa10") or {}).get("latest_index_value_jpy"))
+        when = d.get("collected_at_jst", s["collected_at_jst"])
         for c in d.get("cards", []):
+            an = c.get("analysis") or {}
+            t = an.get("tiers")
+            if t:
+                key = (t.get("definitely_buy"), t.get("buy_upper"), t.get("ceiling"))
+                made = max([pr.get("made", "") for pr in ((an.get("verdict") or {}).get("predictions") or [])] or [""])
+                st = tier_state.get(c.get("url"))
+                if not st or st[0] != key:
+                    tier_state[c.get("url")] = st = [key, when, idx, when]
+                if made and made > st[3]:
+                    st[3] = made
+            else:
+                tier_state.pop(c.get("url"), None)
             psa10 = (c.get("grades") or {}).get("psa10") or {}
             if psa10.get("lowest_price") is None:
                 continue
@@ -41,10 +62,24 @@ def build(root: Path = ROOT) -> Path:
             if price is None:
                 continue
             points[c.get("url")] = [price, 1 if a.get("price_source") == "sales_confirmed" else 0]
-        series.append({"d": d.get("collected_at_jst", s["collected_at_jst"]),
-                       "m": s.get("check_mode", "full"), "p": points})
+        entry = {"d": when, "m": s.get("check_mode", "full"), "p": points}
+        if idx:
+            entry["i"] = idx
+        series.append(entry)
+
+    def index_at(ts):
+        v = None
+        for e in series:
+            if e["d"] <= ts and e.get("i"):
+                v = e["i"]
+        return v
+
+    tiers = {}
+    for url, (_, changed, idx0, reviewed) in tier_state.items():
+        since = max(changed, reviewed)
+        tiers[url] = {"since": since, "i": index_at(since) or idx0}
     out = root / "data" / "history.json"
-    out.write_text(json.dumps({"snapshots": series}, ensure_ascii=False, separators=(",", ":")) + "\n",
+    out.write_text(json.dumps({"snapshots": series, "tiers": tiers}, ensure_ascii=False, separators=(",", ":")) + "\n",
                    encoding="utf-8")
     # The track record (data/calls.json) is derived from the same snapshots.
     try:

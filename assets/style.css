@@ -152,7 +152,7 @@ a.kpi:hover { border-color: var(--line-3); color: var(--text); }
 .vtag.watch { color: var(--amber); border-color: var(--amber); }
 .vtag.dont_buy { color: var(--neg); border-color: var(--neg); }
 .vtag.defer, .vtag.none { color: var(--muted); border-color: var(--line-3); }
-.owned-chip, .limit-chip {
+.owned-chip, .limit-chip, .due-chip {
   display: inline-flex; font: 14px var(--display); letter-spacing: 0.08em; line-height: 1; padding: 4px 6px 2px; border-radius: 3px; margin-left: 6px;
 }
 .owned-chip { background: var(--panel-2); color: var(--green); border: 1px solid rgba(69, 212, 131, 0.4); }
@@ -567,3 +567,16 @@ td em { color: var(--muted-2); font-style: normal; }
 .ci-members th, .ci-members td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ci-members .muted { color: var(--muted-2); }
 @media (max-width: 800px) { .ci-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ci-v { font-size: 22px; } }
+
+/* tier review status + vs. market (card detail) */
+.due-chip { color: var(--amber); border: 1px solid rgba(245, 165, 36, 0.5); }
+.tier-age { font-size: 12px; color: var(--muted); margin: 8px 0; line-height: 1.5; }
+.tier-age.due { color: var(--soft); background: rgba(245, 165, 36, 0.08); border: 1px solid rgba(245, 165, 36, 0.4); border-radius: var(--radius); padding: 8px 10px; }
+.tier-age.due b { color: var(--amber); }
+.vs-mkt { margin-top: 12px; background: var(--panel-2); border: 1px solid #2c2c32; border-radius: var(--radius); padding: 10px 12px; font-size: 13px; }
+.vs-mkt .lbl { display: block; margin-bottom: 6px; }
+.vs-row { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 3px 0; font-variant-numeric: tabular-nums; }
+.vs-row > span:first-child { color: var(--muted-2); min-width: 56px; }
+.vs-gap { font-weight: 600; }
+.vs-mkt .muted { color: var(--muted-2); }
+.vs-mkt .cd-note { margin-top: 6px; }
