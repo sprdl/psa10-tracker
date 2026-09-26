@@ -9,7 +9,12 @@ a few hundred bytes per snapshot.
 
     python3 scripts/build_history.py          # rebuild (add_snapshot / apply_analysis call this)
 
-Per snapshot: {"d": collected_at_jst, "m": check_mode, "i": pokeca PSA10 index, "p": {url: [price, confirmed]}}
+Per snapshot: {"d": collected_at_jst, "m": check_mode, "i": pokeca PSA10 index, "p": {url: [price, confirmed]},
+               "h": {url: [PSA10 sales/day, raw A sales/day]}}
+
+"h" is how fast the card trades on SNKRDUNK: the number of recent completed sales in
+the snapshot (up to 20, one-copy sales) divided by the days since the oldest of them.
+Timestamps are either dates ("2026/09/14", taken as noon JST) or relative ("18時間前").
 
 Top-level "tiers": {url: {"since": review date, "i": pokeca PSA10 index then}} — when each
 card's current tiers were last set or reviewed: the later of the snapshot where the
@@ -20,8 +25,34 @@ where price follows the site's own rule (analysis.representative_price if set,
 else the PSA10 lowest ask; cards with no PSA10 ask are left out) and confirmed
 is 1 when price_source is sales_confirmed.
 """
-import json
+import json, re
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+JST = timezone(timedelta(hours=9))
+REL = {"秒": 1 / 86400, "分": 1 / 1440, "時間": 1 / 24, "日": 1, "週間": 7, "ヶ月": 30, "か月": 30}
+
+
+def sale_age_days(when, ref):
+    """Days between a SNKRDUNK sale timestamp and the snapshot time (None if unreadable)."""
+    w = (when or "").strip()
+    if w in ("たった今", "今"):
+        return 0.0
+    m = re.match(r"(\d+)\s*(秒|分|時間|日|週間|ヶ月|か月)前", w)
+    if m:
+        return (int(m.group(1)) + 0.5) * REL[m.group(2)]  # "1日前" means 1-2 days ago: take the middle
+    m = re.match(r"(\d{4})/(\d{1,2})/(\d{1,2})", w)
+    if m:
+        t = datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), 12, tzinfo=JST)
+        return max(0.0, (ref - t).total_seconds() / 86400)
+    return None
+
+
+def sales_per_day(sales, ref):
+    ages = [a for a in (sale_age_days(s.get("when"), ref) for s in sales or []) if a is not None]
+    if len(ages) < 2:
+        return None
+    return round(len(ages) / max(max(ages), 0.25), 2)
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -62,7 +93,23 @@ def build(root: Path = ROOT) -> Path:
             if price is None:
                 continue
             points[c.get("url")] = [price, 1 if a.get("price_source") == "sales_confirmed" else 0]
+        heat = {}
+        try:
+            ref = datetime.fromisoformat(when)
+            if ref.tzinfo is None:
+                ref = ref.replace(tzinfo=JST)
+        except ValueError:
+            ref = None
+        if ref:
+            for c in d.get("cards", []):
+                g = c.get("grades") or {}
+                a = sales_per_day((g.get("psa10") or {}).get("recent_completed_sales"), ref)
+                b = sales_per_day((g.get("raw_a_grade") or {}).get("recent_completed_sales"), ref)
+                if a is not None or b is not None:
+                    heat[c.get("url")] = [a, b]
         entry = {"d": when, "m": s.get("check_mode", "full"), "p": points}
+        if heat:
+            entry["h"] = heat
         if idx:
             entry["i"] = idx
         series.append(entry)

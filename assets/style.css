@@ -640,3 +640,16 @@ td em { color: var(--muted-2); font-style: normal; }
 .ev-name { color: var(--text); }
 .ev-meta { font-size: 11px; color: var(--muted); }
 @media (max-width: 600px) { .ev-list li { grid-template-columns: 1fr; } .ev-when { grid-row: auto; } }
+
+/* trading activity (heat) */
+.heat-chip { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line-3); color: var(--muted); vertical-align: middle; margin-left: 4px; }
+.heat-hot { background: var(--accent); border-color: var(--accent); color: #111; }
+.heat-active { border-color: var(--accent); color: var(--accent); }
+.heat-slow { color: var(--soft); }
+.heat-cold { color: var(--muted-2); border-style: dashed; }
+.heat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+.heat-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.heat-table th, .heat-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.heat-table th { font-size: 11px; color: var(--muted); font-weight: 600; }
+.heat-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.heat-table a { color: var(--text); text-decoration: none; }

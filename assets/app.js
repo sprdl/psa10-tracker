@@ -1082,6 +1082,7 @@
     renderMarketStrip(data);
     renderCustomIndex();
     renderEvents();
+    renderHeat();
     renderKpis(data);
     renderSignals(cards);
     renderBanners(data, state.previousData);
@@ -1204,6 +1205,82 @@
     return `<span class="zb ${cls || ''}"><span class="zb-track"><i class="z-db" style="width:${pct(t.definitely_buy)}"></i><i class="z-bu" style="width:${pct(t.buy_upper - t.definitely_buy)}"></i><i class="z-w" style="width:${pct(t.ceiling - t.buy_upper)}"></i><i class="z-x"></i></span><span class="zb-now" style="left:${pct(getRep(card))}"></span>${lim != null ? `<span class="zb-lim" style="left:${pct(lim)}"></span>` : ''}</span>`;
   }
 
+  // ---------- trading activity ("heat") ----------
+  // How fast a card trades on SNKRDUNK: recent one-copy completed sales (up to 20 per
+  // grade, as read by the price check) divided by the days since the oldest of them.
+  // Same rule as scripts/build_history.py, which stores it per snapshot in history.json.
+  const HEAT_LEVELS = [[5, 'hot', 'Hot'], [2, 'active', 'Active'], [0.7, 'slow', 'Slow'], [0, 'cold', 'Cold']];
+  const REL_DAYS = { '秒': 1 / 86400, '分': 1 / 1440, '時間': 1 / 24, '日': 1, '週間': 7, 'ヶ月': 30, 'か月': 30 };
+  function saleAgeDays(when, refMs) {
+    const w = String(when || '').trim();
+    if (w === 'たった今' || w === '今') return 0;
+    let m = w.match(/^(\d+)\s*(秒|分|時間|日|週間|ヶ月|か月)前/);
+    if (m) return (Number(m[1]) + 0.5) * REL_DAYS[m[2]];
+    m = w.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+    if (m) return Math.max(0, (refMs - Date.parse(`${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T12:00:00+09:00`)) / 86400000);
+    return null;
+  }
+  function salesPerDay(sales, refIso) {
+    const ref = Date.parse(refIso);
+    const ages = (sales || []).map((x) => saleAgeDays(x.when, ref)).filter((a) => a != null);
+    if (ages.length < 2 || isNaN(ref)) return null;
+    const span = Math.max(Math.max(...ages), 0.25);
+    // 20 sales within SNKRDUNK's coarsest timestamp ("1日前") means the true rate may be higher
+    return { rate: ages.length / span, n: ages.length, span, sat: ages.length >= 20 && span <= 1.6 };
+  }
+  function rateTxt(x) { return x ? fmtRate(x.rate) + (x.sat ? '+' : '') : '—'; }
+  function heatLevel(rate) { return rate == null ? null : HEAT_LEVELS.find(([min]) => rate >= min); }
+  function fmtRate(r) { return r == null ? '—' : r >= 10 ? String(Math.round(r)) : r >= 1 ? r.toFixed(1) : r.toFixed(2); }
+  function heatOf(card) {
+    const ref = (state.currentData && state.currentData.collected_at_jst) || new Date().toISOString();
+    const g = card.grades || {};
+    const psa = salesPerDay((g.psa10 || {}).recent_completed_sales, ref);
+    const raw = salesPerDay((g.raw_a_grade || {}).recent_completed_sales, ref);
+    if (!psa && !raw) return null;
+    // a week ago, from history.json
+    const snaps = (state.hist && state.hist.snapshots) || [];
+    const weekAgo = new Date(Date.parse(ref) - 7 * 86400000).toISOString();
+    let prev = null;
+    for (const e of snaps) { if (Date.parse(e.d) <= Date.parse(weekAgo) && e.h && e.h[card.url] && e.h[card.url][0] != null) prev = { d: e.d, rate: e.h[card.url][0] }; }
+    const within = (g.psa10 || {}).count_within_15pct;
+    const cover = psa && within ? within / psa.rate : null;
+    return { psa, raw, prev, cover, within, level: heatLevel(psa ? psa.rate : null) };
+  }
+  function heatChip(card) {
+    const h = heatOf(card);
+    if (!h || !h.level) return '';
+    return `<span class="heat-chip heat-${h.level[1]}" title="About ${fmtRate(h.psa.rate)} PSA10 sales a day on SNKRDUNK">${h.level[2]}</span>`;
+  }
+  function heatStatHtml(card) {
+    const h = heatOf(card);
+    if (!h || !h.psa) return `<div class="cd-stat"><div class="lbl">PSA10 trading</div><div class="val">—</div><div class="heat-sub">No recent PSA10 sales on SNKRDUNK</div></div>`;
+    const ch = h.prev && h.prev.rate ? (h.psa.rate / h.prev.rate - 1) * 100 : null;
+    const spanTxt = h.psa.span < 1 ? `${Math.max(1, Math.round(h.psa.span * 24))} h` : `${h.psa.span.toFixed(h.psa.span < 10 ? 1 : 0)} days`;
+    return `<div class="cd-stat"><div class="lbl">PSA10 trading (SNKRDUNK)</div>
+      <div class="val">≈${rateTxt(h.psa)} / day ${heatChip(card)}</div>
+      <div class="heat-sub">Last ${h.psa.n} sales in ${spanTxt}${h.prev ? ` · a week ago ≈${fmtRate(h.prev.rate)}/day${ch != null ? ` <span class="${dirClass(ch)}">(${fmtPct(ch)})</span>` : ''}` : ''}${h.cover != null ? `<br>Cheap listings (${h.within}) ≈ ${h.cover < 1 ? Math.max(1, Math.round(h.cover * 24)) + ' h' : h.cover.toFixed(1) + ' days'} of sales` : ''}${h.raw ? ` · raw A ≈${fmtRate(h.raw.rate)}/day` : ''}</div></div>`;
+  }
+  function renderHeat() {
+    const el = document.getElementById('heat-panel');
+    if (!el) return;
+    const cards = ((state.currentData && state.currentData.cards) || []).map((c) => ({ c, h: heatOf(c) })).filter((x) => x.h && (x.h.psa || x.h.raw));
+    if (!cards.length) { el.hidden = true; return; }
+    el.hidden = false;
+    cards.sort((a, b) => ((b.h.psa || {}).rate || -1) - ((a.h.psa || {}).rate || -1) || ((b.h.raw || {}).rate || 0) - ((a.h.raw || {}).rate || 0));
+    const rows = cards.map(({ c, h }) => {
+      const { short, code } = parseCardName(c.card_name_ja);
+      const ch = h.psa && h.prev && h.prev.rate ? (h.psa.rate / h.prev.rate - 1) * 100 : null;
+      return `<tr><td><a href="#/card/${escapeAttr(cardId(c))}"><b class="jp">${escapeHtml(short)}</b></a> <small class="muted">${escapeHtml(code)}</small></td>
+        <td class="num">${rateTxt(h.psa)}</td><td>${heatChip(c)}</td>
+        <td class="num">${h.prev ? fmtRate(h.prev.rate) : '—'}${ch != null ? ` <span class="${dirClass(ch)}">${fmtPct(ch)}</span>` : ''}</td>
+        <td class="num">${h.cover != null ? (h.cover < 1 ? Math.max(1, Math.round(h.cover * 24)) + ' h' : h.cover.toFixed(1) + ' d') : '—'}</td>
+        <td class="num">${h.raw ? fmtRate(h.raw.rate) : '—'}</td></tr>`;
+    }).join('');
+    el.innerHTML = `<h2 class="section-title">Trading activity</h2>
+      <p class="ci-note">How often each card actually sells on SNKRDUNK, from its recent one-copy completed sales (the last 20 per grade; "13+" means 20 sales within about a day, so the true rate may be higher). Hot ≥ 5 PSA10 sales a day, Active ≥ 2, Slow ≥ 0.7, Cold below. "Cheap listings last" = listings within 15% of the lowest ask ÷ daily PSA10 sales: a short time means the cheap end gets bought up fast; a long time means copies sit.</p>
+      <div class="table-scroll"><table class="heat-table"><thead><tr><th>Card</th><th class="num">PSA10 sales / day</th><th></th><th class="num">A week ago</th><th class="num">Cheap listings last</th><th class="num">Raw A sales / day</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
   function tagChip(card) {
     const tag = displayTagFor(card);
     return tag ? `<span class="vtag ${tag}">${escapeHtml(tagLabel(tag))}</span>` : `<span class="vtag none">No tiers</span>`;
@@ -1236,7 +1313,7 @@
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
         <span class="wl-off">${offPeakText(card)}</span>
-        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
+        <span class="wl-tag">${tagChip(card)}${heatChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
       </a>`;
     }).join('');
     el.querySelectorAll('.wl-row').forEach((a) => a.addEventListener('click', (e) => {
@@ -1401,6 +1478,7 @@
       <div class="cd-stats">
         <div class="cd-stat"><div class="lbl">Order-book depth</div><div class="val">${depth.within} / ${depth.total}${asOfHtml(psa10.listings_as_of)}</div><div class="depth-bar-track"><div class="depth-bar-fill" style="width:${Math.round(depth.ratio * 100)}%"></div></div></div>
         <div class="cd-stat"><div class="lbl">Recent sales</div><div class="val">${salesRangeText(psa10.recent_completed_sales)}</div></div>
+        ${heatStatHtml(card)}
         <div class="cd-stat"><div class="lbl">Favorites</div><div class="val">${favHtml}</div></div>
         <div class="cd-stat"><div class="lbl">Population · gem rate</div><div class="val">${popText}${card.population_as_of ? asOfHtml(card.population_as_of) : ''}</div></div>
         <div class="cd-stat"><div class="lbl">Raw A lowest</div><div class="val">${raw ? fmtYen(raw.lowest_price) : '—'}</div></div>
