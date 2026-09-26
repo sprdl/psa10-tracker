@@ -7,6 +7,7 @@
     currentData: null,
     previousData: null,
     calls: null, // data/calls.json — track record of past calls (scripts/build_calls.py)
+    customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
     selectedUrl: null, // card shown in the overview's detail drawer (desktop)
     cardTab: 'overview', // last-used tab of the card detail
@@ -173,6 +174,7 @@
     }
 
     try { state.calls = await fetchJSON('data/calls.json'); } catch (e) { state.calls = null; }
+    try { state.customIndex = await fetchJSON('data/custom_index.json'); } catch (e) { state.customIndex = null; }
 
     await loadIndex(snaps.length - 1);
   }
@@ -405,6 +407,94 @@
     mn.innerHTML = notes.map(([k, v]) => `<div class="panel"><div class="lbl">${escapeHtml(k)}</div><p>${escapeHtml(v)}</p></div>`).join('');
   }
 
+  // ---------- render: My-tier index (data/custom_index.json) ----------
+  // Equal-weighted index of the tier actually being bought; base date = 100.
+  // Everything shown is computed here from the stored prices and base prices.
+
+  function customIndexStats() {
+    const ci = state.customIndex;
+    const ser = (ci && ci.series) || [];
+    if (!ser.length) return null;
+    const last = ser[ser.length - 1];
+    const before = (days) => {
+      const t = new Date(last.d + 'T00:00:00+09:00').getTime() - days * 86400000;
+      let hit = null;
+      for (const e of ser) if (new Date(e.d + 'T00:00:00+09:00').getTime() <= t) hit = e;
+      return hit;
+    };
+    const pct = (e) => (e && e !== last ? (last.level / e.level - 1) * 100 : null);
+    return { ci, ser, last, day: pct(ser.length > 1 ? ser[ser.length - 2] : null), week: pct(before(7)), month: pct(before(30)) };
+  }
+
+  function myTierLine() {
+    const st = customIndexStats();
+    if (!st) return '';
+    return `<br><span>My tier ${st.last.level.toFixed(1)}</span>${st.day != null ? ` · <span class="${dirClass(st.day)}">${fmtPct(st.day)} day</span>` : ''}`;
+  }
+
+  function renderCustomIndex() {
+    let el = document.getElementById('custom-index');
+    if (!el) return;
+    const st = customIndexStats();
+    if (!st) { el.hidden = true; return; }
+    el.hidden = false;
+    const { ci, ser, last } = st;
+    const meta = ci.meta || {};
+    const base = ser.find((e) => e.pokeca_psa10) || null;
+    const cell = (k, v, cls) => `<div class="ci-stat"><div class="lbl">${k}</div><div class="ci-v ${cls || ''}">${v}</div></div>`;
+    const since = last.level - (meta.base_level || 100);
+    const pokecaRel = (e) => (base && e.pokeca_psa10 ? (e.pokeca_psa10 / base.pokeca_psa10) * 100 : null);
+    const pk = pokecaRel(last);
+
+    // chart: my-tier level vs pokeca-chart PSA10 index rebased to 100 on the same day
+    let chart = '';
+    if (ser.length >= 2) {
+      const w = 700, h = 170, pad = 10;
+      const vals = ser.flatMap((e) => [e.level, pokecaRel(e)]).filter((v) => v != null);
+      let lo = Math.min(...vals), hi = Math.max(...vals);
+      const padV = (hi - lo) * 0.12 || 2; lo -= padV; hi += padV;
+      const x = (i) => pad + (i * (w - pad * 2)) / (ser.length - 1);
+      const y = (v) => pad + (h - pad * 2) * (1 - (v - lo) / (hi - lo));
+      const line = (get) => ser.map((e, i) => [e, i]).filter(([e]) => get(e) != null)
+        .map(([e, i], k) => `${k ? 'L' : 'M'}${x(i).toFixed(1)},${y(get(e)).toFixed(1)}`).join(' ');
+      const y100 = y(100).toFixed(1);
+      chart = `<svg class="ci-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="My-tier index vs pokeca-chart PSA10 index">
+        <line x1="${pad}" x2="${w - pad}" y1="${y100}" y2="${y100}" class="ci-base"/>
+        <path d="${line(pokecaRel)}" class="ci-line-pk"/>
+        <path d="${line((e) => e.level)}" class="ci-line"/>
+      </svg>
+      <div class="spark-dates"><span>${escapeHtml(ser[0].d)}</span><span>${escapeHtml(last.d)}</span></div>
+      <div class="ci-legend"><span class="ci-key ci-key-me"></span>My tier <span class="ci-key ci-key-pk"></span>pokeca-chart PSA10 (rebased to 100)</div>`;
+    } else {
+      chart = `<p class="ci-note">Chart appears after the second daily reading.</p>`;
+    }
+
+    const rows = (meta.constituents || []).map((c) => {
+      const p = last.prices && last.prices[c.code];
+      const ch = p != null ? (p / c.base - 1) * 100 : null;
+      return { c, p, ch, carried: (last.carried || []).includes(c.code) };
+    }).sort((a, b) => (a.ch ?? 1e9) - (b.ch ?? 1e9));
+    const table = `<details class="ci-members"><summary>${rows.length} cards · weakest first</summary>
+      <div class="table-scroll"><table><thead><tr><th>Card</th><th>Code</th><th>Base</th><th>Now</th><th>vs base</th></tr></thead><tbody>
+      ${rows.map(({ c, p, ch, carried }) => `<tr><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.code)}</td><td>${fmtYen(c.base)}</td>
+        <td>${fmtYen(p)}${carried ? ' <span class="muted">(carried)</span>' : ''}</td><td class="${dirClass(ch)}">${fmtPct(ch)}</td></tr>`).join('')}
+      </tbody></table></div></details>`;
+
+    el.innerHTML = `
+      <h2 class="section-title">My-tier index</h2>
+      <p class="ci-note">${escapeHtml(meta.selection || '')} Base ${escapeHtml(meta.base_date || '')} = ${meta.base_level || 100}. Updated once a day with the full check.</p>
+      <div class="ci-stats">
+        ${cell('Level · ' + escapeHtml(last.d), last.level.toFixed(2))}
+        ${cell('Day', fmtPct(st.day), dirClass(st.day))}
+        ${cell('7 days', fmtPct(st.week), dirClass(st.week))}
+        ${cell('30 days', fmtPct(st.month), dirClass(st.month))}
+        ${cell('Since base', fmtPct(since), dirClass(since))}
+        ${cell('pokeca idx since base', fmtPct(pk != null ? pk - 100 : null), dirClass(pk != null ? pk - 100 : null))}
+      </div>
+      ${chart}
+      ${table}`;
+  }
+
   // ---------- render: banners (human-authored + auto-detected) ----------
 
   function computeAutoFlags(cards, prevData) {
@@ -615,6 +705,7 @@
     const prevCards = (state.previousData && state.previousData.cards) || [];
     els.collectedAt.textContent = fmtDateJST(data.collected_at_jst);
     renderMarketStrip(data);
+    renderCustomIndex();
     renderKpis(data);
     renderSignals(cards);
     renderBanners(data, state.previousData);
@@ -650,7 +741,7 @@
     const c = (sm && sm.calls) || {};
     const chg = (x) => `<span class="${dirClass(x.day_change_pct)}">${fmtPct(x.day_change_pct)} day</span> · <span class="${dirClass(x.month_change_pct)}">${fmtPct(x.month_change_pct)} month</span>`;
     const tiles = [
-      { href: '#/market', k: 'PSA10 index', v: fmtYen(p.latest_index_value_jpy), d: chg(p) },
+      { href: '#/market', k: 'PSA10 index', v: fmtYen(p.latest_index_value_jpy), d: chg(p) + myTierLine() },
       { href: '#/market', k: 'Raw A-rank index', v: fmtYen(r.latest_index_value_jpy), d: chg(r) },
       { href: '#/planner', k: 'Budget left', v: fmtYen(st.budget - spent), d: `of ${fmtYen(st.budget)} · ${fmtYen(spent)} spent` },
       { href: '#/record', k: 'Track record', v: sm && sm.calls_scored ? `${c.right || 0} right · ${c.wrong || 0} wrong` : '—',

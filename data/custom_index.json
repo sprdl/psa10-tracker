@@ -1,0 +1,182 @@
+{
+ "meta": {
+  "name": "My-tier index",
+  "base_date": "2026-09-26",
+  "base_level": 100,
+  "method": "Equal-weighted: 100 × mean(price ÷ base). Prices = PSA10価格 on pokeca-chart.com/gr/all-card/. Missing price → last known price carried forward.",
+  "selection": "Pokémon ex/V/VMAX/VSTAR alt-art/SAR cards; released 2021–2025 and ≥ ~10 months old; no promos, trainers or start-deck cards; PSA10 ¥15k–150k at base date; max 3 Charizard.",
+  "next_review": "2026-12-26",
+  "revisions": [
+   {
+    "d": "2026-09-26",
+    "note": "created with 22 constituents"
+   }
+  ],
+  "constituents": [
+   {
+    "code": "sv8a 217/187",
+    "name": "Umbreon ex SAR",
+    "name_ja": "ブラッキーex",
+    "base": 67500
+   },
+   {
+    "code": "sv8 132/106",
+    "name": "Pikachu ex SAR",
+    "name_ja": "ピカチュウex",
+    "base": 76993
+   },
+   {
+    "code": "sv8a 212/187",
+    "name": "Sylveon ex SAR",
+    "name_ja": "ニンフィアex",
+    "base": 21333
+   },
+   {
+    "code": "sv8a 211/187",
+    "name": "Espeon ex SAR",
+    "name_ja": "エーフィex",
+    "base": 15750
+   },
+   {
+    "code": "SV2a 201/165",
+    "name": "Charizard ex SAR (151)",
+    "name_ja": "リザードンex",
+    "base": 74333
+   },
+   {
+    "code": "SV2a 205/165",
+    "name": "Mew ex SAR (151)",
+    "name_ja": "ミュウex",
+    "base": 58500
+   },
+   {
+    "code": "SV2a 202/165",
+    "name": "Blastoise ex SAR (151)",
+    "name_ja": "カメックスex",
+    "base": 26740
+   },
+   {
+    "code": "SV2a 200/165",
+    "name": "Venusaur ex SAR (151)",
+    "name_ja": "フシギバナex",
+    "base": 21900
+   },
+   {
+    "code": "SV4a 349/190",
+    "name": "Charizard ex SAR (Shiny Treasure)",
+    "name_ja": "リザードンex",
+    "base": 54639
+   },
+   {
+    "code": "SV4a 348/190",
+    "name": "Gardevoir ex SAR (Shiny Treasure)",
+    "name_ja": "サーナイトex",
+    "base": 28000
+   },
+   {
+    "code": "SV3 134/108",
+    "name": "Charizard ex SAR (Ruler of the Black Flame)",
+    "name_ja": "リザードンex",
+    "base": 61999
+   },
+   {
+    "code": "SV5a 090/066",
+    "name": "Greninja ex SAR",
+    "name_ja": "ゲッコウガex",
+    "base": 41999
+   },
+   {
+    "code": "sv11B 174/086",
+    "name": "Zekrom ex SAR",
+    "name_ja": "ゼクロムex",
+    "base": 107625
+   },
+   {
+    "code": "sv11W 174/086",
+    "name": "Reshiram ex SAR",
+    "name_ja": "レシラムex",
+    "base": 109999
+   },
+   {
+    "code": "sv10 125/098",
+    "name": "Team Rocket's Mewtwo ex SAR",
+    "name_ja": "ロケット団のミュウツーex",
+    "base": 79500
+   },
+   {
+    "code": "M2a 240/193",
+    "name": "Mega Gengar ex SAR",
+    "name_ja": "メガゲンガーex",
+    "base": 62250
+   },
+   {
+    "code": "M2a 250/193",
+    "name": "Mega Dragonite ex SAR",
+    "name_ja": "メガカイリューex",
+    "base": 56275
+   },
+   {
+    "code": "M1L 092/063",
+    "name": "Mega Lucario ex SAR",
+    "name_ja": "メガルカリオex",
+    "base": 99900
+   },
+   {
+    "code": "S8b 223/184",
+    "name": "Pikachu VMAX CSR",
+    "name_ja": "ピカチュウVMAX",
+    "base": 27000
+   },
+   {
+    "code": "S6a 085/069",
+    "name": "Umbreon V SA",
+    "name_ja": "ブラッキーV",
+    "base": 75580
+   },
+   {
+    "code": "S12a 261/172",
+    "name": "Giratina VSTAR",
+    "name_ja": "ギラティナVSTAR",
+    "base": 38477
+   },
+   {
+    "code": "s9 103/100",
+    "name": "Charizard V SA",
+    "name_ja": "リザードンV",
+    "base": 45000
+   }
+  ]
+ },
+ "series": [
+  {
+   "d": "2026-09-26",
+   "level": 100.0,
+   "n": 22,
+   "prices": {
+    "sv8a 217/187": 67500,
+    "sv8 132/106": 76993,
+    "sv8a 212/187": 21333,
+    "sv8a 211/187": 15750,
+    "SV2a 201/165": 74333,
+    "SV2a 205/165": 58500,
+    "SV2a 202/165": 26740,
+    "SV2a 200/165": 21900,
+    "SV4a 349/190": 54639,
+    "SV4a 348/190": 28000,
+    "SV3 134/108": 61999,
+    "SV5a 090/066": 41999,
+    "sv11B 174/086": 107625,
+    "sv11W 174/086": 109999,
+    "sv10 125/098": 79500,
+    "M2a 240/193": 62250,
+    "M2a 250/193": 56275,
+    "M1L 092/063": 99900,
+    "S8b 223/184": 27000,
+    "S6a 085/069": 75580,
+    "S12a 261/172": 38477,
+    "s9 103/100": 45000
+   },
+   "pokeca_psa10": 105124
+  }
+ ]
+}

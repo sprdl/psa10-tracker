@@ -155,3 +155,18 @@ docs/schema.md                  the full snapshot JSON schema, raw fields + opti
 
 No build step, no dependencies, no backend — it's a static site that reads its own
 `data/` folder at request time.
+
+## My-tier index
+
+`data/custom_index.json` holds a daily, equal-weighted PSA10 index of 22 cards in
+the tier being bought (modern alt-art/SAR, ¥15k–150k at the 2026-09-26 base = 100),
+shown on the Market page and under the PSA10 index tile. The price check updates it
+once a day with the full check:
+
+```bash
+python3 scripts/add_custom_index.py --print-js          # extractor to run on pokeca-chart.com/gr/all-card/
+python3 scripts/add_custom_index.py result.json --pokeca 105124
+```
+
+Constituents and base prices live in the file's `meta`; review them quarterly
+(see the script's docstring for keeping the level continuous).
