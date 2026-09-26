@@ -50,6 +50,36 @@
       "altema_mode": "daily",
       "note": "added from issue #20",
       "added": "2026-09-26"
+    },
+    {
+      "snkrdunk_id": "881430",
+      "card_name_ja": "エーフィex SAR仕様 [MF 043/040](構築デッキ「30th CELEBRATION プレミアムデッキセット エーフィ・ブラッキー」)",
+      "url": "https://snkrdunk.com/apparels/881430",
+      "image_url": "",
+      "altema_url": "",
+      "altema_mode": "weekly_until_graded",
+      "note": "added from issue #19",
+      "added": "2026-09-26"
+    },
+    {
+      "snkrdunk_id": "881431",
+      "card_name_ja": "ブラッキーex SAR仕様 [MF 044/040](構築デッキ「30th CELEBRATION プレミアムデッキセット エーフィ・ブラッキー」)",
+      "url": "https://snkrdunk.com/apparels/881431",
+      "image_url": "",
+      "altema_url": "",
+      "altema_mode": "weekly_until_graded",
+      "note": "added from issue #18",
+      "added": "2026-09-26"
+    },
+    {
+      "snkrdunk_id": "91178",
+      "card_name_ja": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+      "url": "https://snkrdunk.com/apparels/91178",
+      "image_url": "",
+      "altema_url": "",
+      "altema_mode": "daily",
+      "note": "added from issue #17",
+      "added": "2026-09-26"
     }
   ]
 }
