@@ -684,3 +684,13 @@ td em { color: var(--muted-2); font-style: normal; }
 .tsort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tsort.on::after { content: ' ▲'; font-size: 10px; color: var(--accent); }
 .tsort.on[data-dir="desc"]::after { content: ' ▼'; }
+
+/* card pictures in the Tables page headers */
+.slab.tbl { width: 56px; height: 80px; padding: 3px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }
+.slab.tbl .slab-label { height: 10px; padding: 0; }
+.slab.tbl .slab-label b { display: none; }
+th.tc-head { vertical-align: top; min-width: 110px; }
+th.tc-head a { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; color: var(--text); text-decoration: none; }
+th.tc-head a:hover b { color: var(--accent); }
+th.tc-head b { font-size: 14px; line-height: 1.25; font-weight: 700; white-space: normal; }
+th.tc-head small { font-size: 11px; color: var(--muted-2); font-weight: 400; white-space: nowrap; }

@@ -2290,9 +2290,15 @@
     wireTableSort();
   }
 
+  // Column header for a card in the Tables page: slab picture + short name + code, linking to the card page.
+  function tableCardTh(card) {
+    const { short, code } = parseCardName(card.card_name_ja);
+    return `<th class="tc-head"><a href="#/card/${escapeAttr(cardId(card))}" title="${escapeAttr(card.card_name_ja)}">${slabHtml(card, 'tbl')}<b class="jp">${escapeHtml(short)}</b><small>${escapeHtml(code)}</small></a></th>`;
+  }
+
   function buildDiyTable(entries) {
     if (!entries.length) return null;
-    const thead = '<thead><tr><th></th>' + entries.map((e) => `<th>${escapeHtml(e.card.card_name_ja)}</th>`).join('') + '</tr></thead>';
+    const thead = '<thead><tr><th></th>' + entries.map((e) => tableCardTh(e.card)).join('') + '</tr></thead>';
 
     let rows = '';
     rows += `<tr><td>${sortableLabel('price', 'Buy the slab (PSA10)')}</td>` + entries.map((e) => `<td>${fmtYen(e.repPrice)}${e.card.analysis && e.card.analysis.price_source === 'sales_confirmed' ? ' <em>(sales-confirmed)</em>' : ''}</td>`).join('') + '</tr>';
@@ -2313,7 +2319,7 @@
 
   function buildComparisonTable(cards, prevCards) {
     if (!cards.length) return null;
-    const thead = `<thead><tr><th>${sortableLabel('name', 'Card')}</th>` + cards.map((c) => `<th>${escapeHtml(c.card_name_ja)}</th>`).join('') + '</tr></thead>';
+    const thead = `<thead><tr><th>${sortableLabel('name', 'Card')}</th>` + cards.map((c) => tableCardTh(c)).join('') + '</tr></thead>';
 
     const rowsData = [
       ['Current PSA10', cards.map((c) => {
