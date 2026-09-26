@@ -206,3 +206,12 @@ Under each limit the card page shows a rough chance that a listing reaches it
 within 30 and 90 days (random-walk model on the card's own daily prices, no trend
 assumed; needs 6+ days of history), next to the evaluation's own stated odds for
 a nearby price when there are any.
+
+## Home Screen widget (iPhone / iPad)
+
+`widgets/psa10-widget.js` is a [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) widget that reads this site's public data:
+small = rotates through cards at your limit (first) or in a Buy zone, every ~15 min
+(widget parameter = a SNKRDUNK id pins one card); medium = buy signals + My-tier index;
+large = compact overview. It uses limits saved to all devices (`data/limits.json`).
+Setup: install Scriptable, create a new script, paste the file, then add a Scriptable
+widget to the Home Screen and choose the script. Tapping opens the tracker.
