@@ -7,6 +7,7 @@
     currentData: null,
     previousData: null,
     calls: null, // data/calls.json — track record of past calls (scripts/build_calls.py)
+    syncedLimits: {}, // data/limits.json — limits saved for every device
     hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
@@ -177,6 +178,8 @@
     try { state.calls = await fetchJSON('data/calls.json'); } catch (e) { state.calls = null; }
     try { state.customIndex = await fetchJSON('data/custom_index.json'); } catch (e) { state.customIndex = null; }
     state.hist = await loadHistoryIndex();
+    try { state.syncedLimits = (await fetchJSON('data/limits.json')).limits || {}; } catch (e) { state.syncedLimits = {}; }
+    reconcileLimits();
 
     await loadIndex(snaps.length - 1);
   }
@@ -323,14 +326,99 @@
     get(key, dflt) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : dflt; } catch (e) { return dflt; } },
     set(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* not persisted */ } },
   };
+  // Limits live in two places: data/limits.json (saved through a GitHub issue form,
+  // the same on every device) and this browser's own edits (`limits`, 0 = cleared
+  // here). A local edit wins until the synced file catches up, then it's dropped.
   let limits = store.get('psa10.limits', {});
   const LIMIT_STEP = 500;
-
-  function getLimit(card) { const v = limits[card.url]; return typeof v === 'number' ? v : null; }
+  function syncedLimit(url) {
+    const e = state.syncedLimits && state.syncedLimits[url];
+    return e && typeof e.price === 'number' ? e.price : null;
+  }
+  function reconcileLimits() {
+    let changed = false;
+    Object.keys(limits).forEach((url) => {
+      const local = limits[url], synced = syncedLimit(url);
+      if ((local === 0 && synced == null) || (local > 0 && local === synced)) { delete limits[url]; changed = true; }
+    });
+    if (changed) store.set('psa10.limits', limits);
+  }
+  function getLimit(card) {
+    if (Object.prototype.hasOwnProperty.call(limits, card.url)) return limits[card.url] > 0 ? limits[card.url] : null;
+    return syncedLimit(card.url);
+  }
+  // 'local' = changed on this device only (not saved to all devices yet), 'synced', or null (no limit anywhere).
+  function limitSync(card) {
+    if (Object.prototype.hasOwnProperty.call(limits, card.url)) return 'local';
+    return syncedLimit(card.url) != null ? 'synced' : null;
+  }
   function setLimit(card, v) {
-    if (v == null) delete limits[card.url];
-    else limits[card.url] = Math.max(LIMIT_STEP, Math.round(v / LIMIT_STEP) * LIMIT_STEP);
+    limits[card.url] = v == null ? 0 : Math.max(LIMIT_STEP, Math.round(v / LIMIT_STEP) * LIMIT_STEP);
     store.set('psa10.limits', limits);
+    reconcileLimits();
+  }
+  function limitFormUrl(card) {
+    const v = getLimit(card);
+    const q = new URLSearchParams({ template: 'set-limit.yml',
+      title: `Limit: ${parseCardName(card.card_name_ja).short} ${v ? '¥' + v.toLocaleString('en-US') : '(remove)'}`,
+      url: card.url, limit: String(v || 0) });
+    return `${REPO_URL}/issues/new?${q}`;
+  }
+
+  // ---------- odds of a listing reaching a price ----------
+  // Rough model: the lowest ask as a random walk with no trend, volatility taken
+  // from this card's own daily prices (median per JST day, 3-day changes to damp
+  // one-off listings), clamped to 1–5% a day. P(touch ≤ L within T days)
+  // = 2·Φ(ln(L/S) / (σ√T)). Needs 6+ days of prices.
+  function normCdf(x) {
+    const t = 1 / (1 + 0.3275911 * Math.abs(x) / Math.SQRT2);
+    const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-(x * x) / 2);
+    return x >= 0 ? (1 + y) / 2 : (1 - y) / 2;
+  }
+  function dailyVol(card) {
+    const snaps = (state.hist && state.hist.snapshots) || [];
+    const byDay = new Map();
+    const until = refTime();
+    snaps.forEach((e) => {
+      if (e.d > until || !e.p || !e.p[card.url]) return;
+      const day = new Date(new Date(e.d).getTime() + 9 * 3600e3).toISOString().slice(0, 10);
+      if (!byDay.has(day)) byDay.set(day, []);
+      byDay.get(day).push(e.p[card.url][0]);
+    });
+    const days = [...byDay.keys()].sort();
+    const px = days.map((d) => { const v = byDay.get(d).sort((a, b) => a - b); return v[v.length >> 1]; });
+    if (px.length < 6) return { days: px.length, sigma: null };
+    const k = 3, r = [];
+    for (let i = k; i < px.length; i++) r.push(Math.log(px[i] / px[i - k]));
+    const m = r.reduce((a, b) => a + b, 0) / r.length;
+    const sd = Math.sqrt(r.reduce((a, b) => a + (b - m) ** 2, 0) / r.length) / Math.sqrt(k);
+    return { days: px.length, sigma: Math.min(0.05, Math.max(0.01, sd)) };
+  }
+  function touchOdds(card, price) {
+    const S = lowestAsk(card);
+    if (!S || !price) return null;
+    if (price >= S) return { reached: true };
+    const v = dailyVol(card);
+    if (v.sigma == null) return { days: v.days, sigma: null };
+    const p = (T) => Math.min(1, 2 * normCdf(Math.log(price / S) / (v.sigma * Math.sqrt(T))));
+    return { days: v.days, sigma: v.sigma, p30: p(30), p90: p(90) };
+  }
+  function fmtOdds(x) { return x < 0.05 ? '<5%' : x > 0.95 ? '>95%' : '~' + Math.round(x * 20) * 5 + '%'; }
+  // The evaluation's own stated odds for a nearby price, as a cross-check.
+  function evalOddsNear(card, price) {
+    const preds = (((card.analysis || {}).verdict || {}).predictions || []).filter((q) => q.type === 'touch_below' && q.price && typeof q.p === 'number');
+    if (!preds.length) return null;
+    const best = preds.reduce((a, b) => (Math.abs(b.price - price) < Math.abs(a.price - price) ? b : a));
+    return Math.abs(best.price - price) / price <= 0.07 ? best : null;
+  }
+  function limitOddsHtml(card, price) {
+    const o = touchOdds(card, price);
+    if (!o) return '';
+    if (o.reached) return `<div class="limit-odds">A listing is already at or below ${fmtYen(price)}.</div>`;
+    if (o.sigma == null) return `<div class="limit-odds">Odds of reaching ${fmtYen(price)} appear after 6 days of price history (${o.days} so far).</div>`;
+    const ev = evalOddsNear(card, price);
+    return `<div class="limit-odds">Chance a listing reaches ${fmtYen(price)}: <b>${fmtOdds(o.p30)}</b> within 30 days · <b>${fmtOdds(o.p90)}</b> within 90 days
+      <span class="limit-odds-note">Rough model from ${o.days} days of this card's prices (swings about ${(o.sigma * 100).toFixed(1)}% a day, no trend assumed). Short histories make it overstate big moves; it gets better as history builds.${ev ? ` The evaluation said ${Math.round(ev.p * 100)}% for ≤${fmtYen(ev.price)} by ${escapeHtml(ev.by)}.` : ''}</span></div>`;
   }
   // A limit is "hit" when a PSA10 listing you could buy right now is at or below it —
   // so this compares the lowest ask, not the representative (sales) price.
@@ -1119,7 +1207,7 @@
           ? ` <span class="limit-hit-note">a listing is at or below it (${fmtYen(ask)})</span>`
           : (ask != null ? ` <span class="limit-gap">lowest ask is ${fmtYen(ask - limit)} above</span>` : '')}
          <span class="limit-actions"><button type="button" class="limit-btn" data-act="edit">Edit</button><button type="button" class="limit-btn" data-act="clear">Clear</button></span>`
-      : `<button type="button" class="limit-btn" data-act="edit">+ Set my limit</button><span class="limit-gap">get a Buy signal when a listing drops to it</span>`}</div>`;
+      : `<button type="button" class="limit-btn" data-act="edit">+ Set my limit</button><span class="limit-gap">get a Buy signal when a listing drops to it</span>`}${limitSyncHtml(card)}</div>${limit != null ? limitOddsHtml(card, limit) : ''}`;
 
     let gaugeHtml = '';
     const edge = (pct) => (pct > 86 ? ' edge-r' : pct < 10 ? ' edge-l' : '');
@@ -1497,13 +1585,31 @@
     marker.addEventListener('pointercancel', end);
   }
 
+  function limitSyncHtml(card) {
+    const st = limitSync(card);
+    if (st === 'synced') return '<span class="limit-sync ok">✓ Saved on all devices</span>';
+    if (st !== 'local') return '';
+    const clearing = getLimit(card) == null;
+    return `<span class="limit-sync">${clearing ? 'Removed on this device only' : 'Only on this device'} · <a href="${escapeAttr(limitFormUrl(card))}" target="_blank" rel="noopener">${clearing ? 'Remove everywhere' : 'Save to all devices'} ↗</a><span class="limit-sync-hint">opens a GitHub form; submit it and every device updates in about a minute</span></span>`;
+  }
+
   function openLimitEditor(row, card) {
     const t = card.analysis && card.analysis.tiers;
     const start = getLimit(card) || (t && t.buy_upper) || lowestAsk(card) || '';
     row.innerHTML = `<span class="limit-lbl">My limit</span> ¥<input type="number" class="limit-input" inputmode="numeric" min="${LIMIT_STEP}" step="${LIMIT_STEP}" value="${start}">
       <button type="button" class="limit-btn primary" data-act="save">Save</button><button type="button" class="limit-btn" data-act="cancel">Cancel</button>
-      <span class="limit-hint">${t ? `Buy line is ${fmtYen(t.buy_upper)}. ` : ''}Rounded to ¥${LIMIT_STEP}; drag the gold handle on the bar to fine-tune.</span>`;
+      <span class="limit-hint">${t ? `Buy line is ${fmtYen(t.buy_upper)}. ` : ''}Rounded to ¥${LIMIT_STEP}; drag the gold handle on the bar to fine-tune.</span>
+      <span class="limit-live"></span>`;
     const input = row.querySelector('.limit-input');
+    const live = row.querySelector('.limit-live');
+    const showOdds = () => {
+      const v = Math.round(Number(input.value) / LIMIT_STEP) * LIMIT_STEP;
+      const o = v > 0 ? touchOdds(card, v) : null;
+      live.textContent = !o ? '' : o.reached ? 'A listing is already at or below this.'
+        : o.sigma == null ? '' : `Chance of a listing at ≤${fmtYen(v)}: ${fmtOdds(o.p30)} in 30 days · ${fmtOdds(o.p90)} in 90 days (rough)`;
+    };
+    input.addEventListener('input', showOdds);
+    showOdds();
     input.focus(); input.select();
     const save = () => { const v = Number(input.value); if (v > 0) setLimit(card, v); render(); };
     row.querySelector('[data-act="save"]').addEventListener('click', (e) => { e.stopPropagation(); save(); });

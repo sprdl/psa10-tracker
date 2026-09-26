@@ -1,0 +1,30 @@
+name: Set limit
+
+# Runs when you submit the site's "Save to all devices" limit form (a GitHub issue).
+# Only issues opened by the repo owner are processed.
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: limits
+  cancel-in-progress: false
+
+jobs:
+  set:
+    if: >-
+      github.event.issue.state == 'open' &&
+      github.event.issue.user.login == github.repository_owner &&
+      contains(github.event.issue.labels.*.name, 'set-limit')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update data/limits.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/set_limit.py "$GITHUB_EVENT_PATH"
