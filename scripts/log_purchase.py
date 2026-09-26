@@ -25,6 +25,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import unicodedata
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -197,6 +198,30 @@ def finish(issue, msg, ok, dry):
         gh("PATCH", f"/issues/{n}", {"state": "closed", "state_reason": "completed"})
 
 
+def apply(issue, labels, store):
+    """Apply this issue's change to `store` (fresh from disk). Returns (comment, commit message)."""
+    hs = store.setdefault("holdings", [])
+    if "remove-purchase" in labels:
+        pid = removal_id(issue)
+        gone = [h for h in hs if h.get("id") == pid]
+        if not gone:
+            raise FormError(f"There's no purchase with id {pid} (maybe it was already removed).")
+        store["holdings"] = [h for h in hs if h.get("id") != pid]
+        name = gone[0].get("card_name_ja", pid)
+        return (f"Removed purchase **{pid}** ({name}, ¥{gone[0].get('purchase_price_jpy', 0):,} on {gone[0].get('purchase_date')}). The site updates in about a minute.",
+                f"holdings: remove {pid} {name} (#{issue['number']})")
+    h, tracked = build_holding(issue)
+    replaced = any(x.get("id") == h["id"] for x in hs)
+    store["holdings"] = [x for x in hs if x.get("id") != h["id"]] + [h]
+    cost = h["purchase_price_jpy"] + (h.get("grading_fee_jpy", 0) + h.get("shipping_insurance_jpy", 0))
+    msg = (f"{'Updated' if replaced else 'Logged'} purchase **{h['id']}**: {h['card_name_ja']}, "
+           f"¥{h['purchase_price_jpy']:,} on {h['purchase_date']}"
+           + (f" + ¥{h['grading_fee_jpy'] + h['shipping_insurance_jpy']:,} grading & shipping (total ¥{cost:,})" if h["condition"] == "raw_to_grade" else " (PSA10 slab)")
+           + ". The site updates in about a minute."
+           + ("" if tracked else "\n\nNote: this card isn't on the tracker, so it shows without a current price or P&L."))
+    return msg, f"holdings: {'update' if replaced else 'add'} {h['card_name_ja']} (#{issue['number']})"
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     dry = "--dry-run" in sys.argv
@@ -205,33 +230,13 @@ def main():
     event = json.loads(Path(args[0]).read_text(encoding="utf-8"))
     issue = event["issue"]
     labels = {l["name"] for l in issue.get("labels", [])}
-    store = load_holdings()
-    hs = store.setdefault("holdings", [])
+    if not labels & {"bought", "remove-purchase"}:
+        print("Not a purchase issue; nothing to do.")
+        return
 
     try:
-        if "remove-purchase" in labels:
-            pid = removal_id(issue)
-            gone = [h for h in hs if h.get("id") == pid]
-            if not gone:
-                raise FormError(f"There's no purchase with id {pid} (maybe it was already removed).")
-            store["holdings"] = [h for h in hs if h.get("id") != pid]
-            name = gone[0].get("card_name_ja", pid)
-            commit_msg = f"holdings: remove {pid} {name} (#{issue['number']})"
-            msg = f"Removed purchase **{pid}** ({name}, ¥{gone[0].get('purchase_price_jpy', 0):,} on {gone[0].get('purchase_date')}). The site updates in about a minute."
-        elif "bought" in labels:
-            h, tracked = build_holding(issue)
-            replaced = any(x.get("id") == h["id"] for x in hs)
-            store["holdings"] = [x for x in hs if x.get("id") != h["id"]] + [h]
-            cost = h["purchase_price_jpy"] + (h.get("grading_fee_jpy", 0) + h.get("shipping_insurance_jpy", 0))
-            commit_msg = f"holdings: {'update' if replaced else 'add'} {h['card_name_ja']} (#{issue['number']})"
-            msg = (f"{'Updated' if replaced else 'Logged'} purchase **{h['id']}**: {h['card_name_ja']}, "
-                   f"¥{h['purchase_price_jpy']:,} on {h['purchase_date']}"
-                   + (f" + ¥{h['grading_fee_jpy'] + h['shipping_insurance_jpy']:,} grading & shipping (total ¥{cost:,})" if h["condition"] == "raw_to_grade" else " (PSA10 slab)")
-                   + ". The site updates in about a minute."
-                   + ("" if tracked else "\n\nNote: this card isn't on the tracker, so it shows without a current price or P&L."))
-        else:
-            print("Not a purchase issue; nothing to do.")
-            return
+        store = load_holdings()
+        msg, commit_msg = apply(issue, labels, store)
     except FormError as e:
         finish(issue, f"Couldn't record this: {e}\n\nEdit the issue to fix it and it will be retried automatically.", False, dry)
         return  # not a failed run: the comment on the issue says what to fix
@@ -240,10 +245,35 @@ def main():
         print(json.dumps(store, ensure_ascii=False, indent=2))
         print(msg)
         return
-    save_holdings(store)
-    commit_and_push(commit_msg)
-    # Pushes made with the Actions token don't start other workflows, so start the Pages deploy explicitly.
-    gh("POST", "/actions/workflows/deploy.yml/dispatches", {"ref": "main"})
+
+    git("config", "user.name", "github-actions[bot]")
+    git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
+    # Several forms submitted at once run in parallel (and a price check may push too).
+    # Each attempt starts from the latest main and re-applies this one change, so they never conflict.
+    changed = False
+    for attempt in range(6):
+        git("fetch", "-q", "origin", "main")
+        git("reset", "-q", "--hard", "origin/main")
+        store = load_holdings()
+        try:
+            msg, commit_msg = apply(issue, labels, store)
+        except FormError as e:  # e.g. a removal that another run already did
+            finish(issue, f"Couldn't record this: {e}", False, dry)
+            return
+        save_holdings(store)
+        git("add", "data/holdings.json")
+        if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
+            break  # already recorded (e.g. a re-run)
+        git("commit", "-q", "-m", commit_msg)
+        if subprocess.run(["git", "push", "-q", "origin", "HEAD:main"], cwd=ROOT).returncode == 0:
+            changed = True
+            break
+        time.sleep(3 + attempt * 2)
+    else:
+        raise RuntimeError("git push failed six times")
+    if changed:
+        # Pushes made with the Actions token don't start other workflows, so start the Pages deploy explicitly.
+        gh("POST", "/actions/workflows/deploy.yml/dispatches", {"ref": "main"})
     finish(issue, msg, True, dry)
 
 
