@@ -266,12 +266,50 @@
 
   // A written "defer" is a deliberate human call ("don't act regardless of
   // price"), so it wins over the computed zone; otherwise the live zone wins.
+  // Correction rule: while the market is still falling (see correctionState), a
+  // price in the Buy zone shows as Watch; only Definitely-buy stays a buy.
   function displayTagFor(card) {
     const a = card.analysis;
     if (!a) return null;
     const written = a.verdict && a.verdict.tag;
     if (written === 'defer') return 'defer';
-    return liveTagOf(a.tiers, getRep(card)) || written || null;
+    const live = liveTagOf(a.tiers, getRep(card));
+    if (live === 'buy' && correctionState().active) return 'watch';
+    return live || written || null;
+  }
+
+  // True when the card's price is in the Buy zone but the correction rule holds it at Watch.
+  function heldByCorrection(card) {
+    const a = card.analysis;
+    return !!(a && a.tiers && (!a.verdict || a.verdict.tag !== 'defer')
+      && liveTagOf(a.tiers, getRep(card)) === 'buy' && correctionState().active);
+  }
+
+  // Correction rule (same as the card-evaluation skill): the market counts as still
+  // correcting while the My-tier index is down more than CORRECTION_PCT over 30 days.
+  // Until the My-tier index has 30 days of data, the pokeca-chart PSA10 index's
+  // month change is used instead.
+  const CORRECTION_PCT = 10;
+  let correctionCache = null;
+  function correctionState() {
+    const key = (state.currentData && state.currentData.collected_at_jst) || '';
+    if (correctionCache && correctionCache.key === key) return correctionCache.v;
+    let v = { active: false, pct: null, name: null };
+    const ref = key || new Date().toISOString();
+    const ser = (state.customIndex && state.customIndex.series) || [];
+    const day = ref.slice(0, 10);
+    const past = new Date(Date.parse(day + 'T00:00:00Z') - 30 * 86400000).toISOString().slice(0, 10);
+    let now = null, then = null;
+    for (const e of ser) { if (e.d <= day) now = e; if (e.d <= past) then = e; }
+    if (now && then) {
+      const pct = (now.level / then.level - 1) * 100;
+      v = { active: pct <= -CORRECTION_PCT, pct, name: 'My-tier index' };
+    } else {
+      const m = (((state.currentData || {}).pokeca_chart_index || {}).psa10 || {}).month_change_pct;
+      if (m != null) v = { active: m <= -CORRECTION_PCT, pct: m, name: 'PSA10 index' };
+    }
+    correctionCache = { key, v };
+    return v;
   }
 
   function tagLabel(tag) {
@@ -351,7 +389,7 @@
     const tracked = cards.filter((c) => lowestAsk(c) != null).length;
 
     if (!signals.length) {
-      el.innerHTML = `<div class="signals-head">Buy signals</div><div class="signals-empty">None right now. No card is in a Buy zone or at your limit (${tracked} tracked).</div>`;
+      el.innerHTML = `<div class="signals-head">Buy signals</div><div class="signals-empty">None right now. ${correctionState().active ? 'No card is at Definitely-buy or your limit (correction rule on; Buy-zone cards count as Watch)' : 'No card is in a Buy zone or at your limit'} (${tracked} tracked).</div>`;
     } else {
       el.innerHTML = `<div class="signals-head">Buy signals</div>` + signals.map((s) => {
         const isNew = isLatest && !seen.has(s.key);
@@ -624,6 +662,11 @@
 
   function renderBanners(data, prevData) {
     let html = '';
+    const cs = correctionState();
+    if (cs.active) {
+      const held = (data.cards || []).filter(heldByCorrection).map((c) => parseCardName(c.card_name_ja).short);
+      html += `<div class="banner warning"><strong>Correction rule on: ${escapeHtml(cs.name)} ${fmtPct(cs.pct)} over 30 days.</strong>While the market is still falling more than ${CORRECTION_PCT}% a month, only Definitely-buy prices count as a buy; cards in the Buy zone show as Watch${held.length ? ` (now: ${escapeHtml(held.join(', '))})` : ''}. Your own limit prices still trigger signals.</div>`;
+    }
     (data.banners || []).forEach((b) => {
       const cls = b.type === 'warning' ? 'warning' : b.type === 'correction' ? 'correction' : '';
       html += `<div class="banner ${cls}"><strong>${escapeHtml(b.title || '')}</strong>${escapeHtml(b.body || '')}</div>`;
@@ -1127,7 +1170,10 @@
       // written reasoning concluded; a zone mismatch is flagged first, then plain drift
       // from the price the verdict was written against (verdict_price_ref).
       let staleHtml = '';
-      if (v.tag && v.tag !== 'defer' && displayTag && v.tag !== displayTag) {
+      if (heldByCorrection(card)) {
+        const cs = correctionState();
+        staleHtml = `<div class="verdict-stale">Price is in the Buy zone, shown as Watch by the correction rule (${escapeHtml(cs.name)} ${fmtPct(cs.pct)} over 30 days). It becomes a buy at Definitely-buy (≤${fmtYen(analysis.tiers.definitely_buy)}) or once the market steadies.</div>`;
+      } else if (v.tag && v.tag !== 'defer' && displayTag && v.tag !== displayTag) {
         staleHtml = `<div class="verdict-stale">Price is now in the ${tagLabel(displayTag)} zone. The written analysis called it ${tagLabel(v.tag)}${refP != null ? ' at ' + fmtYen(refP) : ''}, worth a fresh look.</div>`;
       } else if (!analysis.price_source && analysis.verdict_price_ref != null && repPrice != null) {
         const ref = analysis.verdict_price_ref;
