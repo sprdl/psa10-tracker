@@ -2913,6 +2913,55 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 119000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 132000,
+          "when": "April 2026",
+          "source": "SNKRDUNK PSA10 trade chart (April monthly median ~¥130.5k) and Cardrush/altema ¥132k on 4/5; single prints reached ¥142.5k in Aug 2026"
+        },
+        "tiers": {
+          "definitely_buy": 98000,
+          "buy_upper": 108000,
+          "ceiling": 125000
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2000,
+        "raw_tiers": {
+          "definitely_buy": 55000,
+          "buy_upper": 65000,
+          "ceiling": 75000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: near its highs while the market corrects",
+          "reasoning": "Sales slipped from ¥128k (9/19) to ¥117.5–120k this week, but the card is still 1.5× its Jan 2026 level (~¥78k) and has not given back the anniversary run the way the PSA10 index has (−27% in a month). There's about a 45% chance of a listing at ≤¥108k (June's correction range) within 3 months and 25% of ≤¥98k within 6, against roughly 20% odds it's back above ¥130k by then. Grading a raw copy yourself costs about ¥94–100k expected at an 82% gem rate, so the slab carries a ¥20k+ premium today.",
+          "predictions": [
+            {
+              "text": "A listing at ≤¥108k (Buy) within 3 months",
+              "p": 0.45,
+              "type": "touch_below",
+              "price": 108000,
+              "by": "2026-12-26"
+            },
+            {
+              "text": "Reaches Definitely-buy (≤¥98k) within 6 months",
+              "p": 0.25,
+              "type": "touch_below",
+              "price": 98000,
+              "by": "2027-03-26"
+            },
+            {
+              "text": "Lowest ask back at ≥¥130k within 3 months",
+              "p": 0.2,
+              "type": "touch_above",
+              "price": 130000,
+              "by": "2026-12-26"
+            }
+          ]
+        }
       }
     }
   ],
