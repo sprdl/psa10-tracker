@@ -36,8 +36,10 @@ JS = r"""await (async () => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (let i = 0; i < 30 && !/PSA10価格/.test(document.querySelector('main')?.innerText || ''); i++) await sleep(300);
   const seen = {}, re = /\[([^\]]+)\][^\n]*\n\n[^\n]*\n\nPSA10価格\n\n([^\n]+)/g;
-  const H = document.body.scrollHeight;
-  for (let y = 0; y <= H + 1200; y += 600) {
+  // the list renders progressively: wait for the page to stop growing, and keep scrolling to the live height
+  let prevH = 0;
+  for (let i = 0; i < 20; i++) { const h = document.body.scrollHeight; if (h > 5000 && h === prevH) break; prevH = h; await sleep(300); }
+  for (let y = 0; y <= document.body.scrollHeight + 1200; y += 600) {
     window.scrollTo(0, y); await sleep(120);
     const t = document.querySelector('main').innerText; let m;
     while ((m = re.exec(t))) seen[m[1].toLowerCase()] = m[2];
