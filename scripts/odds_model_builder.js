@@ -30,8 +30,8 @@ window.__oddsBuilder = async (step) => {
   }
   if (step === 'grab') {
     const list = JSON.parse(LS.getItem('om_list') || '[]'), started = +LS.getItem('om_started');
-    const todo = list.filter(h => +(LS.getItem('om_t:' + h) || 0) < started).slice(0, 35);
-    if (!todo.length) return `done: ${list.length} cards`;
+    const todo = list.filter(h => +(LS.getItem('om_t:' + h) || 0) < started && +(LS.getItem('om_f:' + h + ':' + started) || 0) < 2).slice(0, 35);
+    if (!todo.length) { const got = list.filter(h => +(LS.getItem('om_t:' + h) || 0) >= started).length; return `done: ${got}/${list.length} cards read`; }
     let ok = 0;
     for (const h of todo) {
       const fr = document.createElement('iframe'); fr.style.cssText = 'position:fixed;left:-3000px;top:0;width:1200px;height:900px'; fr.src = h; document.body.appendChild(fr);
@@ -40,8 +40,9 @@ window.__oddsBuilder = async (step) => {
         await sleep(300); const d = fr.contentDocument; if (!d) continue; code = (d.title.match(/\[([^\]]+)\]/) || [])[1];
         for (const c of d.querySelectorAll('canvas')) { let el = c; for (let k = 0; k < 12 && el && !rows; k++, el = el.parentElement) { const fk = Object.keys(el).find(x => x.startsWith('__reactFiber')); if (!fk) continue; let f = el[fk]; for (let u = 0; u < 30 && f; u++, f = f.return) { const p = f.memoizedProps; if (p && Array.isArray(p.data) && p.data.length && 'item_status' in p.data[0]) { rows = p.data; break; } } } if (rows) break; }
       }
-      if (rows && code) { LS.setItem('ci_h:' + code, JSON.stringify(rows.filter(r => r.item_status === 2 && r.price > 0).map(r => [r.date, r.price, r.volume || 0]))); ok++; }
-      LS.setItem('om_t:' + h, String(Date.now())); fr.remove();
+      if (rows && code) { LS.setItem('ci_h:' + code, JSON.stringify(rows.filter(r => r.item_status === 2 && r.price > 0).map(r => [r.date, r.price, r.volume || 0]))); LS.setItem('om_t:' + h, String(Date.now())); ok++; }
+      else { const fk = 'om_f:' + h + ':' + started; LS.setItem(fk, String(+(LS.getItem(fk) || 0) + 1)); }
+      fr.remove();
     }
     return `grabbed ${ok}/${todo.length}; run grab again`;
   }
