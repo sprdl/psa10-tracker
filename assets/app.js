@@ -1209,7 +1209,7 @@
   // How fast a card trades on SNKRDUNK: recent one-copy completed sales (up to 20 per
   // grade, as read by the price check) divided by the days since the oldest of them.
   // Same rule as scripts/build_history.py, which stores it per snapshot in history.json.
-  const HEAT_LEVELS = [[5, 'hot', 'Hot'], [2, 'active', 'Active'], [0.7, 'slow', 'Slow'], [0, 'cold', 'Cold']];
+  const HEAT_LEVELS = [[8, 'hot', 'Hot'], [4, 'active', 'Active'], [0.7, 'slow', 'Slow'], [0, 'cold', 'Cold']];
   const REL_DAYS = { '秒': 1 / 86400, '分': 1 / 1440, '時間': 1 / 24, '日': 1, '週間': 7, 'ヶ月': 30, 'か月': 30 };
   function saleAgeDays(when, refMs) {
     const w = String(when || '').trim();
@@ -1286,7 +1286,7 @@
         <td class="num">${h.raw ? fmtRate(h.raw.rate) : '—'}</td></tr>`;
     }).join('');
     el.innerHTML = `<h2 class="section-title">Trading activity</h2>
-      <p class="ci-note">How often each card actually sells on SNKRDUNK, from its recent one-copy completed sales (the last 20 per grade; "13+" means 20 sales within about a day, so the true rate may be higher). Hot ≥ 5 PSA10 sales a day, Active ≥ 2, Slow ≥ 0.7, Cold below. "Cheap listings last" = listings within 15% of the lowest ask ÷ daily PSA10 sales: a short time means the cheap end gets bought up fast; a long time means copies sit.</p>
+      <p class="ci-note">How often each card actually sells on SNKRDUNK, from its recent one-copy completed sales (the last 20 per grade; "13+" means 20 sales within about a day, so the true rate may be higher). Hot ≥ 8 PSA10 sales a day, Active ≥ 4, Slow ≥ 0.7, Cold below. "Cheap listings last" = listings within 15% of the lowest ask ÷ daily PSA10 sales: a short time means the cheap end gets bought up fast; a long time means copies sit.</p>
       <div class="table-scroll"><table class="heat-table"><thead><tr><th>Card</th><th class="num">PSA10 sales / day</th><th></th><th class="num">A week ago</th><th class="num">Cheap listings last</th><th class="num">Raw A sales / day</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
 
@@ -1299,6 +1299,24 @@
     const code = parseCardName(card.card_name_ja).code;
     const img = card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : '';
     return `<span class="slab ${size || ''}"><span class="slab-label"><b>${escapeHtml(code)}</b><b>GEM MT 10</b></span><span class="slab-art ${artClassFor(card)}">${img}</span></span>`;
+  }
+
+  // Price change vs the latest snapshot at least `days` old (history.json, same price rule as getRep).
+  function priceChangeAgo(card, days) {
+    const snaps = (state.hist && state.hist.snapshots) || [];
+    const ref = Date.parse((state.currentData && state.currentData.collected_at_jst) || new Date().toISOString());
+    const cut = ref - days * 86400000;
+    let then = null;
+    for (const e of snaps) { if (Date.parse(e.d) <= cut && e.p && e.p[card.url]) then = e; }
+    const now = getRep(card);
+    if (!then || now == null) return null;
+    const old = then.p[card.url][0];
+    return old ? { pct: (now / old - 1) * 100, from: then.d.slice(0, 10), old } : null;
+  }
+  function changeCell(card, days, cls) {
+    const c = priceChangeAgo(card, days);
+    if (!c) return `<span class="${cls} muted" title="No snapshot from ${days} days ago yet (history starts 2026-09-15)">—</span>`;
+    return `<span class="${cls} ${dirClass(c.pct)}" title="${fmtYen(c.old)} on ${c.from}">${fmtPct(c.pct)}</span>`;
   }
 
   function offPeakText(card) {
@@ -1321,7 +1339,7 @@
         <span class="wl-name"><b class="jp">${escapeHtml(short)}</b><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
-        <span class="wl-off">${offPeakText(card)}</span>
+        ${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg')}
         <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
         <span class="wl-heat">${heatChip(card)}</span>
       </a>`;
@@ -1368,7 +1386,7 @@
           ${owned ? '<span class="tile-owned">Owned</span>' : ''}
         </span>
         <span class="tile-name jp">${escapeHtml(short)}</span>
-        <span class="tile-price"><b class="display">${fmtYen(getRep(card))}</b><span>${offPeakText(card)} off peak</span></span>
+        <span class="tile-price"><b class="display">${fmtYen(getRep(card))}</b><span class="tile-chg"><small>7d</small>${changeCell(card, 7, 'tc')}<small>30d</small>${changeCell(card, 30, 'tc')}</span></span>
         ${zoneBarHtml(card, 'thin')}
         <span class="tile-meta">${escapeHtml(code)} · Pop ${pop}</span>
       </a>`;
