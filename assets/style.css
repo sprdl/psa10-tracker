@@ -209,7 +209,7 @@ img.card-img {
 /* ---------- overview: list + drawer ---------- */
 .split { display: flex; gap: 18px; align-items: flex-start; }
 .watchlist { flex-grow: 1; min-width: 0; overflow: hidden; }
-.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 96px minmax(80px, 150px) 60px 104px; gap: 12px; align-items: center; padding: 0 18px; }
+.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 92px minmax(70px, 140px) 54px 96px 82px; gap: 10px; align-items: center; padding: 0 18px; }
 .wl-head { padding-top: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font: 15px var(--display); letter-spacing: 0.1em; color: var(--muted-2); }
 .wl-head .r, .wl-price, .wl-off { text-align: right; }
 .wl-head span { white-space: nowrap; }
@@ -365,7 +365,7 @@ img.card-img {
 
 /* ---------- watching ---------- */
 .watch-panel { display: flex; flex-direction: column; gap: 8px; }
-.watch-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 110px 90px 150px; gap: 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 16px; color: var(--text); }
+.watch-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 110px 150px 90px 150px; gap: 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 16px; color: var(--text); }
 .watch-row:hover { border-color: var(--line-3); color: var(--text); }
 .wthumb { width: 44px; height: 60px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
 .wname { display: flex; flex-direction: column; min-width: 0; }
@@ -506,7 +506,7 @@ td em { color: var(--muted-2); font-style: normal; }
   .wl-head { display: none; }
   #watchlist { display: flex; flex-direction: column; gap: 8px; }
   .wl-row {
-    grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: "slab name price" "slab name tag" "bar bar bar";
+    grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: "slab name price" "slab heat tag" "bar bar bar";
     gap: 4px 10px; padding: 12px; min-height: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
   }
   .wl-row:last-child { border-bottom: 1px solid var(--line); }
@@ -516,6 +516,7 @@ td em { color: var(--muted-2); font-style: normal; }
   .wl-name b { font-size: 20px; }
   .wl-price { grid-area: price; font-size: 22px; }
   .wl-tag { grid-area: tag; justify-content: flex-end; }
+  .wl-heat { grid-area: heat; }
   .wl-row .zb, .wl-row .zb-none { grid-area: bar; height: 14px; margin-top: 4px; }
   .wl-off { display: none; }
   .collection { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 14px; }
@@ -538,7 +539,8 @@ td em { color: var(--muted-2); font-style: normal; }
     padding: 10px 16px; background: rgba(11, 11, 13, 0.95); border-top: 1px solid var(--line);
   }
   .card-page { padding-bottom: 70px; }
-  .watch-row { grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: "thumb name raw" "thumb state meta"; gap: 2px 12px; }
+  .watch-row { grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: "thumb name raw" "thumb heat meta" "thumb state state"; gap: 2px 12px; }
+  .wheat { grid-area: heat; flex-direction: row; align-items: center; gap: 6px; }
   .wthumb { grid-area: thumb; width: 36px; height: 50px; }
   .wname { grid-area: name; }
   .wraw { grid-area: raw; }
@@ -642,11 +644,18 @@ td em { color: var(--muted-2); font-style: normal; }
 @media (max-width: 600px) { .ev-list li { grid-template-columns: 1fr; } .ev-when { grid-row: auto; } }
 
 /* trading activity (heat) */
-.heat-chip { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line-3); color: var(--muted); vertical-align: middle; margin-left: 4px; }
-.heat-hot { background: var(--accent); border-color: var(--accent); color: #111; }
-.heat-active { border-color: var(--accent); color: var(--accent); }
-.heat-slow { color: var(--soft); }
+.heat-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line-3); color: var(--muted); white-space: nowrap; vertical-align: middle; }
+.heat-chip svg { width: 11px; height: 11px; flex: none; }
+.heat-hot { background: linear-gradient(135deg, #ff8a3d, #e5383b); border-color: transparent; color: #fff; box-shadow: 0 0 10px rgba(240, 82, 77, 0.45); }
+.heat-active { color: var(--green); border-color: rgba(69, 212, 131, 0.6); background: rgba(69, 212, 131, 0.08); }
+.heat-slow { color: #8fd3ff; border-color: rgba(143, 211, 255, 0.55); background: rgba(143, 211, 255, 0.08); }
 .heat-cold { color: var(--muted-2); border-style: dashed; }
+.wl-heat { display: flex; align-items: center; }
+.wheat { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.wheat small { font-size: 11px; color: var(--muted-2); white-space: nowrap; }
+.tile-chips { display: flex; gap: 6px; align-items: center; }
+.tile-chips .heat-chip { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); }
+.tile-chips .heat-active, .tile-chips .heat-slow, .tile-chips .heat-cold { background: var(--bg); }
 .heat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
 .heat-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .heat-table th, .heat-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }

@@ -1246,10 +1246,19 @@
     const cover = psa && within ? within / psa.rate : null;
     return { psa, raw, prev, cover, within, level: heatLevel(psa ? psa.rate : null) };
   }
-  function heatChip(card) {
+  // Raw A-rank sells far more often than PSA10, so it has its own thresholds (watching page).
+  const HEAT_LEVELS_RAW = [[40, 'hot', 'Hot'], [15, 'active', 'Active'], [5, 'slow', 'Slow'], [0, 'cold', 'Cold']];
+  const HEAT_ICON = {
+    hot: '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8.2 1c.6 2.6 3.8 4 3.8 8.1A4 4 0 0 1 4 9.3c0-1.9.9-3.1 1.9-3.9 0 1.4.6 2.3 1.4 2.6C7 5.9 7 3.4 8.2 1z"/></svg>',
+    slow: '<svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 1.5v13M2.4 4.75l11.2 6.5M2.4 11.25l11.2-6.5M6.2 2.9 8 4.4l1.8-1.5M6.2 13.1 8 11.6l1.8 1.5"/></svg>',
+  };
+  function heatChip(card, grade) {
     const h = heatOf(card);
-    if (!h || !h.level) return '';
-    return `<span class="heat-chip heat-${h.level[1]}" title="About ${fmtRate(h.psa.rate)} PSA10 sales a day on SNKRDUNK">${h.level[2]}</span>`;
+    const x = h && (grade === 'raw' ? h.raw : h.psa);
+    if (!x) return '';
+    const lv = (grade === 'raw' ? HEAT_LEVELS_RAW : HEAT_LEVELS).find(([min]) => x.rate >= min);
+    const what = grade === 'raw' ? 'raw A-rank' : 'PSA10';
+    return `<span class="heat-chip heat-${lv[1]}" title="About ${rateTxt(x)} ${what} sales a day on SNKRDUNK">${HEAT_ICON[lv[1]] || ''}${lv[2]}</span>`;
   }
   function heatStatHtml(card) {
     const h = heatOf(card);
@@ -1313,7 +1322,8 @@
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
         <span class="wl-off">${offPeakText(card)}</span>
-        <span class="wl-tag">${tagChip(card)}${heatChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
+        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
+        <span class="wl-heat">${heatChip(card)}</span>
       </a>`;
     }).join('');
     el.querySelectorAll('.wl-row').forEach((a) => a.addEventListener('click', (e) => {
@@ -1353,7 +1363,7 @@
       const pop = card.psa10_population != null ? card.psa10_population.toLocaleString() : '—';
       return `<a class="tile${limitHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}">
         <span class="tile-slab">${slabHtml(card, 'lg')}
-          <span class="tile-chips">${tagChip(card)}</span>
+          <span class="tile-chips">${heatChip(card)}${tagChip(card)}</span>
           ${lim != null ? `<span class="tile-limit">Limit ${fmtYen(lim)}</span>` : ''}
           ${owned ? '<span class="tile-owned">Owned</span>' : ''}
         </span>
@@ -1388,6 +1398,7 @@
         <span class="wthumb">${thumbHtml}</span>
         <span class="wname"><b class="jp">${escapeHtml(short || card.card_name_ja)}</b><small>${escapeHtml(code)}</small></span>
         <span class="wraw"><small>Raw A</small><b class="display">${raw && raw.lowest_price != null ? fmtYen(raw.lowest_price) : '—'}</b></span>
+        <span class="wheat">${heatChip(card, 'raw')}${(heatOf(card) || {}).raw ? `<small>≈${rateTxt(heatOf(card).raw)} raw A sales / day</small>` : ''}</span>
         <span class="wmeta">♥ ${fav}</span>
         <span class="wstate">${escapeHtml(status)}</span>
       </a>`;
