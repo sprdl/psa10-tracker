@@ -184,6 +184,7 @@
     try { state.syncedLimits = (await fetchJSON('data/limits.json')).limits || {}; } catch (e) { state.syncedLimits = {}; }
     try { state.oddsModel = await fetchJSON('data/odds_model.json'); } catch (e) { state.oddsModel = null; }
     reconcileLimits();
+    initSortUi();
 
     await loadIndex(snaps.length - 1);
   }
@@ -1102,9 +1103,72 @@
 
   // Order used by the list and the display case: cards with a listing at or below
   // your limit first, then Definitely-buy / Buy zones, otherwise the snapshot's order.
+  // ---------- sorting (overview + collection) ----------
+  // Default = signals first (your limit, then Definitely-buy / Buy), then the tracker order.
+  // Other keys come from the overview's column headers (desktop) or the Sort menu (phone).
+  // Cards without a value (e.g. no 30-day history yet) always go last.
+  const VERDICT_RANK = { definitely_buy: 0, buy: 1, watch: 2, dont_buy: 3, defer: 4 };
+  const SORTS = {
+    default: { label: 'Signals first', dir: 1 },
+    name: { label: 'Card name', dir: 1, v: (c) => parseCardName(c.card_name_ja).short },
+    price: { label: 'Price', dir: -1, v: (c) => getRep(c) },
+    zone: { label: 'Closest to Buy', dir: 1, v: (c) => { const t = c.analysis && c.analysis.tiers; const p = getRep(c); return t && p != null ? p / t.buy_upper : null; } },
+    chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeAgo(c, 7) || {}).pct ?? null },
+    chg30: { label: '30-day change', dir: 1, v: (c) => (priceChangeAgo(c, 30) || {}).pct ?? null },
+    verdict: { label: 'Verdict', dir: 1, v: (c) => (limitHit(c) ? -1 : VERDICT_RANK[displayTagFor(c)] ?? 5) },
+    heat: { label: 'Trading activity', dir: -1, v: (c) => { const h = heatOf(c); return h && h.psa ? h.psa.rate : null; } },
+  };
+  let sortState = store.get('psa10.sort', { key: 'default', dir: 1 });
+  if (!SORTS[sortState.key]) sortState = { key: 'default', dir: 1 };
+
   function sortedMarketCards(cards) {
     const rank = (c) => (limitHit(c) ? 0 : 3) + ({ definitely_buy: 0, buy: 1 }[displayTagFor(c)] ?? 2);
-    return cards.filter(hasMarket).map((card, i) => ({ card, i })).sort((a, b) => rank(a.card) - rank(b.card) || a.i - b.i).map((x) => x.card);
+    const base = cards.filter(hasMarket).map((card, i) => ({ card, i }));
+    const sd = SORTS[sortState.key];
+    if (!sd.v) return base.sort((a, b) => rank(a.card) - rank(b.card) || a.i - b.i).map((x) => x.card);
+    const vals = new Map(base.map((x) => [x.card, sd.v(x.card)]));
+    return base.sort((a, b) => {
+      const va = vals.get(a.card), vb = vals.get(b.card);
+      if (va == null && vb == null) return a.i - b.i;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      const c = typeof va === 'string' ? va.localeCompare(vb, 'ja') : va - vb;
+      return c * sortState.dir || rank(a.card) - rank(b.card) || a.i - b.i;
+    }).map((x) => x.card);
+  }
+
+  function setSort(key, dir) {
+    if (!SORTS[key]) return;
+    sortState = { key, dir: dir != null ? dir : (sortState.key === key ? -sortState.dir : SORTS[key].dir) };
+    store.set('psa10.sort', sortState);
+    syncSortUi();
+    if (state.currentData) { renderOverviewList(state.currentData.cards || []); renderCollection(state.currentData.cards || []); }
+  }
+  function syncSortUi() {
+    document.querySelectorAll('.wl-head [data-sort]').forEach((b) => {
+      const on = b.dataset.sort === sortState.key;
+      b.classList.toggle('on', on);
+      b.dataset.dir = on ? (sortState.dir > 0 ? 'asc' : 'desc') : '';
+      b.setAttribute('aria-sort', on ? (sortState.dir > 0 ? 'ascending' : 'descending') : 'none');
+    });
+    const sel = document.getElementById('wl-sort-select'), dirBtn = document.getElementById('wl-sort-dir');
+    if (sel) sel.value = sortState.key;
+    if (dirBtn) { dirBtn.textContent = sortState.dir > 0 ? '↑' : '↓'; dirBtn.hidden = sortState.key === 'default'; }
+  }
+  function initSortUi() {
+    document.querySelectorAll('.wl-head [data-sort]').forEach((b) => b.addEventListener('click', () => {
+      // clicking the active column a third time goes back to the default order
+      if (b.dataset.sort === sortState.key && sortState.dir !== SORTS[sortState.key].dir) return setSort('default', 1);
+      setSort(b.dataset.sort);
+    }));
+    const sel = document.getElementById('wl-sort-select');
+    if (sel) {
+      sel.innerHTML = Object.entries(SORTS).map(([k, d]) => `<option value="${k}">${escapeHtml(d.label)}</option>`).join('');
+      sel.addEventListener('change', () => setSort(sel.value, SORTS[sel.value].dir));
+    }
+    const dirBtn = document.getElementById('wl-sort-dir');
+    if (dirBtn) dirBtn.addEventListener('click', () => setSort(sortState.key, -sortState.dir));
+    syncSortUi();
   }
 
   // ---------- render: key numbers ----------

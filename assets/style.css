@@ -213,6 +213,12 @@ img.card-img {
 .wl-head { padding-top: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font: 15px var(--display); letter-spacing: 0.1em; color: var(--muted-2); }
 .wl-head .r, .wl-price, .wl-off, .wl-chg { text-align: right; }
 .wl-head span { white-space: nowrap; }
+.wl-head button { all: unset; cursor: pointer; white-space: nowrap; font: inherit; letter-spacing: inherit; color: inherit; }
+.wl-head button:hover, .wl-head button.on { color: var(--text); }
+.wl-head button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.wl-head button.on::after { content: ' ▲'; font-size: 10px; color: var(--accent); }
+.wl-head button.on[data-dir="desc"]::after { content: ' ▼'; }
+.wl-sortbar { display: none; }
 .wl-row { min-height: 70px; padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid #1d1d21; color: var(--text); }
 .wl-row:last-child { border-bottom: 0; }
 .wl-row:hover { background: #19191d; color: var(--text); }
@@ -506,6 +512,9 @@ td em { color: var(--muted-2); font-style: normal; }
   .sig-text { display: none; }
   .watchlist { background: transparent; border: 0; overflow: visible; }
   .wl-head { display: none; }
+  .wl-sortbar { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+  .wl-sortbar select { flex: 1; background: var(--panel); color: var(--text); border: 1px solid var(--line-3); border-radius: 8px; padding: 8px 10px; font: inherit; }
+  .wl-sortbar button { background: var(--panel); color: var(--text); border: 1px solid var(--line-3); border-radius: 8px; padding: 7px 12px; font: inherit; cursor: pointer; }
   #watchlist { display: flex; flex-direction: column; gap: 8px; }
   .wl-row {
     grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: "slab name price" "slab heat tag" "bar bar bar";
