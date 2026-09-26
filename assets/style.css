@@ -711,3 +711,14 @@ th.tc-head small { font-size: 11px; color: var(--muted-2); font-weight: 400; whi
   .wl-head .wl-zone, .wl-row .zb, .wl-row .zb-none { display: none; }
 }
 }
+
+/* interactive card-page charts */
+.lc-plot { position: relative; width: 100%; outline: none; touch-action: pan-y; margin-top: 4px; }
+.lc-plot:focus-visible { box-shadow: 0 0 0 2px var(--accent); border-radius: 4px; }
+.lc-plot svg, .history-block .lc-plot svg, .spark-block .lc-plot svg { display: block; overflow: visible; width: 100%; height: auto; }
+.lc-plot .ci-tip { white-space: normal; max-width: 260px; }
+.lc-bar { fill: var(--line-3); }
+.lc-bar.in { fill: var(--accent); opacity: 0.9; }
+.lc-hl { fill: rgba(255, 255, 255, 0.06); pointer-events: none; }
+.hist-ref-line.lim { stroke: var(--soft); stroke-dasharray: 2 3; stroke-width: 1.2; }
+.hist-ref-label.lim { fill: var(--soft); font-size: 10px; }

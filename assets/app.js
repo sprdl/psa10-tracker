@@ -1722,7 +1722,7 @@
           ${statsHtml}
         </div>
         <div class="cd-panel" data-panel="history"${cur === 'history' ? '' : ' hidden'}><div class="history-block"><div class="loading-inline">Loading full history…</div></div></div>
-        <div class="cd-panel" data-panel="listings"${cur === 'listings' ? '' : ' hidden'}>${buildGradeDetail('PSA10', psa10)}${raw ? buildGradeDetail('Raw A-rank', raw) : ''}</div>
+        <div class="cd-panel" data-panel="listings"${cur === 'listings' ? '' : ' hidden'}>${buildGradeDetail('PSA10', psa10, getLimit(card))}${raw ? buildGradeDetail('Raw A-rank', raw) : ''}</div>
         <div class="cd-panel" data-panel="diy"${cur === 'diy' ? '' : ' hidden'}>${diyHtml}</div>
         ${mode === 'page' ? '' : actionsHtml}
       </div>`;
@@ -1730,6 +1730,7 @@
 
   function wireCardDetail(el, card) {
     wireLimitControls(el, card);
+    mountCharts(el);
     let historyLoaded = false;
     const showTab = (k) => {
       state.cardTab = k;
@@ -2080,6 +2081,7 @@
     if (!container) return;
     const points = await getCardPriceHistory(card);
     container.innerHTML = buildPriceHistoryHtml(card, points);
+    mountCharts(container);
   }
 
   // A long-run line chart of representative_price across every snapshot the
@@ -2092,74 +2094,27 @@
       return `<div class="lbl">Price history</div><div class="hist-empty">Not enough history yet — this builds up as you run more price checks.</div>`;
     }
 
-    const prices = points.map((p) => p.price);
-    let lo = Math.min(...prices);
-    let hi = Math.max(...prices);
     const tiers = card.analysis && card.analysis.tiers;
-    if (tiers) {
-      lo = Math.min(lo, tiers.definitely_buy);
-      hi = Math.max(hi, tiers.ceiling);
-    }
-    const pad = (hi - lo) * 0.1 || hi * 0.1 || 1000;
-    lo = Math.max(0, lo - pad);
-    hi = hi + pad;
-    const range = hi - lo || 1;
-
-    const w = 700, h = 160, padX = 4, padTop = 10, padBottom = 10;
-    const plotH = h - padTop - padBottom;
-    const step = (w - padX * 2) / (points.length - 1);
-    const y = (price) => padTop + plotH - ((price - lo) / range) * plotH;
-    const pts = points.map((p, i) => [padX + i * step, y(p.price)]);
-
-    const trendUp = prices[prices.length - 1] > prices[0];
-    const color = trendUp ? 'var(--red)' : 'var(--green-strong)';
-    const gradId = 'hist-grad-' + (sparkGradCounter++);
-    const linePath = smoothPath(pts);
-    const baseline = h - padBottom;
-    const last = pts[pts.length - 1];
-    const areaPath = `${linePath} L${last[0].toFixed(1)},${baseline} L${pts[0][0].toFixed(1)},${baseline} Z`;
-
-    const dots = points.map((p, i) => {
-      const [px, py] = pts[i];
-      return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${p.confirmed ? 2.6 : 2}" fill="${p.confirmed ? color : 'var(--muted-2)'}" />`;
-    }).join('');
-
-    let refLines = '';
-    if (tiers) {
-      const refLine = (price, cls, label) => `
-        <line x1="${padX}" y1="${y(price).toFixed(1)}" x2="${w - padX}" y2="${y(price).toFixed(1)}" class="hist-ref-line ${cls}" />
-        <text x="${w - padX}" y="${(y(price) - 4).toFixed(1)}" class="hist-ref-label ${cls}" text-anchor="end">${label}</text>`;
-      refLines = refLine(tiers.definitely_buy, 'db', 'Definitely-buy')
-        + refLine(tiers.buy_upper, 'bu', 'Buy')
-        + refLine(tiers.ceiling, 'ceil', "Don't-buy");
-    }
-
-    const svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
-          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      ${refLines}
-      <path d="${areaPath}" fill="url(#${gradId})" />
-      <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2" />
-      ${dots}
-    </svg>`;
-
-    const dateLabels = `<div class="spark-dates"><span>${escapeHtml(fmtDateShort(points[0].date))}</span><span>${escapeHtml(fmtDateShort(points[points.length - 1].date))}</span></div>`;
-    const note = tiers
-      ? `<div class="hist-note">Dashed lines are today's tiers, shown for reference — they may not have applied at every point in the past.</div>`
-      : '';
-
-    return `<div class="lbl">Price history — ${points.length} checks, ${escapeHtml(fmtDateShort(points[0].date))} → ${escapeHtml(fmtDateShort(points[points.length - 1].date))}</div>${svg}${dateLabels}${note}`;
+    const lim = getLimit(card);
+    const refs = [];
+    if (tiers) refs.push({ y: tiers.definitely_buy, label: 'Definitely-buy', cls: 'db' }, { y: tiers.buy_upper, label: 'Buy', cls: 'bu' }, { y: tiers.ceiling, label: "Don't-buy", cls: 'ceil' });
+    if (lim != null) refs.push({ y: lim, label: 'My limit', cls: 'lim' });
+    const up = points[points.length - 1].price > points[0].price;
+    const chart = chartSlot({
+      type: 'line', xMode: 'time', height: 190, color: up ? 'var(--red)' : 'var(--green-strong)', refs,
+      label: `PSA10 price history of ${card.card_name_ja}`,
+      points: points.map((p) => ({ x: Date.parse(p.date), y: p.price, dim: !p.confirmed,
+        title: fmtDateShort(p.date) + ' JST', sub: p.confirmed ? 'sales-confirmed price' : 'lowest ask' })),
+    });
+    const note = `<div class="hist-note">Filled dots are sales-confirmed prices, grey dots lowest asks. Dashed lines are today's tiers${lim != null ? ' and your limit' : ''}, shown for reference; they may not have applied at every point in the past.</div>`;
+    return `<div class="lbl">Price history — ${points.length} checks, ${escapeHtml(fmtDateShort(points[0].date))} → ${escapeHtml(fmtDateShort(points[points.length - 1].date))}</div>${chart}${note}`;
   }
 
-  function buildGradeDetail(label, grade) {
+  function buildGradeDetail(label, grade, limit) {
     const listings = grade.top20_cheapest_listings || [];
     const sales = grade.recent_completed_sales || [];
-    const distribution = buildDistribution(grade, listings);
-    const sparkline = buildSparkline(sales);
+    const distribution = buildDistribution(grade, listings, limit);
+    const sparkline = buildSparkline(sales, limit);
     const salesList = sales.slice().reverse().map((s) => `<li><span>${fmtYen(s.price)}</span><span class="when">${escapeHtml(s.when)}</span></li>`).join('');
 
     const note = grade.note ? `<div class="raw-note">${escapeHtml(grade.note)}</div>` : '';
@@ -2185,80 +2140,166 @@
   // across their own min–max range, replacing the old 20-chip grid. Computed
   // entirely client-side from top20_cheapest_listings / threshold_115pct_of_lowest
   // — no new fields required in the JSON.
-  function buildDistribution(grade, listings) {
+  function buildDistribution(grade, listings, limit) {
     if (!listings.length) return '';
     const sorted = listings.slice().sort((a, b) => a - b);
-    const min = sorted[0], max = sorted[sorted.length - 1];
     const threshold = grade.threshold_115pct_of_lowest;
-    const range = max - min || 1;
-    const bins = Math.min(14, sorted.length);
-    const binWidth = range / bins || 1;
-    const counts = new Array(bins).fill(0);
-    sorted.forEach((p) => {
-      let idx = Math.floor((p - min) / binWidth);
-      if (idx >= bins) idx = bins - 1;
-      if (idx < 0) idx = 0;
-      counts[idx]++;
-    });
-    const maxCount = Math.max(...counts, 1);
-    const bars = counts.map((c, idx) => {
-      if (!c) return '';
-      const leftPct = ((idx + 0.5) / bins) * 100;
-      const heightPct = Math.max(16, (c / maxCount) * 100);
-      const binPrice = min + (idx + 0.5) * binWidth;
-      const within = threshold != null ? binPrice <= threshold : true;
-      return `<div class="dist-bar ${within ? 'in' : ''}" style="left:${leftPct.toFixed(1)}%; height:${heightPct.toFixed(0)}%;"></div>`;
-    }).join('');
-
+    const chart = chartSlot({ type: 'bars', height: 130, listings: sorted, threshold, limit, label: 'Listing price distribution' });
     return `
       <div class="distribution">
-        <div class="lbl">Listing distribution (${listings.length} sampled${threshold != null ? `, lowest → +15% cutoff at ${fmtYen(threshold)}` : ''})</div>
-        <div class="dist-track">${bars}</div>
-        <div class="dist-range"><span>${fmtYen(min)} lowest</span><span>${fmtYen(max)}</span></div>
+        <div class="lbl">Listing distribution (${listings.length} cheapest listings${threshold != null ? `, yellow = within 15% of the lowest, up to ${fmtYen(threshold)}` : ''})</div>
+        ${chart}
       </div>`;
   }
 
   let sparkGradCounter = 0;
 
+  // ---------- interactive charts (card page) ----------
+  // Charts are emitted as empty slots while the HTML string is built, then drawn at the
+  // container's real width by mountCharts() (so text isn't stretched) and redrawn when that
+  // width changes, e.g. when a hidden tab is opened. Hover, tap or arrow keys show values.
+  const chartReg = new Map(); let chartSeq = 0;
+  function chartSlot(cfg) {
+    const id = 'ch' + (++chartSeq);
+    chartReg.set(id, cfg);
+    if (chartReg.size > 200) chartReg.delete(chartReg.keys().next().value);
+    return `<div class="lc-plot" data-chart="${id}" tabindex="0" role="img" aria-label="${escapeAttr((cfg.label || 'Chart') + '. Use the arrow keys to step through the values.')}"></div>`;
+  }
+  function mountCharts(root) {
+    root.querySelectorAll('[data-chart]').forEach((box) => {
+      const cfg = chartReg.get(box.dataset.chart);
+      if (!cfg || box._mounted) return;
+      box._mounted = true;
+      const draw = () => (cfg.type === 'bars' ? drawBarChart : drawLineChart)(box, cfg);
+      let lastW = box.clientWidth;
+      if (window.ResizeObserver) new ResizeObserver(() => { const w = box.clientWidth; if (w && Math.abs(w - lastW) > 2) { lastW = w; draw(); } }).observe(box);
+      if (box.clientWidth) draw();
+    });
+  }
+  function yenShort(v) { return v >= 1e6 ? '¥' + +(v / 1e6).toFixed(2) + 'M' : v >= 1e4 ? '¥' + +(v / 1e3).toFixed(1) + 'k' : fmtYen(v); }
+  function niceTicks(lo, hi, n) {
+    const span = hi - lo || Math.abs(hi) || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= raw) || 10 * mag;
+    const a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step, out = [];
+    for (let v = a; v <= b + step / 1e6; v += step) out.push(v);
+    return out;
+  }
+  function tipPlace(box, tip, x, yTop, W) {
+    tip.hidden = false;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.min(Math.max(x - tw / 2, 0), W - tw) + 'px';
+    tip.style.top = Math.max(0, yTop - tip.offsetHeight - 12) + 'px';
+  }
+  function wireHover(box, svg, n, xs, show, hide) {
+    let cur = -1;
+    const nearest = (cx) => { const r = svg.getBoundingClientRect(), x = cx - r.left; let b = 0; for (let i = 1; i < n; i++) if (Math.abs(xs[i] - x) < Math.abs(xs[b] - x)) b = i; return b; };
+    const go = (i) => { if (i >= 0 && i < n) { cur = i; show(i); } };
+    svg.addEventListener('pointermove', (e) => go(nearest(e.clientX)));
+    svg.addEventListener('pointerdown', (e) => go(nearest(e.clientX)));
+    svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { hide(); cur = -1; } });
+    box.onkeydown = (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); go(cur < 0 ? n - 1 : cur + (e.key === 'ArrowLeft' ? -1 : 1)); }
+      else if (e.key === 'Home') go(0); else if (e.key === 'End') go(n - 1); else if (e.key === 'Escape') { hide(); cur = -1; }
+    };
+    box.onblur = () => { hide(); cur = -1; };
+  }
+
+  function drawLineChart(box, cfg) {
+    const pts = cfg.points; if (!pts.length) return;
+    const W = Math.max(260, box.clientWidth), H = cfg.height || 170;
+    const m = { l: 52, r: 12, t: 12, b: 26 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const ys = pts.map((p) => p.y).concat((cfg.refs || []).map((r) => r.y));
+    const ticks = niceTicks(Math.min(...ys), Math.max(...ys), 4), lo = ticks[0], hi = ticks[ticks.length - 1];
+    const x0 = pts[0].x, x1 = pts[pts.length - 1].x;
+    const X = (x) => m.l + (pts.length === 1 ? iw / 2 : ((x - x0) * iw) / (x1 - x0 || 1));
+    const Y = (v) => m.t + ih * (1 - (v - lo) / (hi - lo || 1));
+    const xy = pts.map((p) => [X(p.x), Y(p.y)]);
+    // x ticks
+    let xt = [];
+    if (cfg.xMode === 'time') {
+      const span = x1 - x0, n = Math.max(2, Math.min(6, Math.floor(iw / 90)));
+      for (let k = 0; k <= n; k++) { const t = x0 + (span * k) / n; const d = new Date(t + 9 * 36e5); xt.push([X(t), span > 60 * 864e5 ? `${d.getUTCFullYear() % 100}/${d.getUTCMonth() + 1}` : `${d.getUTCMonth() + 1}/${d.getUTCDate()}`]); }
+    } else {
+      const n = Math.max(2, Math.min(5, Math.floor(iw / 110)));
+      for (let k = 0; k <= n; k++) { const i = Math.round(((pts.length - 1) * k) / n); if (!xt.length || xt[xt.length - 1][2] !== i) xt.push([xy[i][0], pts[i].tick || '', i]); }
+    }
+    const gid = 'lcg' + (++sparkGradCounter), color = cfg.color || 'var(--accent)';
+    const line = xy.length > 1 ? smoothPath(xy) : `M${xy[0][0]},${xy[0][1]} L${xy[0][0] + 0.1},${xy[0][1]}`;
+    const base = m.t + ih;
+    const area = `${line} L${xy[xy.length - 1][0].toFixed(1)},${base} L${xy[0][0].toFixed(1)},${base} Z`;
+    const refs = (cfg.refs || []).map((r) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(r.y).toFixed(1)}" y2="${Y(r.y).toFixed(1)}" class="hist-ref-line ${r.cls}"/><text x="${m.l + iw}" y="${(Y(r.y) - 4).toFixed(1)}" class="hist-ref-label ${r.cls}" text-anchor="end">${escapeHtml(r.label)} ${yenShort(r.y)}</text>`).join('');
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+      ${ticks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${yenShort(v)}</text>`).join('')}
+      ${xt.map(([x, lab]) => `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${base}" y2="${base + 4}" class="ci-axis"/><text x="${x.toFixed(1)}" y="${base + 18}" class="ci-xtick">${escapeHtml(lab)}</text>`).join('')}
+      <line x1="${m.l}" x2="${m.l + iw}" y1="${base}" y2="${base}" class="ci-axis"/>
+      ${refs}
+      <path d="${area}" fill="url(#${gid})"/>
+      <path d="${line}" fill="none" stroke="${color}" stroke-width="2"/>
+      ${xy.map(([x, y], i) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${pts[i].dim ? 2.2 : 2.8}" fill="${pts[i].dim ? 'var(--muted-2)' : color}"/>`).join('')}
+      <g class="ci-hover" style="display:none"><line class="ci-cross" y1="${m.t}" y2="${base}"/><circle class="lc-dot" r="5" fill="${color}"/></g>
+    </svg><div class="ci-tip" role="status" aria-live="polite" hidden></div>`;
+    const svg = box.querySelector('svg'), g = svg.querySelector('.ci-hover'), tip = box.querySelector('.ci-tip');
+    const cross = g.querySelector('.ci-cross'), dot = g.querySelector('.lc-dot');
+    const lim = (cfg.refs || []).find((r) => r.cls === 'lim');
+    const show = (i) => {
+      const [x, y] = xy[i], p = pts[i];
+      g.style.display = ''; cross.setAttribute('x1', x); cross.setAttribute('x2', x); dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+      const prev = i > 0 ? pts[i - 1].y : null, ch = prev ? (p.y / prev - 1) * 100 : null;
+      tip.innerHTML = `<div class="ci-tip-d">${escapeHtml(p.title || '')}</div><div><b>${fmtYen(p.y)}</b>${ch != null ? ` <span class="${dirClass(ch)}">${ch === 0 ? '±0' : fmtPct(ch)}</span>` : ''}</div>${p.sub ? `<div class="muted">${escapeHtml(p.sub)}</div>` : ''}${lim ? `<div class="muted">vs your limit ${fmtPct((p.y / lim.y - 1) * 100)}</div>` : ''}`;
+      tipPlace(box, tip, x, y, W);
+    };
+    wireHover(box, svg, pts.length, xy.map((q) => q[0]), show, () => { g.style.display = 'none'; tip.hidden = true; });
+  }
+
+  function drawBarChart(box, cfg) {
+    const L = cfg.listings; if (!L.length) return;
+    const W = Math.max(260, box.clientWidth), H = cfg.height || 130;
+    const m = { l: 30, r: 12, t: 10, b: 26 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const min = L[0], max = L[L.length - 1];
+    const nb = Math.max(1, Math.min(14, L.length)), bw = (max - min) / nb || 1;
+    const bins = Array.from({ length: nb }, (_, i) => ({ a: min + i * bw, b: min + (i + 1) * bw, items: [] }));
+    L.forEach((v) => bins[Math.max(0, Math.min(nb - 1, Math.floor((v - min) / bw)))].items.push(v));
+    const top = Math.max(...bins.map((b) => b.items.length), 1);
+    const yt = niceTicks(0, top, Math.min(4, top)).filter((v) => Number.isInteger(v));
+    const yMax = yt[yt.length - 1] || top;
+    const X = (v) => m.l + (max === min ? iw / 2 : ((v - min) * iw) / (max - min));
+    const Y = (c) => m.t + ih * (1 - c / yMax);
+    const slot = iw / nb, gap = Math.min(4, slot * 0.2);
+    const bx = bins.map((_, i) => m.l + i * slot + slot / 2);
+    const xt = [[min, 'lowest'], [max, '']].concat(cfg.threshold != null && cfg.threshold < max && X(cfg.threshold) - X(min) > 110 && X(max) - X(cfg.threshold) > 90 ? [[cfg.threshold, '+15%']] : []);
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+      ${yt.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 6}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${v}</text>`).join('')}
+      ${bins.map((b, i) => b.items.length ? `<rect x="${(bx[i] - slot / 2 + gap / 2).toFixed(1)}" y="${Y(b.items.length).toFixed(1)}" width="${(slot - gap).toFixed(1)}" height="${(m.t + ih - Y(b.items.length)).toFixed(1)}" rx="2" class="lc-bar${cfg.threshold == null || b.a <= cfg.threshold ? ' in' : ''}" data-i="${i}"/>` : '').join('')}
+      <line x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}" class="ci-axis"/>
+      ${cfg.limit != null && cfg.limit >= min && cfg.limit <= max ? `<line x1="${X(cfg.limit).toFixed(1)}" x2="${X(cfg.limit).toFixed(1)}" y1="${m.t}" y2="${m.t + ih}" class="hist-ref-line lim"/><text x="${(X(cfg.limit) + 4).toFixed(1)}" y="${m.t + 10}" class="hist-ref-label lim">My limit</text>` : ''}
+      ${xt.map(([v, lab], k) => `<text x="${X(v).toFixed(1)}" y="${m.t + ih + 17}" class="ci-xtick" style="text-anchor:${k === 0 ? 'start' : k === 1 ? 'end' : 'middle'}">${yenShort(v)}${lab ? ' ' + lab : ''}</text>`).join('')}
+      <rect class="lc-hl" style="display:none" y="${m.t}" height="${ih}" rx="2"/>
+    </svg><div class="ci-tip" role="status" aria-live="polite" hidden></div>`;
+    const svg = box.querySelector('svg'), tip = box.querySelector('.ci-tip'), hl = svg.querySelector('.lc-hl');
+    const show = (i) => {
+      const b = bins[i];
+      hl.style.display = ''; hl.setAttribute('x', bx[i] - slot / 2); hl.setAttribute('width', slot);
+      const list = b.items.length ? [...new Set(b.items)].map((v) => fmtYen(v) + (b.items.filter((x) => x === v).length > 1 ? ' ×' + b.items.filter((x) => x === v).length : '')).join(', ') : 'no listings';
+      tip.innerHTML = `<div class="ci-tip-d">${fmtYen(b.a)} – ${fmtYen(b.b)}</div><div><b>${b.items.length}</b> listing${b.items.length === 1 ? '' : 's'}${cfg.threshold != null ? (b.a <= cfg.threshold ? ' · within 15%' : ' · over +15%') : ''}</div><div class="muted">${escapeHtml(list)}</div>`;
+      tipPlace(box, tip, bx[i], b.items.length ? Y(b.items.length) : m.t + ih, W);
+    };
+    wireHover(box, svg, nb, bx, show, () => { hl.style.display = 'none'; tip.hidden = true; });
+  }
+
   // Smoothed (Catmull-Rom → cubic Bezier) sales sparkline with a gradient area
   // fill, generalized for any real recent_completed_sales array (1..N points) —
   // oldest first, matching the order the JSON already provides.
-  function buildSparkline(sales) {
+  function buildSparkline(sales, limit) {
     if (!sales.length) return '';
-    const prices = sales.map((s) => s.price);
-    const w = 500, h = 90, padX = 4, padTop = 14, padBottom = 18;
-    const min = Math.min(...prices), max = Math.max(...prices);
-    const range = max - min || 1;
-    const plotH = h - padTop - padBottom;
-    const step = prices.length > 1 ? (w - padX * 2) / (prices.length - 1) : 0;
-    const pts = prices.map((p, i) => [
-      padX + i * step,
-      padTop + plotH - ((p - min) / range) * plotH,
-    ]);
-
-    const trendUp = prices[prices.length - 1] > prices[0];
-    const color = trendUp ? 'var(--red)' : 'var(--green-strong)';
-    const gradId = 'spark-grad-' + (sparkGradCounter++);
-    const linePath = pts.length > 1 ? smoothPath(pts) : `M${pts[0][0]},${pts[0][1]} L${pts[0][0]},${pts[0][1]}`;
-    const baseline = h - padBottom;
-    const last = pts[pts.length - 1];
-    const areaPath = `${linePath} L${last[0].toFixed(1)},${baseline} L${pts[0][0].toFixed(1)},${baseline} Z`;
-
-    const svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-        </linearGradient>
-      </defs>
-      <path d="${areaPath}" fill="url(#${gradId})" />
-      <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2" />
-      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.5" fill="${color}" />
-    </svg>`;
-
-    const dateLabels = `<div class="spark-dates"><span>${escapeHtml(sales[0].when)} · ${fmtYen(sales[0].price)}</span><span>${escapeHtml(sales[sales.length - 1].when)} · ${fmtYen(sales[sales.length - 1].price)}</span></div>`;
-
-    return `<div class="spark-block"><div class="lbl">Sales history — ${escapeHtml(sales[0].when)} → ${escapeHtml(sales[sales.length - 1].when)}</div>${svg}${dateLabels}</div>`;
+    const up = sales[sales.length - 1].price > sales[0].price;
+    const chart = chartSlot({
+      type: 'line', xMode: 'index', height: 150, color: up ? 'var(--red)' : 'var(--green-strong)',
+      refs: limit != null ? [{ y: limit, label: 'My limit', cls: 'lim' }] : [],
+      label: 'Recent completed sales',
+      points: sales.map((x, i) => ({ x: i, y: x.price, title: x.when, sub: `sale ${i + 1} of ${sales.length} (oldest first)`, tick: x.when })),
+    });
+    return `<div class="spark-block"><div class="lbl">Sales history — ${escapeHtml(sales[0].when)} → ${escapeHtml(sales[sales.length - 1].when)} · last ${sales.length} one-copy sales</div>${chart}</div>`;
   }
 
   function smoothPath(pts) {
