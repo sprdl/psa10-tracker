@@ -1209,7 +1209,9 @@
   // How fast a card trades on SNKRDUNK: recent one-copy completed sales (up to 20 per
   // grade, as read by the price check) divided by the days since the oldest of them.
   // Same rule as scripts/build_history.py, which stores it per snapshot in history.json.
-  const HEAT_LEVELS = [[8, 'hot', 'Hot'], [4, 'active', 'Active'], [0.7, 'slow', 'Slow'], [0, 'cold', 'Cold']];
+  // Calibrated 2026-09-26 on 110 modern PSA10 cards (pokeca-chart September trade counts, ≈1.9× SNKRDUNK
+  // one-copy sales): Hot ≈ top 10%, Active ≈ top 25%, Slow = middle half, Cold ≈ bottom 25%.
+  const HEAT_LEVELS = [[5, 'hot', 'Hot'], [3, 'active', 'Active'], [1.2, 'slow', 'Slow'], [0, 'cold', 'Cold']];
   const REL_DAYS = { '秒': 1 / 86400, '分': 1 / 1440, '時間': 1 / 24, '日': 1, '週間': 7, 'ヶ月': 30, 'か月': 30 };
   function saleAgeDays(when, refMs) {
     const w = String(when || '').trim();
@@ -1286,7 +1288,7 @@
         <td class="num">${h.raw ? fmtRate(h.raw.rate) : '—'}</td></tr>`;
     }).join('');
     el.innerHTML = `<h2 class="section-title">Trading activity</h2>
-      <p class="ci-note">How often each card actually sells on SNKRDUNK, from its recent one-copy completed sales (the last 20 per grade; "13+" means 20 sales within about a day, so the true rate may be higher). Hot ≥ 8 PSA10 sales a day, Active ≥ 4, Slow ≥ 0.7, Cold below. "Cheap listings last" = listings within 15% of the lowest ask ÷ daily PSA10 sales: a short time means the cheap end gets bought up fast; a long time means copies sit.</p>
+      <p class="ci-note">How often each card actually sells on SNKRDUNK, from its recent one-copy completed sales (the last 20 per grade; "13+" means 20 sales within about a day, so the true rate may be higher). Hot ≥ 5 PSA10 sales a day (about the busiest 10% of modern PSA10 cards), Active ≥ 3 (top quarter), Slow ≥ 1.2 (the middle half), Cold below. "Cheap listings last" = listings within 15% of the lowest ask ÷ daily PSA10 sales: a short time means the cheap end gets bought up fast; a long time means copies sit.</p>
       <div class="table-scroll"><table class="heat-table"><thead><tr><th>Card</th><th class="num">PSA10 sales / day</th><th></th><th class="num">A week ago</th><th class="num">Cheap listings last</th><th class="num">Raw A sales / day</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
 
