@@ -3503,6 +3503,41 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 55000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 112680,
+          "when": "April 2026",
+          "source": "pokeca-chart per-card PSA10 chart (monthly), Sept 26; peak lined up with the 30th-anniversary run-up"
+        },
+        "tiers": {
+          "definitely_buy": 45000,
+          "buy_upper": 52000,
+          "ceiling": 65000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: market still correcting",
+          "reasoning": "PSA10 has given back about 50% from the April peak and is back at January 2026 levels (¥55k), but the My-tier index is down 27% over 30 days, so under the correction rule only a listing at or below ¥45k (Oct-Dec 2025 level) is a Buy. Population is mature (17,949, 83.8% gem), so scarcity is not the story; the risk is another leg down with the index, roughly 35% odds of a further 10%+ drop by year-end.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at or below ¥52k (Buy zone) appears within 3 months",
+              "p": 0.55,
+              "type": "touch_below",
+              "price": 52000,
+              "by": "2026-12-26"
+            },
+            {
+              "text": "A PSA10 listing at or below ¥45k (Definitely buy) appears within 6 months",
+              "p": 0.25,
+              "type": "touch_below",
+              "price": 45000,
+              "by": "2027-03-26"
+            }
+          ]
+        }
       }
     },
     {
@@ -3929,6 +3964,41 @@
             {
               "price": 245000,
               "when": "2026/06/29"
+            }
+          ]
+        }
+      },
+      "analysis": {
+        "representative_price": 298000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 441000,
+          "when": "August 2026",
+          "source": "pokeca-chart per-card PSA10 chart (monthly median; single high ¥463k), Sept 26"
+        },
+        "tiers": {
+          "definitely_buy": 250000,
+          "buy_upper": 285000,
+          "ceiling": 330000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: market still correcting, and above your ¥200k budget",
+          "reasoning": "Down about 32% from the August peak and back at the March 2026 level (¥298k), with sales clustered at ¥298-300k, but only 5 of 20 listings sit within 15% of the low and the My-tier index is down 27% in 30 days, so only ¥250k or lower is a Definitely-buy under the correction rule. Mature out-of-print card (8,102 PSA10, 81.5% gem) with a strong long-run uptrend (¥87k in Jan 2025), but even the Definitely-buy tier is above the ¥200k budget.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at or below ¥285k (Buy zone) appears within 3 months",
+              "p": 0.45,
+              "type": "touch_below",
+              "price": 285000,
+              "by": "2026-12-26"
+            },
+            {
+              "text": "A PSA10 listing at or below ¥250k (Definitely buy) appears within 6 months",
+              "p": 0.25,
+              "type": "touch_below",
+              "price": 250000,
+              "by": "2027-03-26"
             }
           ]
         }

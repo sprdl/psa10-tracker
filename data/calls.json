@@ -10,11 +10,11 @@
    "right": 2,
    "wrong": 1,
    "neutral": 0,
-   "pending": 11
+   "pending": 12
   },
   "calls_scored": 3,
   "odds_resolved": 0,
-  "odds_open": 18,
+  "odds_open": 22,
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
@@ -28,6 +28,25 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/105553",
+   "name": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
+   "tag": "watch",
+   "label": "Watch: market still correcting",
+   "latest_label": "Watch: market still correcting",
+   "reaffirmed": 0,
+   "made": "2026-09-26T19:34:04+09:00",
+   "price": 57999,
+   "window_end": "2026-10-26T19:34:04+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05
+  },
   {
    "url": "https://snkrdunk.com/apparels/100567",
    "name": "ルギアV SR:SA[s12 110/098](拡張パック「パラダイムトリガー」)",
@@ -166,8 +185,8 @@
    "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
    "tag": "watch",
    "label": "Watch — grail, sliding fast toward pre-hype base",
-   "latest_label": "Watch — grail, sliding fast toward pre-hype base",
-   "reaffirmed": 0,
+   "latest_label": "Watch: market still correcting, and above your ¥200k budget",
+   "reaffirmed": 1,
    "made": "2026-09-17T09:01:00+09:00",
    "price": 285000,
    "window_end": "2026-10-17T09:01:00+09:00",
@@ -395,6 +414,34 @@
    "gap_pct": -2.0
   },
   {
+   "url": "https://snkrdunk.com/apparels/91178",
+   "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+   "text": "A PSA10 listing at or below ¥285k (Buy zone) appears within 3 months",
+   "p": 0.45,
+   "type": "touch_below",
+   "price": 285000,
+   "by": "2026-12-26",
+   "made": "2026-09-26T19:34:04+09:00",
+   "status": "open",
+   "why": "91 days left",
+   "now": 295000,
+   "gap_pct": -3.4
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/105553",
+   "name": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
+   "text": "A PSA10 listing at or below ¥52k (Buy zone) appears within 3 months",
+   "p": 0.55,
+   "type": "touch_below",
+   "price": 52000,
+   "by": "2026-12-26",
+   "made": "2026-09-26T19:34:04+09:00",
+   "status": "open",
+   "why": "91 days left",
+   "now": 57999,
+   "gap_pct": -10.3
+  },
+  {
    "url": "https://snkrdunk.com/apparels/100567",
    "name": "ルギアV SR:SA[s12 110/098](拡張パック「パラダイムトリガー」)",
    "text": "A PSA10 listing at ≤¥128k (Buy) within 3 months",
@@ -547,6 +594,34 @@
    "why": "180 days left",
    "now": 25500,
    "gap_pct": -13.7
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/91178",
+   "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+   "text": "A PSA10 listing at or below ¥250k (Definitely buy) appears within 6 months",
+   "p": 0.25,
+   "type": "touch_below",
+   "price": 250000,
+   "by": "2027-03-26",
+   "made": "2026-09-26T19:34:04+09:00",
+   "status": "open",
+   "why": "181 days left",
+   "now": 295000,
+   "gap_pct": -15.3
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/105553",
+   "name": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
+   "text": "A PSA10 listing at or below ¥45k (Definitely buy) appears within 6 months",
+   "p": 0.25,
+   "type": "touch_below",
+   "price": 45000,
+   "by": "2027-03-26",
+   "made": "2026-09-26T19:34:04+09:00",
+   "status": "open",
+   "why": "181 days left",
+   "now": 57999,
+   "gap_pct": -22.4
   },
   {
    "url": "https://snkrdunk.com/apparels/585221",
