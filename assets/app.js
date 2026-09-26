@@ -1113,6 +1113,7 @@
     name: { label: 'Card name', dir: 1, v: (c) => parseCardName(c.card_name_ja).short },
     price: { label: 'Price', dir: -1, v: (c) => getRep(c) },
     zone: { label: 'Closest to Buy', dir: 1, v: (c) => { const t = c.analysis && c.analysis.tiers; const p = getRep(c); return t && p != null ? p / t.buy_upper : null; } },
+    limit: { label: 'Distance to my limit', dir: 1, v: (c) => (limitGap(c) || {}).pct ?? null },
     chgLast: { label: 'Change since last check', dir: 1, v: (c) => (priceChangeLast(c) || {}).pct ?? null },
     chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeAgo(c, 7) || {}).pct ?? null },
     chg30: { label: '30-day change', dir: 1, v: (c) => (priceChangeAgo(c, 30) || {}).pct ?? null },
@@ -1427,6 +1428,17 @@
     if (!c) return `<span class="${cls} muted" title="No earlier snapshot for this card">—</span>`;
     return `<span class="${cls} ${dirClass(c.pct)}" title="${fmtYen(c.old)} at the previous check (${escapeHtml(c.from)} JST)">${c.pct === 0 ? '±0' : fmtPct(c.pct)}</span>`;
   }
+  // Lowest PSA10 ask vs your limit (the same comparison that fires "Limit" signals).
+  function limitGap(card) {
+    const l = getLimit(card), a = lowestAsk(card);
+    return l != null && a != null ? { pct: (a / l - 1) * 100, lim: l, ask: a } : null;
+  }
+  function limitGapCell(card, cls) {
+    const g = limitGap(card);
+    if (!g) return `<span class="${cls} muted" title="No limit set for this card">—</span>`;
+    const hit = g.pct <= 0;
+    return `<span class="${cls} ${hit ? 'lim-hit' : 'lim-gap'}" title="Lowest ask ${fmtYen(g.ask)} vs your limit ${fmtYen(g.lim)} (${fmtYen(Math.abs(g.ask - g.lim))} ${hit ? 'below' : 'above'})">${hit ? '✓ ' + (g.pct === 0 ? '0%' : fmtPct(g.pct)) : fmtPct(g.pct)}</span>`;
+  }
   function changeCell(card, days, cls) {
     const c = priceChangeAgo(card, days);
     if (!c) return `<span class="${cls} muted" title="No snapshot from ${days} days ago yet (history starts 2026-09-15)">—</span>`;
@@ -1453,7 +1465,7 @@
         <span class="wl-name"><b class="jp">${escapeHtml(short)}</b><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
-        ${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg')}
+        ${limitGapCell(card, 'wl-chg')}${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg wl-c30')}
         <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
         <span class="wl-heat">${heatChip(card)}</span>
       </a>`;
@@ -2351,6 +2363,7 @@
 
     const ROW_KEYS = { 'Current PSA10': 'price', 'Order-book depth': 'depth', 'Favorite count': 'favorites', 'Population / gem rate': 'population', 'Off peak (where known)': 'offpeak' };
     let body = rowsData.map(([label, vals]) => `<tr><td>${ROW_KEYS[label] ? sortableLabel(ROW_KEYS[label], label) : label}</td>${vals.map((v) => `<td>${v}</td>`).join('')}</tr>`).join('');
+    body += `<tr><td>${sortableLabel('limit', 'vs. my limit')}</td>${cards.map((c) => { const g = limitGap(c); return `<td class="${g ? (g.pct <= 0 ? 'lim-hit' : 'lim-gap') : ''}">${g ? fmtPct(g.pct) + ' <span class="muted">(' + fmtYen(g.lim) + ')</span>' : '—'}</td>`; }).join('')}</tr>`;
     body += `<tr><td>${sortableLabel('chg7', '7-day change')}</td>${cards.map((c) => { const x = priceChangeAgo(c, 7); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? fmtPct(x.pct) : '—'}</td>`; }).join('')}</tr>`;
     body += `<tr><td>${sortableLabel('chg30', '30-day change')}</td>${cards.map((c) => { const x = priceChangeAgo(c, 30); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? fmtPct(x.pct) : '—'}</td>`; }).join('')}</tr>`;
     body += `<tr><td>${sortableLabel('heat', 'PSA10 sales / day')}</td>${cards.map((c) => { const h = heatOf(c); return `<td>${h && h.psa ? rateTxt(h.psa) + ' ' + heatChip(c) : '—'}</td>`; }).join('')}</tr>`;

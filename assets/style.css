@@ -209,7 +209,7 @@ img.card-img {
 /* ---------- overview: list + drawer ---------- */
 .split { display: flex; gap: 18px; align-items: flex-start; }
 .watchlist { flex-grow: 1; min-width: 0; overflow: hidden; }
-.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 100px minmax(70px, 120px) 50px 50px 50px 92px 82px; gap: 10px; align-items: center; padding: 0 18px; }
+.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 100px minmax(64px, 110px) 54px 50px 50px 50px 92px 82px; gap: 9px; align-items: center; padding: 0 18px; }
 .wl-head { padding-top: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font: 15px var(--display); letter-spacing: 0.1em; color: var(--muted-2); }
 .wl-head .r, .wl-price, .wl-off, .wl-chg { text-align: right; }
 .wl-head span { white-space: nowrap; }
@@ -694,3 +694,20 @@ th.tc-head a { display: flex; flex-direction: column; align-items: flex-start; g
 th.tc-head a:hover b { color: var(--accent); }
 th.tc-head b { font-size: 14px; line-height: 1.25; font-weight: 700; white-space: normal; }
 th.tc-head small { font-size: 11px; color: var(--muted-2); font-weight: 400; white-space: nowrap; }
+
+.lim-gap { color: var(--soft); }
+.lim-hit { color: var(--accent); font-weight: 700; }
+
+/* overview: drop the least essential columns when the list gets narrow (e.g. detail panel open),
+   so card names keep enough room */
+.watchlist { container-type: inline-size; }
+@media (min-width: 900px) {
+@container (max-width: 960px) {
+  .wl-head, .wl-row { grid-template-columns: 34px minmax(0, 1fr) 100px minmax(64px, 110px) 54px 50px 50px 92px 82px; }
+  .wl-c30, .wl-head .wl-c30 { display: none; }
+}
+@container (max-width: 860px) {
+  .wl-head, .wl-row { grid-template-columns: 34px minmax(0, 1fr) 100px 54px 50px 50px 92px 82px; }
+  .wl-head .wl-zone, .wl-row .zb, .wl-row .zb-none { display: none; }
+}
+}
