@@ -170,3 +170,17 @@ python3 scripts/add_custom_index.py result.json --pokeca 105124
 
 Constituents and base prices live in the file's `meta`; review them quarterly
 (see the script's docstring for keeping the level continuous).
+
+## Limit prices on every device
+
+A limit you set on a card page is kept in that browser first ("Only on this
+device"). Click **Save to all devices** to open a prefilled GitHub issue form
+(label `set-limit`); submitting it runs `.github/workflows/limits.yml`, which
+calls `scripts/set_limit.py` to update `data/limits.json`, commits, redeploys the
+site and closes the issue. A limit of 0 removes it. Only issues you open are
+processed.
+
+Under each limit the card page shows a rough chance that a listing reaches it
+within 30 and 90 days (random-walk model on the card's own daily prices, no trend
+assumed; needs 6+ days of history), next to the evaluation's own stated odds for
+a nearby price when there are any.
