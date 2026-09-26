@@ -174,12 +174,22 @@ function pill(stack, label, color, filled, size) {
   return p;
 }
 
-// Sizes for the medium widget. iPad Home Screen widgets are much smaller in points than on
-// iPhone (e.g. ~250×112 pt vs ~330×155 pt), so the iPad gets a compact layout.
-const COMPACT = Device.isPad();
-const MZ = COMPACT
-  ? { pad: 9, tileW: 72, gap: 7, slabW: 25, slabH: 37, price: 15, name: 7.5, small: 7, logo: 12, spark: [34, 11], bar: 7, pill: 7 }
-  : { pad: 12, tileW: 93, gap: 7, slabW: 31, slabH: 45, price: 18, name: 8.5, small: 8.5, logo: 15, spark: [46, 16], bar: 9, pill: 8 };
+// Sizes for the medium widget. Widgets are laid out at a fixed size in points and iPadOS then
+// scales the whole widget down to fit its Home Screen grid, so the iPad uses the ~348 pt layout.
+// On iPhone the medium widget's width depends on the screen width.
+function mediumWidth() {
+  if (Device.isPad()) return 348;
+  const sw = Math.min(Device.screenSize().width, Device.screenSize().height);
+  return sw >= 428 ? 364 : sw >= 414 ? 360 : sw >= 390 ? 338 : sw >= 375 ? 329 : 292;
+}
+const COMPACT = false;
+const MZ = (() => {
+  const W = mediumWidth(), pad = 12, gap = 8;
+  const tileW = Math.floor((W - 2 * (pad + 2) - 2 * gap) / 3);
+  const slabW = Math.round(tileW * 0.33);
+  return { pad, tileW, gap, slabW, slabH: Math.round(slabW * 1.45), price: tileW >= 100 ? 20 : 18, name: 9, small: 8.5, logo: 15, spark: [46, 16], bar: 9, pill: 8 };
+})();
+
 function tagPill(stack, x, short, size) {
   if (x.limitHit) return pill(stack, short ? 'LIMIT' : 'LIMIT HIT', C.accent, true, size);
   if (TAG[x.tag]) return pill(stack, TAG[x.tag][0], TAG[x.tag][1], TAG[x.tag][2], size);
@@ -311,7 +321,7 @@ async function medium(w, m, ci) {
   w.setPadding(z.pad, z.pad + 2, z.pad - 2, z.pad + 2);
   w.url = BASE + '#/overview';
   header(w, m, ci, z);
-  w.addSpacer(COMPACT ? 3 : 5);
+  w.addSpacer(5);
   const sig = m.limitHits.concat(m.buys);
   // signals first; free slots are filled with the cards closest to a buy
   const list = sig.slice(0, 3).concat(m.closest.slice(0, Math.max(0, 3 - sig.length)));
@@ -321,7 +331,7 @@ async function medium(w, m, ci) {
   sub.addSpacer();
   if (m.corr.on) { txt(sub, 'CORRECTION', z.small, C.amber, true); sub.addSpacer(4); }
   txt(sub, m.when.slice(5, 16).replace('-', '/').replace('T', ' '), z.small, C.muted);
-  w.addSpacer(COMPACT ? 4 : 6);
+  w.addSpacer();
   const row = w.addStack(); row.topAlignContent();
   for (let k = 0; k < list.length; k++) {
     const x = list[k], isSig = sig.includes(x);
