@@ -11,6 +11,7 @@
     syncedLimits: {}, // data/limits.json — limits saved for every device
     hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
+    events: null, // data/events.json — release calendar for the event rule (scripts/events.py)
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
     selectedUrl: null, // card shown in the overview's detail drawer (desktop)
     cardTab: 'overview', // last-used tab of the card detail
@@ -178,6 +179,7 @@
 
     try { state.calls = await fetchJSON('data/calls.json'); } catch (e) { state.calls = null; }
     try { state.customIndex = await fetchJSON('data/custom_index.json'); } catch (e) { state.customIndex = null; }
+    try { state.events = await fetchJSON('data/events.json'); } catch (e) { state.events = null; }
     state.hist = await loadHistoryIndex();
     try { state.syncedLimits = (await fetchJSON('data/limits.json')).limits || {}; } catch (e) { state.syncedLimits = {}; }
     try { state.oddsModel = await fetchJSON('data/odds_model.json'); } catch (e) { state.oddsModel = null; }
@@ -279,8 +281,61 @@
     const written = a.verdict && a.verdict.tag;
     if (written === 'defer') return 'defer';
     const live = liveTagOf(a.tiers, getRep(card));
-    if (live === 'buy' && correctionState().active) return 'watch';
+    if (live === 'buy' && (correctionState().active || eventFor(card))) return 'watch';
     return live || written || null;
+  }
+
+  // ---------- event rule ----------
+  // Same as the card-evaluation skill: within window_days before a major release or
+  // announcement (and on the day itself), a Buy-zone price shows as Watch. An event's
+  // scope is "all" or a list of set codes (the first part of the card code, e.g. M6a).
+  // Undated (rumoured) events are listed but never applied.
+  function todayJst() { return new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10); }
+  function daysUntil(d) { return Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse(todayJst() + 'T00:00:00Z')) / 86400000); }
+  function eventWindow() { return (state.events && state.events.window_days) || 3; }
+  function upcomingEvents() {
+    const evs = (state.events && state.events.events) || [];
+    return evs.filter((e) => !e.d || daysUntil(e.d) >= 0)
+      .sort((a, b) => (a.d ? 0 : 1) - (b.d ? 0 : 1) || String(a.d).localeCompare(String(b.d)));
+  }
+  function eventApplies(e, card) {
+    if (!e.scope || e.scope === 'all') return true;
+    const set = (parseCardName(card.card_name_ja).code.split(/\s+/)[0] || '').toLowerCase();
+    return e.scope.some((x) => String(x).toLowerCase() === set);
+  }
+  function activeEvents() {
+    return upcomingEvents().filter((e) => e.d && e.major !== false && daysUntil(e.d) <= eventWindow());
+  }
+  function eventFor(card) { return activeEvents().find((e) => eventApplies(e, card)) || null; }
+  function eventWhen(e) {
+    if (!e.d) return e.when || 'date TBA';
+    const n = daysUntil(e.d);
+    return `${e.d.slice(5).replace('-', '/')} (${n === 0 ? 'today' : n === 1 ? 'tomorrow' : 'in ' + n + ' days'})`;
+  }
+  function eventScope(e) { return !e.scope || e.scope === 'all' ? 'all cards' : e.scope.join(', ') + ' cards'; }
+
+  // True when the card's price is in the Buy zone but the event rule holds it at Watch.
+  function heldByEvent(card) {
+    const a = card.analysis;
+    return !!(a && a.tiers && (!a.verdict || a.verdict.tag !== 'defer')
+      && liveTagOf(a.tiers, getRep(card)) === 'buy' && eventFor(card));
+  }
+
+  function renderEvents() {
+    const el = document.getElementById('events-panel');
+    if (!el) return;
+    const up = upcomingEvents();
+    if (!up.length) { el.hidden = true; return; }
+    el.hidden = false;
+    const win = eventWindow();
+    el.innerHTML = `<h2 class="section-title">Release calendar</h2>
+      <p class="ci-note">Event rule: in the ${win} days before a major release (and on the day), Buy-zone prices show as Watch until it's out. Rumoured dates are listed but don't trigger the rule. Edited with scripts/events.py.</p>
+      <ul class="ev-list">${up.map((e) => {
+        const on = e.d && e.major !== false && daysUntil(e.d) <= win;
+        return `<li class="${on ? 'on' : ''}${e.d ? '' : ' tba'}"><span class="ev-when">${escapeHtml(eventWhen(e))}</span>
+          <span class="ev-name">${escapeHtml(e.name)}</span>
+          <span class="ev-meta">${escapeHtml(eventScope(e))}${e.major === false ? ' · minor' : ''}${on ? ' · <b>rule on</b>' : ''}${e.note ? ' · ' + escapeHtml(e.note) : ''}</span></li>`;
+      }).join('')}</ul>`;
   }
 
   // True when the card's price is in the Buy zone but the correction rule holds it at Watch.
@@ -475,7 +530,7 @@
     const tracked = cards.filter((c) => lowestAsk(c) != null).length;
 
     if (!signals.length) {
-      el.innerHTML = `<div class="signals-head">Buy signals</div><div class="signals-empty">None right now. ${correctionState().active ? 'No card is at Definitely-buy or your limit (correction rule on; Buy-zone cards count as Watch)' : 'No card is in a Buy zone or at your limit'} (${tracked} tracked).</div>`;
+      el.innerHTML = `<div class="signals-head">Buy signals</div><div class="signals-empty">None right now. ${correctionState().active || activeEvents().length ? `No card is at Definitely-buy or your limit (${correctionState().active ? 'correction' : 'event'} rule on; Buy-zone cards count as Watch)` : 'No card is in a Buy zone or at your limit'} (${tracked} tracked).</div>`;
     } else {
       el.innerHTML = `<div class="signals-head">Buy signals</div>` + signals.map((s) => {
         const isNew = isLatest && !seen.has(s.key);
@@ -561,34 +616,51 @@
     el.hidden = false;
     const { ci, ser, last } = st;
     const meta = ci.meta || {};
-    const base = ser.find((e) => e.pokeca_psa10) || null;
+    // pokeca-chart line is rebased to 100 on the index's base day (not the first back value)
+    const base = ser.find((e) => e.d === meta.base_date && e.pokeca_psa10) || [...ser].reverse().find((e) => e.pokeca_psa10) || null;
     const cell = (k, v, cls) => `<div class="ci-stat"><div class="lbl">${k}</div><div class="ci-v ${cls || ''}">${v}</div></div>`;
     const since = last.level - (meta.base_level || 100);
     const pokecaRel = (e) => (base && e.pokeca_psa10 ? (e.pokeca_psa10 / base.pokeca_psa10) * 100 : null);
     const pk = pokecaRel(last);
+    const firstReal = ser.find((e) => !e.backfill);
+    const bf = meta.backfill && ser[0].backfill ? meta.backfill : null;
 
-    // chart: my-tier level vs pokeca-chart PSA10 index rebased to 100 on the same day
+    // chart: my-tier level vs pokeca-chart PSA10 index (both 100 on the base day); x axis is time,
+    // so monthly back values and daily readings sit at their real dates
+    const RANGES = [['3M', 92], ['1Y', 366], ['All', 0]];
+    const rng = store.get('psa10.ciRange', '1Y');
+    const span = (RANGES.find((r) => r[0] === rng) || RANGES[1])[1];
+    const tOf = (e) => Date.parse(e.d + 'T00:00:00Z');
+    const tLast = tOf(last);
+    const view = span ? ser.filter((e) => tOf(e) >= tLast - span * 86400000) : ser;
     let chart = '';
-    if (ser.length >= 2) {
+    if (view.length >= 2) {
       const w = 700, h = 170, pad = 10;
-      const vals = ser.flatMap((e) => [e.level, pokecaRel(e)]).filter((v) => v != null);
-      let lo = Math.min(...vals), hi = Math.max(...vals);
+      const vals = view.flatMap((e) => [e.level, pokecaRel(e)]).filter((v) => v != null);
+      let lo = Math.min(...vals, 100), hi = Math.max(...vals, 100);
       const padV = (hi - lo) * 0.12 || 2; lo -= padV; hi += padV;
-      const x = (i) => pad + (i * (w - pad * 2)) / (ser.length - 1);
+      const t0 = tOf(view[0]);
+      const x = (e) => pad + ((tOf(e) - t0) * (w - pad * 2)) / (tLast - t0 || 1);
       const y = (v) => pad + (h - pad * 2) * (1 - (v - lo) / (hi - lo));
-      const line = (get) => ser.map((e, i) => [e, i]).filter(([e]) => get(e) != null)
-        .map(([e, i], k) => `${k ? 'L' : 'M'}${x(i).toFixed(1)},${y(get(e)).toFixed(1)}`).join(' ');
+      const line = (get) => view.filter((e) => get(e) != null)
+        .map((e, k) => `${k ? 'L' : 'M'}${x(e).toFixed(1)},${y(get(e)).toFixed(1)}`).join(' ');
       const y100 = y(100).toFixed(1);
+      const shadeEnd = view[0].backfill && firstReal ? x(firstReal) : null;
+      const shade = shadeEnd != null ? `<rect x="${pad}" y="0" width="${Math.max(0, shadeEnd - pad).toFixed(1)}" height="${h}" class="ci-bf"/>` : '';
       chart = `<svg class="ci-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="My-tier index vs pokeca-chart PSA10 index">
+        ${shade}
         <line x1="${pad}" x2="${w - pad}" y1="${y100}" y2="${y100}" class="ci-base"/>
         <path d="${line(pokecaRel)}" class="ci-line-pk"/>
         <path d="${line((e) => e.level)}" class="ci-line"/>
       </svg>
-      <div class="spark-dates"><span>${escapeHtml(ser[0].d)}</span><span>${escapeHtml(last.d)}</span></div>
-      <div class="ci-legend"><span class="ci-key ci-key-me"></span>My tier <span class="ci-key ci-key-pk"></span>pokeca-chart PSA10 (rebased to 100)</div>`;
+      <div class="spark-dates"><span>${escapeHtml(view[0].d)}</span><span>${escapeHtml(last.d)}</span></div>
+      <div class="ci-legend"><span class="ci-key ci-key-me"></span>My tier <span class="ci-key ci-key-pk"></span>pokeca-chart PSA10 (100 on ${escapeHtml(base ? base.d : '')})${shade ? ' <span class="ci-key-bf"></span>backfilled from per-card charts' : ''}</div>`;
     } else {
       chart = `<p class="ci-note">Chart appears after the second daily reading.</p>`;
     }
+    const rangeBtns = `<div class="ci-range" role="group" aria-label="Chart range">${RANGES.map(([k]) =>
+      `<button type="button" class="ci-rng${k === rng ? ' on' : ''}" data-rng="${k}" aria-pressed="${k === rng}">${k}</button>`).join('')}</div>`;
+    const bfNote = bf ? ` Values before ${escapeHtml(firstReal ? firstReal.d : '')} are backfilled from pokeca-chart's per-card PSA10 charts (month-end points until Jul 2026, daily after; a card counts ${bf.join_days || 90} days after its first price; fewer cards before Mar 2026).` : '';
 
     const rows = (meta.constituents || []).map((c) => {
       const p = last.prices && last.prices[c.code];
@@ -603,7 +675,7 @@
 
     el.innerHTML = `
       <h2 class="section-title">My-tier index</h2>
-      <p class="ci-note">${escapeHtml(meta.selection || '')} Base ${escapeHtml(meta.base_date || '')} = ${meta.base_level || 100}. Updated once a day with the full check.</p>
+      <p class="ci-note">${escapeHtml(meta.selection || '')} Base ${escapeHtml(meta.base_date || '')} = ${meta.base_level || 100}. Updated once a day with the full check.${bfNote}</p>
       <div class="ci-stats">
         ${cell('Level · ' + escapeHtml(last.d), last.level.toFixed(2))}
         ${cell('Day', fmtPct(st.day), dirClass(st.day))}
@@ -612,8 +684,10 @@
         ${cell('Since base', fmtPct(since), dirClass(since))}
         ${cell('pokeca idx since base', fmtPct(pk != null ? pk - 100 : null), dirClass(pk != null ? pk - 100 : null))}
       </div>
+      ${rangeBtns}
       ${chart}
       ${table}`;
+    el.querySelectorAll('[data-rng]').forEach((b) => b.addEventListener('click', () => { store.set('psa10.ciRange', b.dataset.rng); renderCustomIndex(); }));
   }
 
   // ---------- tier review status + card vs market ----------
@@ -748,6 +822,14 @@
 
   function renderBanners(data, prevData) {
     let html = '';
+    const act = activeEvents();
+    if (act.length) {
+      const held = (data.cards || []).filter(heldByEvent).map((c) => parseCardName(c.card_name_ja).short);
+      html += `<div class="banner warning"><strong>Event rule on: ${escapeHtml(act.map((e) => e.name + ' ' + eventWhen(e)).join(' · '))}.</strong>Right before a major release prices often dip, so Buy-zone prices show as Watch until it's out (${escapeHtml([...new Set(act.map(eventScope))].join(', '))})${held.length ? `; now: ${escapeHtml(held.join(', '))}` : ''}. Definitely-buy prices and your own limits still count.</div>`;
+    } else {
+      const next = upcomingEvents().find((e) => e.d && e.major !== false && daysUntil(e.d) <= 14);
+      if (next) html += `<div class="banner auto"><strong>Coming up: ${escapeHtml(next.name)}, ${escapeHtml(eventWhen(next))}</strong>The event rule holds Buy calls for ${escapeHtml(eventScope(next))} in the ${eventWindow()} days before it.</div>`;
+    }
     const cs = correctionState();
     if (cs.active) {
       const held = (data.cards || []).filter(heldByCorrection).map((c) => parseCardName(c.card_name_ja).short);
@@ -922,6 +1004,7 @@
     els.collectedAt.textContent = fmtDateJST(data.collected_at_jst);
     renderMarketStrip(data);
     renderCustomIndex();
+    renderEvents();
     renderKpis(data);
     renderSignals(cards);
     renderBanners(data, state.previousData);
@@ -1256,7 +1339,10 @@
       // written reasoning concluded; a zone mismatch is flagged first, then plain drift
       // from the price the verdict was written against (verdict_price_ref).
       let staleHtml = '';
-      if (heldByCorrection(card)) {
+      if (heldByEvent(card)) {
+        const ev = eventFor(card);
+        staleHtml = `<div class="verdict-stale">Price is in the Buy zone, shown as Watch by the event rule: ${escapeHtml(ev.name)} ${escapeHtml(eventWhen(ev))}. Prices often dip around a big release; it becomes a buy again after that, or now at Definitely-buy (≤${fmtYen(analysis.tiers.definitely_buy)}).</div>`;
+      } else if (heldByCorrection(card)) {
         const cs = correctionState();
         staleHtml = `<div class="verdict-stale">Price is in the Buy zone, shown as Watch by the correction rule (${escapeHtml(cs.name)} ${fmtPct(cs.pct)} over 30 days). It becomes a buy at Definitely-buy (≤${fmtYen(analysis.tiers.definitely_buy)}) or once the market steadies.</div>`;
       } else if (v.tag && v.tag !== 'defer' && displayTag && v.tag !== displayTag) {

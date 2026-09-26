@@ -1,0 +1,10 @@
+{
+ "about": "Release / announcement calendar for the event rule: within window_days before a major event (on the day itself too), a Buy-zone price shows as Watch on the site and the evaluation skill won't call Buy, unless the price is at Definitely-buy. scope \"all\" = every card; a list of set codes (e.g. [\"M6a\"]) = only cards from those sets. Events with d = null are rumoured/undated: listed, never applied. Edit with scripts/events.py.",
+ "window_days": 3,
+ "events": [
+  {"d": "2026-09-16", "name": "30th CELEBRATION (M6a) booster, Espeon/Umbreon premium deck set, FUTURISTIC BOX", "kind": "release", "major": true, "scope": "all", "source": "https://www.30th.pokemon-card.com/product/m6a"},
+  {"d": "2026-10-16", "name": "30th CELEBRATION カードセット (9 generation versions, promo + packs)", "kind": "release", "major": true, "scope": ["M6a"], "note": "More 30th CELEBRATION packs in circulation; mainly affects M6a cards.", "source": "https://premium.gamepedia.jp/pokeca/archives/327"},
+  {"d": null, "when": "2026-11/12 (rumoured)", "name": "拡張パック「ハドウシーカー」", "kind": "release", "major": true, "scope": "all", "tentative": true, "note": "Only a trademark filing so far; no official date.", "source": "https://premium.gamepedia.jp/pokeca/archives/327"},
+  {"d": null, "when": "early 2027 (rumoured)", "name": "ハイクラスパック「MEGA×MEGA パレード」", "kind": "release", "major": true, "scope": "all", "tentative": true, "note": "Only a trademark filing / copyright mark so far.", "source": "https://premium.gamepedia.jp/pokeca/archives/24915"}
+ ]
+}

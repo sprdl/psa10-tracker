@@ -171,6 +171,28 @@ python3 scripts/add_custom_index.py result.json --pokeca 105124
 Constituents and base prices live in the file's `meta`; review them quarterly
 (see the script's docstring for keeping the level continuous).
 
+History before the first daily reading is backfilled from pokeca-chart's per-card PSA10
+charts (entries marked `"backfill": true`; month-end values until Jul 2026, daily after).
+That gives the correction rule a real 30-day change from day one. To rebuild it (e.g.
+after changing constituents): run `scripts/odds_model_builder.js` list + grab on
+pokeca-chart, then `add_custom_index.py --print-backfill-js` on
+https://pokeca-chart.com/gr/chart-index/ and `add_custom_index.py --backfill result.json`.
+
+## Release calendar and the event rule
+
+`data/events.json` lists upcoming releases. In the 3 days before a major one (and on
+the day), a Buy-zone price shows as Watch, the same rule the evaluation skill uses;
+Definitely-buy prices and your own limits still count. An event can apply to all cards
+or only some sets (`"scope": ["M6a"]`). Rumoured events without a date are listed on
+the Market page but never applied.
+
+```bash
+python3 scripts/events.py list                     # upcoming + rumoured
+python3 scripts/events.py window                   # is the rule on right now?
+python3 scripts/events.py add 2026-11-20 "拡張パック「…」" --scope all --source URL
+python3 scripts/events.py date "ハドウシーカー" 2026-11-27   # a rumoured event gets its date
+```
+
 ## Limit prices on every device
 
 A limit you set on a card page is kept in that browser first ("Only on this
