@@ -441,9 +441,17 @@ def main():
 
     # keep the site's compact price-history index in step with the snapshots
     sys.path.insert(0, str(root / "scripts"))
+    import odds_model
+    try:
+        n = odds_model.log_for_snapshot(data, root)
+        if n:
+            print(f"Logged {n} limit-odds forecast(s) to data/odds_log.json")
+    except Exception as e:  # never block publishing a price check over it
+        print(f"warning: couldn't log limit odds: {e}")
     import build_history
     build_history.build(root)
-    subprocess.run(["git", "add", "data/manifest.json", "data/history.json", "data/calls.json", str(dest.relative_to(root))], cwd=root, check=True)
+    extra = ["data/odds_log.json"] if (root / "data" / "odds_log.json").exists() else []
+    subprocess.run(["git", "add", "data/manifest.json", "data/history.json", "data/calls.json", *extra, str(dest.relative_to(root))], cwd=root, check=True)
     commit_msg = f"snapshot: {data.get('collected_at_jst', filename)}"
     commit = subprocess.run(["git", "commit", "-m", commit_msg], cwd=root)
     if commit.returncode != 0:

@@ -210,6 +210,24 @@ def build(root: Path = ROOT) -> Path:
         })
     predictions.sort(key=lambda x: (x["by"], x["name"]))
 
+    # Limit-odds model (data/odds_log.json, written by odds_model.py on each full check):
+    # each entry is two forecasts, "a listing at <= price within 30 / 90 days".
+    model_odds = []
+    log_path = root / "data" / "odds_log.json"
+    if log_path.exists():
+        for e in json.loads(log_path.read_text(encoding="utf-8")).get("entries", []):
+            made = _dt(e["made"])
+            pts = series.get(e["url"], [])
+            for days, pk in ((30, "p30"), (90, "p90")):
+                by = made + timedelta(days=days)
+                hit = next(((d, x) for d, x in pts if made < _dt(d) <= by and x <= e["price"]), None)
+                status = "yes" if hit else ("no" if now >= by else "open")
+                model_odds.append({"url": e["url"], "name": names.get(e["url"], e["url"]), "kind": e.get("kind"),
+                                   "price": e["price"], "ask": e.get("ask"), "days": days, "p": e[pk],
+                                   "made": e["made"], "by": by.date().isoformat(), "status": status,
+                                   "why": f"¥{hit[1]:,} on {hit[0][:10]}" if hit else ""})
+    mo_res = [x for x in model_odds if x["status"] in ("yes", "no")]
+
     scored = [c for c in calls if c["status"] in ("right", "wrong", "neutral")]
     resolved = [x for x in predictions if x["status"] in ("yes", "no") and isinstance(x.get("p"), (int, float))]
     summary = {
@@ -220,11 +238,19 @@ def build(root: Path = ROOT) -> Path:
         "brier": round(sum((x["p"] - (1 if x["status"] == "yes" else 0)) ** 2 for x in resolved) / len(resolved), 3) if resolved else None,
         "expected_yes": round(sum(x["p"] for x in resolved), 1) if resolved else None,
         "actual_yes": sum(1 for x in resolved if x["status"] == "yes"),
+        "model_odds": {
+            "logged": len(model_odds), "open": sum(1 for x in model_odds if x["status"] == "open"),
+            "resolved": len(mo_res),
+            "brier": round(sum((x["p"] - (1 if x["status"] == "yes" else 0)) ** 2 for x in mo_res) / len(mo_res), 3) if mo_res else None,
+            "expected_yes": round(sum(x["p"] for x in mo_res), 1) if mo_res else None,
+            "actual_yes": sum(1 for x in mo_res if x["status"] == "yes"),
+        },
     }
     out = root / "data" / "calls.json"
     out.write_text(json.dumps({"as_of": as_of, "window_days": WINDOW_DAYS, "threshold": THRESHOLD, "confirm_readings": CONFIRM_READINGS,
                                "noise_threshold_pctl": NOISE_PCTL, "noise_threshold_cap": NOISE_CAP,
-                               "summary": summary, "calls": calls, "predictions": predictions},
+                               "summary": summary, "calls": calls, "predictions": predictions,
+                               "model_odds": model_odds},
                               ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return out
 

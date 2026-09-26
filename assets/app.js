@@ -7,6 +7,7 @@
     currentData: null,
     previousData: null,
     calls: null, // data/calls.json — track record of past calls (scripts/build_calls.py)
+    oddsModel: null, // data/odds_model.json — odds of a listing reaching a price
     syncedLimits: {}, // data/limits.json — limits saved for every device
     hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
@@ -179,6 +180,7 @@
     try { state.customIndex = await fetchJSON('data/custom_index.json'); } catch (e) { state.customIndex = null; }
     state.hist = await loadHistoryIndex();
     try { state.syncedLimits = (await fetchJSON('data/limits.json')).limits || {}; } catch (e) { state.syncedLimits = {}; }
+    try { state.oddsModel = await fetchJSON('data/odds_model.json'); } catch (e) { state.oddsModel = null; }
     reconcileLimits();
 
     await loadIndex(snaps.length - 1);
@@ -366,42 +368,38 @@
   }
 
   // ---------- odds of a listing reaching a price ----------
-  // Rough model: the lowest ask as a random walk with no trend, volatility taken
-  // from this card's own daily prices (median per JST day, 3-day changes to damp
-  // one-off listings), clamped to 1–5% a day. P(touch ≤ L within T days)
-  // = 2·Φ(ln(L/S) / (σ√T)). Needs 6+ days of prices.
-  function normCdf(x) {
-    const t = 1 / (1 + 0.3275911 * Math.abs(x) / Math.SQRT2);
-    const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-(x * x) / 2);
-    return x >= 0 ? (1 + y) / 2 : (1 - y) / 2;
+  // Model in data/odds_model.json (see its "about"): zero drift, the card's own
+  // volatility from ~2 years of pokeca-chart PSA10 prices shrunk toward the pool of
+  // 125 modern cards, and empirical z-curves instead of a normal curve, so fat tails
+  // are kept. Backtested out of sample on 2024–26 data; trend/momentum made it worse.
+  function oddsModelCode(card) {
+    const m = state.oddsModel;
+    if (!m) return null;
+    const code = (parseCardName(card.card_name_ja).code || '').toLowerCase().trim();
+    if (m.cards[code]) return code;
+    const promo = code.match(/^([a-z]+-p)\s+(\d+)$/);             // "sv-p 098" -> "098/sv-p"
+    if (promo && m.cards[`${promo[2]}/${promo[1]}`]) return `${promo[2]}/${promo[1]}`;
+    return null;
   }
-  function dailyVol(card) {
-    const snaps = (state.hist && state.hist.snapshots) || [];
-    const byDay = new Map();
-    const until = refTime();
-    snaps.forEach((e) => {
-      if (e.d > until || !e.p || !e.p[card.url]) return;
-      const day = new Date(new Date(e.d).getTime() + 9 * 3600e3).toISOString().slice(0, 10);
-      if (!byDay.has(day)) byDay.set(day, []);
-      byDay.get(day).push(e.p[card.url][0]);
-    });
-    const days = [...byDay.keys()].sort();
-    const px = days.map((d) => { const v = byDay.get(d).sort((a, b) => a - b); return v[v.length >> 1]; });
-    if (px.length < 6) return { days: px.length, sigma: null };
-    const k = 3, r = [];
-    for (let i = k; i < px.length; i++) r.push(Math.log(px[i] / px[i - k]));
-    const m = r.reduce((a, b) => a + b, 0) / r.length;
-    const sd = Math.sqrt(r.reduce((a, b) => a + (b - m) ** 2, 0) / r.length) / Math.sqrt(k);
-    return { days: px.length, sigma: Math.min(0.05, Math.max(0.01, sd)) };
+  function zShare(qs, z) {                                          // share of history at or below z
+    if (z <= qs[0]) return 0;
+    const n = qs.length - 1;
+    if (z >= qs[n]) return 1;
+    let i = 0; while (i < n && qs[i + 1] < z) i++;
+    const f = (z - qs[i]) / ((qs[i + 1] - qs[i]) || 1);
+    return (i + f) / n;
   }
   function touchOdds(card, price) {
-    const S = lowestAsk(card);
+    const S = lowestAsk(card), m = state.oddsModel;
     if (!S || !price) return null;
     if (price >= S) return { reached: true };
-    const v = dailyVol(card);
-    if (v.sigma == null) return { days: v.days, sigma: null };
-    const p = (T) => Math.min(1, 2 * normCdf(Math.log(price / S) / (v.sigma * Math.sqrt(T))));
-    return { days: v.days, sigma: v.sigma, p30: p(30), p90: p(90) };
+    if (!m) return null;
+    const code = oddsModelCode(card);
+    const [s30, s90, nOwn] = code ? m.cards[code] : [m.pool_sigma[0], m.pool_sigma[1], 0];
+    const x = Math.log(price / S), cap = m.about.cap || 0.99;
+    const p30 = Math.min(cap, m.about.touch_factor_30 * zShare(m.z_end30, x / s30));
+    const p90 = Math.max(p30, Math.min(cap, m.about.touch_factor_90 * zShare(m.z_touch90, x / s90)));
+    return { p30, p90, own: !!code && nOwn >= 4, s30, drop: -x };
   }
   function fmtOdds(x) { return x < 0.05 ? '<5%' : x > 0.95 ? '>95%' : '~' + Math.round(x * 20) * 5 + '%'; }
   // The evaluation's own stated odds for a nearby price, as a cross-check.
@@ -415,11 +413,11 @@
     const o = touchOdds(card, price);
     if (!o) return '';
     if (o.reached) return `<div class="limit-odds">A listing is already at or below ${fmtYen(price)}.</div>`;
-    if (o.sigma == null) return `<div class="limit-odds">Odds of reaching ${fmtYen(price)} appear after 6 days of price history (${o.days} so far).</div>`;
     const ev = evalOddsNear(card, price);
-    return `<div class="limit-odds">Chance a listing reaches ${fmtYen(price)}: <b>${fmtOdds(o.p30)}</b> within 30 days · <b>${fmtOdds(o.p90)}</b> within 90 days
-      <span class="limit-odds-note">Rough model from ${o.days} days of this card's prices (swings about ${(o.sigma * 100).toFixed(1)}% a day, no trend assumed). Short histories make it overstate big moves; it gets better as history builds.${ev ? ` The evaluation said ${Math.round(ev.p * 100)}% for ≤${fmtYen(ev.price)} by ${escapeHtml(ev.by)}.` : ''}</span></div>`;
+    return `<div class="limit-odds">Chance a listing reaches ${fmtYen(price)} (${Math.round(o.drop * 100)}% below today's lowest ask): <b>${fmtOdds(o.p30)}</b> within 30 days · <b>${fmtOdds(o.p90)}</b> within 90 days
+      <span class="limit-odds-note">${o.own ? `From this card's own price swings over the last months` : `This card has no pokeca-chart history, so it uses the typical swings of modern PSA10s`}, calibrated on ~2 years of prices for 125 modern PSA10s and tested on 2024–26 data. It assumes no trend, because trend and momentum made the backtest worse.${ev ? ` The written evaluation said ${Math.round(ev.p * 100)}% for ≤${fmtYen(ev.price)} by ${escapeHtml(ev.by)}.` : ''}</span></div>`;
   }
+
   // A limit is "hit" when a PSA10 listing you could buy right now is at or below it —
   // so this compares the lowest ask, not the representative (sales) price.
   function lowestAsk(card) { const p = card.grades && card.grades.psa10; return p ? p.lowest_price : null; }
@@ -1452,6 +1450,12 @@
       ? `<div class="pl-stat"><div class="lbl">Odds accuracy (Brier)</div><div class="val ${sm.brier <= 0.2 ? 'pos' : sm.brier > 0.25 ? 'neg' : ''}">${sm.brier.toFixed(2)}</div><div class="tr-hint">0 = perfect · 0.25 = always saying 50%</div></div>
          <div class="pl-stat"><div class="lbl">Expected vs happened</div><div class="val">${sm.expected_yes} vs ${sm.actual_yes}</div><div class="tr-hint">of ${sm.odds_resolved} resolved</div></div>`
       : `<div class="pl-stat"><div class="lbl">Stated odds</div><div class="val muted">${sm.odds_open || 0} open</div><div class="tr-hint">none resolved yet</div></div>`;
+    const mo = sm.model_odds;
+    const modelTile = mo && mo.logged
+      ? (mo.brier != null
+        ? `<div class="pl-stat"><div class="lbl">Limit-odds model (Brier)</div><div class="val ${mo.brier <= 0.2 ? 'pos' : mo.brier > 0.25 ? 'neg' : ''}">${mo.brier.toFixed(2)}</div><div class="tr-hint">${mo.expected_yes} expected vs ${mo.actual_yes} happened, of ${mo.resolved} resolved · ${mo.open} open</div></div>`
+        : `<div class="pl-stat"><div class="lbl">Limit-odds model</div><div class="val muted">${mo.open} open</div><div class="tr-hint">weekly forecasts for tier prices and your limits; first results after 30 days</div></div>`)
+      : '';
     const headline = sm.calls_scored
       ? `${c.right || 0} right · ${c.wrong || 0} wrong${c.neutral ? ` · ${c.neutral} neutral` : ''}`
       : 'no calls scored yet';
@@ -1515,6 +1519,7 @@
         <div class="pl-summary">
           <div class="pl-stat"><div class="lbl">Buy / Watch calls</div><div class="val">${escapeHtml(headline)}</div><div class="tr-hint">${c.pending || 0} still inside their ${win}-day window</div></div>
           ${brier}
+          ${modelTile}
         </div>
         <div class="tr-bar"><h3 class="tr-h">By card</h3><button type="button" class="limit-btn tr-toggle">Expand all</button></div>
         <div class="tr-cards">${groupHtml}</div>
@@ -1606,7 +1611,7 @@
       const v = Math.round(Number(input.value) / LIMIT_STEP) * LIMIT_STEP;
       const o = v > 0 ? touchOdds(card, v) : null;
       live.textContent = !o ? '' : o.reached ? 'A listing is already at or below this.'
-        : o.sigma == null ? '' : `Chance of a listing at ≤${fmtYen(v)}: ${fmtOdds(o.p30)} in 30 days · ${fmtOdds(o.p90)} in 90 days (rough)`;
+        : `Chance of a listing at ≤${fmtYen(v)}: ${fmtOdds(o.p30)} in 30 days · ${fmtOdds(o.p90)} in 90 days`;
     };
     input.addEventListener('input', showOdds);
     showOdds();
