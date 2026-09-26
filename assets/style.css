@@ -580,3 +580,20 @@ td em { color: var(--muted-2); font-style: normal; }
 .vs-gap { font-weight: 600; }
 .vs-mkt .muted { color: var(--muted-2); }
 .vs-mkt .cd-note { margin-top: 6px; }
+
+/* track record grouped by card */
+.tr-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.tr-bar .tr-h { margin: 0; }
+.tr-cards { display: flex; flex-direction: column; gap: 8px; }
+.tr-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.tr-card > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; padding: 12px 14px; }
+.tr-card > summary::-webkit-details-marker { display: none; }
+.tr-card > summary::before { content: '▸'; color: var(--muted-2); margin-right: -6px; transition: transform .15s; }
+.tr-card[open] > summary::before { transform: rotate(90deg); }
+.tr-card[open] > summary { border-bottom: 1px solid var(--line); }
+.tr-cname { display: flex; align-items: baseline; gap: 8px; flex: 1 1 220px; min-width: 0; }
+.tr-csum { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.tr-dot { color: var(--line-3); }
+.tr-cbody { padding: 10px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
+.tr-sh { font: 16px var(--display); letter-spacing: 0.08em; color: var(--muted-2); margin-top: 4px; }
+.tr-cbody .tr-row { background: var(--panel-2); }

@@ -1368,30 +1368,59 @@
       ? `${c.right || 0} right · ${c.wrong || 0} wrong${c.neutral ? ` · ${c.neutral} neutral` : ''}`
       : 'no calls scored yet';
 
-    const callRows = tr.calls.map((k) => {
-      const name = parseCardName(k.name).short;
+    // Grouped by card: one collapsible block per card with its calls and stated odds,
+    // cards with the most recent activity first.
+    const callRow = (k) => {
       const so = k.status === 'pending'
         ? `day ${k.days_in}/${win} · low so far ${k.low != null ? fmtYen(k.low) + ' (' + trPct(k.low_pct) + ')' : '—'} · now ${k.now != null ? fmtYen(k.now) + ' (' + trPct(k.now_pct) + ')' : '—'}`
         : escapeHtml(k.why);
       return `<div class="tr-row">
-        <div class="tr-main"><span class="tr-name">${escapeHtml(name)}</span> <span class="vtag ${k.tag}">${escapeHtml(tagLabel(k.tag))}</span>
+        <div class="tr-main"><span class="vtag ${k.tag}">${escapeHtml(tagLabel(k.tag))}</span>
           <span class="tr-meta">${trDate(k.made)} at ${fmtYen(k.price)}${k.reaffirmed ? ` · reaffirmed ${k.reaffirmed}×` : ''}</span></div>
         <div class="tr-res">${trPill(k.status)}</div>
         <div class="tr-sub">${escapeHtml(k.label || '')}<br>${so}</div>
       </div>`;
-    }).join('');
-
-    const predRows = (tr.predictions || []).map((p) => {
-      const name = parseCardName(p.name).short;
+    };
+    const predRow = (p) => {
       const detail = p.status === 'open'
         ? `now ${p.now != null ? fmtYen(p.now) : '—'}${p.gap_pct != null ? ` · needs ${trPct(p.gap_pct)}` : ''} · ${escapeHtml(p.why)}`
         : escapeHtml(p.why);
       return `<div class="tr-row">
-        <div class="tr-main"><span class="tr-odds">${Math.round(p.p * 100)}%</span> <span class="tr-name">${escapeHtml(name)}</span>
+        <div class="tr-main"><span class="tr-odds">${Math.round(p.p * 100)}%</span>
           <span class="tr-meta">${p.type === 'touch_below' ? '≤' : '≥'}${fmtYen(p.price)} by ${trDate(p.by)}</span></div>
         <div class="tr-res">${trPill(p.status)}</div>
         <div class="tr-sub">${escapeHtml(p.text)} (said ${trDate(p.made)})<br>${detail}</div>
       </div>`;
+    };
+    const groups = new Map();
+    const groupOf = (url, name) => {
+      if (!groups.has(url)) groups.set(url, { url, name, calls: [], preds: [], last: '' });
+      return groups.get(url);
+    };
+    tr.calls.forEach((k) => { const g = groupOf(k.url, k.name); g.calls.push(k); if (k.made > g.last) g.last = k.made; });
+    (tr.predictions || []).forEach((p) => { const g = groupOf(p.url, p.name); g.preds.push(p); if ((p.made || '') > g.last) g.last = p.made || ''; });
+    const openSet = new Set(store.get('psa10.trOpen', []));
+    const cnt = (arr, st) => arr.filter((x) => x.status === st).length;
+    const groupHtml = [...groups.values()].sort((x, y) => (x.last < y.last ? 1 : x.last > y.last ? -1 : 0)).map((g) => {
+      const { short, code } = parseCardName(g.name);
+      g.calls.sort((x, y) => (x.made < y.made ? 1 : -1));
+      g.preds.sort((x, y) => (x.by < y.by ? -1 : x.by > y.by ? 1 : 0));
+      const cur = g.calls[0];
+      const callSum = [['right', 'right'], ['wrong', 'wrong'], ['neutral', 'neutral'], ['pending', 'pending']]
+        .map(([st, l]) => (cnt(g.calls, st) ? `${cnt(g.calls, st)} ${l}` : '')).filter(Boolean).join(' · ');
+      const oddsSum = [['yes', 'happened'], ['no', "didn't"], ['open', 'open'], ['void', 'void']]
+        .map(([st, l]) => (cnt(g.preds, st) ? `${cnt(g.preds, st)} ${l}` : '')).filter(Boolean).join(' · ');
+      return `<details class="tr-card" data-url="${escapeAttr(g.url)}"${openSet.has(g.url) ? ' open' : ''}>
+        <summary>
+          <span class="tr-cname"><span class="tr-name jp">${escapeHtml(short)}</span><span class="tr-meta">${escapeHtml(code)}</span></span>
+          <span class="tr-csum">${cur ? `<span class="tr-meta">Latest call</span><span class="vtag ${cur.tag}">${escapeHtml(tagLabel(cur.tag))}</span>` : ''}
+            <span class="tr-meta">${g.calls.length ? `Calls: ${callSum}` : 'No calls'}${g.preds.length ? ` <span class="tr-dot">·</span> Odds: ${oddsSum}` : ''}</span></span>
+        </summary>
+        <div class="tr-cbody">
+          ${g.calls.length ? `<div class="tr-sh">Calls</div><div class="tr-list">${g.calls.map(callRow).join('')}</div>` : ''}
+          ${g.preds.length ? `<div class="tr-sh">Stated odds</div><div class="tr-list">${g.preds.map(predRow).join('')}</div>` : ''}
+        </div>
+      </details>`;
     }).join('');
 
     sec.innerHTML = `
@@ -1399,15 +1428,28 @@
           <div class="pl-stat"><div class="lbl">Buy / Watch calls</div><div class="val">${escapeHtml(headline)}</div><div class="tr-hint">${c.pending || 0} still inside their ${win}-day window</div></div>
           ${brier}
         </div>
-        <h3 class="tr-h">Calls</h3>
-        <div class="tr-list">${callRows}</div>
-        ${predRows ? `<h3 class="tr-h">Stated odds</h3><div class="tr-list">${predRows}</div>` : ''}
+        <div class="tr-bar"><h3 class="tr-h">By card</h3><button type="button" class="limit-btn tr-toggle">Expand all</button></div>
+        <div class="tr-cards">${groupHtml}</div>
         <p class="tr-note">How it's scored: each change of verdict is one call, measured on the lowest PSA10 ask over the next ${win} days.
           A <b>Buy</b> is wrong if the price drops more than the card's threshold below the call price (you could have bought cheaper), otherwise right.
           A <b>Watch</b> is right if it drops more than the threshold (waiting paid off), wrong if it ends more than the threshold higher without a dip, otherwise neutral.
           The threshold is ${th}% or the card's own normal swing between checks if larger (up to ${Math.round((tr.noise_threshold_cap || 0.1) * 100)}%), and a drop only counts after ${tr.confirm_readings || 2} checks in a row below it, so one stray cheap listing can't decide a call.
           Stated odds are checked against their deadline; the Brier score rewards odds that match how often things actually happen.
           Updated with every price check (as of ${escapeHtml(fmtDateShort(tr.as_of))}).</p>`;
+    const saveOpen = () => store.set('psa10.trOpen', [...sec.querySelectorAll('details.tr-card[open]')].map((d) => d.dataset.url));
+    const toggle = sec.querySelector('.tr-toggle');
+    const syncToggle = () => {
+      const all = [...sec.querySelectorAll('details.tr-card')];
+      toggle.textContent = all.length && all.every((d) => d.open) ? 'Collapse all' : 'Expand all';
+    };
+    sec.querySelectorAll('details.tr-card').forEach((d) => d.addEventListener('toggle', () => { saveOpen(); syncToggle(); }));
+    toggle.addEventListener('click', () => {
+      const all = [...sec.querySelectorAll('details.tr-card')];
+      const open = !all.every((d) => d.open);
+      all.forEach((d) => { d.open = open; });
+      saveOpen(); syncToggle();
+    });
+    syncToggle();
   }
 
   // Limit controls in a card detail (drawer or card page). Clicks stop propagating
