@@ -426,11 +426,6 @@
     return { ci, ser, last, day: pct(ser.length > 1 ? ser[ser.length - 2] : null), week: pct(before(7)), month: pct(before(30)) };
   }
 
-  function myTierLine() {
-    const st = customIndexStats();
-    if (!st) return '';
-    return `<br><span>My tier ${st.last.level.toFixed(1)}</span>${st.day != null ? ` · <span class="${dirClass(st.day)}">${fmtPct(st.day)} day</span>` : ''}`;
-  }
 
   function renderCustomIndex() {
     let el = document.getElementById('custom-index');
@@ -737,15 +732,17 @@
     const p = idx.psa10 || {}, r = idx.raw_bihin || {};
     const st = plannerState();
     const spent = state.holdings.reduce((a, h) => a + holdingCost(h), 0);
-    const sm = state.calls && state.calls.summary;
-    const c = (sm && sm.calls) || {};
     const chg = (x) => `<span class="${dirClass(x.day_change_pct)}">${fmtPct(x.day_change_pct)} day</span> · <span class="${dirClass(x.month_change_pct)}">${fmtPct(x.month_change_pct)} month</span>`;
+    const ci = customIndexStats();
+    const ciD = !ci ? 'no readings yet'
+      : ci.ser.length === 1 ? `base ${escapeHtml(ci.ci.meta.base_date)} = 100 · first reading`
+      : [ci.day != null ? `<span class="${dirClass(ci.day)}">${fmtPct(ci.day)} day</span>` : 'day: —',
+         ci.month != null ? `<span class="${dirClass(ci.month)}">${fmtPct(ci.month)} month</span>` : `since ${escapeHtml(ci.ci.meta.base_date)}: <span class="${dirClass(ci.last.level - 100)}">${fmtPct(ci.last.level - 100)}</span>`].join(' · ');
     const tiles = [
-      { href: '#/market', k: 'PSA10 index', v: fmtYen(p.latest_index_value_jpy), d: chg(p) + myTierLine() },
+      { href: '#/market', k: 'PSA10 index', v: fmtYen(p.latest_index_value_jpy), d: chg(p) },
       { href: '#/market', k: 'Raw A-rank index', v: fmtYen(r.latest_index_value_jpy), d: chg(r) },
+      { href: '#/market', k: 'My-tier index', v: ci ? ci.last.level.toFixed(2) : '—', d: ciD },
       { href: '#/planner', k: 'Budget left', v: fmtYen(st.budget - spent), d: `of ${fmtYen(st.budget)} · ${fmtYen(spent)} spent` },
-      { href: '#/record', k: 'Track record', v: sm && sm.calls_scored ? `${c.right || 0} right · ${c.wrong || 0} wrong` : '—',
-        d: sm ? `${c.pending || 0} calls pending · ${sm.odds_open || 0} odds open` : 'no calls yet' },
     ];
     document.getElementById('kpis').innerHTML = tiles.map((t) =>
       `<a class="kpi" href="${t.href}"><span class="lbl">${escapeHtml(t.k)}</span><span class="kpi-v display">${escapeHtml(t.v)}</span><span class="kpi-d">${t.d}</span></a>`).join('');
