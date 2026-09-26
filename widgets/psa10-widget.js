@@ -291,7 +291,7 @@ async function small(w, m) {
     pool = [m.closest[0]];
   }
   const x = pool[slot % pool.length];
-  w.url = BASE + '#/card/' + x.id;
+  w.url = openLink('#/card/' + x.id);
   const top = w.addStack(); top.centerAlignContent();
   if (closest) txt(top, 'NO SIGNALS · CLOSEST', 9, C.muted, true); else tagPill(top, x);
   top.addSpacer();
@@ -319,7 +319,7 @@ async function small(w, m) {
 async function medium(w, m, ci) {
   const z = MZ;
   w.setPadding(z.pad, z.pad + 2, z.pad - 2, z.pad + 2);
-  w.url = BASE + '#/overview';
+  w.url = openLink('#/overview');
   header(w, m, ci, z);
   w.addSpacer(5);
   const sig = m.limitHits.concat(m.buys);
@@ -337,7 +337,7 @@ async function medium(w, m, ci) {
     const x = list[k], isSig = sig.includes(x);
     if (k) row.addSpacer(z.gap);
     const tile = row.addStack(); tile.layoutVertically(); tile.size = new Size(z.tileW, 0);
-    tile.url = BASE + '#/card/' + x.id;
+    tile.url = openLink('#/card/' + x.id);
     // top block has a fixed height so the bars of all three tiles line up
     const top = tile.addStack(); top.topAlignContent(); top.size = new Size(z.tileW, z.slabH);
     const slab = top.addImage(slabImage(await cardImage(x.c.image_url), z.slabW, z.slabH)); slab.imageSize = new Size(z.slabW, z.slabH);
@@ -363,7 +363,7 @@ async function medium(w, m, ci) {
 
 // ---------------------------------------------------------------- large: overview list
 async function large(w, m, ci) {
-  w.url = BASE + '#/overview';
+  w.url = openLink('#/overview');
   header(w, m, ci);
   w.addSpacer(8);
   const list = m.limitHits.concat(m.buys, m.cards.filter((x) => !m.limitHits.includes(x) && !m.buys.includes(x)));
@@ -384,6 +384,22 @@ async function large(w, m, ci) {
   footer(w, m, m.corr.on ? 'correction rule on · 7d change' : '7d change');
 }
 
+// ---------------------------------------------------------------- opening the tracker
+// iOS can't open a Home Screen web app from a link (links always go to Safari). So a tap runs
+// this script inside Scriptable, which shows the tracker full screen in its own web view.
+// Set OPEN_IN_SAFARI = true to go back to opening Safari.
+const OPEN_IN_SAFARI = false;
+function openLink(route) {
+  if (OPEN_IN_SAFARI) return BASE + route;
+  return 'scriptable:///run/' + encodeURIComponent(Script.name()) + '?route=' + encodeURIComponent(route);
+}
+if (config.runsInApp && args.queryParameters && args.queryParameters.route) {
+  const wv = new WebView();
+  await wv.loadURL(BASE + args.queryParameters.route);
+  await wv.present(true);
+  Script.complete();
+} else {
+
 // ---------------------------------------------------------------- main
 const w = new ListWidget();
 const bgGrad = new LinearGradient(); bgGrad.colors = [new Color('#141417'), C.bg]; bgGrad.locations = [0, 1];
@@ -403,3 +419,4 @@ try {
 if (config.runsInWidget) Script.setWidget(w);
 else await (config.widgetFamily === 'small' ? w.presentSmall() : w.presentMedium());
 Script.complete();
+} // end: widget mode
