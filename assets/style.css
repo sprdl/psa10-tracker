@@ -674,3 +674,13 @@ td em { color: var(--muted-2); font-style: normal; }
 .heat-table th { font-size: 11px; color: var(--muted); font-weight: 600; }
 .heat-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 .heat-table a { color: var(--text); text-decoration: none; }
+
+/* tables page sorting */
+.tbl-sortbar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin-bottom: 4px; flex-wrap: wrap; }
+.tbl-sortbar select { background: var(--panel); color: var(--text); border: 1px solid var(--line-3); border-radius: 8px; padding: 7px 10px; font: inherit; min-width: 200px; }
+.tbl-sortbar button { background: var(--panel); color: var(--text); border: 1px solid var(--line-3); border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
+.tsort { all: unset; cursor: pointer; border-bottom: 1px dashed var(--line-3); }
+.tsort:hover, .tsort.on { color: var(--text); border-bottom-color: var(--accent); }
+.tsort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tsort.on::after { content: ' ▲'; font-size: 10px; color: var(--accent); }
+.tsort.on[data-dir="desc"]::after { content: ' ▼'; }

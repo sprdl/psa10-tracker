@@ -1121,10 +1121,10 @@
   let sortState = store.get('psa10.sort', { key: 'default', dir: 1 });
   if (!SORTS[sortState.key]) sortState = { key: 'default', dir: 1 };
 
-  function sortedMarketCards(cards) {
+  function sortCardsBy(cards, defs, st) {
     const rank = (c) => (limitHit(c) ? 0 : 3) + ({ definitely_buy: 0, buy: 1 }[displayTagFor(c)] ?? 2);
-    const base = cards.filter(hasMarket).map((card, i) => ({ card, i }));
-    const sd = SORTS[sortState.key];
+    const base = cards.map((card, i) => ({ card, i }));
+    const sd = defs[st.key] || defs.default;
     if (!sd.v) return base.sort((a, b) => rank(a.card) - rank(b.card) || a.i - b.i).map((x) => x.card);
     const vals = new Map(base.map((x) => [x.card, sd.v(x.card)]));
     return base.sort((a, b) => {
@@ -1133,8 +1133,44 @@
       if (va == null) return 1;
       if (vb == null) return -1;
       const c = typeof va === 'string' ? va.localeCompare(vb, 'ja') : va - vb;
-      return c * sortState.dir || rank(a.card) - rank(b.card) || a.i - b.i;
+      return c * st.dir || rank(a.card) - rank(b.card) || a.i - b.i;
     }).map((x) => x.card);
+  }
+  function sortedMarketCards(cards) { return sortCardsBy(cards.filter(hasMarket), SORTS, sortState); }
+
+  // Tables page: same keys plus the extra statistics shown there; its own remembered order.
+  const TABLE_SORTS = Object.assign({}, SORTS, {
+    depth: { label: 'Order-book depth', dir: -1, v: (c) => { const d = depthInfo(c.grades.psa10); return d.total ? d.within / d.total : null; } },
+    favorites: { label: 'Favorites', dir: -1, v: (c) => c.favorite_count ?? null },
+    population: { label: 'PSA10 population', dir: -1, v: (c) => c.psa10_population ?? null },
+    gem: { label: 'Gem rate', dir: -1, v: (c) => c.psa10_gem_rate_pct ?? null },
+    offpeak: { label: 'Off peak', dir: -1, v: (c) => { const pk = c.analysis && c.analysis.peak; return pk && pk.price ? computeOffPeakPct(pk.price, getRep(c)) : null; } },
+    raw: { label: 'Raw A-rank price', dir: 1, v: (c) => { const r = c.grades && c.grades.raw_a_grade; return r ? r.lowest_price ?? null : null; } },
+    diy: { label: 'DIY vs. slab', dir: 1, v: (c) => { const d = computeDiyEconomics(c, getRep(c)); return d ? d.delta : null; } },
+  });
+  let tableSort = store.get('psa10.tableSort', { key: 'default', dir: 1 });
+  if (!TABLE_SORTS[tableSort.key]) tableSort = { key: 'default', dir: 1 };
+  function setTableSort(key, dir) {
+    if (!TABLE_SORTS[key]) return;
+    tableSort = { key, dir: dir != null ? dir : (tableSort.key === key ? -tableSort.dir : TABLE_SORTS[key].dir) };
+    store.set('psa10.tableSort', tableSort);
+    if (state.currentData) renderTables(state.currentData.cards || [], (state.previousData && state.previousData.cards) || []);
+  }
+  function sortableLabel(key, label) {
+    const on = tableSort.key === key, dir = on ? (tableSort.dir > 0 ? 'asc' : 'desc') : '';
+    return `<button type="button" class="tsort${on ? ' on' : ''}" data-tsort="${key}" data-dir="${dir}" aria-sort="${on ? (tableSort.dir > 0 ? 'ascending' : 'descending') : 'none'}" title="Sort the cards by this row">${label}</button>`;
+  }
+  function wireTableSort() {
+    const bar = document.getElementById('tbl-sortbar');
+    if (bar) {
+      bar.innerHTML = `<label for="tbl-sort-select">Sort cards by</label><select id="tbl-sort-select">${Object.entries(TABLE_SORTS).map(([k, d]) => `<option value="${k}"${k === tableSort.key ? ' selected' : ''}>${escapeHtml(d.label)}</option>`).join('')}</select>${tableSort.key !== 'default' ? `<button type="button" id="tbl-sort-dir" aria-label="Reverse order">${tableSort.dir > 0 ? '↑' : '↓'}</button>` : ''}`;
+      bar.querySelector('select').addEventListener('change', (e) => setTableSort(e.target.value, TABLE_SORTS[e.target.value].dir));
+      const d = bar.querySelector('#tbl-sort-dir'); if (d) d.addEventListener('click', () => setTableSort(tableSort.key, -tableSort.dir));
+    }
+    document.querySelectorAll('[data-tsort]').forEach((b) => b.addEventListener('click', () => {
+      if (b.dataset.tsort === tableSort.key && tableSort.dir !== TABLE_SORTS[tableSort.key].dir) return setTableSort('default', 1);
+      setTableSort(b.dataset.tsort);
+    }));
   }
 
   function setSort(key, dir) {
@@ -2221,7 +2257,7 @@
   // ---------- render: tables ----------
 
   function renderTables(cards, prevCards) {
-    const validCards = cards.filter((c) => c.grades && c.grades.psa10 && c.grades.psa10.lowest_price != null);
+    const validCards = sortCardsBy(cards.filter((c) => c.grades && c.grades.psa10 && c.grades.psa10.lowest_price != null), TABLE_SORTS, tableSort);
 
     const diySection = document.getElementById('diy-table-section');
     const diyTableEl = document.getElementById('diy-table');
@@ -2239,6 +2275,7 @@
     const cmpHtml = buildComparisonTable(validCards, prevCards);
     if (cmpHtml) { cmpTableEl.innerHTML = cmpHtml; cmpSection.hidden = false; }
     else { cmpSection.hidden = true; }
+    wireTableSort();
   }
 
   function buildDiyTable(entries) {
@@ -2246,10 +2283,10 @@
     const thead = '<thead><tr><th></th>' + entries.map((e) => `<th>${escapeHtml(e.card.card_name_ja)}</th>`).join('') + '</tr></thead>';
 
     let rows = '';
-    rows += '<tr><td>Buy the slab (PSA10)</td>' + entries.map((e) => `<td>${fmtYen(e.repPrice)}${e.card.analysis && e.card.analysis.price_source === 'sales_confirmed' ? ' <em>(sales-confirmed)</em>' : ''}</td>`).join('') + '</tr>';
-    rows += '<tr><td>Buy raw A-rank</td>' + entries.map((e) => `<td>${fmtYen(e.diy.rawPrice)}</td>`).join('') + '</tr>';
+    rows += `<tr><td>${sortableLabel('price', 'Buy the slab (PSA10)')}</td>` + entries.map((e) => `<td>${fmtYen(e.repPrice)}${e.card.analysis && e.card.analysis.price_source === 'sales_confirmed' ? ' <em>(sales-confirmed)</em>' : ''}</td>`).join('') + '</tr>';
+    rows += `<tr><td>${sortableLabel('raw', 'Buy raw A-rank')}</td>` + entries.map((e) => `<td>${fmtYen(e.diy.rawPrice)}</td>`).join('') + '</tr>';
     rows += '<tr><td>Raw + grade it yourself (expected cost)</td>' + entries.map((e) => `<td>${fmtYen(e.diy.diyExpected)}</td>`).join('') + '</tr>';
-    rows += '<tr><td>vs. just buying the slab</td>' + entries.map((e) => `<td>${e.diy.delta >= 0 ? '+' : '−'}${fmtYen(Math.abs(e.diy.delta))}</td>`).join('') + '</tr>';
+    rows += `<tr><td>${sortableLabel('diy', 'vs. just buying the slab')}</td>` + entries.map((e) => `<td>${e.diy.delta >= 0 ? '+' : '−'}${fmtYen(Math.abs(e.diy.delta))}</td>`).join('') + '</tr>';
 
     const anyRawTiers = entries.some((e) => e.card.analysis && e.card.analysis.raw_tiers);
     if (anyRawTiers) {
@@ -2264,7 +2301,7 @@
 
   function buildComparisonTable(cards, prevCards) {
     if (!cards.length) return null;
-    const thead = '<thead><tr><th></th>' + cards.map((c) => `<th>${escapeHtml(c.card_name_ja)}</th>`).join('') + '</tr></thead>';
+    const thead = `<thead><tr><th>${sortableLabel('name', 'Card')}</th>` + cards.map((c) => `<th>${escapeHtml(c.card_name_ja)}</th>`).join('') + '</tr></thead>';
 
     const rowsData = [
       ['Current PSA10', cards.map((c) => {
@@ -2294,7 +2331,11 @@
       })],
     ];
 
-    let body = rowsData.map(([label, vals]) => `<tr><td>${label}</td>${vals.map((v) => `<td>${v}</td>`).join('')}</tr>`).join('');
+    const ROW_KEYS = { 'Current PSA10': 'price', 'Order-book depth': 'depth', 'Favorite count': 'favorites', 'Population / gem rate': 'population', 'Off peak (where known)': 'offpeak' };
+    let body = rowsData.map(([label, vals]) => `<tr><td>${ROW_KEYS[label] ? sortableLabel(ROW_KEYS[label], label) : label}</td>${vals.map((v) => `<td>${v}</td>`).join('')}</tr>`).join('');
+    body += `<tr><td>${sortableLabel('chg7', '7-day change')}</td>${cards.map((c) => { const x = priceChangeAgo(c, 7); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? fmtPct(x.pct) : '—'}</td>`; }).join('')}</tr>`;
+    body += `<tr><td>${sortableLabel('chg30', '30-day change')}</td>${cards.map((c) => { const x = priceChangeAgo(c, 30); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? fmtPct(x.pct) : '—'}</td>`; }).join('')}</tr>`;
+    body += `<tr><td>${sortableLabel('heat', 'PSA10 sales / day')}</td>${cards.map((c) => { const h = heatOf(c); return `<td>${h && h.psa ? rateTxt(h.psa) + ' ' + heatChip(c) : '—'}</td>`; }).join('')}</tr>`;
 
     body += `<tr class="divider"><td colspan="${cards.length + 1}">PSA10 price tiers</td></tr>`;
     const tierRow = (label, fn) => `<tr><td>${label}</td>${cards.map((c) => { const t = c.analysis && c.analysis.tiers; return `<td>${t ? fn(t) : 'Not yet established'}</td>`; }).join('')}</tr>`;
@@ -2303,7 +2344,7 @@
     body += tierRow('Watch closely', (t) => fmtYen(t.buy_upper) + '–' + fmtYen(t.ceiling));
     body += tierRow("Don't-buy ceiling", (t) => fmtYen(t.ceiling));
 
-    body += `<tr><td>Verdict</td>${cards.map((c) => {
+    body += `<tr><td>${sortableLabel('verdict', 'Verdict')}</td>${cards.map((c) => {
       const tag = displayTagFor(c);
       if (tag) {
         return `<td><span class="pill ${tag}">${escapeHtml(tagLabel(tag))}</span></td>`;
