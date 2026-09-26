@@ -166,16 +166,23 @@ function txt(stack, s, size, color, bold, lines) {
   t.minimumScaleFactor = 0.7;
   return t;
 }
-function pill(stack, label, color, filled) {
-  const p = stack.addStack();
-  p.setPadding(2, 6, 2, 6); p.cornerRadius = 4; p.borderWidth = 1; p.borderColor = color;
+function pill(stack, label, color, filled, size) {
+  const f = size || 10, p = stack.addStack();
+  p.setPadding(f > 9 ? 2 : 1, f > 9 ? 6 : 4, f > 9 ? 2 : 1, f > 9 ? 6 : 4); p.cornerRadius = 3; p.borderWidth = 1; p.borderColor = color;
   if (filled) p.backgroundColor = color;
-  const t = p.addText(label); t.font = Font.boldSystemFont(10); t.textColor = filled ? C.bg : color;
+  const t = p.addText(label); t.font = Font.boldSystemFont(f); t.textColor = filled ? C.bg : color; t.lineLimit = 1;
   return p;
 }
-function tagPill(stack, x, short) {
-  if (x.limitHit) return pill(stack, short ? 'LIMIT' : 'LIMIT HIT', C.accent, true);
-  if (TAG[x.tag]) return pill(stack, ...TAG[x.tag]);
+
+// Sizes for the medium widget. iPad Home Screen widgets are much smaller in points than on
+// iPhone (e.g. ~250×112 pt vs ~330×155 pt), so the iPad gets a compact layout.
+const COMPACT = Device.isPad();
+const MZ = COMPACT
+  ? { pad: 9, tileW: 72, gap: 7, slabW: 25, slabH: 37, price: 15, name: 7.5, small: 7, logo: 12, spark: [34, 11], bar: 7, pill: 7 }
+  : { pad: 12, tileW: 93, gap: 7, slabW: 31, slabH: 45, price: 18, name: 8.5, small: 8.5, logo: 15, spark: [46, 16], bar: 9, pill: 8 };
+function tagPill(stack, x, short, size) {
+  if (x.limitHit) return pill(stack, short ? 'LIMIT' : 'LIMIT HIT', C.accent, true, size);
+  if (TAG[x.tag]) return pill(stack, TAG[x.tag][0], TAG[x.tag][1], TAG[x.tag][2], size);
   return null;
 }
 function dtxt(stack, s, size, color) {
@@ -201,17 +208,17 @@ function slabImage(art, w, h) {
 }
 
 // Zone bar like the app's: green (definitely buy) / light green (buy) / amber (watch) / red, white tick = price, yellow dot = your limit.
-function zoneBarImage(x, w) {
-  const h = 10, d = new DrawContext(); d.size = new Size(w, h); d.opaque = false; d.respectScreenScale = true;
+function zoneBarImage(x, w, hh) {
+  const h = hh || 10, d = new DrawContext(); d.size = new Size(w, h); d.opaque = false; d.respectScreenScale = true;
   const t = x.tiers;
   if (!t) return null;
   const peak = (x.c.analysis && x.c.analysis.peak && x.c.analysis.peak.price) || 0;
   const scale = Math.round(Math.max(peak, t.ceiling) * 1.08 / 1000) * 1000 || t.ceiling;
   const X = (v) => Math.max(0, Math.min(w, (v / scale) * w));
-  const y = 3, th = 4;
+  const th = Math.max(3, Math.round(h * 0.4)), y = (h - th) / 2;
   const seg = (a, b, col) => { d.setFillColor(col); d.fillRect(new Rect(X(a), y, Math.max(0, X(b) - X(a)), th)); };
   seg(0, t.definitely_buy, C.greenStrong); seg(t.definitely_buy, t.buy_upper, C.green); seg(t.buy_upper, t.ceiling, C.amber); seg(t.ceiling, scale, C.zoneRed);
-  if (x.lim != null) { d.setFillColor(C.accent); d.fillEllipse(new Rect(X(x.lim) - 3.5, h / 2 - 3.5, 7, 7)); }
+  if (x.lim != null) { const r = h * 0.35; d.setFillColor(C.accent); d.fillEllipse(new Rect(X(x.lim) - r, h / 2 - r, 2 * r, 2 * r)); }
   d.setFillColor(C.text); d.fillRect(new Rect(X(x.price) - 1, 0, 2, h));
   return d.getImage();
 }
@@ -232,20 +239,19 @@ function sparkImage(ci, w, h) {
   return d.getImage();
 }
 
-function header(w, m, ci) {
+function header(w, m, ci, z) {
+  z = z || MZ;
   const head = w.addStack(); head.centerAlignContent();
-  const logo = head.addStack(); logo.backgroundColor = C.accent; logo.cornerRadius = 3; logo.setPadding(2, 4, 0, 4);
-  dtxt(logo, 'PSA10', 15, C.bg);
-  head.addSpacer(5);
-  dtxt(head, 'TRACKER', 15, C.text);
+  const logo = head.addStack(); logo.backgroundColor = C.accent; logo.cornerRadius = 3; logo.setPadding(1, 4, 0, 4);
+  dtxt(logo, 'PSA10', z.logo, C.bg);
+  head.addSpacer(4);
+  dtxt(head, 'TRACKER', z.logo, C.text);
   head.addSpacer();
   if (m.corr.level != null) {
-    const sp = sparkImage(ci, 46, 16);
-    if (sp) { const i = head.addImage(sp); i.imageSize = new Size(46, 16); head.addSpacer(6); }
-    const col = head.addStack(); col.layoutVertically();
-    const r1 = col.addStack(); r1.addSpacer(); txt(r1, 'MY TIER', 8, C.muted, true);
-    const r2 = col.addStack(); r2.addSpacer(); r2.bottomAlignContent();
-    dtxt(r2, m.corr.level.toFixed(1), 15, C.text); r2.addSpacer(4); dtxt(r2, pct(m.corr.pct), 12, pctColor(m.corr.pct));
+    const sp = sparkImage(ci, z.spark[0], z.spark[1]);
+    if (sp) { const i = head.addImage(sp); i.imageSize = new Size(z.spark[0], z.spark[1]); head.addSpacer(5); }
+    txt(head, 'MY TIER ', z.small, C.muted, true);
+    dtxt(head, m.corr.level.toFixed(1), z.logo, C.text); head.addSpacer(3); dtxt(head, pct(m.corr.pct), z.logo - 2, pctColor(m.corr.pct));
   }
 }
 
@@ -301,41 +307,48 @@ async function small(w, m) {
 
 // ---------------------------------------------------------------- medium: signals + index
 async function medium(w, m, ci) {
+  const z = MZ;
+  w.setPadding(z.pad, z.pad + 2, z.pad - 2, z.pad + 2);
   w.url = BASE + '#/overview';
-  header(w, m, ci);
-  w.addSpacer(6);
+  header(w, m, ci, z);
+  w.addSpacer(COMPACT ? 3 : 5);
   const sig = m.limitHits.concat(m.buys);
   // signals first; free slots are filled with the cards closest to a buy
   const list = sig.slice(0, 3).concat(m.closest.slice(0, Math.max(0, 3 - sig.length)));
   const sub = w.addStack(); sub.centerAlignContent();
-  txt(sub, m.limitHits.length ? 'AT YOUR LIMIT' : sig.length ? 'BUY SIGNALS' : 'NO BUY SIGNALS · CLOSEST', 9, m.limitHits.length ? C.accent : C.muted, true);
-  if (sig.length > 3) { sub.addSpacer(4); txt(sub, `+${sig.length - 3} more`, 9, C.muted); }
+  txt(sub, m.limitHits.length ? 'AT YOUR LIMIT' : sig.length ? 'BUY SIGNALS' : 'NO SIGNALS · CLOSEST', z.small, m.limitHits.length ? C.accent : C.muted, true);
+  if (sig.length > 3) { sub.addSpacer(4); txt(sub, `+${sig.length - 3} more`, z.small, C.muted); }
   sub.addSpacer();
-  txt(sub, (m.corr.on ? 'correction on · ' : '') + m.when.slice(5, 16).replace('-', '/').replace('T', ' '), 9, C.muted);
-  w.addSpacer(6);
+  if (m.corr.on) { txt(sub, 'CORRECTION', z.small, C.amber, true); sub.addSpacer(4); }
+  txt(sub, m.when.slice(5, 16).replace('-', '/').replace('T', ' '), z.small, C.muted);
+  w.addSpacer(COMPACT ? 4 : 6);
   const row = w.addStack(); row.topAlignContent();
   for (let k = 0; k < list.length; k++) {
-    const x = list[k];
-    if (k) row.addSpacer(7);
-    const tile = row.addStack(); tile.layoutVertically(); tile.size = new Size(93, 0);
+    const x = list[k], isSig = sig.includes(x);
+    if (k) row.addSpacer(z.gap);
+    const tile = row.addStack(); tile.layoutVertically(); tile.size = new Size(z.tileW, 0);
     tile.url = BASE + '#/card/' + x.id;
-    const top = tile.addStack(); top.topAlignContent();
-    const slab = top.addImage(slabImage(await cardImage(x.c.image_url), 33, 48)); slab.imageSize = new Size(33, 48);
-    top.addSpacer(5);
+    // top block has a fixed height so the bars of all three tiles line up
+    const top = tile.addStack(); top.topAlignContent(); top.size = new Size(z.tileW, z.slabH);
+    const slab = top.addImage(slabImage(await cardImage(x.c.image_url), z.slabW, z.slabH)); slab.imageSize = new Size(z.slabW, z.slabH);
+    top.addSpacer(4);
     const col = top.addStack(); col.layoutVertically();
-    dtxt(col, yen(x.ask), 17, x.limitHit ? C.accent : C.text);
-    txt(col, x.name.short, 8.5, C.soft, true, 2);
-    col.addSpacer(3);
-    if (sig.includes(x)) tagPill(col, x, true);
-    else { const g = m.gap(x); txt(col, isFinite(g) ? `+${(g * 100).toFixed(0)}% to ${x.lim != null ? 'limit' : 'Buy'}` : '', 9, C.ice, true); }
-    tile.addSpacer(4);
-    const zb = zoneBarImage(x, 93);
-    if (zb) { const i = tile.addImage(zb); i.imageSize = new Size(93, 10); }
-    const ch = tile.addStack();
-    txt(ch, '7d ' + pct(x.chg7), 8, pctColor(x.chg7));
-    if (x.heat) { ch.addSpacer(); txt(ch, x.heat[0], 8, x.heat[1], true); }
+    dtxt(col, yen(x.ask), z.price, x.limitHit ? C.accent : C.text);
+    txt(col, x.name.short, z.name, C.soft, true, 1);
+    col.addSpacer();
+    if (isSig) tagPill(col, x, true, z.pill);
+    else { const g = m.gap(x); txt(col, isFinite(g) ? `+${(g * 100).toFixed(0)}% ${x.lim != null ? 'to limit' : 'to Buy'}` : '', z.small, C.ice, true, 1); }
+    tile.addSpacer(3);
+    const zb = zoneBarImage(x, z.tileW, z.bar);
+    if (zb) { const i = tile.addImage(zb); i.imageSize = new Size(z.tileW, z.bar); }
+    tile.addSpacer(1);
+    const ch = tile.addStack(); ch.size = new Size(z.tileW, 0); ch.centerAlignContent();
+    txt(ch, '7d ' + pct(x.chg7), z.small, pctColor(x.chg7), false, 1);
+    ch.addSpacer();
+    if (x.heat) txt(ch, x.heat[0], z.small, x.heat[1], true, 1);
   }
   if (!list.length) txt(w, 'No tracked cards with a PSA10 market yet.', 10, C.muted);
+  w.addSpacer();
 }
 
 // ---------------------------------------------------------------- large: overview list
