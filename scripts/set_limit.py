@@ -18,6 +18,7 @@ leaves the issue open; editing the issue re-runs this.
 import json
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -61,32 +62,43 @@ def main():
         return
     card = next((c for c in latest_cards() if c.get("url", "").rstrip("/") == url), None)
     name = (card or {}).get("card_name_ja") or url
-    store = load()
-    lim = store.setdefault("limits", {})
-    if price:
-        lim[url] = {"price": price, "set": datetime.now(JST).isoformat(timespec="seconds"), "issue": issue["number"]}
-        msg = f"Saved your limit for **{name}**: ¥{price:,}. Every device shows it once the site updates (about a minute)."
-        commit_msg = f"limits: {name} ¥{price:,} (#{issue['number']})"
-    else:
+    def apply(store):
+        lim = store.setdefault("limits", {})
+        if price:
+            lim[url] = {"price": price, "set": datetime.now(JST).isoformat(timespec="seconds"), "issue": issue["number"]}
+            return (f"Saved your limit for **{name}**: ¥{price:,}. Every device shows it once the site updates (about a minute).",
+                    f"limits: {name} ¥{price:,} (#{issue['number']})")
         existed = lim.pop(url, None)
-        msg = (f"Removed your limit for **{name}**." if existed else f"**{name}** had no saved limit; nothing to remove.") + " The site updates in about a minute."
-        commit_msg = f"limits: remove {name} (#{issue['number']})"
-    if not card:
-        msg += "\n\nNote: this card isn't on the tracker right now."
+        return ((f"Removed your limit for **{name}**." if existed else f"**{name}** had no saved limit; nothing to remove.")
+                + " The site updates in about a minute.", f"limits: remove {name} (#{issue['number']})")
+
     if dry:
-        print(json.dumps(store, ensure_ascii=False, indent=2)); print(msg); return
-    LIMITS.write_text(json.dumps(store, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        store = load(); msg, _ = apply(store)
+        print(json.dumps(store, ensure_ascii=False, indent=1)); print(msg); return
     git("config", "user.name", "github-actions[bot]")
     git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
-    git("add", "data/limits.json")
-    if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0:
+    # Several limit forms submitted at once run in parallel. Each attempt starts from the
+    # latest main, re-applies this one change and pushes, so they never conflict.
+    pushed = changed = False
+    for attempt in range(6):
+        git("fetch", "-q", "origin", "main")
+        git("reset", "-q", "--hard", "origin/main")
+        store = load()
+        msg, commit_msg = apply(store)
+        LIMITS.write_text(json.dumps(store, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        git("add", "data/limits.json")
+        if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
+            break  # already saved (e.g. a re-run)
         git("commit", "-q", "-m", commit_msg)
-        for _ in range(3):  # a price check may have pushed in the meantime
-            if subprocess.run(["git", "push", "-q", "origin", "HEAD:main"], cwd=ROOT).returncode == 0:
-                break
-            git("pull", "-q", "--rebase", "origin", "main")
-        else:
-            raise RuntimeError("git push failed three times")
+        if subprocess.run(["git", "push", "-q", "origin", "HEAD:main"], cwd=ROOT).returncode == 0:
+            pushed = changed = True
+            break
+        time.sleep(3 + attempt * 2)
+    else:
+        raise RuntimeError("git push failed six times")
+    if not card:
+        msg += "\n\nNote: this card isn't on the tracker right now."
+    if changed:
         # Pushes made with the Actions token don't start other workflows, so start the Pages deploy explicitly.
         gh("POST", "/actions/workflows/deploy.yml/dispatches", {"ref": "main"})
     finish(issue, msg, True, dry)
