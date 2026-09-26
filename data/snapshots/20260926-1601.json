@@ -3192,6 +3192,48 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 141000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 228000,
+          "when": "April 2026",
+          "source": "pokeca-chart per-card PSA10 chart (s12 110/098), read 2026-09-26"
+        },
+        "tiers": {
+          "definitely_buy": 115000,
+          "buy_upper": 128000,
+          "ceiling": 145000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: back at pre-hype level, but still falling ~8%/week and the market is correcting",
+          "reasoning": "PSA10 has round-tripped from the ¥228k April peak to ~¥138–141k, roughly the Jan–Feb 2026 pre-announcement level, but sales are still stepping down (¥157k on 9/17 → ¥139–145k now) and the PSA10 index is −27% on the month, so the correction rule holds it at Watch. Model odds: ~40% for a listing at ≤¥128k within 30 days, ~45% within 3 months, ~30% for ≤¥115k (Q4-2025 organic level) within 3 months; downside if bought today is roughly −10–20% if the index keeps sliding.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥128k (Buy) within 30 days",
+              "p": 0.4,
+              "type": "touch_below",
+              "price": 128000,
+              "by": "2026-10-26"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥128k (Buy) within 3 months",
+              "p": 0.45,
+              "type": "touch_below",
+              "price": 128000,
+              "by": "2026-12-26"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥115k (Definitely buy) within 3 months",
+              "p": 0.3,
+              "type": "touch_below",
+              "price": 115000,
+              "by": "2026-12-26"
+            }
+          ]
+        }
       }
     }
   ],
