@@ -635,26 +635,12 @@
     const view = span ? ser.filter((e) => tOf(e) >= tLast - span * 86400000) : ser;
     let chart = '';
     if (view.length >= 2) {
-      const w = 700, h = 170, pad = 10;
-      const vals = view.flatMap((e) => [e.level, pokecaRel(e)]).filter((v) => v != null);
-      let lo = Math.min(...vals, 100), hi = Math.max(...vals, 100);
-      const padV = (hi - lo) * 0.12 || 2; lo -= padV; hi += padV;
-      const t0 = tOf(view[0]);
-      const x = (e) => pad + ((tOf(e) - t0) * (w - pad * 2)) / (tLast - t0 || 1);
-      const y = (v) => pad + (h - pad * 2) * (1 - (v - lo) / (hi - lo));
-      const line = (get) => view.filter((e) => get(e) != null)
-        .map((e, k) => `${k ? 'L' : 'M'}${x(e).toFixed(1)},${y(get(e)).toFixed(1)}`).join(' ');
-      const y100 = y(100).toFixed(1);
-      const shadeEnd = view[0].backfill && firstReal ? x(firstReal) : null;
-      const shade = shadeEnd != null ? `<rect x="${pad}" y="0" width="${Math.max(0, shadeEnd - pad).toFixed(1)}" height="${h}" class="ci-bf"/>` : '';
-      chart = `<svg class="ci-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="My-tier index vs pokeca-chart PSA10 index">
-        ${shade}
-        <line x1="${pad}" x2="${w - pad}" y1="${y100}" y2="${y100}" class="ci-base"/>
-        <path d="${line(pokecaRel)}" class="ci-line-pk"/>
-        <path d="${line((e) => e.level)}" class="ci-line"/>
-      </svg>
-      <div class="spark-dates"><span>${escapeHtml(view[0].d)}</span><span>${escapeHtml(last.d)}</span></div>
-      <div class="ci-legend"><span class="ci-key ci-key-me"></span>My tier <span class="ci-key ci-key-pk"></span>pokeca-chart PSA10 (100 on ${escapeHtml(base ? base.d : '')})${shade ? ' <span class="ci-key-bf"></span>backfilled from per-card charts' : ''}</div>`;
+      chart = `<figure class="ci-fig">
+        <figcaption class="ci-cap"><span class="ci-cap-t">My-tier index vs pokeca-chart PSA10 index</span>
+          <span class="ci-cap-s">Both indexed to 100 on ${escapeHtml(base ? base.d : meta.base_date || '')} · hover or tap for values</span></figcaption>
+        <div class="ci-plot" tabindex="0" role="img" aria-label="Line chart of the My-tier index and the pokeca-chart PSA10 index, ${escapeHtml(view[0].d)} to ${escapeHtml(last.d)}. Use the arrow keys to step through the values."></div>
+        <div class="ci-legend"><span class="ci-key ci-key-me"></span>My tier <span class="ci-key ci-key-pk"></span>pokeca-chart PSA10 (100 on ${escapeHtml(base ? base.d : '')})${view[0].backfill && firstReal ? ' <span class="ci-key-bf"></span>backfilled from per-card charts' : ''}</div>
+      </figure>`;
     } else {
       chart = `<p class="ci-note">Chart appears after the second daily reading.</p>`;
     }
@@ -688,7 +674,98 @@
       ${chart}
       ${table}`;
     el.querySelectorAll('[data-rng]').forEach((b) => b.addEventListener('click', () => { store.set('psa10.ciRange', b.dataset.rng); renderCustomIndex(); }));
+    const plot = el.querySelector('.ci-plot');
+    if (plot) drawIndexChart(plot, view, { base, firstReal, pokecaRel, baseLevel: meta.base_level || 100 });
   }
+
+  // Time-based line chart with axes, gridlines and a hover/tap/keyboard crosshair.
+  // Drawn at the container's real pixel width so text never stretches; redrawn on resize.
+  let ciObserver = null;
+  function drawIndexChart(box, view, o) {
+    // hidden views have no width yet: redraw whenever the box's width changes (incl. first show)
+    if (ciObserver) ciObserver.disconnect();
+    if (window.ResizeObserver) {
+      let lastW = box.clientWidth;
+      ciObserver = new ResizeObserver(() => { const w = box.clientWidth; if (w && Math.abs(w - lastW) > 2) { lastW = w; drawIndexChart(box, view, o); } });
+      ciObserver.observe(box);
+    }
+    if (!box.clientWidth) return;
+    const W = Math.max(280, Math.round(box.clientWidth)), H = W < 520 ? 210 : 250;
+    const m = { l: 46, r: 14, t: 12, b: 28 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const tOf = (e) => Date.parse(e.d + 'T00:00:00Z');
+    const t0 = tOf(view[0]), t1 = tOf(view[view.length - 1]);
+    const pts = view.map((e) => ({ e, t: tOf(e), me: e.level, pk: o.pokecaRel(e) }));
+    const vals = pts.flatMap((p) => [p.me, p.pk]).filter((v) => v != null).concat([100]);
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    // nice y ticks
+    const span = hi - lo || 10, raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= raw) || 10 * mag;
+    lo = Math.floor((lo - span * 0.04) / step) * step; hi = Math.ceil((hi + span * 0.04) / step) * step;
+    const X = (t) => m.l + ((t - t0) * iw) / (t1 - t0 || 1);
+    const Y = (v) => m.t + ih * (1 - (v - lo) / (hi - lo));
+    const yTicks = []; for (let v = lo; v <= hi + 1e-9; v += step) yTicks.push(v);
+    // x ticks: month starts, thinned to fit
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [];
+    const d0 = new Date(t0); for (let y = d0.getUTCFullYear(), mo = d0.getUTCMonth() + 1; ; mo++) {
+      if (mo === 12) { mo = 0; y++; } const t = Date.UTC(y, mo, 1); if (t > t1) break; months.push(t); }
+    const every = Math.max(1, Math.ceil(months.length / Math.max(2, Math.floor(iw / 70))));
+    const xTicks = months.filter((_, i) => i % every === 0);
+    const fmtTick = (t) => { const d = new Date(t); return (d.getUTCMonth() === 0 || xTicks.length <= 4 || every >= 12) ? `${MON[d.getUTCMonth()]} ${String(d.getUTCFullYear()).slice(2)}` : MON[d.getUTCMonth()]; };
+    const path = (k) => pts.filter((p) => p[k] != null).map((p, i) => `${i ? 'L' : 'M'}${X(p.t).toFixed(1)},${Y(p[k]).toFixed(1)}`).join(' ');
+    const bfEnd = view[0].backfill && o.firstReal ? Math.min(X(tOf(o.firstReal)), m.l + iw) : null;
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+      ${bfEnd != null && bfEnd > m.l ? `<rect x="${m.l}" y="${m.t}" width="${(bfEnd - m.l).toFixed(1)}" height="${ih}" class="ci-bf"/>` : ''}
+      ${yTicks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${+v.toFixed(1)}</text>`).join('')}
+      ${xTicks.map((t) => `<line x1="${X(t).toFixed(1)}" x2="${X(t).toFixed(1)}" y1="${m.t + ih}" y2="${m.t + ih + 4}" class="ci-axis"/><text x="${X(t).toFixed(1)}" y="${m.t + ih + 18}" class="ci-xtick">${fmtTick(t)}</text>`).join('')}
+      <line x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}" class="ci-axis"/>
+      <line x1="${m.l}" x2="${m.l + iw}" y1="${Y(100).toFixed(1)}" y2="${Y(100).toFixed(1)}" class="ci-base"/>
+      <text x="${m.l + iw}" y="${(Y(100) - 5).toFixed(1)}" class="ci-basel">100 = base</text>
+      <path d="${path('pk')}" class="ci-line-pk"/>
+      <path d="${path('me')}" class="ci-line"/>
+      <g class="ci-hover" style="display:none">
+        <line class="ci-cross" y1="${m.t}" y2="${m.t + ih}"/>
+        <circle class="ci-dot-pk" r="4"/><circle class="ci-dot-me" r="4.5"/>
+      </g>
+    </svg><div class="ci-tip" role="status" aria-live="polite" hidden></div>`;
+    const svg = box.querySelector('svg'), g = svg.querySelector('.ci-hover'), tip = box.querySelector('.ci-tip');
+    const cross = g.querySelector('.ci-cross'), dm = g.querySelector('.ci-dot-me'), dp = g.querySelector('.ci-dot-pk');
+    const fmtD = (d) => { const [y, mo, dd] = d.split('-'); return `${+dd} ${MON[+mo - 1]} ${y}`; };
+    const pct = (v) => (v == null ? '' : ` <span class="${dirClass(v - o.baseLevel)}">(${fmtPct(v - o.baseLevel)} vs base)</span>`);
+    let cur = -1;
+    const show = (i) => {
+      if (i < 0 || i >= pts.length) return;
+      cur = i; const p = pts[i], x = X(p.t);
+      g.style.display = ''; cross.setAttribute('x1', x); cross.setAttribute('x2', x);
+      dm.setAttribute('cx', x); dm.setAttribute('cy', Y(p.me));
+      if (p.pk != null) { dp.style.display = ''; dp.setAttribute('cx', x); dp.setAttribute('cy', Y(p.pk)); } else dp.style.display = 'none';
+      const e = p.e;
+      tip.innerHTML = `<div class="ci-tip-d">${fmtD(e.d)}${e.backfill ? ' · <span class="muted">backfilled' + (e.n ? `, ${e.n} cards` : '') + '</span>' : (e.n ? ` · <span class="muted">${e.n} cards</span>` : '')}</div>
+        <div><span class="ci-key ci-key-me"></span>My tier <b>${e.level.toFixed(2)}</b>${pct(e.level)}</div>
+        ${e.pokeca_psa10 ? `<div><span class="ci-key ci-key-pk"></span>PSA10 index <b>${fmtYen(e.pokeca_psa10)}</b>${p.pk != null ? ` <span class="muted">= ${p.pk.toFixed(1)}</span>` : ''}</div>` : '<div class="muted">PSA10 index: no value that day</div>'}`;
+      tip.hidden = false;
+      const tw = tip.offsetWidth, left = Math.min(Math.max(x - tw / 2, 0), W - tw);
+      const topY = Math.min(Y(p.me), p.pk != null ? Y(p.pk) : Infinity);
+      tip.style.left = left + 'px';
+      tip.style.top = Math.max(0, topY - tip.offsetHeight - 12) + 'px';
+    };
+    const hide = () => { g.style.display = 'none'; tip.hidden = true; cur = -1; };
+    const nearest = (clientX) => {
+      const r = svg.getBoundingClientRect(); const t = t0 + ((clientX - r.left - m.l) / iw) * (t1 - t0);
+      let best = 0; for (let i = 1; i < pts.length; i++) if (Math.abs(pts[i].t - t) < Math.abs(pts[best].t - t)) best = i;
+      return best;
+    };
+    svg.addEventListener('pointermove', (ev) => show(nearest(ev.clientX)));
+    svg.addEventListener('pointerdown', (ev) => show(nearest(ev.clientX)));
+    svg.addEventListener('pointerleave', (ev) => { if (ev.pointerType === 'mouse') hide(); });
+    box.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') { ev.preventDefault(); show(cur < 0 ? pts.length - 1 : cur + (ev.key === 'ArrowLeft' ? -1 : 1)); }
+      else if (ev.key === 'Home') show(0); else if (ev.key === 'End') show(pts.length - 1); else if (ev.key === 'Escape') hide();
+    });
+    box.addEventListener('blur', hide);
+  }
+
 
   // ---------- tier review status + card vs market ----------
   // Tiers are fixed yen amounts. They're flagged for review when they are more than
