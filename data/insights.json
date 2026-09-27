@@ -6,6 +6,12 @@
    "headline": "Already corrected, now holding its floor",
    "text": "While the My-tier index fell about 8% over the past week, the lowest ask barely moved (¥29,800 → ¥29,999) and sales actually firmed: the last 10 one-copy sales have a median of ¥29,780, about 10% above the 10 before them (¥27,000). The likely reason is that this card corrected earlier and harder than the rest of the tier: it is 59% below its May peak (Umbreon is about 37% below its peak), so it is already back in its pre-hype range, where buyers step in. The caveat is a thin order book (6 of 20 listings within 15% of the lowest) and only about 1.6 sales a day, so a couple of cheap listings could still pull it down. For you: it sits right on the Buy line (¥29,500), and a dip to your ¥26,000 limit is less likely while it holds up (the model says about 30% within 30 days). Watch whether sales stay around ¥29–30k if the market keeps falling.",
    "signals": "7d price +0.7% (¥29,800→¥29,999) vs My-tier index -7.8% = +8.5 pts"
+  },
+  "https://snkrdunk.com/apparels/387059": {
+   "written": "2026-09-27T18:59:50+09:00",
+   "headline": "Rising against the market, but the buying burst is fading",
+   "text": "The lowest ask rose from ¥41,000 to ¥43,000 over the week while the My-tier index fell about 8%, and sales rose with it (¥40,000–41,000 on 9/19–22, ¥43,000–43,500 since 9/25). Trading has cooled sharply, though: about 2.4 PSA10 sales a day now against roughly 7.5 a week ago. A likely driver is the attention on Gengar around the 30th-anniversary set released on 9/16, which includes a new Gengar ex SAR; that kind of spillover tends to fade. At ¥43,000 it is in the Watch zone (Buy ≤¥38,000), 23% above your ¥35,000 limit and 22% below its August peak (¥55,000). With buying slowing, the higher price needs new buyers to hold, so a slide back toward ¥40–41k would not be surprising. It also remains outside your collecting criteria (SM era, not full art).",
+   "signals": "7d price +4.9% (¥41,000→¥43,000) vs My-tier index -7.8% = +12.7 pts | PSA10 sales/day 2.4 vs 7.5 a week ago (-68%)"
   }
  }
 }
