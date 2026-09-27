@@ -1959,14 +1959,14 @@
     const c = sm.calls || {};
     const win = tr.window_days || 30, th = Math.round((tr.threshold || 0.05) * 100);
     const brier = sm.brier != null
-      ? `<div class="pl-stat"><div class="lbl">Odds accuracy (Brier)</div><div class="val ${sm.brier <= 0.2 ? 'pos' : sm.brier > 0.25 ? 'neg' : ''}">${sm.brier.toFixed(2)}</div><div class="tr-hint">0 = perfect · 0.25 = always saying 50%</div></div>
-         <div class="pl-stat"><div class="lbl">Expected vs happened</div><div class="val">${sm.expected_yes} vs ${sm.actual_yes}</div><div class="tr-hint">of ${sm.odds_resolved} resolved</div></div>`
-      : `<div class="pl-stat"><div class="lbl">Stated odds</div><div class="val muted">${sm.odds_open || 0} open</div><div class="tr-hint">none resolved yet</div></div>`;
+      ? `<div class="pl-stat"><div class="lbl">Odds accuracy (Brier)</div><div class="val ${sm.brier <= 0.2 ? 'pos' : sm.brier > 0.25 ? 'neg' : ''}">${sm.brier.toFixed(2)}</div><div class="tr-hint">0 = perfect · 0.25 = always saying 50%</div><div class="tr-explain">How well the chances written in the evaluations (e.g. “45% it reaches ¥70k by December”) match what happened. Lower is better: under 0.20 is good, above 0.25 is worse than always guessing 50%.</div></div>
+         <div class="pl-stat"><div class="lbl">Expected vs happened</div><div class="val">${sm.expected_yes} vs ${sm.actual_yes}</div><div class="tr-hint">of ${sm.odds_resolved} resolved</div><div class="tr-explain">The stated chances added up give how many predictions should have come true (first number); the second is how many did. The closer the two, the better calibrated the odds.${sm.odds_resolved < 10 ? ' With this few resolved, the numbers still swing a lot.' : ''}</div></div>`
+      : `<div class="pl-stat"><div class="lbl">Stated odds</div><div class="val muted">${sm.odds_open || 0} open</div><div class="tr-hint">none resolved yet</div><div class="tr-explain">How well the chances written in the evaluations (e.g. “45% it reaches ¥70k by December”) match what happened. Lower is better: under 0.20 is good, above 0.25 is worse than always guessing 50%.</div></div>`;
     const mo = sm.model_odds;
     const modelTile = mo && mo.logged
       ? (mo.brier != null
-        ? `<div class="pl-stat"><div class="lbl">Limit-odds model (Brier)</div><div class="val ${mo.brier <= 0.2 ? 'pos' : mo.brier > 0.25 ? 'neg' : ''}">${mo.brier.toFixed(2)}</div><div class="tr-hint">${mo.expected_yes} expected vs ${mo.actual_yes} happened, of ${mo.resolved} resolved · ${mo.open} open</div></div>`
-        : `<div class="pl-stat"><div class="lbl">Limit-odds model</div><div class="val muted">${mo.open} open</div><div class="tr-hint">weekly forecasts for tier prices and your limits; first results after 30 days</div></div>`)
+        ? `<div class="pl-stat"><div class="lbl">Limit-odds model (Brier)</div><div class="val ${mo.brier <= 0.2 ? 'pos' : mo.brier > 0.25 ? 'neg' : ''}">${mo.brier.toFixed(2)}</div><div class="tr-hint">${mo.expected_yes} expected vs ${mo.actual_yes} happened, of ${mo.resolved} resolved · ${mo.open} open</div><div class="tr-explain">The same score for the site’s automatic odds model, which logs the chance of a listing reaching your limits and tier prices on each full check. Lower is better.${mo.resolved < 10 ? ' Only a few forecasts have reached their date so far, so read it as an early signal.' : ''}</div></div>`
+        : `<div class="pl-stat"><div class="lbl">Limit-odds model</div><div class="val muted">${mo.open} open</div><div class="tr-hint">weekly forecasts for tier prices and your limits; first results after 30 days</div><div class="tr-explain">The same score for the site’s automatic odds model, which logs the chance of a listing reaching your limits and tier prices on each full check. Lower is better.</div></div>`)
       : '';
     const headline = sm.calls_scored
       ? `${c.right || 0} right · ${c.wrong || 0} wrong${c.neutral ? ` · ${c.neutral} neutral` : ''}`

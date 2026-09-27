@@ -921,3 +921,6 @@ a.pl-stat.pl-link:hover { border-color: var(--accent); background: var(--hover);
   .sc-row { grid-template-columns: 34px minmax(0, 1fr); }
   .sc-res { grid-column: 2; flex-direction: row; align-items: center; justify-content: flex-start; }
 }
+
+/* track record: one-sentence explanation under each score tile */
+.tr-explain { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.45; color: var(--muted); }
