@@ -1061,6 +1061,8 @@
   function insightsHtml(card) {
     const list = insightsFor(card);
     const w = writtenInsight(card);
+    // a written analysis from the full check already covers the numbers: show it alone
+    if (w) return `<div class="insights"><div class="ins-head"><span class="lbl">What stands out</span><span class="muted">analysis from the full check</span></div>${w}</div>`;
     const quiet = quietChecks(card, new Set(list.map((x) => x.key)));
     if (!list.length && !w && !quiet.length) return '';
     const head = list.length ? `${list.length} finding${list.length === 1 ? '' : 's'} from the numbers` : 'nothing unusual in the numbers';
