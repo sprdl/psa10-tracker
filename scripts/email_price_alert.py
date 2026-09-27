@@ -78,9 +78,8 @@ def main():
     dry = "--dry-run" in args
     no_push = "--no-push" in args
     root = Path(__file__).resolve().parent.parent
-    _clear_stale_git_locks(root)
-
     if not dry:
+        _clear_stale_git_locks(root)
         pull = subprocess.run(["git", "pull", "--ff-only", "--quiet"], cwd=root, text=True, capture_output=True)
         if pull.returncode != 0:
             die("`git pull --ff-only` failed — sort out the local repo first:\n" + (pull.stderr or pull.stdout))
@@ -155,9 +154,10 @@ def main():
     import build_history
     build_history.build(root)
 
-    _clear_stale_git_locks(root)  # in case something else touched .git since the pull above
+    _clear_stale_git_locks(root)
     subprocess.run(["git", "add", "data/manifest.json", "data/history.json", str(dest.relative_to(root))],
                     cwd=root, check=True)
+    _clear_stale_git_locks(root)
     commit_msg = f"email alert: {new_card.get('card_name_ja')} ¥{price:,} (was ¥{old_low:,})"
     commit = subprocess.run(["git", "commit", "-m", commit_msg], cwd=root)
     if commit.returncode != 0:
@@ -168,6 +168,7 @@ def main():
         print("Committed locally. Skipping push (--no-push).")
         return
 
+    _clear_stale_git_locks(root)
     push = subprocess.run(["git", "push"], cwd=root)
     if push.returncode != 0:
         die("git push failed — check your git remote/auth, then run `git push` manually.")
