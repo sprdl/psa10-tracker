@@ -1,0 +1,11 @@
+{
+ "about": "Analyses written by the full price check for cards that stand out (scripts/outliers.py). Shown on the card page above the automatic findings. Edit with scripts/set_insight.py.",
+ "insights": {
+  "https://snkrdunk.com/apparels/138599": {
+   "written": "2026-09-27T18:59:47+09:00",
+   "headline": "Already corrected, now holding its floor",
+   "text": "While the My-tier index fell about 8% over the past week, the lowest ask barely moved (¥29,800 → ¥29,999) and sales actually firmed: the last 10 one-copy sales have a median of ¥29,780, about 10% above the 10 before them (¥27,000). The likely reason is that this card corrected earlier and harder than the rest of the tier: it is 59% below its May peak (Umbreon is about 37% below its peak), so it is already back in its pre-hype range, where buyers step in. The caveat is a thin order book (6 of 20 listings within 15% of the lowest) and only about 1.6 sales a day, so a couple of cheap listings could still pull it down. For you: it sits right on the Buy line (¥29,500), and a dip to your ¥26,000 limit is less likely while it holds up (the model says about 30% within 30 days). Watch whether sales stay around ¥29–30k if the market keeps falling.",
+   "signals": "7d price +0.7% (¥29,800→¥29,999) vs My-tier index -7.8% = +8.5 pts"
+  }
+ }
+}
