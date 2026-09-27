@@ -6,3 +6,4 @@ data/incoming/
 
 # Python bytecode
 __pycache__/
+.git-credentials
