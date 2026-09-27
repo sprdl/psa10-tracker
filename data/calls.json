@@ -1,5 +1,5 @@
 {
- "as_of": "2026-09-27T18:05:53+09:00",
+ "as_of": "2026-09-27T18:20:58+09:00",
  "window_days": 30,
  "threshold": 0.05,
  "confirm_readings": 2,
@@ -7,12 +7,12 @@
  "noise_threshold_cap": 0.1,
  "summary": {
   "calls": {
-   "right": 3,
+   "right": 5,
    "wrong": 1,
    "neutral": 0,
-   "pending": 13
+   "pending": 11
   },
-  "calls_scored": 4,
+  "calls_scored": 6,
   "odds_resolved": 1,
   "odds_open": 25,
   "brier": 0.303,
@@ -39,10 +39,10 @@
    "price": 115980,
    "window_end": "2026-10-27T08:58:59+09:00",
    "days_in": 0,
-   "low": 115000,
-   "low_pct": -0.8,
-   "now": 115000,
-   "now_pct": -0.8,
+   "low": 114980,
+   "low_pct": -0.9,
+   "now": 114980,
+   "now_pct": -0.9,
    "status": "pending",
    "why": "",
    "threshold": 0.05
@@ -81,8 +81,8 @@
    "low_pct": -5.3,
    "now": 54900,
    "now_pct": -5.3,
-   "status": "pending",
-   "why": "",
+   "status": "right",
+   "why": "dropped to ¥54,900 on 2026-09-27 (held under −5% for 2 checks)",
    "threshold": 0.05
   },
   {
@@ -119,8 +119,8 @@
    "low_pct": -8.4,
    "now": 108000,
    "now_pct": -8.4,
-   "status": "pending",
-   "why": "",
+   "status": "right",
+   "why": "dropped to ¥108,000 on 2026-09-27 (held under −5% for 2 checks)",
    "threshold": 0.05
   },
   {
@@ -560,7 +560,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "status": "open",
    "why": "91 days left",
-   "now": 115000,
+   "now": 114980,
    "gap_pct": -6.1
   },
   {
@@ -728,7 +728,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "status": "open",
    "why": "181 days left",
-   "now": 115000,
+   "now": 114980,
    "gap_pct": -17.4
   }
  ],
