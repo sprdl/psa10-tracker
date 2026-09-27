@@ -6,6 +6,11 @@ Usage:
     python3 scripts/quick_update.py data/incoming/quick-raw.json            # build, save, commit, push
     python3 scripts/quick_update.py data/incoming/quick-raw.json --no-push  # build, save, commit only
     python3 scripts/quick_update.py data/incoming/quick-raw.json --dry-run  # build + print, write nothing
+    python3 scripts/quick_update.py - <<'EOF' … EOF                        # compact lines on stdin (below)
+
+Input is either the JSON shape below or, since 2026-09-27, the compact lines that
+pricecheck/scripts/snkrdunk_quick.js returns (one card per line, see decode_compact),
+which are decoded into exactly the same JSON before anything else happens.
 
 A quick run reads ONE page per card (the SNKRDUNK product page) instead of the full
 routine (listings pages, altema, pokeca index). The raw file the price-check skill
@@ -35,6 +40,8 @@ full check, which knows their names.
 
 import copy
 import json
+import re
+from urllib.parse import unquote
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -55,6 +62,96 @@ def snkrdunk_id(url: str) -> str:
     return (url or "").rstrip("/").split("/")[-1]
 
 
+WHEN_UNITS = {"s": "秒", "m": "分", "h": "時間", "d": "日", "w": "週間", "M": "ヶ月", "K": "か月"}
+TILE_NOTE = {"-": "no listings (出品待ち)", "?": "no price on tile"}
+
+
+def _when(code):
+    """Inverse of enc() in snkrdunk_quick.js: 3h → 3時間前, 260421 → 2026/04/21, n → たった今."""
+    if code == "n":
+        return "たった今"
+    if code.startswith("~"):
+        return unquote(code[1:])
+    m = re.fullmatch(r"(\d{2})(\d{2})(\d{2})", code)
+    if m:
+        return f"20{m[1]}/{m[2]}/{m[3]}"
+    m = re.fullmatch(r"(\d+)([smhdwMK])", code)
+    if m:
+        return f"{m[1]}{WHEN_UNITS[m[2]]}前"
+    raise ValueError(f"unknown time code {code!r}")
+
+
+def _sales(tok, grade):
+    """P=… / P~4=… / P0 / P!n / P!a → the snkrdunk_base.js result for one grade."""
+    body = tok[1:]
+    if body == "!n":
+        return {"error": "sales-history grade pill not found"}
+    if body == "!a":
+        return {"pill_active": False, "recent_completed_sales": [], "error": "grade pill did not activate after 3 clicks"}
+    if body == "0":
+        return {"pill_active": True, "recent_completed_sales": [],
+                "sales_note": "no completed sales in period (この期間内に取引がありません)"}
+    m = re.fullmatch(r"(?:~(\d+))?=(.*)", body)
+    if not m:
+        raise ValueError(f"bad sales token {tok!r}")
+    rows = []
+    for item in filter(None, m[2].split(",")):
+        price, _, when = item.partition("@")
+        rows.append({"price": int(price), "when": _when(when)})
+    res = {"pill_active": True, "recent_completed_sales": rows}
+    if m[1]:
+        res["sales_note"] = f"{m[1]} row(s) discarded: grade/quantity did not match {grade}/1枚"
+    return res
+
+
+def _tile(code):
+    if code.isdigit():
+        return {"lowest_ask": int(code)}
+    if code in TILE_NOTE:
+        return {"lowest_ask": None, "note": TILE_NOTE[code]}
+    if code == "x":
+        return {"error": "tile not found"}
+    raise ValueError(f"bad tile code {code!r}")
+
+
+def decode_compact(text):
+    """Compact quick-check lines → {"mode": "quick", "cards": {id: {"base": …, "tiles": …}}}.
+
+    Line: <id> f<fav|?> p<tile> a<tile> P<sales> A<sales>   (or  <id> E<reason>)
+    Only lines that start with a SNKRDUNK id are read, so a header line is harmless."""
+    cards = {}
+    for line in text.splitlines():
+        parts = line.split()
+        if not parts or not parts[0].isdigit():
+            continue
+        sid, toks = parts[0], parts[1:]
+        if toks and toks[0].startswith("E"):
+            cards[sid] = {"base": {"error": unquote(toks[0][1:])}, "tiles": {}}
+            continue
+        by = {t[0]: t for t in toks}
+        fav = by.get("f", "f?")[1:]
+        base = {"favorite_count": int(fav) if fav.isdigit() else None, "sales": {}}
+        if not fav.isdigit():
+            base["favorite_error"] = "favorite count pattern not found"
+        for key, grade in (("P", "PSA10"), ("A", "A")):
+            if key in by:
+                base["sales"][grade] = _sales(by[key], grade)
+        if by.get("p") == "p!" or by.get("a") == "a!":
+            tiles = {"error": "grade tiles not found"}
+        else:
+            tiles = {g: _tile(by[k][1:]) for k, g in (("p", "PSA10"), ("a", "A")) if k in by}
+        cards[sid] = {"base": base, "tiles": tiles}
+    return {"mode": "quick", "cards": cards}
+
+
+def load_raw(path):
+    text = sys.stdin.read() if path == "-" else Path(path).read_text(encoding="utf-8")
+    if text.lstrip().startswith("{"):
+        return json.loads(text), None
+    decoded = decode_compact(text)
+    return decoded, text
+
+
 def main():
     args = sys.argv[1:]
     files = [a for a in args if not a.startswith("--")]
@@ -63,7 +160,7 @@ def main():
     dry = "--dry-run" in args
     root = Path(__file__).resolve().parent.parent
 
-    raw = json.loads(Path(files[0]).read_text(encoding="utf-8"))
+    raw, compact = load_raw(files[0])
     raw_cards = raw.get("cards") or {}
     if not raw_cards:
         die("The raw file has no cards.")
@@ -178,6 +275,8 @@ def main():
 
     incoming = root / "data" / "incoming"
     incoming.mkdir(parents=True, exist_ok=True)
+    if compact is not None:  # keep what came in, for debugging (gitignored, overwritten each run)
+        (incoming / "quick-raw.txt").write_text(compact, encoding="utf-8")
     built = incoming / "latest-run.json"
     built.write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print()

@@ -1,0 +1,96 @@
+{
+ "_comment": "Tracked cards (source: user's SNKRDUNK favorites, last updated 2026-09-25 — removed Detective Pikachu Promo [SV-P 098] and added Pikachu V CSR [S8b 222/184] per user request). Listing pages: <url>/used?conditionIds=22 (PSA10) and =18 (A). altema_mode: 'daily' = check every run; 'weekly_until_graded' = check on Mondays or whenever SNKRDUNK shows any PSA10 listing/sale for the card, then switch to 'daily' once a population appears.",
+ "cards": [
+  {
+   "snkrdunk_id": "138599",
+   "card_name_ja": "ピカチュウVMAX CSR[s8b 223/184](ハイクラスパック「VMAXクライマックス」)",
+   "url": "https://snkrdunk.com/apparels/138599",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230913100335-0.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/12527",
+   "altema_mode": "daily"
+  },
+  {
+   "snkrdunk_id": "96712",
+   "card_name_ja": "ピカチュウV CSR[S8b 222/184](ハイクラスパック「VMAXクライマックス」)",
+   "url": "https://snkrdunk.com/apparels/96712",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/4b947d82-02ca-4a8e-9aec-7eea59159954.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/12526",
+   "altema_mode": "daily",
+   "note": "distinct from ピカチュウVMAX CSR (138599) — this is the V, not VMAX, same set/pack"
+  },
+  {
+   "snkrdunk_id": "408333",
+   "card_name_ja": "ピカチュウex SAR [SV8 132/106](拡張パック「超電ブレイカー」)",
+   "url": "https://snkrdunk.com/apparels/408333",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/8c2d34aa-dab1-4c89-b51c-5dd44b8eaca6.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/29010",
+   "altema_mode": "daily"
+  },
+  {
+   "snkrdunk_id": "455596",
+   "card_name_ja": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
+   "url": "https://snkrdunk.com/apparels/455596",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/79302385-1b7d-4fb5-bd23-b78bd029a9df.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/30180",
+   "altema_mode": "daily"
+  },
+  {
+   "snkrdunk_id": "387059",
+   "card_name_ja": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
+   "url": "https://snkrdunk.com/apparels/387059",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/85cc3d97-a5a1-4b35-a65c-6e6a4b59e8de.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/2681",
+   "altema_mode": "daily"
+  },
+  {
+   "snkrdunk_id": "896992",
+   "card_name_ja": "ゲンガーex SAR [M6a 131/103](拡張パック「30th CELEBRATION」)",
+   "url": "https://snkrdunk.com/apparels/896992",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/c4e43e7c-599c-4a12-bda1-c14fd82e7a1f.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/39464",
+   "altema_mode": "weekly_until_graded"
+  },
+  {
+   "snkrdunk_id": "896991",
+   "card_name_ja": "ミュウex SAR [M6a 129/103](拡張パック「30th CELEBRATION」)",
+   "url": "https://snkrdunk.com/apparels/896991",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/a471001c-e055-4f99-8791-f76d9ecaaf43.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/39462",
+   "altema_mode": "weekly_until_graded"
+  },
+  {
+   "snkrdunk_id": "891195",
+   "card_name_ja": "ジラーチex SAR [M6a 132/103](拡張パック「30th CELEBRATION」)",
+   "url": "https://snkrdunk.com/apparels/891195",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/pkmn-tcg-2026-0907-pk012-of.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/39465",
+   "altema_mode": "weekly_until_graded"
+  },
+  {
+   "snkrdunk_id": "896990",
+   "card_name_ja": "ミュウツーex SAR [M6a 128/103](拡張パック「30th CELEBRATION」)",
+   "url": "https://snkrdunk.com/apparels/896990",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/7be3f490-752f-4727-805f-2dccfc3a8bf6.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/39461",
+   "altema_mode": "weekly_until_graded"
+  },
+  {
+   "snkrdunk_id": "882279",
+   "card_name_ja": "ピカチュウex SAR [M6a 126/103](拡張パック「30th CELEBRATION」)",
+   "url": "https://snkrdunk.com/apparels/882279",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/a8ae3f3e-aa84-46f6-89c5-b310371979d5.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/39459",
+   "altema_mode": "weekly_until_graded",
+   "note": "昼/day version"
+  },
+  {
+   "snkrdunk_id": "882280",
+   "card_name_ja": "ピカチュウex SAR [M6a 127/103](拡張パック「30th CELEBRATION」)",
+   "url": "https://snkrdunk.com/apparels/882280",
+   "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/9537cce2-2788-4bd5-ac0f-34aea4318ee6.webp?size=l",
+   "altema_url": "https://altema.jp/pokemoncard/card/39460",
+   "altema_mode": "weekly_until_graded",
+   "note": "夜/night version"
+  }
+ ]
+}

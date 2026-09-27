@@ -9,6 +9,7 @@ when the last FULL check ran, and whether one has run yet today (JST).
        "suggested_mode": "quick"}
 
 suggested_mode is "full" if no full check has run today (JST), else "quick".
+A second line, quick_ids = [...], lists the SNKRDUNK ids a quick check reads.
 Manifest entries without a check_mode are treated as full checks.
 """
 import json
@@ -30,3 +31,8 @@ print(json.dumps({
     "full_today": full_today,
     "suggested_mode": "quick" if full_today else "full",
 }, ensure_ascii=False))
+# The cards a quick check reads (every card in the latest snapshot), as a ready-made JS array.
+if snaps:
+    latest = json.loads((root / "data" / "snapshots" / snaps[-1]["file"]).read_text(encoding="utf-8"))
+    ids = [c.get("url", "").rstrip("/").split("/")[-1] for c in latest.get("cards", []) if c.get("url")]
+    print("quick_ids = " + json.dumps(ids))
