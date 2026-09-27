@@ -154,6 +154,11 @@
       "file": "20260928-0818.json",
       "collected_at_jst": "2026-09-28T08:18:03+09:00",
       "check_mode": "email_alert"
+    },
+    {
+      "file": "20260928-0844.json",
+      "collected_at_jst": "2026-09-28T08:44:32+09:00",
+      "check_mode": "full"
     }
   ]
 }
