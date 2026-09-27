@@ -732,3 +732,32 @@ body.is-updating::before {
 }
 @keyframes psa10-updating { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 @media (prefers-reduced-motion: reduce) { body.is-updating::before { animation: none; background: var(--accent); opacity: 0.5; } }
+
+/* ---------- collection ⇄ card page transition (see onHashChange in app.js) ---------- */
+::view-transition-group(card-hero) { animation-duration: 0.42s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+::view-transition-old(card-hero), ::view-transition-new(card-hero) { animation-duration: 0.42s; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.22s; }
+@keyframes cd-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+body.cd-entering .page-head,
+body.cd-entering #card-page .cd-info > *,
+body.cd-entering #card-page .cd-tabs,
+body.cd-entering #card-page .cd-panel { animation: cd-rise 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+body.cd-entering .page-head { animation-delay: 0.16s; }
+body.cd-entering #card-page .cd-info > :nth-child(1) { animation-delay: 0.22s; }
+body.cd-entering #card-page .cd-info > :nth-child(2) { animation-delay: 0.26s; }
+body.cd-entering #card-page .cd-info > :nth-child(3) { animation-delay: 0.30s; }
+body.cd-entering #card-page .cd-info > :nth-child(4) { animation-delay: 0.34s; }
+body.cd-entering #card-page .cd-info > :nth-child(5) { animation-delay: 0.38s; }
+body.cd-entering #card-page .cd-info > :nth-child(n+6) { animation-delay: 0.42s; }
+body.cd-entering #card-page .cd-tabs { animation-delay: 0.44s; }
+body.cd-entering #card-page .cd-panel { animation-delay: 0.50s; }
+@media (prefers-reduced-motion: reduce) {
+  body.cd-entering .page-head, body.cd-entering #card-page * { animation: none !important; }
+}
+/* keep the navigation chrome still while the page underneath changes */
+.sidebar { view-transition-name: app-sidebar; }
+.mobile-bar { view-transition-name: app-mobilebar; }
+.tabbar { view-transition-name: app-tabbar; }
+::view-transition-old(app-sidebar), ::view-transition-old(app-mobilebar), ::view-transition-old(app-tabbar) { display: none; }
+::view-transition-new(app-sidebar), ::view-transition-new(app-mobilebar), ::view-transition-new(app-tabbar) { animation: none; }
+::view-transition-group(app-sidebar), ::view-transition-group(app-mobilebar), ::view-transition-group(app-tabbar) { animation: none; }

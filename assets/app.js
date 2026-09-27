@@ -205,7 +205,7 @@
   }
 
   async function init() {
-    window.addEventListener('hashchange', () => { applyRoute(); window.scrollTo(0, 0); });
+    window.addEventListener('hashchange', onHashChange);
     const freshP = loadFreshBundle();
 
     let shown = null;
@@ -1021,6 +1021,54 @@
     document.getElementById('page-title').textContent = title;
     document.getElementById('page-sub').textContent = sub;
     document.title = view === 'overview' ? 'PSA10 Tracker' : `${title} · PSA10 Tracker`;
+
+    lastRoute = { view, arg };
+  }
+
+  // ---------- page transition: collection ⇄ card page ----------
+  // Uses the browser's View Transitions API: the tapped slab gets the name "card-hero",
+  // the page switches, the card page's big slab gets the same name, and the browser
+  // animates one into the other. The rest of the card page then fades in (CSS:
+  // body.cd-entering). Going back flies the slab into its tile again. Browsers without
+  // the API, and Reduce Motion, switch instantly as before. Only collection ⇄ card
+  // uses it; every other navigation is unchanged.
+  const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let lastRoute = null;        // route shown before the current navigation (set by applyRoute)
+  let collectionScrollY = 0;   // where the collection was scrolled when a card was opened
+  let enterTimer = null;
+  function tileSlabFor(id) {
+    const tile = [...document.querySelectorAll('#collection a.tile')].find((a) => a.getAttribute('href') === '#/card/' + id);
+    return tile ? tile.querySelector('.slab') : null;
+  }
+  function cardPageSlab() { return document.querySelector('#card-page .cd-hero .slab'); }
+  function heroTransitionFor(from, to) {
+    if (!from || !document.startViewTransition || REDUCED_MOTION.matches || !state.currentData) return null;
+    if (from.view === 'collection' && to.view === 'card' && to.arg) return { dir: 'in', id: to.arg };
+    if (from.view === 'card' && from.arg && to.view === 'collection') return { dir: 'out', id: from.arg };
+    return null;
+  }
+  function onHashChange() {
+    const from = lastRoute, to = parseRoute();
+    if (from && from.view === 'collection') collectionScrollY = window.scrollY;
+    const scrollFor = () => window.scrollTo(0, from && from.view === 'card' && to.view === 'collection' ? collectionScrollY : 0);
+    const t = heroTransitionFor(from, to);
+    const oldEl = t && (t.dir === 'in' ? tileSlabFor(t.id) : cardPageSlab());
+    if (!t || !oldEl) { applyRoute(); scrollFor(); return; }
+    oldEl.style.viewTransitionName = 'card-hero';
+    let newEl = null;
+    const vt = document.startViewTransition(() => {
+      oldEl.style.viewTransitionName = '';
+      applyRoute();
+      scrollFor();
+      newEl = t.dir === 'in' ? cardPageSlab() : tileSlabFor(t.id);
+      if (newEl) newEl.style.viewTransitionName = 'card-hero';
+      if (t.dir === 'in') {
+        clearTimeout(enterTimer);
+        document.body.classList.add('cd-entering');
+        enterTimer = setTimeout(() => document.body.classList.remove('cd-entering'), 1100);
+      }
+    });
+    vt.finished.finally(() => { if (newEl) newEl.style.viewTransitionName = ''; });
   }
 
   function viewSubtitle(view) {
