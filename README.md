@@ -4,6 +4,9 @@ A small personal, non-commercial web app for tracking JPY prices of PSA10 and ra
 A-rank Japanese Pokémon TCG cards from SNKRDUNK. Static site, deployed to GitHub
 Pages via GitHub Actions on every push to `main`.
 
+**How the code works:** see [docs/HOW-IT-WORKS.md](docs/HOW-IT-WORKS.md), a guide to every part of
+the site, the data files, the scripts and the GitHub Actions, with recipes for common changes.
+
 ## One-time setup
 
 1. Push this repo to GitHub (already done if you're reading this from the repo).
@@ -150,6 +153,7 @@ scripts/build_history.py        rebuilds data/history.json, the compact index th
 data/tracked_cards.json         cards tracked in addition to the price-check skill's own list
 data/history.json               per-card price series across all snapshots (auto-rebuilt on every publish)
 docs/schema.md                  the full snapshot JSON schema, raw fields + optional analysis overlay
+docs/HOW-IT-WORKS.md            guide to how the code works
 .github/workflows/deploy.yml    GitHub Actions: deploy to Pages on push
 ```
 
