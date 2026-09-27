@@ -1009,12 +1009,20 @@
       lines: [`The lowest ask ${fmtYen(ask)} is ${fmtYen(ask - lim)} above your ${fmtYen(lim)} limit. A single cheaper listing would trigger a Buy signal.`] });
     return out.sort((a, b) => b.score - a.score);
   }
+  // Written analyses: paragraphs separated by blank lines; a paragraph that starts with a short
+  // "Label:" (What's happening / Why / For you / Watch) gets the label in bold.
+  function insightParas(text) {
+    return String(text || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean).map((p) => {
+      const m = p.match(/^([^:：\n]{2,24})[:：]\s+([\s\S]+)$/);
+      return m ? `<p><b class="ins-lab">${escapeHtml(m[1])}</b> ${escapeHtml(m[2])}</p>` : `<p>${escapeHtml(p)}</p>`;
+    }).join('');
+  }
   function writtenInsight(card) {
     const e = state.insights && state.insights.insights && state.insights.insights[card.url];
     if (!e || !e.text) return '';
     const age = Math.floor(daysBetween(e.written, refTime()));
     return `<div class="ins-written"><div class="ins-wh"><span class="lbl">Analysis</span><span class="muted">written ${escapeHtml(fmtDateShort(e.written))} by the full check${age > 7 ? ` · ${age} days old, may be outdated` : ''}</span></div>
-      ${e.headline ? `<b class="ins-hl">${escapeHtml(e.headline)}</b>` : ''}<p>${escapeHtml(e.text)}</p>
+      ${e.headline ? `<b class="ins-hl">${escapeHtml(e.headline)}</b>` : ''}${insightParas(e.text)}
       ${(e.sources || []).filter((x) => /^https?:\/\//.test(x.url || '')).length ? `<div class="ins-src"><span class="muted">Sources:</span> ${e.sources.filter((x) => /^https?:\/\//.test(x.url || '')).map((x) => `<a href="${escapeAttr(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.title || x.url)} ↗</a>`).join(' · ')}</div>` : ''}</div>`;
   }
   function insightsHtml(card) {

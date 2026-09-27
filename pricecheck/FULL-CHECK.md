@@ -164,9 +164,12 @@ price-prediction blogs are not evidence: skip them, or clearly label them as rum
 find nothing relevant, say so in one clause ("no news of a reprint or new card") rather than
 guessing. Never visit SNKRDUNK or pokeca-chart pages beyond the price check itself for this.
 
-Write two to five plain sentences: what is happening (with the key numbers), the likely reason
-(say "likely" when it is a hypothesis, and which part comes from the news), what it means for buying
-(tiers, the user's limit, the correction/event rules), and what to watch next. Save each with one
+Write it as three or four short paragraphs separated by blank lines, each starting with its label
+(the site shows the label as a small heading), one to three sentences each:
+- `What's happening:` the move, with the key numbers (price, market, sales, trading, depth).
+- `Why:` the likely reason (say "likely" when it is a hypothesis, and which part comes from the news).
+- `For you:` what it means for buying (tiers, the user's limit, the correction/event rules).
+- `Watch:` what to look for in the next checks. Save each with one
 `device_bash` call (same credential rules as step 7):
 ```
 cd "$R" && python3 scripts/set_insight.py <snkrdunk_id> --headline "<one-line takeaway>" --signals "<the findings line from outliers.py>" --source "<title>|<url>" <<'EOF'
