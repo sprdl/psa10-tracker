@@ -8,10 +8,20 @@
    "signals": "7d price +0.7% (¥29,800→¥29,999) vs My-tier index -7.8% = +8.5 pts"
   },
   "https://snkrdunk.com/apparels/387059": {
-   "written": "2026-09-27T18:59:50+09:00",
-   "headline": "Rising against the market, but the buying burst is fading",
-   "text": "The lowest ask rose from ¥41,000 to ¥43,000 over the week while the My-tier index fell about 8%, and sales rose with it (¥40,000–41,000 on 9/19–22, ¥43,000–43,500 since 9/25). Trading has cooled sharply, though: about 2.4 PSA10 sales a day now against roughly 7.5 a week ago. A likely driver is the attention on Gengar around the 30th-anniversary set released on 9/16, which includes a new Gengar ex SAR; that kind of spillover tends to fade. At ¥43,000 it is in the Watch zone (Buy ≤¥38,000), 23% above your ¥35,000 limit and 22% below its August peak (¥55,000). With buying slowing, the higher price needs new buyers to hold, so a slide back toward ¥40–41k would not be surprising. It also remains outside your collecting criteria (SM era, not full art).",
-   "signals": "7d price +4.9% (¥41,000→¥43,000) vs My-tier index -7.8% = +12.7 pts | PSA10 sales/day 2.4 vs 7.5 a week ago (-68%)"
+   "written": "2026-09-27T19:04:07+09:00",
+   "headline": "Rising on Gengar attention from the 30th set, but the burst is fading",
+   "text": "The lowest ask rose from ¥41,000 to ¥43,000 over the week while the My-tier index fell about 8%, and sales rose with it (¥40,000–41,000 on 9/19–22, ¥43,000–43,500 since 9/25). The likely driver is attention on Gengar: the 30th CELEBRATION set released on 9/16 has three Gengar cards, a Gengar ex RR, a Gengar ex SAR and a special reprint of the classic Gengar (per torecolle, 9/18), and collectors of a character often look at its older cards too. That spillover is already fading: about 2.4 PSA10 sales a day now against roughly 7.5 a week ago. At ¥43,000 it is in the Watch zone (Buy ≤¥38,000), 23% above your ¥35,000 limit and 22% below its August peak (¥55,000). With buying slowing, the higher price needs new buyers to hold, so a slide back toward ¥40–41k would not be surprising. It also remains outside your collecting criteria (SM era, not full art); the new Gengar ex SAR is the natural replacement once its PSA10 market forms.",
+   "signals": "7d price +4.9% (¥41,000→¥43,000) vs My-tier index -7.8% = +12.7 pts | PSA10 sales/day 2.4 vs 7.5 a week ago (-68%)",
+   "sources": [
+    {
+     "title": "torecolle: 30th CELEBRATION Gengar (9/18)",
+     "url": "https://torecolle.jp/?p=52891"
+    },
+    {
+     "title": "altema: 30th Gengar ex SAR",
+     "url": "https://altema.jp/pokemoncard/card/39464"
+    }
+   ]
   },
   "https://snkrdunk.com/apparels/585221": {
    "written": "2026-09-27T18:59:52+09:00",
