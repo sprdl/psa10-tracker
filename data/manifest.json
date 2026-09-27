@@ -134,6 +134,11 @@
       "file": "20260927-2018.json",
       "collected_at_jst": "2026-09-27T20:18:27+09:00",
       "check_mode": "email_alert"
+    },
+    {
+      "file": "20260927-2311.json",
+      "collected_at_jst": "2026-09-27T23:11:50+09:00",
+      "check_mode": "email_alert"
     }
   ]
 }
