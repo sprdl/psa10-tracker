@@ -3,7 +3,8 @@
 Save a written analysis for one card to data/insights.json (shown at the top of the card's
 "What stands out" panel on the site), then commit and push.
 
-    python3 scripts/set_insight.py <snkrdunk_id> --headline "One-line takeaway" [--signals "…"] [--no-push] <<'EOF'
+    python3 scripts/set_insight.py <snkrdunk_id> --headline "One-line takeaway" [--signals "…"]
+                                   [--source "Title|https://…" ...] [--no-push] <<'EOF'
     Two to five sentences: what is happening, the likely reason, what it means for buying
     (tiers / your limit), and what to watch next.
     EOF
@@ -59,8 +60,15 @@ def main():
         text = sys.stdin.read().strip()
         if len(text) < 40:
             die("write the analysis on stdin (a heredoc), at least a couple of sentences")
+        sources = []
+        for i, x in enumerate(a):
+            if x == "--source" and i + 1 < len(a):
+                title, _, link = a[i + 1].rpartition("|")
+                if not link.startswith("http"):
+                    die(f"--source needs 'Title|https://…', got {a[i + 1]!r}")
+                sources.append({"title": title.strip() or link, "url": link.strip()})
         items[url] = {"written": now.isoformat(), "headline": arg("--headline") or "", "text": text,
-                      "signals": arg("--signals") or ""}
+                      "signals": arg("--signals") or "", "sources": sources}
         msg = f"insight: {sid} {arg('--headline') or ''}".strip()
     PATH.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"saved {PATH.relative_to(ROOT)} ({len(items)} card(s) with an analysis)")

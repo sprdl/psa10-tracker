@@ -1014,7 +1014,8 @@
     if (!e || !e.text) return '';
     const age = Math.floor(daysBetween(e.written, refTime()));
     return `<div class="ins-written"><div class="ins-wh"><span class="lbl">Analysis</span><span class="muted">written ${escapeHtml(fmtDateShort(e.written))} by the full check${age > 7 ? ` · ${age} days old, may be outdated` : ''}</span></div>
-      ${e.headline ? `<b class="ins-hl">${escapeHtml(e.headline)}</b>` : ''}<p>${escapeHtml(e.text)}</p></div>`;
+      ${e.headline ? `<b class="ins-hl">${escapeHtml(e.headline)}</b>` : ''}<p>${escapeHtml(e.text)}</p>
+      ${(e.sources || []).filter((x) => /^https?:\/\//.test(x.url || '')).length ? `<div class="ins-src"><span class="muted">Sources:</span> ${e.sources.filter((x) => /^https?:\/\//.test(x.url || '')).map((x) => `<a href="${escapeAttr(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.title || x.url)} ↗</a>`).join(' · ')}</div>` : ''}</div>`;
   }
   function insightsHtml(card) {
     const list = insightsFor(card);

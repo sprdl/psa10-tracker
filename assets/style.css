@@ -941,3 +941,4 @@ a.pl-stat.pl-link:hover { border-color: var(--accent); background: var(--hover);
 .ins-hl { font-size: 14px; }
 .ins-written p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--soft); white-space: pre-line; }
 .ins-chip { font: 14px var(--display); letter-spacing: 0.06em; padding: 2px 6px 1px; border-radius: 4px; color: var(--accent); border: 1px solid var(--accent); margin-left: 4px; }
+.ins-src { font-size: 12px; line-height: 1.6; }
