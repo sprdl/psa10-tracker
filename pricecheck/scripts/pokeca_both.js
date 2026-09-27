@@ -4,7 +4,11 @@
 //   IDX psa10 {json}      IDX raw {json}      (pokeca_index.js result without last14_daily)
 await (async () => {
   const read = async (doc) => {
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const sleep = window.__wsleep || (window.__wsleep = (() => { // timers from a Web Worker: a hidden tab throttles page timers to 1/s, then 1/min
+    const P = {}; let n = 0, w = null;
+    try { w = new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data[0]),e.data[1])'], { type: 'text/javascript' }))); w.onmessage = (e) => { const r = P[e.data]; delete P[e.data]; if (r) r(); }; } catch (e) { w = null; }
+    return (ms) => new Promise((r) => { if (w) { P[++n] = r; w.postMessage([n, ms]); } setTimeout(r, ms); }); // page timer too, in case the worker is blocked
+  })());
   const findData = () => {
     for (const c of doc.querySelectorAll('canvas')) {
       let el = c;
@@ -62,7 +66,7 @@ await (async () => {
   f.style.cssText = 'position:fixed;left:-3000px;top:0;width:1200px;height:2400px;border:0';
   f.src = '/chart-index/';
   document.body.appendChild(f);
-  for (let i = 0; i < 40 && !(f.contentDocument && f.contentDocument.location.pathname === '/chart-index/' && f.contentDocument.querySelector('canvas')); i++) await new Promise(r => setTimeout(r, 300));
+  for (let i = 0; i < 40 && !(f.contentDocument && f.contentDocument.location.pathname === '/chart-index/' && f.contentDocument.querySelector('canvas')); i++) await window.__wsleep(300);
   const raw = await read(f.contentDocument);
   f.remove();
   return 'IDX psa10 ' + JSON.stringify(psa10) + '\nIDX raw ' + JSON.stringify(raw);

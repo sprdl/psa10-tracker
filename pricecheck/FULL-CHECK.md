@@ -28,6 +28,14 @@ hand-edit the lists.
 
 Get a tab id (`tabs_context_mcp` with createIfEmpty, or a standalone `navigate`).
 
+**Browser:** use the built-in browser (`mcp__remote-devices__Claude_Browser__*`) when it's available,
+Claude in Chrome otherwise. A Chrome tab Claude works in is usually a background (hidden) tab, and
+Chrome throttles a hidden page's timers to once a second and, after 5 minutes, to once a minute. On
+2026-09-28 that stalled a full check for 30+ minutes. The scripts now wait with a Web Worker timer
+(`window.__wsleep`), which isn't throttled, so they also run at full speed in a hidden tab; the
+polling call uses it too and adds `(tab hidden)` to `running i/N`. If two polls in a row show no
+progress, stop and report it rather than polling on.
+
 **1b. Add requested cards** (only if the mode check listed open requests). For each request:
 - `snkrdunk_id` is null: run `python3 scripts/card_requests.py reject <number> "no SNKRDUNK product URL found — open the card on snkrdunk.com and paste its address"`.
 - Otherwise, `navigate` the tab to its URL, then run `pricecheck/scripts/snkrdunk_base.js` and `pricecheck/scripts/grade_tiles.js` there (`cat` them via `device_bash`).
@@ -46,7 +54,7 @@ card with listings, 3 s without). Collect the lines by calling `javascript_tool`
 returns lines instead of `running i/N` (each call waits up to ~37 s):
 
 ```js
-await (async()=>{for(let i=0;i<75&&!window.__pj.done;i++)await new Promise(r=>setTimeout(r,500));const q=window.__pj;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}`})()
+await (async()=>{for(let i=0;i<75&&!window.__pj.done;i++)await (window.__wsleep||(m=>new Promise(r=>setTimeout(r,m))))(500);const q=window.__pj;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}${document.hidden?' (tab hidden)':''}`})()
 ```
 
 Keep the lines exactly as returned (one per card; the script's header comment documents the codes).

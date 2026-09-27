@@ -8,7 +8,7 @@
 //     the listings pages ?conditionIds=22 (PSA10) and =18 (A) with 安い順 + 販売中のみ, top 20
 //     (same rules as snkrdunk_listings.js).
 // It returns at once and keeps one compact line per card in window.__pj; poll with
-//   await (async()=>{for(let i=0;i<75&&!window.__pj.done;i++)await new Promise(r=>setTimeout(r,500));const q=window.__pj;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}`})()
+//   await (async()=>{for(let i=0;i<75&&!window.__pj.done;i++)await (window.__wsleep||(m=>new Promise(r=>setTimeout(r,m))))(500);const q=window.__pj;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}${document.hidden?' (tab hidden)':''}`})()
 // Line: <id> f.. p.. a.. P.. A.. [L..] [R..] [I..]   (decoded by scripts/full_update.py)
 //   f/p/a/P/A: exactly as in snkrdunk_quick.js (favorites, PSA10 tile, A tile, PSA10 sales, A sales)
 //   L / R (PSA10 / A listings): L=<top-20 prices ascending>  with optional flags before '=':
@@ -20,7 +20,11 @@
   const PLAN = [/* ["455596","full",0], ["896992","tile",0], … */];
   if (window.__pj && !window.__pj.done) return `already running ${window.__pj.i}/${window.__pj.n}`;
   const q = window.__pj = { n: PLAN.length, i: 0, lines: [], done: false, started: new Date().toISOString() };
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const sleep = window.__wsleep || (window.__wsleep = (() => { // timers from a Web Worker: a hidden tab throttles page timers to 1/s, then 1/min
+    const P = {}; let n = 0, w = null;
+    try { w = new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data[0]),e.data[1])'], { type: 'text/javascript' }))); w.onmessage = (e) => { const r = P[e.data]; delete P[e.data]; if (r) r(); }; } catch (e) { w = null; }
+    return (ms) => new Promise((r) => { if (w) { P[++n] = r; w.postMessage([n, ms]); } setTimeout(r, ms); }); // page timer too, in case the worker is blocked
+  })());
   const U = { '秒': 's', '分': 'm', '時間': 'h', '日': 'd', '週間': 'w', 'ヶ月': 'M', 'か月': 'K' };
   const enc = (w) => {
     w = String(w || '').trim(); let m;

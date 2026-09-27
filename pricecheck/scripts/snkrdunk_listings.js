@@ -2,7 +2,11 @@
 // Applies 安い順 (Vue-safe native setter) + 販売中のみ, verifies no SOLD tiles and ascending order,
 // and returns the top-20 cheapest prices plus the derived 15% stats.
 await (async () => {
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const sleep = window.__wsleep || (window.__wsleep = (() => { // timers from a Web Worker: a hidden tab throttles page timers to 1/s, then 1/min
+    const P = {}; let n = 0, w = null;
+    try { w = new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data[0]),e.data[1])'], { type: 'text/javascript' }))); w.onmessage = (e) => { const r = P[e.data]; delete P[e.data]; if (r) r(); }; } catch (e) { w = null; }
+    return (ms) => new Promise((r) => { if (w) { P[++n] = r; w.postMessage([n, ms]); } setTimeout(r, ms); }); // page timer too, in case the worker is blocked
+  })());
   for (let i = 0; i < 25 && !(document.querySelector('select') && document.querySelector('input[type=checkbox]')); i++) await sleep(400);
   const sel = document.querySelector('select'), cb = document.querySelector('input[type=checkbox]');
   if (!sel || !cb) return { error: 'listings page controls (sort select / 販売中のみ) not found' };

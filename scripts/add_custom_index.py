@@ -52,7 +52,11 @@ JST = timezone(timedelta(hours=9))
 
 JS = r"""await (async () => {
   const CODES = %s;
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const sleep = window.__wsleep || (window.__wsleep = (() => { // timers from a Web Worker: a hidden tab throttles page timers to 1/s, then 1/min
+    const P = {}; let n = 0, w = null;
+    try { w = new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data[0]),e.data[1])'], { type: 'text/javascript' }))); w.onmessage = (e) => { const r = P[e.data]; delete P[e.data]; if (r) r(); }; } catch (e) { w = null; }
+    return (ms) => new Promise((r) => { if (w) { P[++n] = r; w.postMessage([n, ms]); } setTimeout(r, ms); }); // page timer too, in case the worker is blocked
+  })());
   for (let i = 0; i < 30 && !/PSA10価格/.test(document.querySelector('main')?.innerText || ''); i++) await sleep(300);
   const seen = {}, re = /\[([^\]]+)\][^\n]*\n\n[^\n]*\n\nPSA10価格\n\n([^\n]+)/g;
   // the list renders progressively: wait for the page to stop growing, and keep scrolling to the live height
@@ -74,7 +78,11 @@ JS = r"""await (async () => {
 
 BACKFILL_JS = r"""await (async () => {
   const META = %s, END = %s, JOIN_DAYS = 90, MIN_CARDS = 5;
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const sleep = window.__wsleep || (window.__wsleep = (() => { // timers from a Web Worker: a hidden tab throttles page timers to 1/s, then 1/min
+    const P = {}; let n = 0, w = null;
+    try { w = new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data[0]),e.data[1])'], { type: 'text/javascript' }))); w.onmessage = (e) => { const r = P[e.data]; delete P[e.data]; if (r) r(); }; } catch (e) { w = null; }
+    return (ms) => new Promise((r) => { if (w) { P[++n] = r; w.postMessage([n, ms]); } setTimeout(r, ms); }); // page timer too, in case the worker is blocked
+  })());
   const DAY = 86400000, T = s => Date.parse(String(s).slice(0, 10).replace(/\//g, '-') + 'T00:00:00Z'), D = t => new Date(t).toISOString().slice(0, 10);
   const findIdx = () => {
     for (const c of document.querySelectorAll('canvas')) {

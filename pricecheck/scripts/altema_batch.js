@@ -2,13 +2,17 @@
 // https://altema.jp/pokemoncard/ page with ALTEMA filled in from `python3 pricecheck/plan.py`
 // ("ALTEMA = [...]" line). Opens each card page in a hidden same-origin iframe, one after another,
 // and reads it like altema_population.js. Returns at once; poll window.__pj like snkrdunk_full.js:
-//   await (async()=>{for(let i=0;i<75&&!window.__pj.done;i++)await new Promise(r=>setTimeout(r,500));const q=window.__pj;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}`})()
+//   await (async()=>{for(let i=0;i<75&&!window.__pj.done;i++)await (window.__wsleep||(m=>new Promise(r=>setTimeout(r,m))))(500);const q=window.__pj;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}${document.hidden?' (tab hidden)':''}`})()
 // Line: ALT <snkrdunk id> n<population|-> r<gem rate %|-> c<uri 型番> [!<uri error>]
 (() => {
   const ALTEMA = [/* ["224087","https://altema.jp/pokemoncard/card/26372","due"], … */];
   if (window.__pj && !window.__pj.done) return `already running ${window.__pj.i}/${window.__pj.n}`;
   const q = window.__pj = { n: ALTEMA.length, i: 0, lines: [], done: false };
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const sleep = window.__wsleep || (window.__wsleep = (() => { // timers from a Web Worker: a hidden tab throttles page timers to 1/s, then 1/min
+    const P = {}; let n = 0, w = null;
+    try { w = new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data[0]),e.data[1])'], { type: 'text/javascript' }))); w.onmessage = (e) => { const r = P[e.data]; delete P[e.data]; if (r) r(); }; } catch (e) { w = null; }
+    return (ms) => new Promise((r) => { if (w) { P[++n] = r; w.postMessage([n, ms]); } setTimeout(r, ms); }); // page timer too, in case the worker is blocked
+  })());
   (async () => {
     for (const [id, url] of ALTEMA) {
       const path = new URL(url).pathname;

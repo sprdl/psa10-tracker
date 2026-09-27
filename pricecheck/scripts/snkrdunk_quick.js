@@ -3,7 +3,7 @@
 // another (the same pages a person would open, in the user's own browser; no fetch/XHR), reads
 // favorites, the grade tiles and 売買履歴 exactly like snkrdunk_base.js + the grade-tile
 // snippet did, and keeps one compact line per card in window.__pq. It returns at once; poll with
-//   await (async()=>{for(let i=0;i<75&&!window.__pq.done;i++)await new Promise(r=>setTimeout(r,500));const q=window.__pq;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}`})()
+//   await (async()=>{for(let i=0;i<75&&!window.__pq.done;i++)await (window.__wsleep||(m=>new Promise(r=>setTimeout(r,m))))(500);const q=window.__pq;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}${document.hidden?' (tab hidden)':''}`})()
 // Line format (decoded by scripts/quick_update.py):  <id> f<fav|?> p<tile> a<tile> P<sales> A<sales>
 //   tile:  <yen> | - (出品待ち) | ? (no price on tile) | x (tile not found) | ! (no grade tiles)
 //   sales: =<list> | ~<n>=<list> (n rows discarded) | 0 (no sales in period) | !n (pill not found) | !a (pill didn't activate)
@@ -13,7 +13,11 @@
   const IDS = [/* '455596', '138599', … */];
   if (window.__pq && !window.__pq.done) return `already running ${window.__pq.i}/${window.__pq.n}`;
   const q = window.__pq = { n: IDS.length, i: 0, lines: [], done: false, started: new Date().toISOString() };
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const sleep = window.__wsleep || (window.__wsleep = (() => { // timers from a Web Worker: a hidden tab throttles page timers to 1/s, then 1/min
+    const P = {}; let n = 0, w = null;
+    try { w = new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data[0]),e.data[1])'], { type: 'text/javascript' }))); w.onmessage = (e) => { const r = P[e.data]; delete P[e.data]; if (r) r(); }; } catch (e) { w = null; }
+    return (ms) => new Promise((r) => { if (w) { P[++n] = r; w.postMessage([n, ms]); } setTimeout(r, ms); }); // page timer too, in case the worker is blocked
+  })());
   const U = { '秒': 's', '分': 'm', '時間': 'h', '日': 'd', '週間': 'w', 'ヶ月': 'M', 'か月': 'K' };
   const enc = (w) => {
     w = String(w || '').trim(); let m;
