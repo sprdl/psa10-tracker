@@ -32,6 +32,13 @@ from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 CARDS = json.loads((HERE.parent / "references" / "cards.json").read_text(encoding="utf-8"))["cards"]
+# Run from the tracker repo (pricecheck/scripts/), also take the cards added via "+ Add card"
+# (data/tracked_cards.json), so nobody has to merge the two lists by hand.
+_tracked = HERE.parent.parent / "data" / "tracked_cards.json"
+if _tracked.exists():
+    _t = json.loads(_tracked.read_text(encoding="utf-8"))
+    _have = {c["snkrdunk_id"] for c in CARDS}
+    CARDS += [c for c in ((_t.get("cards") if isinstance(_t, dict) else _t) or []) if c.get("snkrdunk_id") and c["snkrdunk_id"] not in _have]
 LISTING_FIELDS = ["lowest_price", "threshold_115pct_of_lowest", "top20_cheapest_listings",
                   "listings_within_15pct_of_lowest", "count_within_15pct", "count_excluded_over_15pct"]
 INDEX_FIELDS = ["latest_index_value_jpy", "day_change_jpy", "day_change_pct", "month_change_jpy",
