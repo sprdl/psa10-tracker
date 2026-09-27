@@ -39,6 +39,31 @@ def card_id(url: str) -> str:
     return parts[-1] if parts else ""
 
 
+def _clear_stale_git_locks(root: Path):
+    """Rename away any leftover .git/*.lock files before touching git.
+
+    This session's connected-folder permissions allow renaming files but not
+    deleting them (rm/unlink need a one-time user approval we can't get on an
+    unattended run). A crashed or interrupted previous git invocation --
+    e.g. two email alerts processed back-to-back -- can leave a stale
+    HEAD.lock/ORIG_HEAD.lock behind, which makes the *next* git command fail
+    with "fatal: cannot lock ref HEAD" even though nothing is actually
+    running. Since renaming is allowed, move any stale lock out of the way
+    (instead of deleting it) so this run can proceed on its own, with no
+    human needed to approve anything.
+    """
+    git_dir = root / ".git"
+    if not git_dir.is_dir():
+        return
+    for lock in git_dir.rglob("*.lock"):
+        try:
+            stamp = datetime.now(JST).strftime("%Y%m%d%H%M%S%f")
+            lock.rename(lock.with_suffix(f".lock.stale-{stamp}"))
+            print(f"cleared stale lock: {lock.relative_to(root)}", file=sys.stderr)
+        except OSError as e:
+            print(f"warning: couldn't clear stale lock {lock}: {e}", file=sys.stderr)
+
+
 def main():
     args = sys.argv[1:]
     pos = [a for a in args if not a.startswith("--")]
@@ -53,6 +78,7 @@ def main():
     dry = "--dry-run" in args
     no_push = "--no-push" in args
     root = Path(__file__).resolve().parent.parent
+    _clear_stale_git_locks(root)
 
     if not dry:
         pull = subprocess.run(["git", "pull", "--ff-only", "--quiet"], cwd=root, text=True, capture_output=True)
@@ -129,6 +155,7 @@ def main():
     import build_history
     build_history.build(root)
 
+    _clear_stale_git_locks(root)  # in case something else touched .git since the pull above
     subprocess.run(["git", "add", "data/manifest.json", "data/history.json", str(dest.relative_to(root))],
                     cwd=root, check=True)
     commit_msg = f"email alert: {new_card.get('card_name_ja')} ¥{price:,} (was ¥{old_low:,})"
