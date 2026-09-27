@@ -10,11 +10,11 @@
    "right": 2,
    "wrong": 1,
    "neutral": 0,
-   "pending": 12
+   "pending": 14
   },
   "calls_scored": 3,
   "odds_resolved": 0,
-  "odds_open": 22,
+  "odds_open": 26,
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
@@ -28,6 +28,44 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/704401",
+   "name": "メガリザードンXex SAR [M2 110/080](拡張パック「インフェルノX」)",
+   "tag": "watch",
+   "label": "Watch: market still correcting",
+   "latest_label": "Watch: market still correcting",
+   "reaffirmed": 0,
+   "made": "2026-09-27T08:58:59+09:00",
+   "price": 115980,
+   "window_end": "2026-10-27T08:58:59+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "tag": "watch",
+   "label": "Watch: market still correcting",
+   "latest_label": "Watch: market still correcting",
+   "reaffirmed": 0,
+   "made": "2026-09-27T08:58:59+09:00",
+   "price": 61000,
+   "window_end": "2026-10-27T08:58:59+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05
+  },
   {
    "url": "https://snkrdunk.com/apparels/105553",
    "name": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
@@ -498,6 +536,34 @@
    "gap_pct": 15.0
   },
   {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A PSA10 listing at or below ¥58k (Buy zone) appears within 3 months",
+   "p": 0.6,
+   "type": "touch_below",
+   "price": 58000,
+   "by": "2026-12-27",
+   "made": "2026-09-27T08:58:59+09:00",
+   "status": "open",
+   "why": "91 days left",
+   "now": 61000,
+   "gap_pct": -4.9
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/704401",
+   "name": "メガリザードンXex SAR [M2 110/080](拡張パック「インフェルノX」)",
+   "text": "A PSA10 listing at or below ¥108k (Buy zone) appears within 3 months",
+   "p": 0.5,
+   "type": "touch_below",
+   "price": 108000,
+   "by": "2026-12-27",
+   "made": "2026-09-27T08:58:59+09:00",
+   "status": "open",
+   "why": "91 days left",
+   "now": 115980,
+   "gap_pct": -6.9
+  },
+  {
    "url": "https://snkrdunk.com/apparels/455596",
    "name": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
    "text": "Slides to ¥57–60k by year-end",
@@ -636,6 +702,34 @@
    "why": "180 days left",
    "now": 112999,
    "gap_pct": -13.3
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A PSA10 listing at or below ¥52k (Definitely buy) appears within 6 months",
+   "p": 0.3,
+   "type": "touch_below",
+   "price": 52000,
+   "by": "2027-03-27",
+   "made": "2026-09-27T08:58:59+09:00",
+   "status": "open",
+   "why": "181 days left",
+   "now": 61000,
+   "gap_pct": -14.8
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/704401",
+   "name": "メガリザードンXex SAR [M2 110/080](拡張パック「インフェルノX」)",
+   "text": "A PSA10 listing at or below ¥95k (Definitely buy) appears within 6 months",
+   "p": 0.25,
+   "type": "touch_below",
+   "price": 95000,
+   "by": "2027-03-27",
+   "made": "2026-09-27T08:58:59+09:00",
+   "status": "open",
+   "why": "181 days left",
+   "now": 115980,
+   "gap_pct": -18.1
   }
  ],
  "model_odds": [

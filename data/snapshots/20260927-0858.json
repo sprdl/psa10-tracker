@@ -4254,6 +4254,41 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 115000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 204699,
+          "when": "May 2026",
+          "source": "pokeca-chart per-card PSA10 chart (daily/monthly median), Sept 27; after a launch spike of ¥250-296k in Oct 2025"
+        },
+        "tiers": {
+          "definitely_buy": 95000,
+          "buy_upper": 108000,
+          "ceiling": 125000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: market still correcting",
+          "reasoning": "PSA10 has fallen about 44% from the May peak and is back at the Nov 2025-Jan 2026 pre-run floor (¥101-116k), with a deep book (20 of 20 listings within 15%) and sales clustered at ¥115k. The My-tier index is down 28% over 30 days, so under the correction rule only a listing at or below ¥95k (below that floor and about 10% under the ¥105k DIY replacement cost) is a Buy. Population is very large (51,341, 86.8% gem), so scarcity does not support a premium; it is also a ¥115k card, more than half the ¥200k budget.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at or below ¥108k (Buy zone) appears within 3 months",
+              "p": 0.5,
+              "type": "touch_below",
+              "price": 108000,
+              "by": "2026-12-27"
+            },
+            {
+              "text": "A PSA10 listing at or below ¥95k (Definitely buy) appears within 6 months",
+              "p": 0.25,
+              "type": "touch_below",
+              "price": 95000,
+              "by": "2027-03-27"
+            }
+          ]
+        }
       }
     },
     {
@@ -4517,6 +4552,41 @@
             {
               "price": 37000,
               "when": "11時間前"
+            }
+          ]
+        }
+      },
+      "analysis": {
+        "representative_price": 61500,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 139664,
+          "when": "April 2026",
+          "source": "pokeca-chart per-card PSA10 chart (monthly median), Sept 27"
+        },
+        "tiers": {
+          "definitely_buy": 52000,
+          "buy_upper": 58000,
+          "ceiling": 68000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: market still correcting",
+          "reasoning": "Down about 56% from the April peak and already 20% below its own Dec 2025-Jan 2026 launch floor (¥77-85k), so the pre-hype anchor is broken and the tiers anchor on replacement cost instead: raw A ¥35k + ¥9,980 grading + ¥2,000 shipping, divided by an 88.8% gem rate, is about ¥53k. The book is deep (20 of 20 within 15%) and sales sit at ¥61-63k, but the My-tier index is down 28% in 30 days, so only ¥52k or lower is a Buy. Population is large (37,021) and another graded-supply wave is likely Nov-Feb, which is the main downside driver.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at or below ¥58k (Buy zone) appears within 3 months",
+              "p": 0.6,
+              "type": "touch_below",
+              "price": 58000,
+              "by": "2026-12-27"
+            },
+            {
+              "text": "A PSA10 listing at or below ¥52k (Definitely buy) appears within 6 months",
+              "p": 0.3,
+              "type": "touch_below",
+              "price": 52000,
+              "by": "2027-03-27"
             }
           ]
         }
