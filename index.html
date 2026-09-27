@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://cdn.snkrdunk.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=20260927b">
+<link rel="stylesheet" href="assets/style.css?v=20260927c">
 </head>
 <body>
 <div class="app">
@@ -69,6 +69,7 @@
     </section>
 
     <section class="view" data-view="collection" hidden>
+      <div id="collection-bar" class="cmp-bar"></div>
       <div id="collection" class="collection"></div>
     </section>
 
@@ -125,6 +126,14 @@
       <p id="card-requests-m" class="card-requests" hidden></p>
     </section>
 
+    <section class="view" data-view="compare" hidden>
+      <div id="compare-page" class="compare-page"></div>
+    </section>
+
+    <section class="view" data-view="duel" hidden>
+      <div id="duel-page" class="duel-page"></div>
+    </section>
+
     <section class="view" data-view="card" hidden>
       <div id="card-page" class="card-page"></div>
     </section>
@@ -138,6 +147,6 @@
     <a href="#/more" data-view="more"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>More</span></a>
   </nav>
 </div>
-<script src="assets/app.js?v=20260927b"></script>
+<script src="assets/app.js?v=20260927c"></script>
 </body>
 </html>

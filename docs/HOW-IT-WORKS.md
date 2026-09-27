@@ -265,7 +265,7 @@ API (`/actions/workflows/deploy.yml/dispatches`) after pushing.
   `#snapshot-select-m`. The two pickers are kept in sync.
 - **`<main>`**: `#page-title` / `#page-sub` (set by `applyRoute`), `#back-link`, then
   **one `<section class="view" data-view="...">` per page**: overview, collection,
-  watching, holdings, planner, record, market, tables, more and card. Only one is
+  watching, holdings, planner, record, market, tables, more, card, compare and duel. Only one is
   visible at a time.
 - **`<nav class="tabbar">`**: the phone bottom bar.
 - At the end: `<script src="assets/app.js?v=20260927">`. The `?v=` part is a cache
@@ -316,6 +316,7 @@ In order:
 | price history | `getCardPriceHistory`, `buildPriceHistoryHtml`, `buildGradeDetail` | History and Listings tabs |
 | interactive charts | `chartSlot`, `mountCharts`, `drawLineChart`, `drawBarChart`, `wireHover` | SVG charts |
 | render: tables | `renderTables`, `buildDiyTable`, `buildComparisonTable` | Tables page |
+| head to head / budget duel | `renderCompare`, `tapeHtml`, `raceHtml`, `ladderHtml`, `renderDuel`, `drawMultiChart` | comparing cards |
 | end | `loadCardRequests`, `init()` | pending-issue notices, start |
 
 ### Startup, step by step
@@ -566,6 +567,32 @@ edit the Python, not the JavaScript. Which cards you expanded is remembered in
 - `renderHeat`, `renderEvents`, plus the snapshot's `notes`.
 - `renderTables`: cards become *columns* and statistics *rows*. Rows with a
   `sortableLabel()` button sort the columns (`TABLE_SORTS`, saved in `psa10.tableSort`).
+
+### Head to head and budget duel
+
+Both live in the section `// ---------- head to head (#/compare/…) and budget duel (#/duel/…) ----------`
+of `app.js`. Nothing new is stored; every number comes from functions described above.
+
+- **Picking cards:** "⇄ Compare two cards" on the Collection page sets `state.cmpMode`.
+  While it's on, `renderCollection` makes each tile toggle its URL in `state.cmpPick`
+  (`togglePick`) instead of opening the card, and `renderCompareBar` shows the sticky bar.
+  "Head to head" goes to `#/compare/<idA>,<idB>`. Leaving the Collection cancels the mode.
+- **Head to head page:** `applyRoute` calls `renderCompare(arg)`. It has two tabs:
+  - *Tale of the tape* (`tapeHtml`): each row is `[label, hint, value function, format,
+    better]`, where `better` is `'low'`, `'high'` or `null` (context only). The card closer
+    to a good buy on a row gets the bright bar; each group's chip names the card that leads
+    all of its scored rows, or says "Split". Rows where neither card has a value are hidden.
+  - *Price race* (`raceHtml` + `drawMultiChart`): both cards' prices from `history.json`
+    (last check per day), indexed to 100 on the first day both have a price, or as % below
+    peak; the My-tier index is added in indexed mode. Scale and range are remembered in
+    `psa10.race`. Below it, `ladderHtml` draws each card's zones scaled to its own Buy line.
+  - `relation(a, b)` compares set codes and the character name (the leading katakana/kanji
+    of the card name, without メガ) to say whether the two are one bet or separate bets.
+- **Budget duel:** the planner shows "⇄ Compare N cards" when 2–4 cards are ticked
+  (`CMP_MAX_DUEL`). It links to `#/duel/<id>,<id>,…`, drawn by `renderDuel`: today's ask
+  and your limit with what's left of the budget, `touchOdds` for your limit, Definitely-buy
+  and the Buy line, the DIY comparison, and totals for buying all of them.
+- **Colours:** card A/B (and C/D in a duel) use `CMP_COLORS`.
 
 ### Pending-request notices
 

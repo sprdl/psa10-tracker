@@ -973,10 +973,12 @@
 
   // ---------- app shell: views + routing ----------
   // Hash routes: #/overview, #/collection, #/watching, #/holdings, #/planner,
-  // #/record, #/market, #/tables, #/more (phone) and #/card/<snkrdunk id>.
+  // #/record, #/market, #/tables, #/more (phone), #/card/<snkrdunk id>,
+  // #/compare/<id>,<id> (head to head) and #/duel/<id>,<id>,… (budget duel).
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
     planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
+    compare: 'Head to head', duel: 'Budget duel',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
@@ -994,13 +996,14 @@
     if (!state.currentData) return;
     const { view, arg } = parseRoute();
     document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== view; });
-    const navView = view === 'card' ? (state.cardFrom || 'overview') : view;
+    const PARENT = { compare: 'collection', duel: 'planner' };
+    const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
     if (tab && ['watching', 'record', 'market', 'tables'].includes(view)) tab.classList.add('on');
 
     const back = document.getElementById('back-link');
-    back.hidden = view !== 'card';
+    back.hidden = view !== 'card' && !PARENT[view];
     let title = VIEWS[view];
     let sub = viewSubtitle(view);
     if (view === 'card') {
@@ -1015,12 +1018,17 @@
         title = 'Card not found'; sub = "This card isn't in the selected snapshot.";
         document.getElementById('card-page').innerHTML = '';
       }
+    } else if (PARENT[view]) {
+      back.href = '#/' + PARENT[view];
+      back.querySelector('span').textContent = VIEWS[PARENT[view]];
+      ({ title, sub } = view === 'compare' ? renderCompare(arg) : renderDuel(arg));
     } else {
       state.cardFrom = view === 'more' ? 'overview' : view;
     }
     document.getElementById('page-title').textContent = title;
     document.getElementById('page-sub').textContent = sub;
     document.title = view === 'overview' ? 'PSA10 Tracker' : `${title} · PSA10 Tracker`;
+    if (view !== 'collection' && state.cmpMode) { state.cmpMode = false; state.cmpPick = []; }
 
     lastRoute = { view, arg };
   }
@@ -1600,8 +1608,10 @@
       const lim = getLimit(card);
       const owned = holdingsFor(card).length;
       const pop = card.psa10_population != null ? card.psa10_population.toLocaleString() : '—';
-      return `<a class="tile${limitHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}">
-        <span class="tile-slab">${slabHtml(card, 'lg')}
+      const pk = state.cmpPick.indexOf(card.url);
+      const pickHtml = state.cmpMode ? `<span class="tile-pick${pk >= 0 ? ' on' : ''}" style="${pk >= 0 ? `background:${CMP_COLORS[pk]};border-color:${CMP_COLORS[pk]}` : ''}" aria-hidden="true">${pk >= 0 ? 'AB'[pk] : ''}</span>` : '';
+      return `<a class="tile${limitHit(card) ? ' hit' : ''}${state.cmpMode ? ' picking' : ''}${pk >= 0 ? ' picked' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}"${state.cmpMode ? ` aria-pressed="${pk >= 0}" style="--pc:${pk >= 0 ? CMP_COLORS[pk] : 'transparent'}"` : ''}>
+        <span class="tile-slab">${slabHtml(card, 'lg')}${pickHtml}
           <span class="tile-chips">${heatChip(card)}${tagChip(card)}</span>
           ${lim != null ? `<span class="tile-limit">Limit ${fmtYen(lim)}</span>` : ''}
           ${owned ? '<span class="tile-owned">Owned</span>' : ''}
@@ -1611,7 +1621,12 @@
         ${zoneBarHtml(card, 'thin')}
         <span class="tile-meta">${escapeHtml(code)} · Pop ${pop}</span>
       </a>`;
-    }).join('') + `<a class="tile tile-add" href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span class="display">+</span>Add a card to track${reqEl && !reqEl.hidden ? `<small>${escapeHtml(reqEl.textContent)}</small>` : ''}</a>`;
+    }).join('') + (state.cmpMode ? '' : `<a class="tile tile-add" href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span class="display">+</span>Add a card to track${reqEl && !reqEl.hidden ? `<small>${escapeHtml(reqEl.textContent)}</small>` : ''}</a>`);
+    if (state.cmpMode) {
+      el.querySelectorAll('a.tile[data-url]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); togglePick(a.dataset.url); }));
+    }
+    renderCompareBar();
+    trimImages(el);
   }
 
   function renderWatchPanel(pending, prevCards) {
@@ -1884,10 +1899,13 @@
       <div class="pl-bar">${spent ? `<div class="pl-bar-spent" style="width:${Math.min(100, st.budget ? (spent / st.budget) * 100 : 0).toFixed(1)}%" title="Spent so far"></div>` : ''}<div class="pl-bar-fill ${left < 0 ? 'over' : ''}" style="width:${Math.min(100, st.budget ? (total / st.budget) * 100 : 0).toFixed(1)}%"></div></div>`;
 
     const toggle = `
-      <div class="pl-mode" role="group" aria-label="Price basis">
+      <div class="pl-top"><div class="pl-mode" role="group" aria-label="Price basis">
         <button type="button" data-mode="today" class="${st.mode === 'today' ? 'on' : ''}">Today's prices</button>
         <button type="button" data-mode="limits" class="${st.mode === 'limits' ? 'on' : ''}">My limits</button>
       </div>
+      ${picked.length >= 2 && picked.length <= CMP_MAX_DUEL
+        ? `<a class="btn btn-primary pl-compare" href="#/duel/${picked.map((r) => escapeAttr(cardId(r.card))).join(',')}">⇄ Compare ${picked.length} cards</a>`
+        : `<span class="pl-cmp-hint">${picked.length > CMP_MAX_DUEL ? `Compare works with up to ${CMP_MAX_DUEL} cards` : 'Tick two or more cards to compare them side by side'}</span>`}</div>
       ${missingLimit ? `<div class="pl-note">${missingLimit} selected card${missingLimit === 1 ? ' has' : 's have'} no limit set, so ${missingLimit === 1 ? 'it uses' : 'they use'} today's price.</div>` : ''}`;
 
     const list = rows.map((r) => {
@@ -2265,7 +2283,7 @@
       const cfg = chartReg.get(box.dataset.chart);
       if (!cfg || box._mounted) return;
       box._mounted = true;
-      const draw = () => (cfg.type === 'bars' ? drawBarChart : drawLineChart)(box, cfg);
+      const draw = () => (cfg.type === 'bars' ? drawBarChart : cfg.type === 'multi' ? drawMultiChart : drawLineChart)(box, cfg);
       let lastW = box.clientWidth;
       if (window.ResizeObserver) new ResizeObserver(() => { const w = box.clientWidth; if (w && Math.abs(w - lastW) > 2) { lastW = w; draw(); } }).observe(box);
       if (box.clientWidth) draw();
@@ -2412,6 +2430,396 @@
       d += `C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)} `;
     }
     return d.trim();
+  }
+
+  // ---------- head to head (#/compare/<id>,<id>) and budget duel (#/duel/<id>,<id>,…) ----------
+  // Head to head: two cards picked on the collection page. Tab 1 "Tale of the tape" puts the
+  // numbers side by side, grouped, and marks which card is closer to a good buy on each row;
+  // tab 2 "Price race" overlays both price histories (indexed to 100 or as % below peak) with
+  // the My-tier index, plus a zone ladder scaled to each card's own Buy line.
+  // Budget duel: 2–4 cards ticked in the budget planner, priced today and at your limits, with
+  // the odds of reaching them and what's left of the budget. Everything is computed here from
+  // data the site already loads; nothing new is stored.
+  const CMP_COLORS = ['#ffd23f', '#7cb4ff', '#c9a0ff', '#5fd4b8'];
+  const CMP_MAX_DUEL = 4;
+  state.cmpMode = false;   // collection page is in "pick two cards" mode
+  state.cmpPick = [];      // urls picked there, in order
+  state.cmpTab = 'tape';
+
+  function cardsFromArg(arg) {
+    const seen = new Set();
+    return String(arg || '').split(',').map((id) => findCardById(id.trim())).filter((c) => c && !seen.has(c.url) && seen.add(c.url));
+  }
+  function characterOf(card) {
+    const m = parseCardName(card.card_name_ja).short.match(/^[゠-ヿ一-鿿]+/);
+    return m ? m[0].replace(/^メガ(?=.)/, '') : '';
+  }
+  function setOf(card) { return (parseCardName(card.card_name_ja).code.split(/\s+/)[0] || '').toLowerCase(); }
+  // How closely two cards' prices are tied: same set and/or same character.
+  function relation(a, b) {
+    const s = setOf(a) && setOf(a) === setOf(b), ch = characterOf(a) && characterOf(a) === characterOf(b) ? characterOf(a) : '';
+    if (s && ch) return { kind: 'one', text: `Same set and character (${ch}): they tend to move together, so owning both is closer to one bet than two.` };
+    if (ch) return { kind: 'partly', text: `Same character (${ch}): partly one bet, as they often move together.` };
+    if (s) return { kind: 'set', text: `Same set (${parseCardName(a.card_name_ja).code.split(/\s+/)[0]}): new supply or a reprint would hit both.` };
+    return { kind: 'none', text: 'Different sets and characters: two separate bets.' };
+  }
+  function writtenVerdictText(card) {
+    const v = card.analysis && card.analysis.verdict;
+    if (!v || !v.tag) return '';
+    const why = heldByEvent(card) ? ' · held by the event rule' : heldByCorrection(card) ? ' · held by the correction rule' : '';
+    return `written verdict: ${tagLabel(v.tag)}${why}`;
+  }
+
+  // ----- collection page: pick two cards -----
+  function renderCompareBar() {
+    const bar = document.getElementById('collection-bar');
+    if (!bar) return;
+    const picked = state.cmpPick.map((u) => ((state.currentData && state.currentData.cards) || []).find((c) => c.url === u)).filter(Boolean);
+    state.cmpPick = picked.map((c) => c.url);
+    const n = picked.length;
+    bar.classList.toggle('on', state.cmpMode);
+    bar.innerHTML = state.cmpMode
+      ? `<span class="cmp-hint">${n === 2
+          ? `<b style="color:${CMP_COLORS[0]}">${escapeHtml(parseCardName(picked[0].card_name_ja).short)}</b> vs <b style="color:${CMP_COLORS[1]}">${escapeHtml(parseCardName(picked[1].card_name_ja).short)}</b>`
+          : n === 1 ? 'Pick one more card' : 'Tap two cards to compare them'}</span>
+         <button type="button" class="btn" data-cmp="cancel">Cancel</button>
+         <button type="button" class="btn btn-primary" data-cmp="go"${n === 2 ? '' : ' disabled'}>Head to head</button>`
+      : `<span class="cmp-hint">Put two cards side by side.</span><button type="button" class="btn" data-cmp="start">⇄ Compare two cards</button>`;
+    bar.querySelectorAll('[data-cmp]').forEach((b) => b.addEventListener('click', () => {
+      const act = b.dataset.cmp;
+      if (act === 'start') { state.cmpMode = true; state.cmpPick = []; }
+      else if (act === 'cancel') { state.cmpMode = false; state.cmpPick = []; }
+      else if (act === 'go' && state.cmpPick.length === 2) {
+        const ids = state.cmpPick.map((u) => cardId({ url: u }));
+        state.cmpMode = false; state.cmpPick = []; state.cmpTab = 'tape';
+        location.hash = '#/compare/' + ids.join(',');
+        return;
+      }
+      renderCollection((state.currentData && state.currentData.cards) || []);
+    }));
+  }
+  function togglePick(url) {
+    const i = state.cmpPick.indexOf(url);
+    if (i >= 0) state.cmpPick.splice(i, 1);
+    else { state.cmpPick.push(url); if (state.cmpPick.length > 2) state.cmpPick.shift(); }
+    renderCollection((state.currentData && state.currentData.cards) || []);
+  }
+
+  // ----- head to head -----
+  function renderCompare(arg) {
+    const el = document.getElementById('compare-page');
+    const cards = cardsFromArg(arg).filter(hasMarket).slice(0, 2);
+    if (cards.length < 2) {
+      el.innerHTML = `<div class="empty-state">Pick two cards with a PSA10 market on the <a href="#/collection">collection</a> page (⇄ Compare two cards).</div>`;
+      return { title: 'Head to head', sub: '' };
+    }
+    const [a, b] = cards;
+    const rel = relation(a, b);
+    const side = (c, i) => {
+      const { short, code, pack } = parseCardName(c.card_name_ja);
+      return `<div class="h2h-side h2h-${i ? 'b' : 'a'}">
+        <a class="h2h-slab" href="#/card/${escapeAttr(cardId(c))}" style="--cc:${CMP_COLORS[i]}">${slabHtml(c, 'xl')}</a>
+        <div class="h2h-info">
+          <span class="h2h-who" style="color:${CMP_COLORS[i]}"><i style="background:${CMP_COLORS[i]}"></i>Card ${i ? 'B' : 'A'}</span>
+          <a class="h2h-name jp" href="#/card/${escapeAttr(cardId(c))}">${escapeHtml(short)}</a>
+          <span class="h2h-meta">${escapeHtml([code, pack].filter(Boolean).join(' · '))}</span>
+          <span class="h2h-price display">${fmtYen(getRep(c))}</span>
+          <span class="h2h-v">${tagChip(c)}<small>${escapeHtml(writtenVerdictText(c))}</small></span>
+        </div>
+      </div>`;
+    };
+    const tab = state.cmpTab === 'race' ? 'race' : 'tape';
+    el.innerHTML = `
+      <div class="panel h2h-hero">${side(a, 0)}<div class="h2h-vs display" aria-hidden="true">VS</div>${side(b, 1)}</div>
+      <div class="h2h-actions">
+        <button type="button" class="btn" data-h2h="swap">⇄ Swap sides</button>
+        <button type="button" class="btn" data-h2h="change">Change cards</button>
+        <span class="h2h-rel rel-${rel.kind}">${escapeHtml(rel.text)}</span>
+      </div>
+      <div class="cd-tabs h2h-tabs" role="tablist" aria-label="Head to head views">
+        <button type="button" role="tab" data-tab="tape" aria-selected="${tab === 'tape'}">Tale of the tape</button>
+        <button type="button" role="tab" data-tab="race" aria-selected="${tab === 'race'}">Price race</button>
+      </div>
+      <div class="h2h-panel" data-panel="tape"${tab === 'tape' ? '' : ' hidden'}>${tapeHtml(a, b)}</div>
+      <div class="h2h-panel" data-panel="race"${tab === 'race' ? '' : ' hidden'}>${raceHtml([a, b])}</div>`;
+    el.querySelector('[data-h2h="swap"]').addEventListener('click', () => { location.hash = '#/compare/' + cardId(b) + ',' + cardId(a); });
+    el.querySelector('[data-h2h="change"]').addEventListener('click', () => { state.cmpMode = true; state.cmpPick = [a.url, b.url]; location.hash = '#/collection'; });
+    el.querySelectorAll('.h2h-tabs button').forEach((btn) => btn.addEventListener('click', () => {
+      state.cmpTab = btn.dataset.tab;
+      el.querySelectorAll('.h2h-tabs button').forEach((x) => x.setAttribute('aria-selected', String(x === btn)));
+      el.querySelectorAll('.h2h-panel').forEach((p) => { p.hidden = p.dataset.panel !== state.cmpTab; });
+    }));
+    wireRace(el, arg);
+    mountCharts(el);
+    trimImages(el);
+    const when = state.currentData ? fmtDateJST(state.currentData.collected_at_jst) : '';
+    return { title: 'Head to head', sub: `${parseCardName(a.card_name_ja).short} vs ${parseCardName(b.card_name_ja).short} · checked ${when}` };
+  }
+
+  // Tale of the tape. better: 'low' | 'high' = which value is closer to a good buy; null = context only.
+  function tapeHtml(a, b) {
+    const name = (c) => parseCardName(c.card_name_ja).short;
+    const buyGap = (c) => { const t = c.analysis && c.analysis.tiers, p = getRep(c); return t && p != null ? (p / t.buy_upper - 1) * 100 : null; };
+    const offPeak = (c) => { const pk = c.analysis && c.analysis.peak; return pk && pk.price ? (getRep(c) / pk.price - 1) * 100 : null; };
+    const limOdds = (c) => { const l = getLimit(c); if (l == null) return null; const o = touchOdds(c, l); return o ? (o.reached ? 100 : o.p30 * 100) : null; };
+    const chg = (d) => (c) => { const x = priceChangeAgo(c, d); return x ? x.pct : null; };
+    const vsMkt = (c) => { const x = priceChangeAgo(c, 7); if (!x) return null; const mv = marketMove(x.from, refTime()); return mv ? x.pct - mv.pct : null; };
+    const heat = (c) => { const h = heatOf(c); return h && h.psa ? h.psa.rate : null; };
+    const within = (c) => (c.grades.psa10 || {}).count_within_15pct ?? null;
+    const diy = (c) => { const d = computeDiyEconomics(c, getRep(c)); return d ? d.delta : null; };
+    const mv7 = (() => { const x = priceChangeAgo(a, 7) || priceChangeAgo(b, 7); return x ? marketMove(x.from, refTime()) : null; })();
+    const pk = (c) => { const p = c.analysis && c.analysis.peak; return p && p.price ? fmtYenShort(p.price) + (p.when ? ' ' + p.when.replace(/\s*20\d\d$/, '') : '') : '—'; };
+    const pts = (x) => (x == null ? '—' : `${x >= 0 ? '+' : '−'}${Math.abs(x).toFixed(1)} pts`);
+    const yenDelta = (x) => (x == null ? '—' : `${x >= 0 ? '+' : '−'}${fmtYen(Math.abs(x))}`);
+    const pctR = (x) => (x == null ? '—' : Math.round(x) + '%');
+    const groups = [
+      { title: 'Value', leadLabel: 'Closer to buying', rows: [
+        ['Above its Buy line', 'lower is closer to Buy', buyGap, fmtPct, 'low'],
+        ['Above my limit', `limit ${fmtYen(getLimit(a))} · ${fmtYen(getLimit(b))}`, (c) => (limitGap(c) || {}).pct ?? null, fmtPct, 'low'],
+        ['Chance to reach my limit', 'within 30 days · limit-odds model', limOdds, pctR, 'high'],
+        ['Below its peak', `context · peak ${pk(a)} / ${pk(b)}`, offPeak, (x) => (x == null ? '—' : fmtPct(x, 0)), null],
+      ] },
+      { title: 'Momentum', leadLabel: 'Holding up better', rows: [
+        ['7-day change', 'context', chg(7), fmtPct, null],
+        ['30-day change', 'context', chg(30), fmtPct, null],
+        ['Vs. the market, 7 days', mv7 ? `${mv7.name} ${fmtPct(mv7.pct)} · higher = holding up` : 'higher = holding up', vsMkt, pts, 'high'],
+      ] },
+      { title: 'Liquidity', leadLabel: 'Easier to buy well', rows: [
+        ['PSA10 sales per day', 'SNKRDUNK, recent one-copy sales', heat, (x) => (x == null ? '—' : fmtRate(x)), 'high'],
+        ['Listings within 15% of lowest', 'order-book depth', within, (x) => (x == null ? '—' : String(x)), 'high'],
+      ] },
+      { title: 'Scarcity & demand', leadLabel: 'Leads', rows: [
+        ['PSA10 population', 'fewer is scarcer', (c) => c.psa10_population ?? null, (x) => (x == null ? '—' : x.toLocaleString('en-US')), 'low'],
+        ['Gem rate', 'context', (c) => c.psa10_gem_rate_pct ?? null, (x) => (x == null ? '—' : x + '%'), null],
+        ['Favorites on SNKRDUNK', 'people watching it', (c) => c.favorite_count ?? null, (x) => (x == null ? '—' : x.toLocaleString('en-US')), 'high'],
+      ] },
+      { title: 'Grade it yourself?', leadLabel: '', rows: [
+        ['Raw + grading vs the slab', 'negative = grading a raw copy is cheaper', diy, yenDelta, null],
+      ] },
+    ];
+    const bar = (v, max, color, on) => (v == null ? '' : `<i style="width:${Math.max(4, (Math.abs(v) / (max || 1)) * 100).toFixed(1)}%;background:${color};opacity:${on ? 1 : 0.28}"></i>`);
+    const html = groups.map((g) => {
+      const leads = [];
+      const rows = g.rows.map(([label, hint, fn, fmt, better]) => {
+        const va = fn(a), vb = fn(b);
+        if (va == null && vb == null) return '';
+        let lead = null;
+        if (better && va != null && vb != null && va !== vb) lead = (better === 'low') === (va < vb) ? 'a' : 'b';
+        if (lead) leads.push(lead);
+        const max = Math.max(Math.abs(va || 0), Math.abs(vb || 0));
+        const ca = better ? CMP_COLORS[0] : 'var(--muted-2)', cb = better ? CMP_COLORS[1] : 'var(--muted-2)';
+        return `<div class="tp-row">
+          <span class="tp-a display${lead === 'a' ? ' lead' : ''}">${escapeHtml(fmt(va))}</span>
+          <span class="tp-ab">${bar(va, max, ca, !better || lead === 'a' || !lead)}</span>
+          <span class="tp-lab"><b>${escapeHtml(label)}</b><small>${escapeHtml(hint)}</small></span>
+          <span class="tp-bb">${bar(vb, max, cb, !better || lead === 'b' || !lead)}</span>
+          <span class="tp-b display${lead === 'b' ? ' lead' : ''}">${escapeHtml(fmt(vb))}</span>
+        </div>`;
+      }).join('');
+      let chip = '';
+      if (leads.length) {
+        const w = leads.every((x) => x === leads[0]) ? leads[0] : null;
+        chip = w ? `<span class="tp-chip" style="color:${CMP_COLORS[w === 'a' ? 0 : 1]}">${escapeHtml(g.leadLabel)}: ${escapeHtml(name(w === 'a' ? a : b))}</span>` : '<span class="tp-chip">Split</span>';
+      }
+      return `<section class="panel tp-group"><div class="tp-head"><h2 class="section-title">${escapeHtml(g.title)}</h2>${chip}</div>${rows}</section>`;
+    }).join('');
+    return html + `<p class="cd-note">Bright bar = the card closer to a good buy on that row. Grey rows are context with no better side. There's no overall score on purpose: rows don't weigh the same.</p>`;
+  }
+
+  // Price race: both cards' prices across every check, on one chart.
+  function raceSeries(card) {
+    const byDay = new Map();
+    ((state.hist && state.hist.snapshots) || []).forEach((e) => { const v = e.p && e.p[card.url]; if (v) byDay.set(e.d.slice(0, 10), v[0]); });
+    return byDay; // Map day -> price (last check of the day), insertion order = chronological
+  }
+  function raceHtml(cards) {
+    const opt = store.get('psa10.race', { mode: 'index', range: 'all' });
+    const peaks = cards.map((c) => c.analysis && c.analysis.peak && c.analysis.peak.price);
+    const mode = opt.mode === 'peak' && peaks.every(Boolean) ? 'peak' : 'index';
+    const RANGES = { '1m': 31, '3m': 92, all: 0 };
+    const range = RANGES[opt.range] != null ? opt.range : 'all';
+    const series = cards.map(raceSeries);
+    const allDays = [...new Set(series.flatMap((s) => [...s.keys()]))].sort();
+    const firsts = series.map((s) => [...s.keys()].sort()[0]);
+    const last = allDays[allDays.length - 1];
+    const cutoff = RANGES[range] && last ? new Date(Date.parse(last) - RANGES[range] * 86400000).toISOString().slice(0, 10) : '';
+    const start = [cutoff, ...firsts].filter(Boolean).sort().pop();
+    const days = allDays.filter((d) => d >= start);
+    if (series.some((sr) => !sr.size)) return controls + `<div class="panel race-box"><div class="hist-empty">No price history yet for one of the cards.</div></div>` + ladderHtml(cards);
+    const btn = (k, label, on, dis) => `<button type="button" data-race="${k}" class="${on ? 'on' : ''}"${dis ? ' disabled title="Needs a known peak for both cards"' : ''}>${label}</button>`;
+    const controls = `<div class="race-ctl">
+      <div class="pl-mode" role="group" aria-label="Scale">${btn('mode:index', 'Indexed to 100', mode === 'index')}${btn('mode:peak', '% below peak', mode === 'peak', !peaks.every(Boolean))}</div>
+      <div class="pl-mode" role="group" aria-label="Range">${btn('range:1m', '1M', range === '1m')}${btn('range:3m', '3M', range === '3m')}${btn('range:all', 'All', range === 'all')}</div></div>`;
+    if (days.length < 2) return controls + `<div class="panel race-box"><div class="hist-empty">Needs at least two checks that include both cards.</div></div>` + ladderHtml(cards);
+    const carry = (s) => { let lastV = null; const sorted = [...s.keys()].sort(); return days.map((d) => { for (const k of sorted) { if (k <= d) lastV = s.get(k); else break; } return lastV; }); };
+    const raw = series.map(carry);
+    const conv = (vals, i) => {
+      if (mode === 'peak') return vals.map((v) => (v == null ? null : (v / peaks[i] - 1) * 100));
+      const base = vals[0];
+      return vals.map((v) => (v == null || !base ? null : (v / base) * 100));
+    };
+    const ser = cards.map((c, i) => ({ name: parseCardName(c.card_name_ja).short, color: CMP_COLORS[i], vals: conv(raw[i], i), raw: raw[i] }));
+    let market = null;
+    const ci = (state.customIndex && state.customIndex.series) || [];
+    if (mode === 'index' && ci.length) {
+      const at = (d) => { let v = null; for (const e of ci) { if (e.d <= d) v = e.level; else break; } return v; };
+      const lv = days.map(at);
+      if (lv[0]) { market = { name: 'My-tier index', color: 'var(--muted)', dash: true, vals: lv.map((v) => (v == null ? null : (v / lv[0]) * 100)) }; }
+    }
+    const refs = cards.map((c, i) => {
+      const t = c.analysis && c.analysis.tiers;
+      if (!t) return null;
+      const y = mode === 'peak' ? (t.buy_upper / peaks[i] - 1) * 100 : (t.buy_upper / raw[i][0]) * 100;
+      return { y, color: CMP_COLORS[i], label: `${ser[i].name} Buy ${yenShort(t.buy_upper)}` };
+    }).filter(Boolean);
+    const fmtY = mode === 'peak' ? (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(Math.round(v))}%` : (v) => String(+v.toFixed(1));
+    const chart = chartSlot({ type: 'multi', height: 280, days: days.map((d) => Date.parse(d + 'T12:00:00+09:00')),
+      series: market ? [...ser, market] : ser, refs, fmtY,
+      label: `Price race: ${ser.map((s) => s.name).join(' vs ')}${mode === 'peak' ? ', percent below peak' : ', indexed to 100'}` });
+    const endTxt = (s) => { const v = s.vals[s.vals.length - 1]; return v == null ? '—' : mode === 'peak' ? fmtY(v) + ' vs peak' : fmtPct(v - 100); };
+    const legend = [...ser, ...(market ? [market] : [])].map((s) => `<span><i class="race-key${s.dash ? ' dash' : ''}" style="border-color:${s.color}"></i>${escapeHtml(s.name)} <b>${endTxt(s)}</b></span>`).join('');
+    const sd = start.slice(5).split('-').map(Number).join('/');
+    const note = mode === 'index'
+      ? `Both lines start at 100 on ${sd} (the first check with both cards${range !== 'all' ? ' in this range' : ''}). Dashed lines are each card's Buy line on the same scale.`
+      : 'Each line is the price as a percentage below that card\'s peak. Dashed lines are each card\'s Buy line on the same scale.';
+    return controls + `<div class="panel race-box"><div class="race-legend">${legend}</div>${chart}<p class="cd-note">${note}</p></div>` + ladderHtml(cards);
+  }
+  function wireRace(el, arg) {
+    el.querySelectorAll('[data-race]').forEach((b) => b.addEventListener('click', () => {
+      const [k, v] = b.dataset.race.split(':');
+      const opt = store.get('psa10.race', { mode: 'index', range: 'all' });
+      opt[k] = v; store.set('psa10.race', opt);
+      state.cmpTab = 'race';
+      renderCompare(arg);
+    }));
+  }
+  // Zone ladder: each card's zones scaled to its own Buy line, so positions compare like for like.
+  function ladderHtml(cards) {
+    const rows = cards.map((c, i) => {
+      const t = c.analysis && c.analysis.tiers, p = getRep(c);
+      if (!t || p == null) return null;
+      const bu = t.buy_upper, l = getLimit(c);
+      return { c, i, db: t.definitely_buy / bu, ce: t.ceiling / bu, p: p / bu, l: l != null ? l / bu : null, price: p };
+    }).filter(Boolean);
+    if (!rows.length) return '';
+    const lo = Math.min(0.8, ...rows.map((r) => Math.min(r.db, r.p, r.l ?? 9))) - 0.03;
+    const hi = Math.max(1.25, ...rows.map((r) => Math.max(r.ce, r.p))) + 0.03;
+    const pos = (r) => ((r - lo) / (hi - lo)) * 100;
+    const seg = (a, b, cls) => `<i class="${cls}" style="left:${pos(a).toFixed(2)}%;width:${(pos(b) - pos(a)).toFixed(2)}%"></i>`;
+    return `<section class="panel zl"><div class="tp-head"><h2 class="section-title">Zone ladder</h2><span class="muted zl-sub">Each bar is scaled to its own Buy line, so the white markers compare like for like</span></div>
+      ${rows.map((r) => `<div class="zl-row"><span class="zl-name" style="color:${CMP_COLORS[r.i]}">${escapeHtml(parseCardName(r.c.card_name_ja).short)} <small>${fmtYen(r.price)} · ${fmtPct((r.p - 1) * 100)} vs Buy</small></span>
+        <span class="zl-track">${seg(lo, r.db, 'z-db')}${seg(r.db, 1, 'z-bu')}${seg(1, r.ce, 'z-w')}${seg(r.ce, hi, 'z-x')}
+          ${r.l != null ? `<b class="zl-lim" style="left:${pos(r.l).toFixed(2)}%" title="My limit ${fmtYen(getLimit(r.c))}"></b>` : ''}
+          <b class="zl-now" style="left:${pos(r.p).toFixed(2)}%" title="${fmtYen(r.price)}"></b></span></div>`).join('')}
+      <div class="gauge-legend"><span><i class="z-db"></i>Definitely buy</span><span><i class="z-bu"></i>Buy</span><span><i class="z-w"></i>Watch</span><span><i class="z-x"></i>Don't buy</span><span><i class="zl-key-now"></i>Price</span><span><i class="zl-key-lim"></i>My limit</span></div></section>`;
+  }
+
+  // ----- budget duel -----
+  function renderDuel(arg) {
+    const el = document.getElementById('duel-page');
+    const cards = cardsFromArg(arg).filter(hasMarket).slice(0, CMP_MAX_DUEL);
+    if (cards.length < 2) {
+      el.innerHTML = `<div class="empty-state">Tick two to ${CMP_MAX_DUEL} cards in the <a href="#/planner">budget planner</a>, then press Compare.</div>`;
+      return { title: 'Which one first?', sub: '' };
+    }
+    const st = plannerState();
+    const spent = state.holdings.reduce((s, h) => s + holdingCost(h), 0);
+    const avail = st.budget - spent;
+    const leftTxt = (x) => (x >= 0 ? `${fmtYen(x)} left after it` : `${fmtYen(-x)} over budget`);
+    const oddsRow = (card, label, price, color) => {
+      const o = touchOdds(card, price);
+      if (!o) return '';
+      if (o.reached) return `<div class="du-odds"><span>${escapeHtml(label)}</span><span class="du-bar"></span><b>already there</b></div>`;
+      return `<div class="du-odds"><span>${escapeHtml(label)}</span><span class="du-bar"><i style="width:${(o.p90 * 100).toFixed(1)}%;background:${color};opacity:.3"></i><i style="width:${(o.p30 * 100).toFixed(1)}%;background:${color}"></i></span><b>${fmtOdds(o.p30)} · ${fmtOdds(o.p90)}</b></div>`;
+    };
+    const cols = cards.map((c, i) => {
+      const { short, code } = parseCardName(c.card_name_ja);
+      const ask = lowestAsk(c), lim = getLimit(c), t = c.analysis && c.analysis.tiers, d = computeDiyEconomics(c, getRep(c));
+      const color = CMP_COLORS[i];
+      return `<article class="panel du-card" style="border-top-color:${color}">
+        <div class="du-head"><a href="#/card/${escapeAttr(cardId(c))}">${slabHtml(c, 'md')}</a>
+          <div class="du-id"><a class="h2h-name jp" href="#/card/${escapeAttr(cardId(c))}">${escapeHtml(short)}</a><span class="h2h-meta">${escapeHtml(code)}</span><span class="h2h-v">${tagChip(c)}<small>${escapeHtml(writtenVerdictText(c))}</small></span></div></div>
+        <div class="du-prices">
+          <div class="du-p"><span class="lbl">Today's lowest ask</span><span class="display">${fmtYen(ask)}</span><small>${leftTxt(avail - ask)}</small></div>
+          <div class="du-p"><span class="lbl">At my limit</span>${lim != null
+            ? `<span class="display acc">${fmtYen(lim)}</span><small>${leftTxt(avail - lim)} · ${Math.round((1 - lim / ask) * 100)}% below today</small>`
+            : `<span class="display muted">—</span><small><a href="#/card/${escapeAttr(cardId(c))}">Set a limit</a> on the card page</small>`}</div>
+        </div>
+        <div class="du-oddsbox"><span class="lbl">Chance a listing reaches… (30 · 90 days)</span>
+          ${lim != null ? oddsRow(c, 'My limit ' + fmtYen(lim), lim, color) : ''}
+          ${t && t.definitely_buy < ask ? oddsRow(c, 'Definitely buy ' + fmtYen(t.definitely_buy), t.definitely_buy, color) : ''}
+          ${t && t.buy_upper < ask ? oddsRow(c, 'Buy line ' + fmtYen(t.buy_upper), t.buy_upper, color) : ''}
+        </div>
+        <div class="du-diy"><span class="muted">Grade a raw copy yourself instead</span><b>${d ? `${fmtYen(Math.abs(d.delta))} ${d.delta < 0 ? 'cheaper' : 'dearer'}` : '—'}</b></div>
+      </article>`;
+    }).join('');
+    const today = cards.reduce((s, c) => s + lowestAsk(c), 0);
+    const atLim = cards.reduce((s, c) => s + (getLimit(c) ?? lowestAsk(c)), 0);
+    const noLim = cards.filter((c) => getLimit(c) == null).length;
+    const rels = [];
+    for (let i = 0; i < cards.length; i++) for (let j = i + 1; j < cards.length; j++) {
+      const r = relation(cards[i], cards[j]);
+      if (r.kind !== 'none') rels.push(`<li><b>${escapeHtml(parseCardName(cards[i].card_name_ja).short)} + ${escapeHtml(parseCardName(cards[j].card_name_ja).short)}</b>: ${escapeHtml(r.text)}</li>`);
+    }
+    const all = cards.length === 2 ? 'Both' : `All ${cards.length}`;
+    el.innerHTML = `
+      <div class="du-grid du-n${cards.length}">${cols}</div>
+      <section class="panel du-sum">
+        <div class="du-p"><span class="lbl">${all}, at today's prices</span><span class="display">${fmtYen(today)}</span><small class="${avail - today >= 0 ? 'pos' : 'neg'}">${avail - today >= 0 ? fmtYen(avail - today) + ' left' : fmtYen(today - avail) + ' over budget'}</small></div>
+        <div class="du-p"><span class="lbl">${all}, at my limits</span><span class="display acc">${fmtYen(atLim)}</span><small class="${avail - atLim >= 0 ? 'pos' : 'neg'}">${avail - atLim >= 0 ? fmtYen(avail - atLim) + ' left' : fmtYen(atLim - avail) + ' over budget'}${today > atLim ? ' · saves ' + fmtYen(today - atLim) : ''}${noLim ? ` · ${noLim} without a limit at today's price` : ''}</small></div>
+        <div class="du-rel">${rels.length ? `<ul>${rels.join('')}</ul>` : `<span class="h2h-rel rel-none">Separate bets: different sets and characters.</span>`}</div>
+      </section>
+      <p class="cd-note">Budget ${fmtYen(st.budget)}${spent ? `, ${fmtYen(spent)} already spent` : ''} (set in the <a href="#/planner">budget planner</a>). Odds come from the limit-odds model: no trend assumed; bold bar 30 days, faint bar 90 days.</p>`;
+    trimImages(el);
+    return { title: 'Which one first?', sub: `${cards.length} cards from your budget planner · checked ${fmtDateJST(state.currentData.collected_at_jst)}` };
+  }
+
+  // Line chart with several series on one time axis (price race). Same look and hover as drawLineChart.
+  function drawMultiChart(box, cfg) {
+    const xs = cfg.days;
+    if (!xs.length) return;
+    const W = Math.max(260, box.clientWidth), H = cfg.height || 260;
+    const m = { l: 50, r: 12, t: 16, b: 26 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const ys = cfg.series.flatMap((s) => s.vals.filter((v) => v != null)).concat((cfg.refs || []).map((r) => r.y));
+    const ticks = niceTicks(Math.min(...ys), Math.max(...ys), 4), lo = ticks[0], hi = ticks[ticks.length - 1];
+    const x0 = xs[0], x1 = xs[xs.length - 1];
+    const X = (x) => m.l + (xs.length === 1 ? iw / 2 : ((x - x0) * iw) / (x1 - x0 || 1));
+    const Y = (v) => m.t + ih * (1 - (v - lo) / (hi - lo || 1));
+    const fy = cfg.fmtY || ((v) => String(+v.toFixed(1)));
+    const base = m.t + ih;
+    const n = Math.max(1, Math.min(6, Math.floor(iw / 90), xs.length - 1));
+    const xt = []; for (let k = 0; k <= n; k++) { const t = x0 + ((x1 - x0) * k) / n; const d = new Date(t + 9 * 36e5); xt.push([X(t), `${d.getUTCMonth() + 1}/${d.getUTCDate()}`]); }
+    const path = (vals) => { let d = '', pen = false; vals.forEach((v, i) => { if (v == null) { pen = false; return; } d += `${pen ? 'L' : 'M'}${X(xs[i]).toFixed(1)},${Y(v).toFixed(1)} `; pen = true; }); return d.trim(); };
+    let lastLabelY = -99;
+    const refs = (cfg.refs || []).slice().sort((p, q) => Y(p.y) - Y(q.y)).map((r) => {
+      const y = Y(r.y); let ly = y - 5; if (Math.abs(ly - lastLabelY) < 13) ly = y + 13; lastLabelY = ly;
+      return `<line x1="${m.l}" x2="${m.l + iw}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${r.color}" stroke-width="1.2" stroke-dasharray="6 5" opacity="0.7"/><text x="${m.l + 6}" y="${ly.toFixed(1)}" fill="${r.color}" font-size="11" opacity="0.85">${escapeHtml(r.label)}</text>`;
+    }).join('');
+    const lastIdx = (vals) => { for (let i = vals.length - 1; i >= 0; i--) if (vals[i] != null) return i; return -1; };
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+      ${ticks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${escapeHtml(fy(v))}</text>`).join('')}
+      ${xt.map(([x, lab]) => `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${base}" y2="${base + 4}" class="ci-axis"/><text x="${x.toFixed(1)}" y="${base + 18}" class="ci-xtick">${lab}</text>`).join('')}
+      <line x1="${m.l}" x2="${m.l + iw}" y1="${base}" y2="${base}" class="ci-axis"/>
+      ${refs}
+      ${cfg.series.map((s) => { const li = lastIdx(s.vals); return `<path d="${path(s.vals)}" fill="none" stroke="${s.color}" stroke-width="${s.dash ? 1.8 : 2.4}"${s.dash ? ' stroke-dasharray="5 5"' : ''} stroke-linejoin="round"/>${li >= 0 ? `<circle cx="${X(xs[li]).toFixed(1)}" cy="${Y(s.vals[li]).toFixed(1)}" r="${s.dash ? 3.5 : 4.5}" fill="${s.color}"/>` : ''}`; }).join('')}
+      <g class="ci-hover" style="display:none"><line class="ci-cross" y1="${m.t}" y2="${base}"/>${cfg.series.map((s, k) => `<circle data-k="${k}" r="5" fill="${s.color}" stroke="var(--bg)" stroke-width="2"/>`).join('')}</g>
+    </svg><div class="ci-tip" role="status" aria-live="polite" hidden></div>`;
+    const svg = box.querySelector('svg'), g = svg.querySelector('.ci-hover'), tip = box.querySelector('.ci-tip'), cross = g.querySelector('.ci-cross');
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const show = (i) => {
+      const x = X(xs[i]); g.style.display = ''; cross.setAttribute('x1', x); cross.setAttribute('x2', x);
+      let top = base;
+      cfg.series.forEach((s, k) => {
+        const dot = g.querySelector(`[data-k="${k}"]`), v = s.vals[i];
+        if (v == null) { dot.style.display = 'none'; return; }
+        dot.style.display = ''; dot.setAttribute('cx', x); dot.setAttribute('cy', Y(v)); top = Math.min(top, Y(v));
+      });
+      const d = new Date(xs[i] + 9 * 36e5);
+      tip.innerHTML = `<div class="ci-tip-d">${d.getUTCDate()} ${MON[d.getUTCMonth()]}</div>` + cfg.series.map((s) => (s.vals[i] == null ? '' :
+        `<div><span class="ci-key" style="border-top-color:${s.color}${s.dash ? ';border-top-style:dashed' : ''}"></span>${escapeHtml(s.name)} ${s.raw && s.raw[i] != null ? `<b>${fmtYen(s.raw[i])}</b> <span class="muted">${escapeHtml(fy(s.vals[i]))}</span>` : `<b>${escapeHtml(fy(s.vals[i]))}</b>`}</div>`)).join('');
+      tipPlace(box, tip, x, top, W);
+    };
+    wireHover(box, svg, xs.length, xs.map(X), show, () => { g.style.display = 'none'; tip.hidden = true; });
   }
 
   // ---------- render: tables ----------
