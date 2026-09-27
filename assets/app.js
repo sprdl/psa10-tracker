@@ -2752,7 +2752,7 @@
           ${t && t.definitely_buy < ask ? oddsRow(c, 'Definitely buy ' + fmtYen(t.definitely_buy), t.definitely_buy, color) : ''}
           ${t && t.buy_upper < ask ? oddsRow(c, 'Buy line ' + fmtYen(t.buy_upper), t.buy_upper, color) : ''}
         </div>
-        <div class="du-diy"><span class="muted">Grade a raw copy yourself instead</span><b>${d ? `${fmtYen(Math.abs(d.delta))} ${d.delta < 0 ? 'cheaper' : 'dearer'}` : '—'}</b></div>
+        <div class="du-diy"><span class="muted">Buying raw and grading it yourself</span><b>${d ? (Math.round(d.delta) === 0 ? 'same as the slab' : `${fmtYen(Math.abs(d.delta))} ${d.delta < 0 ? 'less' : 'more'} than the slab`) : '—'}</b></div>
       </article>`;
     }).join('');
     const today = cards.reduce((s, c) => s + lowestAsk(c), 0);
