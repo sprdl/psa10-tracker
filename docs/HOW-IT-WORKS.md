@@ -150,6 +150,8 @@ data/tracked_cards.json        cards added via "+ Add card"
 data/incoming/                 drop folder for price-check output (gitignored)
 
 scripts/*.py                   publishing and maintenance scripts (section 11)
+pricecheck/                    the price-check skill's machinery: in-page scripts, assemble.py,
+                               card list, FULL-CHECK.md (full-check procedure)
 scripts/odds_model_builder.js  in-browser helper to rebuild the odds model
 .github/workflows/*.yml        deploy, log purchase, set limit (section 10)
 .github/ISSUE_TEMPLATE/*.yml   Add card, Bought it, Remove purchase, Set limit forms
@@ -227,7 +229,11 @@ The price-check skill assembles one JSON file, which is copied to
    `history.json` + `calls.json` (`build_history.build`);
 6. commits and pushes. The deploy Action publishes the site.
 
-**Quick check.** `quick_update.py` starts from the latest snapshot and replaces only
+**Quick check.** `pricecheck/scripts/snkrdunk_quick.js` runs once in a SNKRDUNK tab: it opens every
+card's product page in a hidden same-origin iframe, one after another, and returns one compact line
+per card (`<id> f<favorites> p<PSA10 ask> a<A ask> P<sales> A<sales>`, codes in the script's header).
+Those lines go straight to `python3 scripts/quick_update.py -` on stdin; its `decode_compact()` turns
+them back into the raw JSON shape. `quick_update.py` then starts from the latest snapshot and replaces only
 what a quick run measures (lowest asks, recent sales, favorites). Everything else
 is carried and stamped `listings_as_of` / `population_as_of` / `as_of`. The site shows
 those stamps as small "as of 9/26 15:15" labels (`asOfHtml`). It then hands off to
@@ -659,7 +665,7 @@ with a docstring explaining its usage. Open the file and read the top.
 | `add_snapshot.py` | publishing a full price check (the skill does it) |
 | `quick_update.py` | publishing a quick check |
 | `apply_analysis.py` | applying an evaluation (`--dry-run` to preview) |
-| `check_status.py` | seeing the latest snapshot and whether today's full check ran |
+| `check_status.py` | seeing the latest snapshot, whether today's full check ran, and the ids a quick check reads |
 | `card_requests.py` | handling Add-card issues: `list`, `add`, `set`, `reject` |
 | `build_history.py` | rebuilding `history.json` + `calls.json` by hand (normally automatic) |
 | `build_calls.py` | rebuilding only the track record |
