@@ -215,7 +215,16 @@ format when adding cards by hand.
 
 ## 5. How new data reaches the site
 
-**Full price check.** Claude reads SNKRDUNK, altema and pokeca-chart in your browser.
+**Full price check.** `pricecheck/plan.py` decides what today's run reads (which cards get their
+listings pages, which altema pages are due, the Monday and monthly extras). Claude then runs one
+in-page script per site in your browser (`pricecheck/scripts/snkrdunk_full.js`, `altema_batch.js`,
+`pokeca_both.js`, plus the My-tier extractor); each opens the site's own pages in hidden same-origin
+iframes and returns compact lines. `python3 scripts/full_update.py -` takes all the lines on stdin,
+decodes them into the raw JSON below, runs `pricecheck/scripts/assemble.py` against the live snapshot
+and hands over to `add_snapshot.py` and `add_custom_index.py`. The older description below still
+describes what happens inside those scripts:
+
+Claude reads SNKRDUNK, altema and pokeca-chart in your browser.
 The price-check skill assembles one JSON file, which is copied to
 `data/incoming/latest-run.json`. Then `python3 scripts/add_snapshot.py data/incoming/latest-run.json`:
 
@@ -662,7 +671,9 @@ with a docstring explaining its usage. Open the file and read the top.
 
 | Script | You'd run it when… |
 |---|---|
-| `add_snapshot.py` | publishing a full price check (the skill does it) |
+| `full_update.py` | publishing a full price check from the compact lines (the skill does it; `--dry-run` to preview) |
+| `../pricecheck/plan.py` | seeing what today's full check will read |
+| `add_snapshot.py` | publishing an assembled snapshot (called by `full_update.py` / `quick_update.py`) |
 | `quick_update.py` | publishing a quick check |
 | `apply_analysis.py` | applying an evaluation (`--dry-run` to preview) |
 | `check_status.py` | seeing the latest snapshot, whether today's full check ran, and the ids a quick check reads |
