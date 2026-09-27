@@ -946,6 +946,13 @@ a.pl-stat.pl-link:hover { border-color: var(--accent); background: var(--hover);
 .ins-pill { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; font: 15px var(--display); letter-spacing: 0.08em; line-height: 1; padding: 4px 9px 2px; border-radius: 4px; border: 1px solid rgba(255, 210, 63, 0.55); color: var(--accent); white-space: nowrap; }
 .ins-pill { padding: 3px 5px; }
 .ins-pill svg { width: 13px; height: 13px; }
+.ins-quiet { border-left-color: var(--line-3); }
+.ins-quiet summary { color: var(--soft); }
+.ins-q { display: grid; grid-template-columns: 130px 1fr; gap: 10px; font-size: 13px; line-height: 1.45; padding: 6px 0; border-top: 1px solid var(--line); }
+.ins-q span:first-child { color: var(--muted); }
+.ins-q span:last-child { color: var(--soft); }
+.ins-q:last-child { margin-bottom: 8px; }
+@media (max-width: 640px) { .ins-q { grid-template-columns: 1fr; gap: 2px; } }
 .ins-src { font-size: 12px; line-height: 1.6; }
 .ins-written p + p { margin-top: 8px; }
 .ins-lab { display: block; font: 15px var(--display); letter-spacing: 0.08em; color: var(--accent); margin-bottom: 1px; }

@@ -976,14 +976,14 @@
         : 'It is falling for its own reasons, faster than the market: often new supply (graded copies coming back, a reprint) or fading interest. Weak cards tend to keep sliding for a while, which can bring your price into reach.';
       lines.push(meaning);
       if (lim != null && ask > lim) { const o = touchOdds(card, lim); if (o && !o.reached) lines.push(`Your limit ${fmtYen(lim)} is ${Math.round((1 - lim / ask) * 100)}% below today's ask; the odds model puts a listing there at ${fmtOdds(o.p30)} within 30 days (it uses the card's own swings, not this week's trend).`); }
-      out.push({ score: Math.abs(g.gap) / (days === 7 ? INSIGHT.gap7 : INSIGHT.gap30), tone: up ? 'up' : 'down', title: up ? `Holding up far better than the market (${days} days)` : `Falling much faster than the market (${days} days)`, lines });
+      out.push({ key: 'market', score: Math.abs(g.gap) / (days === 7 ? INSIGHT.gap7 : INSIGHT.gap30), tone: up ? 'up' : 'down', title: up ? `Holding up far better than the market (${days} days)` : `Falling much faster than the market (${days} days)`, lines });
     }
 
     // 2) the lowest ask vs. where it actually sells
     if (medRecent || sp.all.length >= 5) {
       const ref = medRecent || median(sp.all.slice(-5));
       const d = (ask / ref - 1) * 100;
-      if (Math.abs(d) >= INSIGHT.askVsSales) out.push({ score: Math.abs(d) / INSIGHT.askVsSales * 0.9, tone: d > 0 ? 'down' : 'up',
+      if (Math.abs(d) >= INSIGHT.askVsSales) out.push({ key: 'sales', score: Math.abs(d) / INSIGHT.askVsSales * 0.9, tone: d > 0 ? 'down' : 'up',
         title: d > 0 ? `Asking ${Math.round(d)}% above recent sales` : `Listed ${Math.round(-d)}% below recent sales`,
         lines: [d > 0
           ? `The cheapest listing is ${fmtYen(ask)}, but recent sales are around ${fmtYen(ref)}. Sellers are asking more than buyers have been paying; either asks come down, or a sale at the higher price would confirm a move up.`
@@ -992,20 +992,20 @@
 
     // 3) a big jump since the previous check
     const last = priceChangeLast(card);
-    if (last && Math.abs(last.pct) >= INSIGHT.move) out.push({ score: Math.abs(last.pct) / INSIGHT.move * 0.8, tone: last.pct > 0 ? 'up' : 'down',
+    if (last && Math.abs(last.pct) >= INSIGHT.move) out.push({ key: 'move', score: Math.abs(last.pct) / INSIGHT.move * 0.8, tone: last.pct > 0 ? 'up' : 'down',
       title: `${last.pct > 0 ? 'Up' : 'Down'} ${Math.abs(last.pct).toFixed(0)}% since the last check`,
       lines: [`${fmtYen(last.old)} → ${fmtYen(getRep(card))} since ${escapeHtml(last.from)} JST. ${depth.within <= 2 ? `Only ${depth.within} listing${depth.within === 1 ? ' is' : 's are'} near the lowest ask, so one listing selling or appearing can cause a jump like this.` : `${depth.within} listings are within 15% of the lowest ask, so this is more than a single stray listing.`}`] });
 
     // 4) trading speeding up or drying up
     if (h && h.psa && h.prev && h.prev.rate && Math.max(h.psa.rate, h.prev.rate) >= 1) {
       const c = (h.psa.rate / h.prev.rate - 1) * 100;
-      if (Math.abs(c) >= INSIGHT.heat) out.push({ score: Math.abs(c) / INSIGHT.heat * 0.7, tone: 'neutral',
+      if (Math.abs(c) >= INSIGHT.heat) out.push({ key: 'heat', score: Math.abs(c) / INSIGHT.heat * 0.7, tone: 'neutral',
         title: c > 0 ? `Trading picked up ${c >= 100 ? (c / 100 + 1).toFixed(1) + '×' : '+' + Math.round(c) + '%'}` : `Trading slowed ${Math.round(-c)}%`,
         lines: [`About ${fmtRate(h.psa.rate)} PSA10 sales a day now, ${fmtRate(h.prev.rate)} a week ago. ${c > 0 ? 'More buyers are active; if the price holds while volume rises, the level is well supported.' : 'Fewer buyers; prices in a quiet market can drift, and listings take longer to sell.'}`] });
     }
 
     // 5) close to your limit
-    if (lim != null && ask > lim && (ask / lim - 1) * 100 <= 5) out.push({ score: 1.2, tone: 'up', title: `Within ${((ask / lim - 1) * 100).toFixed(1)}% of your limit`,
+    if (lim != null && ask > lim && (ask / lim - 1) * 100 <= 5) out.push({ key: 'limit', score: 1.2, tone: 'up', title: `Within ${((ask / lim - 1) * 100).toFixed(1)}% of your limit`,
       lines: [`The lowest ask ${fmtYen(ask)} is ${fmtYen(ask - lim)} above your ${fmtYen(lim)} limit. A single cheaper listing would trigger a Buy signal.`] });
     return out.sort((a, b) => b.score - a.score);
   }
@@ -1025,12 +1025,50 @@
       ${e.headline ? `<b class="ins-hl">${escapeHtml(e.headline)}</b>` : ''}${insightParas(e.text)}
       ${(e.sources || []).filter((x) => /^https?:\/\//.test(x.url || '')).length ? `<div class="ins-src"><span class="muted">Sources:</span> ${e.sources.filter((x) => /^https?:\/\//.test(x.url || '')).map((x) => `<a href="${escapeAttr(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.title || x.url)} ↗</a>`).join(' · ')}</div>` : ''}</div>`;
   }
+  // The same five checks for every card, with today's values: shown as "Nothing unusual" when no
+  // finding fires, and as "Other checks" under the findings when some do.
+  function quietChecks(card, fired) {
+    if (!hasMarket(card)) return [];
+    const out = [];
+    const ask = lowestAsk(card);
+    if (!fired.has('market')) {
+      let g = null, gd = 0;
+      for (const d of [7, 3, 1]) { g = marketGap(card, d); if (g) { gd = d; break; } }
+      out.push(['Vs. the market', g ? `${fmtPct(g.card)} over ${gd} day${gd === 1 ? '' : 's'} vs the ${g.name} ${fmtPct(g.market)}: ${g.gap >= 0 ? '+' : '−'}${Math.abs(g.gap).toFixed(1)} pts, in line (flagged at ±${INSIGHT.gap7} over 7 days${gd < 7 ? `; only ${gd} day${gd === 1 ? '' : 's'} of history so far` : ''})` : 'not enough history yet']);
+    }
+    if (!fired.has('sales')) {
+      const sp = salesSplit(card, 7);
+      const ref = sp.recent.length >= 3 ? median(sp.recent) : sp.all.length >= 5 ? median(sp.all.slice(-5)) : null;
+      out.push(['Ask vs. sales', ref ? `lowest ask ${fmtPct((ask / ref - 1) * 100)} vs recent sales (${fmtYen(ref)}), close to where it sells` : `too few recent sales to compare (${sp.all.length})`]);
+    }
+    if (!fired.has('move')) {
+      const last = priceChangeLast(card);
+      out.push(['Since last check', last ? (Math.abs(last.pct) < 0.05 ? `unchanged at ${fmtYen(getRep(card))}` : `${fmtPct(last.pct)} (${fmtYen(last.old)} → ${fmtYen(getRep(card))}), a normal move`) : 'no earlier check to compare']);
+    }
+    if (!fired.has('heat')) {
+      const h = heatOf(card);
+      out.push(['Trading', h && h.psa ? `about ${fmtRate(h.psa.rate)} PSA10 sales a day${h.prev ? ` (${fmtRate(h.prev.rate)} a week ago), steady` : ''}` : 'no trade data yet']);
+    }
+    if (!fired.has('limit')) {
+      const lim = getLimit(card);
+      out.push(['Your limit', lim == null ? 'none set' : ask <= lim ? `lowest ask is at or below your ${fmtYen(lim)} limit` : `${fmtYen(lim)}, ${Math.round((ask / lim - 1) * 100)}% below today's ask`]);
+    }
+    return out;
+  }
+  function quietHtml(rows) {
+    return rows.map(([k, v]) => `<div class="ins-q"><span>${k}</span><span>${v}</span></div>`).join('');
+  }
   function insightsHtml(card) {
     const list = insightsFor(card);
     const w = writtenInsight(card);
-    if (!list.length && !w) return '';
-    return `<div class="insights"><div class="ins-head"><span class="lbl">What stands out</span>${list.length ? `<span class="muted">${list.length} finding${list.length === 1 ? '' : 's'} from the numbers</span>` : ''}</div>${w}
-      ${list.map((x, i) => `<details class="ins ins-${x.tone}"${i === 0 && !w ? ' open' : ''}><summary>${escapeHtml(x.title)}</summary>${x.lines.map((l) => `<p>${l}</p>`).join('')}</details>`).join('')}</div>`;
+    const quiet = quietChecks(card, new Set(list.map((x) => x.key)));
+    if (!list.length && !w && !quiet.length) return '';
+    const head = list.length ? `${list.length} finding${list.length === 1 ? '' : 's'} from the numbers` : 'nothing unusual in the numbers';
+    const quietBlock = !quiet.length ? '' : list.length
+      ? `<details class="ins ins-quiet"><summary>Other checks: nothing unusual</summary>${quietHtml(quiet)}</details>`
+      : `<details class="ins ins-quiet" open><summary>Nothing unusual</summary>${quietHtml(quiet)}</details>`;
+    return `<div class="insights"><div class="ins-head"><span class="lbl">What stands out</span><span class="muted">${head}</span></div>${w}
+      ${list.map((x, i) => `<details class="ins ins-${x.tone}"${i === 0 && !w ? ' open' : ''}><summary>${escapeHtml(x.title)}</summary>${x.lines.map((l) => `<p>${l}</p>`).join('')}</details>`).join('')}${quietBlock}</div>`;
   }
   const INS_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5l1.6 4.2 4.4.3-3.4 2.8 1.1 4.3L8 10.7l-3.7 2.4 1.1-4.3L2 6l4.4-.3z"/></svg>';
   function hasInsight(card) { return insightsFor(card).some((x) => x.score >= 1.5) || !!(state.insights && state.insights.insights && state.insights.insights[card.url]); }
