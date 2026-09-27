@@ -924,3 +924,20 @@ a.pl-stat.pl-link:hover { border-color: var(--accent); background: var(--hover);
 
 /* track record: one-sentence explanation under each score tile */
 .tr-explain { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.45; color: var(--muted); }
+
+/* ---------- insights ("What stands out") on the card page ---------- */
+.insights { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+.ins-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12px; }
+.ins { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--line-3); border-radius: var(--radius); padding: 0 14px; }
+.ins-up { border-left-color: var(--green); } .ins-down { border-left-color: var(--neg); } .ins-neutral { border-left-color: var(--accent); }
+.ins summary { cursor: pointer; list-style: none; padding: 11px 0; font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; gap: 10px; }
+.ins summary::-webkit-details-marker { display: none; }
+.ins summary::after { content: '+'; color: var(--muted-2); font-weight: 400; }
+.ins[open] summary::after { content: '−'; }
+.ins p { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: var(--soft); }
+.ins p:last-child { padding-bottom: 4px; }
+.ins-written { background: var(--panel); border: 1px solid var(--accent); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.ins-wh { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; flex-wrap: wrap; }
+.ins-hl { font-size: 14px; }
+.ins-written p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--soft); white-space: pre-line; }
+.ins-chip { font: 14px var(--display); letter-spacing: 0.06em; padding: 2px 6px 1px; border-radius: 4px; color: var(--accent); border: 1px solid var(--accent); margin-left: 4px; }

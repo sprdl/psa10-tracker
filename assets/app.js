@@ -145,6 +145,7 @@
   const OPTIONAL_DATA = {
     holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
+    insights: 'data/insights.json',
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
@@ -180,6 +181,7 @@
     historyIndexPromise = Promise.resolve(state.hist);
     state.syncedLimits = (b.limits && b.limits.limits) || {};
     state.oddsModel = b.oddsModel || null;
+    state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
     if (fresh) reconcileLimits(); // only against fresh data, never a cached copy
 
     els.snapshotSelects.forEach((sel) => {
@@ -826,9 +828,11 @@
   function refTime() { return (state.currentData && state.currentData.collected_at_jst) || new Date().toISOString(); }
   function daysBetween(a, b) { return (new Date(b) - new Date(a)) / 86400000; }
 
+  // Timestamps mix JST ("…+09:00") and UTC ("…Z") strings, so compare real times, never strings.
+  function jstDay(ts) { return new Date(Date.parse(ts) + 9 * 3600000).toISOString().slice(0, 10); }
   function myTierAt(ts) {
     const ser = (state.customIndex && state.customIndex.series) || [];
-    const day = ts.slice(0, 10);
+    const day = jstDay(ts);
     let hit = null;
     for (const e of ser) if (e.d <= day) hit = e;
     return hit;
@@ -836,7 +840,8 @@
   function pokecaAt(ts) {
     const snaps = (state.hist && state.hist.snapshots) || [];
     let v = null;
-    for (const e of snaps) if (e.d <= ts && e.i) v = e.i;
+    const t = Date.parse(ts);
+    for (const e of snaps) if (Date.parse(e.d) <= t && e.i) v = e.i;
     return v;
   }
 
@@ -876,7 +881,8 @@
   function cardPriceAt(card, ts) {
     const snaps = (state.hist && state.hist.snapshots) || [];
     let v = null;
-    for (const e of snaps) if (e.d <= ts && e.p && e.p[card.url]) v = { d: e.d, price: e.p[card.url][0] };
+    const t = Date.parse(ts);
+    for (const e of snaps) if (Date.parse(e.d) <= t && e.p && e.p[card.url]) v = { d: e.d, price: e.p[card.url][0] };
     return v;
   }
 
@@ -904,6 +910,120 @@
     return `<div class="vs-mkt"><span class="lbl">Vs. the market</span>${rows.map(cell).join('')}
       <p class="cd-note">Weaker than the market means the card is falling for its own reasons (new supply, fading interest); in line means it is moving with a market-wide dip.</p></div>`;
   }
+
+
+  // ---------- insights: explain the numbers that stand out ----------
+  // Rule-based, computed from data already on the page: a card moving very differently from the
+  // market, the lowest ask far from where the card actually sells, a big jump since the last check,
+  // trading speeding up or drying up, a listing close to your limit. Each finding checks the other
+  // evidence (sales, trading, depth) before saying what it probably means. The same thresholds are
+  // in scripts/outliers.py, which picks the cards the full check writes an analysis for
+  // (data/insights.json, shown above these findings).
+  const INSIGHT = { gap7: 8, gap30: 12, move: 8, askVsSales: 8, heat: 50 };
+  function median(a) { const s = a.slice().sort((x, y) => x - y); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
+  // Same numbers as the "Vs. the market" box (vsMarketHtml): history.json prices, index since that day.
+  function marketGap(card, days) {
+    const now = refTime();
+    const cur = cardPriceAt(card, now);
+    const past = cardPriceAt(card, new Date(new Date(now).getTime() - days * 86400000).toISOString());
+    if (!cur || !past || !past.price) return null;
+    const m = marketMove(past.d, now);
+    const c = (cur.price / past.price - 1) * 100;
+    return m ? { card: c, old: past.price, now: cur.price, from: past.d, market: m.pct, name: m.name, gap: c - m.pct } : null;
+  }
+  function salesSplit(card, days) {
+    const ref = Date.parse(refTime());
+    const rows = (((card.grades || {}).psa10 || {}).recent_completed_sales || []).map((s) => ({ p: s.price, age: saleAgeDays(s.when, ref) })).filter((s) => s.age != null);
+    return { recent: rows.filter((s) => s.age <= days).map((s) => s.p), before: rows.filter((s) => s.age > days).map((s) => s.p), all: rows.map((s) => s.p) };
+  }
+  function insightsFor(card) {
+    if (!hasMarket(card)) return [];
+    const out = [];
+    const name = parseCardName(card.card_name_ja).short;
+    const ask = lowestAsk(card);
+    const h = heatOf(card);
+    const rate = h && h.psa ? h.psa.rate : null;
+    const depth = depthInfo(card.grades.psa10);
+    const lim = getLimit(card);
+    const sp = salesSplit(card, 7);
+    const medRecent = sp.recent.length >= 3 ? median(sp.recent) : null;
+    const medBefore = sp.before.length >= 3 ? median(sp.before) : null;
+    const salesMove = medRecent && medBefore ? (medRecent / medBefore - 1) * 100 : null;
+
+    // 1) vs. the market: 7 days (or 30 when that is the bigger story)
+    const g7 = marketGap(card, 7), g30 = marketGap(card, 30);
+    const useG = g30 && Math.abs(g30.gap) >= INSIGHT.gap30 && (!g7 || Math.abs(g30.gap) / INSIGHT.gap30 > Math.abs(g7.gap) / INSIGHT.gap7) ? [g30, 30] : g7 && Math.abs(g7.gap) >= INSIGHT.gap7 ? [g7, 7] : null;
+    if (useG) {
+      const [g, days] = useG;
+      const peers = ((state.currentData && state.currentData.cards) || []).filter(hasMarket).map((c) => ({ c, g: marketGap(c, days) })).filter((x) => x.g);
+      const rank = peers.sort((a, b) => b.g.gap - a.g.gap).findIndex((x) => x.c.url === card.url);
+      const place = peers.length < 2 ? 'the only card with enough history to compare' : rank === 0 ? `the strongest of the ${peers.length} cards with ${days} days of history` : rank === peers.length - 1 ? `the weakest of the ${peers.length} cards with ${days} days of history` : g.gap > 0 ? `#${rank + 1} of the ${peers.length} cards with ${days} days of history` : `#${peers.length - rank} from the bottom of ${peers.length}`;
+      const up = g.gap > 0;
+      const lines = [`Over ${days} days the price went ${fmtPct(g.card)} (${fmtYen(g.old)} → ${fmtYen(g.now)}) while the ${g.name} went ${fmtPct(g.market)}: <b>${Math.abs(g.gap).toFixed(1)} points ${up ? 'stronger' : 'weaker'}</b>, ${place}.`];
+      const confirm = salesMove != null ? (up ? salesMove > -3 : salesMove < 3) : null;
+      if (salesMove != null) lines.push(confirm
+        ? `Completed sales back this up: the median of the last ${sp.recent.length} sales (${fmtYen(medRecent)}) is ${fmtPct(salesMove)} on the ${sp.before.length} before them.`
+        : `Completed sales don't back it up yet: the median of the last ${sp.recent.length} sales (${fmtYen(medRecent)}) is ${fmtPct(salesMove)} on the ${sp.before.length} before them.`);
+      else lines.push(`Too few recent sales (${sp.recent.length} in the last week) to confirm it from sales; this is the asking price alone.`);
+      const thin = rate != null && rate < 1.2, fewCheap = depth.within <= 3;
+      if (rate != null) lines.push(`Trading: about ${fmtRate(rate)} PSA10 sales a day${h.prev ? ` (${fmtRate(h.prev.rate)} a week ago)` : ''}${thin ? ', a slow market where a few listings set the price' : ''}. ${depth.within} of ${depth.total} listings are within 15% of the lowest ask${fewCheap ? ', so the cheap end is thin' : ''}.`);
+      let meaning;
+      if (up) meaning = confirm === false || thin
+        ? 'This looks more like a thin market that hasn\'t repriced than real strength: asks can lag a falling market and then catch down in steps. Worth watching whether sales follow the market down.'
+        : 'Real relative strength: buyers are paying up for this card while the tier falls. It may keep outperforming, or lag and catch down later if the correction continues. Either way a dip to your price is less likely soon than for the weaker cards.';
+      else meaning = confirm === false
+        ? 'The asks are falling but sales haven\'t followed yet: it may be a few sellers undercutting rather than a real drop. Watch the next checks.'
+        : 'It is falling for its own reasons, faster than the market: often new supply (graded copies coming back, a reprint) or fading interest. Weak cards tend to keep sliding for a while, which can bring your price into reach.';
+      lines.push(meaning);
+      if (lim != null && ask > lim) { const o = touchOdds(card, lim); if (o && !o.reached) lines.push(`Your limit ${fmtYen(lim)} is ${Math.round((1 - lim / ask) * 100)}% below today's ask; the odds model puts a listing there at ${fmtOdds(o.p30)} within 30 days (it uses the card's own swings, not this week's trend).`); }
+      out.push({ score: Math.abs(g.gap) / (days === 7 ? INSIGHT.gap7 : INSIGHT.gap30), tone: up ? 'up' : 'down', title: up ? `Holding up far better than the market (${days} days)` : `Falling much faster than the market (${days} days)`, lines });
+    }
+
+    // 2) the lowest ask vs. where it actually sells
+    if (medRecent || sp.all.length >= 5) {
+      const ref = medRecent || median(sp.all.slice(-5));
+      const d = (ask / ref - 1) * 100;
+      if (Math.abs(d) >= INSIGHT.askVsSales) out.push({ score: Math.abs(d) / INSIGHT.askVsSales * 0.9, tone: d > 0 ? 'down' : 'up',
+        title: d > 0 ? `Asking ${Math.round(d)}% above recent sales` : `Listed ${Math.round(-d)}% below recent sales`,
+        lines: [d > 0
+          ? `The cheapest listing is ${fmtYen(ask)}, but recent sales are around ${fmtYen(ref)}. Sellers are asking more than buyers have been paying; either asks come down, or a sale at the higher price would confirm a move up.`
+          : `The cheapest listing is ${fmtYen(ask)}, below recent sales around ${fmtYen(ref)}. Either a bargain that won't last, or an early sign that sale prices are about to drop too.`] });
+    }
+
+    // 3) a big jump since the previous check
+    const last = priceChangeLast(card);
+    if (last && Math.abs(last.pct) >= INSIGHT.move) out.push({ score: Math.abs(last.pct) / INSIGHT.move * 0.8, tone: last.pct > 0 ? 'up' : 'down',
+      title: `${last.pct > 0 ? 'Up' : 'Down'} ${Math.abs(last.pct).toFixed(0)}% since the last check`,
+      lines: [`${fmtYen(last.old)} → ${fmtYen(getRep(card))} since ${escapeHtml(last.from)} JST. ${depth.within <= 2 ? `Only ${depth.within} listing${depth.within === 1 ? ' is' : 's are'} near the lowest ask, so one listing selling or appearing can cause a jump like this.` : `${depth.within} listings are within 15% of the lowest ask, so this is more than a single stray listing.`}`] });
+
+    // 4) trading speeding up or drying up
+    if (h && h.psa && h.prev && h.prev.rate && Math.max(h.psa.rate, h.prev.rate) >= 1) {
+      const c = (h.psa.rate / h.prev.rate - 1) * 100;
+      if (Math.abs(c) >= INSIGHT.heat) out.push({ score: Math.abs(c) / INSIGHT.heat * 0.7, tone: 'neutral',
+        title: c > 0 ? `Trading picked up ${c >= 100 ? (c / 100 + 1).toFixed(1) + '×' : '+' + Math.round(c) + '%'}` : `Trading slowed ${Math.round(-c)}%`,
+        lines: [`About ${fmtRate(h.psa.rate)} PSA10 sales a day now, ${fmtRate(h.prev.rate)} a week ago. ${c > 0 ? 'More buyers are active; if the price holds while volume rises, the level is well supported.' : 'Fewer buyers; prices in a quiet market can drift, and listings take longer to sell.'}`] });
+    }
+
+    // 5) close to your limit
+    if (lim != null && ask > lim && (ask / lim - 1) * 100 <= 5) out.push({ score: 1.2, tone: 'up', title: `Within ${((ask / lim - 1) * 100).toFixed(1)}% of your limit`,
+      lines: [`The lowest ask ${fmtYen(ask)} is ${fmtYen(ask - lim)} above your ${fmtYen(lim)} limit. A single cheaper listing would trigger a Buy signal.`] });
+    return out.sort((a, b) => b.score - a.score);
+  }
+  function writtenInsight(card) {
+    const e = state.insights && state.insights.insights && state.insights.insights[card.url];
+    if (!e || !e.text) return '';
+    const age = Math.floor(daysBetween(e.written, refTime()));
+    return `<div class="ins-written"><div class="ins-wh"><span class="lbl">Analysis</span><span class="muted">written ${escapeHtml(fmtDateShort(e.written))} by the full check${age > 7 ? ` · ${age} days old, may be outdated` : ''}</span></div>
+      ${e.headline ? `<b class="ins-hl">${escapeHtml(e.headline)}</b>` : ''}<p>${escapeHtml(e.text)}</p></div>`;
+  }
+  function insightsHtml(card) {
+    const list = insightsFor(card);
+    const w = writtenInsight(card);
+    if (!list.length && !w) return '';
+    return `<div class="insights"><div class="ins-head"><span class="lbl">What stands out</span>${list.length ? `<span class="muted">${list.length} finding${list.length === 1 ? '' : 's'} from the numbers</span>` : ''}</div>${w}
+      ${list.map((x, i) => `<details class="ins ins-${x.tone}"${i === 0 && !w ? ' open' : ''}><summary>${escapeHtml(x.title)}</summary>${x.lines.map((l) => `<p>${l}</p>`).join('')}</details>`).join('')}</div>`;
+  }
+  function hasInsight(card) { return insightsFor(card).some((x) => x.score >= 1.5) || !!(state.insights && state.insights.insights && state.insights.insights[card.url]); }
 
   // ---------- render: banners (human-authored + auto-detected) ----------
 
@@ -1569,7 +1689,7 @@
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg')}${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg wl-c30')}
-        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
+        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}${hasInsight(card) ? '<span class="ins-chip" title="Something stands out: see What stands out on the card">Insight</span>' : ''}</span>
         <span class="wl-heat">${heatChip(card)}</span>
       </a>`;
     }).join('');
@@ -1826,6 +1946,7 @@
           ${gaugeHtml}
           ${tierReviewHtml(card)}
           ${limitRowHtml}
+          ${insightsHtml(card)}
           ${vsMarketHtml(card)}
           ${verdictHtml}
           ${card.quick_note ? `<p class="cd-note">${escapeHtml(card.quick_note)}</p>` : ''}

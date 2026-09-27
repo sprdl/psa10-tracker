@@ -176,6 +176,7 @@ docs/HOW-IT-WORKS.md           this guide
 | `holdings.json` | `log_purchase.py` (Action), `add_holding.py` | site | `{"holdings": [{id, card_url, purchase_price_jpy, ...}]}` |
 | `odds_model.json` | `save_odds_model.py` | site (limit odds), `odds_model.py` | per-card volatilities, pooled z-curves, calibration factors |
 | `tracked_cards.json` | `card_requests.py` | price-check skill | extra cards beyond the skill's built-in list |
+| `insights.json` | `set_insight.py` (full check step 7b) | card page "What stands out" | written analyses for cards that stand out |
 
 **One card inside a snapshot** looks like this, trimmed. The full version is in
 `docs/schema.md`:
@@ -489,6 +490,18 @@ the correction rule banner, any hand-written `banners` from the snapshot JSON, a
   since then.
 - `vsMarketHtml` compares the card's 7- and 30-day change with the market's
   (My-tier index, or pokeca-chart) to tell a card-specific drop from a market-wide one.
+
+### What stands out (insights)
+
+`insightsFor(card)` (section "insights" in `app.js`) looks for numbers that stand out: the card
+moving 8+ points differently from the market over 7 days (12+ over 30), the lowest ask 8%+ away from
+the median of the last week's sales, an 8%+ jump since the last check, trading up or down 50%+ on a
+week ago, or the ask within 5% of your limit. Each finding cross-checks the other evidence (sales,
+trading, depth) before saying what it probably means, and the list is shown on the card page, with
+an "Insight" chip on the overview for strong ones. `scripts/outliers.py` applies the same rules in
+Python; the full check (step 7b) writes a short analysis for its top cards with
+`scripts/set_insight.py` into `data/insights.json`, shown at the top of the panel. The thresholds
+are in `INSIGHT` (JavaScript) and `T` (Python); change both together.
 
 ### Trading activity ("heat")
 

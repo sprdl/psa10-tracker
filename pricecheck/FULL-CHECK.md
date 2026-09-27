@@ -141,6 +141,27 @@ data/incoming/latest-run.json --prev <latest snapshot>`, then
 
 Run one price check at a time. Overlapping runs published three identical snapshots on 2026-09-25.
 
+**7b. Write the analysis for cards that stand out** (computer linked, after step 7 has published).
+One `device_bash` call: `cd "$R" && python3 scripts/outliers.py`. It lists up to 3 cards whose
+numbers stand out (moving very differently from the market, asks far from recent sales, a big jump,
+trading speeding up or drying up, close to your limit), each with its findings and context; the
+site's "What stands out" panel explains the same findings automatically. For each listed card,
+write a short analysis the numbers alone can't give, from what this run collected (sales, listing
+depth, trading, tiers, limit, peak) plus what you know of the card and the market (a new set or
+reprint, the graded-supply wave, the 30th-anniversary cycle); one web search for news is fine when a
+real-world reason is likely. Two to five plain sentences: what is happening (with the key numbers),
+the likely reason (say "likely" when it is a hypothesis), what it means for buying (tiers, the
+user's limit, the correction/event rules), and what to watch next. Save each with one `device_bash`
+call (same credential rules as step 7):
+```
+cd "$R" && python3 scripts/set_insight.py <snkrdunk_id> --headline "<one-line takeaway>" --signals "<the findings line from outliers.py>" <<'EOF'
+<the analysis>
+EOF
+```
+A newer analysis replaces the card's previous one; the site marks analyses older than a week. If
+`outliers.py` says nothing stands out, skip this step. Mention each card analysed in the chat message
+in one line (its headline).
+
 **8b. Evaluate cards that have no tiers yet** (full checks only, computer linked, after step 7 has published). A card added in step 1b reaches the tracker without tiers or a verdict, and so does a watched card whose PSA10 market has just formed. Evaluate them in the same run, so the user never has to ask separately.
 1. Find them with one `device_bash` call:
    ```
@@ -152,7 +173,7 @@ Run one price check at a time. Overlapping runs published three identical snapsh
 4. Evaluate at most 3 cards per run. Name any others in the chat message; the next full check continues with them.
 5. If an evaluation can't finish (a site is unreachable, or `apply_analysis.py` refuses the JSON), nothing is applied for that card. Say which card and why.
 
-**Chat message (full check):** keep it short. Say where it was published (snapshot file name, or "not published" and why). Then pass on anything notable from the WARNINGS/CHANGES/FULL_UPDATE NOTES and from `add_snapshot.py`'s own warnings: a stale timestamp, the tracked-card set changing, cards whose verdict now needs a fresh review. Examples: very few live listings, a big favorite-count move, a volume spike, a site that couldn't be reached. The live site shows the rest. Include the My-tier index line `add_custom_index.py` printed (level and change), or say why it was skipped. On Mondays, add the release-calendar line from step 6b. Also report any card requests handled in step 1b ("Added: <name>" / "Couldn't add #<n>: <reason>") and one line per card evaluated in step 8b, e.g. "Evaluated <name>: Watch, tiers ¥X / ¥Y / ¥Z, 2 predictions recorded".
+**Chat message (full check):** keep it short. Say where it was published (snapshot file name, or "not published" and why). Then pass on anything notable from the WARNINGS/CHANGES/FULL_UPDATE NOTES and from `add_snapshot.py`'s own warnings: a stale timestamp, the tracked-card set changing, cards whose verdict now needs a fresh review. Examples: very few live listings, a big favorite-count move, a volume spike, a site that couldn't be reached. The live site shows the rest. Include the My-tier index line `add_custom_index.py` printed (level and change), or say why it was skipped. On Mondays, add the release-calendar line from step 6b. Also report any card requests handled in step 1b ("Added: <name>" / "Couldn't add #<n>: <reason>") one line per card analysed in step 7b, and one line per card evaluated in step 8b, e.g. "Evaluated <name>: Watch, tiers ¥X / ¥Y / ¥Z, 2 predictions recorded".
 
 ## Output shape (produced by assemble.py)
 
