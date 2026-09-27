@@ -1032,6 +1032,7 @@
     return `<div class="insights"><div class="ins-head"><span class="lbl">What stands out</span>${list.length ? `<span class="muted">${list.length} finding${list.length === 1 ? '' : 's'} from the numbers</span>` : ''}</div>${w}
       ${list.map((x, i) => `<details class="ins ins-${x.tone}"${i === 0 && !w ? ' open' : ''}><summary>${escapeHtml(x.title)}</summary>${x.lines.map((l) => `<p>${l}</p>`).join('')}</details>`).join('')}</div>`;
   }
+  const INS_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5l1.6 4.2 4.4.3-3.4 2.8 1.1 4.3L8 10.7l-3.7 2.4 1.1-4.3L2 6l4.4-.3z"/></svg>';
   function hasInsight(card) { return insightsFor(card).some((x) => x.score >= 1.5) || !!(state.insights && state.insights.insights && state.insights.insights[card.url]); }
 
   // ---------- render: banners (human-authored + auto-detected) ----------
@@ -1694,11 +1695,11 @@
       const owned = holdingsFor(card).length;
       return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
         ${slabHtml(card, 'xs')}
-        <span class="wl-name"><b class="jp">${escapeHtml(short)}</b><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
+        <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg')}${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg wl-c30')}
-        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}${hasInsight(card) ? '<span class="ins-chip" title="Something stands out: see What stands out on the card">Insight</span>' : ''}</span>
+        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
         <span class="wl-heat">${heatChip(card)}</span>
       </a>`;
     }).join('');
