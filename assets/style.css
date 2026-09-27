@@ -899,3 +899,25 @@ body.cd-entering #card-page .cd-panel { animation-delay: 0.50s; }
 
 /* card pictures in the budget planner (same thumbnail as the watching page) */
 .pl-thumb { grid-area: auto; grid-column: 2; grid-row: 1 / span 2; }
+
+/* ---------- scored calls (#/scored) ---------- */
+a.pl-stat.pl-link { color: var(--text); display: block; transition: border-color .15s ease, background .15s ease; }
+a.pl-stat.pl-link:hover { border-color: var(--accent); background: var(--hover); color: var(--text); }
+.pl-link-go { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.sc-h { margin: 8px 0 0; }
+.sc-list { display: flex; flex-direction: column; gap: 8px; }
+.sc-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--line-3); border-radius: var(--radius); }
+.sc-row.right { border-left-color: var(--green); }
+.sc-row.wrong { border-left-color: var(--neg); }
+.sc-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sc-top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.sc-name { font-size: 22px; font-weight: 400; }
+.sc-name a { color: var(--text); } .sc-name a:hover { color: var(--accent); }
+.sc-call { font-size: 13px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sc-label { font-size: 12px; color: var(--muted); }
+.sc-why { font-size: 13px; color: var(--soft); }
+.sc-res { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+@media (max-width: 899px) {
+  .sc-row { grid-template-columns: 34px minmax(0, 1fr); }
+  .sc-res { grid-column: 2; flex-direction: row; align-items: center; justify-content: flex-start; }
+}

@@ -978,7 +978,7 @@
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
     planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
-    compare: 'Head to head', duel: 'Budget duel',
+    compare: 'Head to head', duel: 'Budget duel', scored: 'Scored calls',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
@@ -996,11 +996,11 @@
     if (!state.currentData) return;
     const { view, arg } = parseRoute();
     document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== view; });
-    const PARENT = { compare: 'collection', duel: 'planner' };
+    const PARENT = { compare: 'collection', duel: 'planner', scored: 'record' };
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
-    if (tab && ['watching', 'record', 'market', 'tables'].includes(view)) tab.classList.add('on');
+    if (tab && ['watching', 'record', 'market', 'tables'].includes(navView)) tab.classList.add('on');
 
     const back = document.getElementById('back-link');
     back.hidden = view !== 'card' && !PARENT[view];
@@ -1021,7 +1021,7 @@
     } else if (PARENT[view]) {
       back.href = '#/' + PARENT[view];
       back.querySelector('span').textContent = VIEWS[PARENT[view]];
-      ({ title, sub } = view === 'compare' ? renderCompare(arg) : renderDuel(arg));
+      ({ title, sub } = view === 'compare' ? renderCompare(arg) : view === 'duel' ? renderDuel(arg) : renderScored());
     } else {
       state.cardFrom = view === 'more' ? 'overview' : view;
     }
@@ -2029,7 +2029,9 @@
 
     sec.innerHTML = `
         <div class="pl-summary">
-          <div class="pl-stat"><div class="lbl">Buy / Watch calls</div><div class="val">${escapeHtml(headline)}</div><div class="tr-hint">${c.pending || 0} still inside their ${win}-day window</div></div>
+          ${sm.calls_scored
+            ? `<a class="pl-stat pl-link" href="#/scored" title="See the calls behind this score"><div class="lbl">Buy / Watch calls</div><div class="val">${escapeHtml(headline)}</div><div class="tr-hint">${c.pending || 0} still inside their ${win}-day window · <span class="pl-link-go">see scored calls ›</span></div></a>`
+            : `<div class="pl-stat"><div class="lbl">Buy / Watch calls</div><div class="val">${escapeHtml(headline)}</div><div class="tr-hint">${c.pending || 0} still inside their ${win}-day window</div></div>`}
           ${brier}
           ${modelTile}
         </div>
@@ -2055,6 +2057,58 @@
       saveOpen(); syncToggle();
     });
     syncToggle();
+  }
+
+
+  // Scored calls (#/scored): only the calls that have resolved and make up the right–wrong score
+  // on the Track record page, grouped by outcome, newest first. Data: data/calls.json.
+  function renderScored() {
+    const el = document.getElementById('scored-page');
+    const tr = state.calls;
+    const all = (tr && tr.calls) || [];
+    const done = all.filter((k) => k.status === 'right' || k.status === 'wrong');
+    const neutral = all.filter((k) => k.status === 'neutral');
+    const win = (tr && tr.window_days) || 30;
+    if (!done.length) {
+      el.innerHTML = `<div class="empty-state">No call has been scored yet. Calls resolve within ${win} days; see the <a href="#/record">track record</a>.</div>`;
+      return { title: 'Scored calls', sub: '' };
+    }
+    const right = done.filter((k) => k.status === 'right'), wrong = done.filter((k) => k.status === 'wrong');
+    const pending = all.filter((k) => k.status === 'pending').length;
+    const cardOf = (url) => ((state.currentData && state.currentData.cards) || []).find((c) => c.url === url) || null;
+    const row = (k) => {
+      const card = cardOf(k.url);
+      const { short, code } = parseCardName(k.name);
+      const thumb = card ? slabHtml(card, 'xs') : '<span class="slab xs"></span>';
+      const nameHtml = card ? `<a href="#/card/${escapeAttr(cardId(card))}">${escapeHtml(short)}</a>` : escapeHtml(short);
+      const meaning = k.tag === 'buy' || k.tag === 'definitely_buy'
+        ? (k.status === 'right' ? 'Buying then was fine: no meaningfully cheaper chance came' : 'You could have bought meaningfully cheaper later')
+        : (k.status === 'right' ? 'Waiting paid off: the price dipped' : 'Waiting cost money: the price rose without a dip');
+      return `<div class="sc-row ${k.status}">
+        ${thumb}
+        <div class="sc-main">
+          <div class="sc-top"><b class="jp sc-name">${nameHtml}</b><span class="tr-meta">${escapeHtml(code)}</span></div>
+          <div class="sc-call"><span class="vtag ${k.tag}">${escapeHtml(tagLabel(k.tag))}</span> called ${trDate(k.made)} at <b>${fmtYen(k.price)}</b>${k.reaffirmed ? ` · reaffirmed ${k.reaffirmed}×` : ''}</div>
+          <div class="sc-label">${escapeHtml(k.label || '')}</div>
+          <div class="sc-why"><b>${escapeHtml(meaning)}.</b> ${escapeHtml(k.why || '')}. Lowest since the call ${k.low != null ? `${fmtYen(k.low)} (${trPct(k.low_pct)})` : '—'} · now ${k.now != null ? `${fmtYen(k.now)} (${trPct(k.now_pct)})` : '—'}.</div>
+        </div>
+        <div class="sc-res">${trPill(k.status)}<span class="tr-meta">threshold ${Math.round((k.threshold || tr.threshold || 0.05) * 100)}%</span></div>
+      </div>`;
+    };
+    const byNewest = (a, b) => (a.made < b.made ? 1 : a.made > b.made ? -1 : 0);
+    const section = (title, list) => list.length ? `<h2 class="section-title sc-h">${title} <span class="muted">${list.length}</span></h2><div class="sc-list">${list.sort(byNewest).map(row).join('')}</div>` : '';
+    el.innerHTML = `
+      <div class="pl-summary">
+        <div class="pl-stat"><div class="lbl">Right</div><div class="val pos">${right.length}</div></div>
+        <div class="pl-stat"><div class="lbl">Wrong</div><div class="val neg">${wrong.length}</div></div>
+        <div class="pl-stat"><div class="lbl">Hit rate</div><div class="val">${Math.round((right.length / done.length) * 100)}%</div><div class="tr-hint">of ${done.length} scored call${done.length === 1 ? '' : 's'}</div></div>
+        <div class="pl-stat"><div class="lbl">Not in the score</div><div class="val muted">${pending + neutral.length}</div><div class="tr-hint">${pending} pending${neutral.length ? ` · ${neutral.length} neutral` : ''}</div></div>
+      </div>
+      ${section('Wrong', wrong)}
+      ${section('Right', right)}
+      <p class="tr-note">A call is scored on the lowest PSA10 ask in the ${win} days after it was made. A Buy is wrong if the ask dropped more than the card's threshold below the call price; a Watch is right if it did. A drop only counts after two checks in a row below the threshold. Neutral and pending calls aren't in the score; they're on the <a href="#/record">track record</a> page.</p>`;
+    trimImages(el);
+    return { title: 'Scored calls', sub: `${right.length} right · ${wrong.length} wrong · as of ${fmtDateShort(tr.as_of)}` };
   }
 
   // Limit controls in a card detail (drawer or card page). Clicks stop propagating
