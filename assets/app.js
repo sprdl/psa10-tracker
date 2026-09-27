@@ -131,26 +131,56 @@
 
   // ---------- data loading ----------
 
+  // All data is small (~50 KB gzipped); the slow part used to be fetching ten files
+  // one after another (~0.35 s each on GitHub Pages). Now everything is requested in
+  // parallel, and 'no-cache' lets the browser revalidate with ETags (a 304 is tiny)
+  // instead of re-downloading unchanged files. The last loaded data is also kept in
+  // this browser, so a repeat visit renders instantly and then refreshes itself.
   async function fetchJSON(path) {
-    const res = await fetch(path, { cache: 'no-store' });
+    const res = await fetch(path, { cache: 'no-cache' });
     if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
     return res.json();
   }
 
-  async function init() {
-    try {
-      state.manifest = await fetchJSON('data/manifest.json');
-    } catch (e) {
-      els.cards.innerHTML = `<div class="empty-state">Couldn't load data/manifest.json. Has a snapshot been added yet?</div>`;
-      document.querySelectorAll('.view').forEach((v) => { v.hidden = v.dataset.view !== 'overview'; });
-      return;
-    }
+  const OPTIONAL_DATA = {
+    holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
+    events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
+  };
+  const CACHE_KEY = 'psa10.cache.v1';
 
+  async function loadFreshBundle() {
+    const optional = (path) => fetchJSON(path).catch(() => null);
+    const manifestP = fetchJSON('data/manifest.json');
+    const restP = Promise.all(Object.entries(OPTIONAL_DATA).map(([k, path]) => optional(path).then((v) => [k, v])));
+    const manifest = await manifestP;
+    const snaps = manifest.snapshots || [];
+    if (!snaps.length) return { manifest, empty: true };
+    const [cur, prev, rest] = await Promise.all([
+      fetchJSON('data/snapshots/' + snaps[snaps.length - 1].file),
+      snaps.length > 1 ? optional('data/snapshots/' + snaps[snaps.length - 2].file) : null,
+      restP,
+    ]);
+    return Object.assign({ manifest, cur, prev }, Object.fromEntries(rest));
+  }
+
+  let sortUiReady = false;
+  function showBundle(b, fresh) {
+    state.manifest = b.manifest;
     const snaps = state.manifest.snapshots || [];
-    if (!snaps.length) {
+    if (b.empty || !snaps.length) {
       els.cards.innerHTML = `<div class="empty-state">No snapshots yet — run add_snapshot to publish the first one.</div>`;
       return;
     }
+    // Holdings are optional and rare to change: a missing file just means nothing's been bought yet.
+    state.holdings = (b.holdings && b.holdings.holdings) || [];
+    state.calls = b.calls || null;
+    state.customIndex = b.customIndex || null;
+    state.events = b.events || null;
+    state.hist = b.hist || null;
+    historyIndexPromise = Promise.resolve(state.hist);
+    state.syncedLimits = (b.limits && b.limits.limits) || {};
+    state.oddsModel = b.oddsModel || null;
+    if (fresh) reconcileLimits(); // only against fresh data, never a cached copy
 
     els.snapshotSelects.forEach((sel) => {
       sel.innerHTML = '';
@@ -161,39 +191,56 @@
         sel.appendChild(opt);
       }
       sel.value = String(snaps.length - 1);
-      sel.addEventListener('change', () => {
+      sel.onchange = () => {
         els.snapshotSelects.forEach((o) => { o.value = sel.value; });
         loadIndex(parseInt(sel.value, 10));
-      });
+      };
     });
-    window.addEventListener('hashchange', () => { applyRoute(); window.scrollTo(0, 0); });
+    if (!sortUiReady) { initSortUi(); sortUiReady = true; }
 
-    // Holdings are optional and rare to change — a missing file just means
-    // nothing's been bought yet, not an error.
-    try {
-      const h = await fetchJSON('data/holdings.json');
-      state.holdings = h.holdings || [];
-    } catch (e) {
-      state.holdings = [];
+    state.currentIndex = snaps.length - 1;
+    state.currentData = b.cur;
+    state.previousData = b.prev || null;
+    render();
+  }
+
+  async function init() {
+    window.addEventListener('hashchange', () => { applyRoute(); window.scrollTo(0, 0); });
+    const freshP = loadFreshBundle();
+
+    let shown = null;
+    const cached = store.get(CACHE_KEY, null);
+    if (cached && cached.manifest && cached.cur) {
+      try { showBundle(cached, false); shown = cached; document.body.classList.add('is-updating'); } catch (e) { shown = null; }
     }
 
-    try { state.calls = await fetchJSON('data/calls.json'); } catch (e) { state.calls = null; }
-    try { state.customIndex = await fetchJSON('data/custom_index.json'); } catch (e) { state.customIndex = null; }
-    try { state.events = await fetchJSON('data/events.json'); } catch (e) { state.events = null; }
-    state.hist = await loadHistoryIndex();
-    try { state.syncedLimits = (await fetchJSON('data/limits.json')).limits || {}; } catch (e) { state.syncedLimits = {}; }
-    try { state.oddsModel = await fetchJSON('data/odds_model.json'); } catch (e) { state.oddsModel = null; }
-    reconcileLimits();
-    initSortUi();
-
-    await loadIndex(snaps.length - 1);
+    let fresh;
+    try {
+      fresh = await freshP;
+    } catch (e) {
+      document.body.classList.remove('is-updating');
+      if (!shown) {
+        els.cards.innerHTML = `<div class="empty-state">Couldn't load data/manifest.json. Has a snapshot been added yet?</div>`;
+        document.querySelectorAll('.view').forEach((v) => { v.hidden = v.dataset.view !== 'overview'; });
+      }
+      return;
+    }
+    document.body.classList.remove('is-updating');
+    const changed = !shown || JSON.stringify(shown) !== JSON.stringify(fresh);
+    // Keep the snapshot the viewer picked while the refresh was running.
+    const userPicked = shown && state.currentIndex !== (shown.manifest.snapshots || []).length - 1;
+    if (changed && !userPicked) showBundle(fresh, true);
+    else { state.manifest = fresh.manifest; reconcileLimits(); }
+    if (changed) store.set(CACHE_KEY, fresh);
   }
 
   async function loadIndex(idx) {
     const snaps = state.manifest.snapshots;
     state.currentIndex = idx;
-    state.currentData = await fetchJSON('data/snapshots/' + snaps[idx].file);
-    state.previousData = idx > 0 ? await fetchJSON('data/snapshots/' + snaps[idx - 1].file) : null;
+    [state.currentData, state.previousData] = await Promise.all([
+      fetchJSON('data/snapshots/' + snaps[idx].file),
+      idx > 0 ? fetchJSON('data/snapshots/' + snaps[idx - 1].file) : null,
+    ]);
     render();
   }
 

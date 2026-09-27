@@ -722,3 +722,13 @@ th.tc-head small { font-size: 11px; color: var(--muted-2); font-weight: 400; whi
 .lc-hl { fill: rgba(255, 255, 255, 0.06); pointer-events: none; }
 .hist-ref-line.lim { stroke: var(--soft); stroke-dasharray: 2 3; stroke-width: 1.2; }
 .hist-ref-label.lim { fill: var(--soft); font-size: 10px; }
+
+/* ---------- refresh indicator (shown while fresh data loads over a cached copy) ---------- */
+body.is-updating::before {
+  content: ""; position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 100;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 40% 100%; background-repeat: no-repeat;
+  animation: psa10-updating 1s linear infinite;
+}
+@keyframes psa10-updating { from { background-position: -40% 0; } to { background-position: 140% 0; } }
+@media (prefers-reduced-motion: reduce) { body.is-updating::before { animation: none; background: var(--accent); opacity: 0.5; } }
