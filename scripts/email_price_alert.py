@@ -57,9 +57,10 @@ def _clear_stale_git_locks(root: Path):
         return
     for lock in git_dir.rglob("*.lock"):
         try:
-            stamp = datetime.now(JST).strftime("%Y%m%d%H%M%S%f")
-            lock.rename(lock.with_suffix(f".lock.stale-{stamp}"))
-            print(f"cleared stale lock: {lock.relative_to(root)}", file=sys.stderr)
+            # Fixed name (no timestamp) so repeated clears overwrite the same
+            # parked file via rename-over-existing, rather than piling up
+            # junk in .git forever (we can rename but never delete here).
+            lock.rename(lock.with_suffix(".lock.stale"))
         except OSError as e:
             print(f"warning: couldn't clear stale lock {lock}: {e}", file=sys.stderr)
 
