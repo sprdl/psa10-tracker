@@ -425,14 +425,14 @@ img.card-img {
 .pl-bar-fill { height: 100%; background: var(--accent); }
 .pl-bar-fill.over { background: var(--red); }
 .pl-list { display: flex; flex-direction: column; gap: 6px; }
-.pl-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+.pl-row { display: grid; grid-template-columns: 22px 44px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; }
 .pl-row:hover { border-color: var(--line-3); }
 .pl-row.on { border-color: var(--accent); background: #1d1b12; }
 .pl-row input { width: 18px; height: 18px; accent-color: var(--accent); grid-row: span 2; }
 .pl-name { font: 21px var(--display); letter-spacing: 0.02em; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pl-price { font: 24px var(--display); letter-spacing: 0.02em; text-align: right; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.05; }
 .pl-src { font: 400 11px var(--sans); color: var(--muted-2); }
-.pl-sub { grid-column: 2 / -1; font-size: 12px; color: var(--muted-2); }
+.pl-sub { grid-column: 3 / -1; font-size: 12px; color: var(--muted-2); }
 .pl-fits { color: var(--green); font-weight: 600; }
 .pl-owned { font: 14px var(--display); letter-spacing: 0.08em; color: var(--green); border: 1px solid rgba(69, 212, 131, 0.4); border-radius: 3px; padding: 2px 5px 0; }
 .tr-hint { font-size: 11px; color: var(--muted-2); margin-top: 2px; }
@@ -763,7 +763,8 @@ body.cd-entering #card-page .cd-panel { animation-delay: 0.50s; }
 ::view-transition-group(app-sidebar), ::view-transition-group(app-mobilebar), ::view-transition-group(app-tabbar) { animation: none; }
 
 /* ---------- head to head (#/compare) + budget duel (#/duel) ---------- */
-.cmp-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.cmp-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.cmp-bar.on { padding: 10px 14px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--panel); }
 .cmp-bar .cmp-hint { flex-grow: 1; color: var(--muted); font-size: 13px; }
 .cmp-bar.on { position: sticky; top: 8px; z-index: 15; border-color: var(--accent); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
 .cmp-bar.on .cmp-hint { color: var(--text); font-weight: 600; }
@@ -895,3 +896,6 @@ body.cd-entering #card-page .cd-panel { animation-delay: 0.50s; }
   .du-card { padding: 16px; }
   .du-sum { grid-template-columns: 1fr; }
 }
+
+/* card pictures in the budget planner (same thumbnail as the watching page) */
+.pl-thumb { grid-area: auto; grid-column: 2; grid-row: 1 / span 2; }

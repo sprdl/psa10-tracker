@@ -1913,6 +1913,7 @@
       const sub = [`today ${fmtYen(r.today)}`, r.lim != null ? `limit ${fmtYen(r.lim)}` : 'no limit', r.buyLine != null ? `Buy ≤${fmtYen(r.buyLine)}` : null].filter(Boolean).join(' · ');
       return `<label class="pl-row ${r.on ? 'on' : ''}">
         <input type="checkbox" data-url="${escapeAttr(r.card.url)}" ${r.on ? 'checked' : ''}>
+        <span class="wthumb pl-thumb">${r.card.image_url ? `<img class="card-img" src="${escapeAttr(r.card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
         <span class="pl-name">${escapeHtml(r.name)}${r.tag ? ` <span class="vtag ${r.tag}">${escapeHtml(tagLabel(r.tag))}</span>` : ''}${ownedUrls.has(r.card.url) ? ' <span class="pl-owned">owned</span>' : ''}</span>
         <span class="pl-price">${fmtYen(r.price)}${st.mode === 'limits' ? `<span class="pl-src">${r.fromLimit ? 'my limit' : 'today'}</span>` : ''}</span>
         <span class="pl-sub">${escapeHtml(sub)}${fits ? ' <span class="pl-fits">fits</span>' : ''}</span>
@@ -1924,6 +1925,7 @@
       : '<div class="empty-state">No cards with a PSA10 market in this snapshot.</div>';
 
     const save = (patch) => { store.set(PLANNER_KEY, Object.assign(plannerState(), patch)); renderPlanner(cards); renderKpis(state.currentData); };
+    trimImages(box);
     box.querySelectorAll('.pl-mode button').forEach((b) => b.addEventListener('click', () => save({ mode: b.dataset.mode })));
     box.querySelectorAll('.pl-row input[type=checkbox]').forEach((cb) => cb.addEventListener('change', () => {
       const sel = new Set(plannerState().selected);
@@ -2484,7 +2486,7 @@
           : n === 1 ? 'Pick one more card' : 'Tap two cards to compare them'}</span>
          <button type="button" class="btn" data-cmp="cancel">Cancel</button>
          <button type="button" class="btn btn-primary" data-cmp="go"${n === 2 ? '' : ' disabled'}>Head to head</button>`
-      : `<span class="cmp-hint">Put two cards side by side.</span><button type="button" class="btn" data-cmp="start">⇄ Compare two cards</button>`;
+      : `<button type="button" class="btn" data-cmp="start">⇄ Compare two cards</button>`;
     bar.querySelectorAll('[data-cmp]').forEach((b) => b.addEventListener('click', () => {
       const act = b.dataset.cmp;
       if (act === 'start') { state.cmpMode = true; state.cmpPick = []; }
