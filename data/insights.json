@@ -12,6 +12,12 @@
    "headline": "Rising against the market, but the buying burst is fading",
    "text": "The lowest ask rose from ¥41,000 to ¥43,000 over the week while the My-tier index fell about 8%, and sales rose with it (¥40,000–41,000 on 9/19–22, ¥43,000–43,500 since 9/25). Trading has cooled sharply, though: about 2.4 PSA10 sales a day now against roughly 7.5 a week ago. A likely driver is the attention on Gengar around the 30th-anniversary set released on 9/16, which includes a new Gengar ex SAR; that kind of spillover tends to fade. At ¥43,000 it is in the Watch zone (Buy ≤¥38,000), 23% above your ¥35,000 limit and 22% below its August peak (¥55,000). With buying slowing, the higher price needs new buyers to hold, so a slide back toward ¥40–41k would not be surprising. It also remains outside your collecting criteria (SM era, not full art).",
    "signals": "7d price +4.9% (¥41,000→¥43,000) vs My-tier index -7.8% = +12.7 pts | PSA10 sales/day 2.4 vs 7.5 a week ago (-68%)"
+  },
+  "https://snkrdunk.com/apparels/585221": {
+   "written": "2026-09-27T18:59:52+09:00",
+   "headline": "Asks dropped below where it sells",
+   "text": "The cheapest listing fell from ¥117,900 yesterday to ¥108,000 today, about 10% below recent sale prices (most sales from 9/21 to 9/25 were ¥116,000–120,000, one at ¥125,000 a day ago). The order book is deep, with all 20 sampled listings within 15% of the lowest, so this is sellers lowering prices across the board rather than one stray listing. That usually means sale prices follow down over the next days, in line with the market correction, rather than a one-off bargain. ¥108,000 is exactly its Buy line, but the correction rule keeps it at Watch; the next checks will show whether sales happen near ¥108–110k. Your ¥70,000 limit remains far below.",
+   "signals": "lowest ask ¥108,000 is -10% vs recent sales median ¥120,000"
   }
  }
 }
