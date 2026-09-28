@@ -179,6 +179,11 @@
       "file": "20260928-2010.json",
       "collected_at_jst": "2026-09-28T20:10:37+09:00",
       "check_mode": "quick"
+    },
+    {
+      "file": "20260928-2119.json",
+      "collected_at_jst": "2026-09-28T21:19:07+09:00",
+      "check_mode": "email_alert"
     }
   ]
 }
