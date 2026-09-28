@@ -1,0 +1,78 @@
+{
+ "weeks": {
+  "2026-09-28": {
+   "created": "2026-09-28T22:11:10+09:00",
+   "close": "2026-10-02T23:59:59+09:00",
+   "questions": [
+    {
+     "url": "https://snkrdunk.com/apparels/408333",
+     "name": "ピカチュウex SAR [SV8 132/106](拡張パック「超電ブレイカー」)",
+     "dir": "below",
+     "target": 70000,
+     "ask": 74500,
+     "lo30": 72000,
+     "hi30": 82000,
+     "model": 0.2,
+     "why": "your limit",
+     "days": 4.1,
+     "id": "2026-09-28-1"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/96712",
+     "name": "ピカチュウV CSR[S8b 222/184](ハイクラスパック「VMAXクライマックス」)",
+     "dir": "below",
+     "target": 23000,
+     "ask": 24800,
+     "lo30": 24500,
+     "hi30": 24980,
+     "model": 0.15,
+     "why": "your limit",
+     "days": 4.1,
+     "id": "2026-09-28-2"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/91178",
+     "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+     "dir": "below",
+     "target": 285000,
+     "ask": 293800,
+     "lo30": 280000,
+     "hi30": 329000,
+     "model": 0.36,
+     "why": "Buy line",
+     "days": 4.1,
+     "id": "2026-09-28-3"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/776365",
+     "name": "メガゲッコウガex SAR [M4 114/083](拡張パック「ニンジャスピナー」)",
+     "dir": "below",
+     "target": 25000,
+     "ask": 25900,
+     "lo30": 25500,
+     "hi30": 28000,
+     "model": 0.348,
+     "why": "Buy line",
+     "days": 4.1,
+     "id": "2026-09-28-4"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/100567",
+     "name": "ルギアV SR:SA[s12 110/098](拡張パック「パラダイムトリガー」)",
+     "dir": "below",
+     "target": 128000,
+     "ask": 132999,
+     "lo30": 130000,
+     "hi30": 141000,
+     "model": 0.328,
+     "why": "Buy line",
+     "days": 4.1,
+     "id": "2026-09-28-5"
+    }
+   ],
+   "answers": {},
+   "results": {}
+  }
+ },
+ "about": "You vs the model: weekly questions, answers and results. See scripts/predict.py."
+}

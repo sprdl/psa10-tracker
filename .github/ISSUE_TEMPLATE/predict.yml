@@ -1,0 +1,13 @@
+name: Save my answers (You vs the model)
+description: Lock in your odds for this week's questions so every device sees them (filled in by the site).
+title: "Answers"
+labels: ["predict"]
+body:
+  - type: textarea
+    id: answers
+    attributes:
+      label: Answers
+      description: 'Filled in by the site: one line per question, "question id: your odds in %".'
+      placeholder: "2026-09-28-1: 35"
+    validations:
+      required: true

@@ -321,7 +321,7 @@ def main():
     sys.path.insert(0, str(root / "scripts"))
     import build_history
     build_history.build(root)  # representative_price feeds the price-history chart
-    git(root, "add", rel, "data/history.json", "data/calls.json")
+    git(root, "add", rel, "data/history.json", "data/calls.json", *[f for f in ("data/predict.json",) if (root / f).exists()])
     names = ", ".join(re.sub(r"[\[(].*$", "", c["card_name_ja"]).strip() for c, _, _ in planned)
     commit = git(root, "commit", "-m", f"analysis: update {names}", check=False)
     if commit.returncode != 0:

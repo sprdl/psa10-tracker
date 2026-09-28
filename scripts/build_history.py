@@ -149,6 +149,14 @@ def build(root: Path = ROOT) -> Path:
     out = root / "data" / "history.json"
     out.write_text(json.dumps({"snapshots": series, "tiers": tiers}, ensure_ascii=False, separators=(",", ":")) + "\n",
                    encoding="utf-8")
+    # "You vs the model" (data/predict.json): make this week's questions, resolve open ones.
+    try:
+        import predict
+        made, resolved, _ = predict.update(root)
+        if made or resolved:
+            print(f"predict: {'new questions for this week' if made else ''}{' · ' if made and resolved else ''}{f'{resolved} resolved' if resolved else ''}")
+    except Exception as e:  # never block publishing a price check over it
+        print(f"warning: couldn't update data/predict.json: {e}")
     # The track record (data/calls.json) is derived from the same snapshots.
     try:
         import build_calls

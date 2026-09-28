@@ -156,7 +156,8 @@ def main():
     build_history.build(root)
 
     _clear_stale_git_locks(root)
-    subprocess.run(["git", "add", "data/manifest.json", "data/history.json", str(dest.relative_to(root))],
+    subprocess.run(["git", "add", "data/manifest.json", "data/history.json", str(dest.relative_to(root)),
+                    *[f for f in ("data/calls.json", "data/predict.json") if (root / f).exists()]],
                     cwd=root, check=True)
     _clear_stale_git_locks(root)
     commit_msg = f"email alert: {new_card.get('card_name_ja')} ¥{price:,} (was ¥{old_low:,})"

@@ -1,5 +1,5 @@
 {
- "as_of": "2026-09-28T20:10:37+09:00",
+ "as_of": "2026-09-28T21:19:07+09:00",
  "window_days": 30,
  "threshold": 0.05,
  "confirm_readings": 2,
@@ -7,12 +7,12 @@
  "noise_threshold_cap": 0.1,
  "summary": {
   "calls": {
-   "right": 5,
+   "right": 6,
    "wrong": 1,
    "neutral": 0,
-   "pending": 11
+   "pending": 10
   },
-  "calls_scored": 6,
+  "calls_scored": 7,
   "odds_resolved": 2,
   "odds_open": 24,
   "brier": 0.231,
@@ -62,8 +62,8 @@
    "low_pct": -7.4,
    "now": 56500,
    "now_pct": -7.4,
-   "status": "pending",
-   "why": "",
+   "status": "right",
+   "why": "dropped to ¥56,500 on 2026-09-28 (held under −5% for 2 checks)",
    "threshold": 0.05
   },
   {
@@ -307,7 +307,7 @@
    "days_in": 13,
    "low": 64000,
    "low_pct": -5.2,
-   "now": 68500,
+   "now": 68499,
    "now_pct": 1.5,
    "status": "pending",
    "why": "",
@@ -574,7 +574,7 @@
    "made": "2026-09-25T10:03:18+09:00",
    "status": "open",
    "why": "94 days left",
-   "now": 68500,
+   "now": 68499,
    "gap_pct": -12.4
   },
   {
@@ -644,7 +644,7 @@
    "made": "2026-09-25T10:03:18+09:00",
    "status": "open",
    "why": "178 days left",
-   "now": 68500,
+   "now": 68499,
    "gap_pct": -15.3
   },
   {

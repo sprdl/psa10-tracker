@@ -156,7 +156,7 @@
   const OPTIONAL_DATA = {
     holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
-    insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json',
+    insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json',
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
@@ -192,6 +192,7 @@
     historyIndexPromise = Promise.resolve(state.hist);
     state.syncedLimits = (b.limits && b.limits.limits) || {};
     state.oddsModel = b.oddsModel || null;
+    state.predict = b.predict || null; // data/predict.json — You vs the model (scripts/predict.py)
     state.scout = b.scout || null; // data/scout.json — untracked candidates (scripts/scout.py)
     state.premium = b.premium || null; // data/premium.json — pokeca-chart slab premium per card (scripts/premium.py)
     state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
@@ -1087,6 +1088,149 @@
   function quietHtml(rows) {
     return rows.map(([k, v]) => `<div class="ins-q"><span>${k}</span><span>${v}</span></div>`).join('');
   }
+  // ---------- You vs the model (#/predict) ----------
+  // data/predict.json is written by scripts/predict.py whenever a snapshot is published: five
+  // questions per week (Mon → Fri 23:59 JST) about your cards, each with the limit-odds model's
+  // frozen odds, resolved from the week's snapshots. You set your odds and "Lock in": the model's
+  // number appears and your answer is kept in this browser until "Save to all devices" sends them
+  // through a GitHub issue form (scripts/set_predictions.py writes them into predict.json).
+  // Scores are Brier scores: mean of (odds − outcome)², lower is better, 0.25 = always saying 50%.
+  const predLocal = () => store.get('psa10.predict.local', {});
+  function predAnswer(wk, id) {
+    const synced = wk.answers && wk.answers[id];
+    if (synced) return { p: synced.p, at: synced.at, synced: true };
+    const l = predLocal()[id];
+    return l ? { p: l.p, at: l.at, synced: false } : null;
+  }
+  function predWeeks() { const w = (state.predict && state.predict.weeks) || {}; return Object.keys(w).sort().map((k) => Object.assign({ key: k }, w[k])); }
+  function predCurrent() { const ws = predWeeks(); const last = ws[ws.length - 1]; return last && Date.parse(last.close) > Date.now() ? last : null; }
+  function predOpen(wk, q) { return !(wk.results || {})[q.id] && Date.parse(wk.close) > Date.now(); }
+  function predOpenCount() {
+    const wk = predCurrent(); if (!wk) return '';
+    const n = wk.questions.filter((q) => predOpen(wk, q) && !predAnswer(wk, q.id)).length;
+    return n ? `${n} open` : '';
+  }
+  function predClose(iso) { const d = new Date(Date.parse(iso) + 9 * 36e5); return `Fri ${d.getUTCMonth() + 1}/${d.getUTCDate()} 23:59 JST`; }
+  function predictSubtitle() {
+    const wk = predCurrent();
+    if (!wk) return 'Five questions a week about your cards: your odds against the model\'s';
+    const left = Date.parse(wk.close) - Date.now(), d = Math.floor(left / 864e5), h = Math.floor((left % 864e5) / 36e5);
+    return `Five questions about your cards · closes ${predClose(wk.close)} · ${d ? `${d}d ` : ''}${h}h left`;
+  }
+  function predScore() {
+    // every answered question that has a result, plus per-week means
+    const rows = [], weeks = [];
+    for (const wk of predWeeks()) {
+      let ys = [], ms = [];
+      for (const q of wk.questions) {
+        const r = (wk.results || {})[q.id], a = predAnswer(wk, q.id);
+        if (!r || !a) continue;
+        const bu = (a.p - r.outcome) ** 2, bm = (q.model - r.outcome) ** 2;
+        rows.push({ wk, q, r, a, bu, bm }); ys.push(bu); ms.push(bm);
+      }
+      const done = wk.questions.every((q) => (wk.results || {})[q.id]);
+      if (ys.length) weeks.push({ wk, you: ys.reduce((x, y) => x + y) / ys.length, model: ms.reduce((x, y) => x + y) / ms.length, n: ys.length, done });
+    }
+    const mean = (a) => (a.length ? a.reduce((x, y) => x + y) / a.length : null);
+    const fin = weeks.filter((w) => w.done);
+    return { rows, weeks, you: mean(rows.map((r) => r.bu)), model: mean(rows.map((r) => r.bm)),
+      wonYou: fin.filter((w) => w.you < w.model - 1e-9).length, wonModel: fin.filter((w) => w.model < w.you - 1e-9).length };
+  }
+  function predCardOf(q) { return ((state.currentData && state.currentData.cards) || []).find((c) => c.url === q.url) || { card_name_ja: q.name, url: q.url }; }
+  function predQuestionHtml(wk, q, i) {
+    const card = predCardOf(q), nm = parseCardName(q.name).short, ask = lowestAsk(card) || q.ask;
+    const r = (wk.results || {})[q.id], a = predAnswer(wk, q.id), open = predOpen(wk, q);
+    const down = q.dir === 'below';
+    const need = (q.target / ask - 1) * 100;
+    const lo = Math.min(q.lo30, q.target, ask) * 0.98, hi = Math.max(q.hi30, q.target, ask) * 1.02, X = (v) => ((v - lo) / (hi - lo || 1)) * 100;
+    const meter = `<div class="pq-meter"><div class="band" style="left:${X(q.lo30)}%;width:${Math.max(1, X(q.hi30) - X(q.lo30))}%"></div><div class="tgt ${down ? '' : 'up'}" style="left:${X(q.target)}%"></div><div class="now" style="left:${X(ask)}%"></div></div>
+      <div class="pq-hint">${down ? 'green' : 'red'} = target · white = today's lowest ask · band = last 30 days</div>`;
+    let body;
+    if (a) {
+      body = `<div class="pq-reveal"><div><div class="pq-hint">You said</div><div class="pq-you">${Math.round(a.p * 100)}%</div></div><div><div class="pq-hint">Model said</div><div class="pq-model">${Math.round(q.model * 100)}%</div></div>
+        <div class="pq-status">${r ? `<b class="${r.outcome ? 'yes' : 'no'}">${r.outcome ? 'Yes' : 'No'}</b> · ${r.outcome ? `${fmtYen(r.extreme)} on ${escapeHtml(fmtDateShort(r.at))}` : `${down ? 'lowest' : 'highest'} ask ${r.extreme ? fmtYen(r.extreme) : '—'}`}<br>you ${((a.p - r.outcome) ** 2).toFixed(3)} · model ${((q.model - r.outcome) ** 2).toFixed(3)}` : a.synced ? 'Locked · saved on all devices' : 'Locked on this device · <b>not saved yet</b>'}</div></div>`;
+    } else if (open) {
+      body = `<div class="pq-slider"><input type="range" min="0" max="100" step="5" value="50" aria-label="Your odds"><span class="pq-pct">50%</span></div>
+        <div class="pq-row"><button type="button" class="btn btn-primary pq-lock" data-id="${escapeAttr(q.id)}">Lock in</button><span class="pq-hint">The model's odds appear once you lock in.</span></div>`;
+    } else {
+      body = `<div class="pq-reveal"><div><div class="pq-hint">Model said</div><div class="pq-model">${Math.round(q.model * 100)}%</div></div><div class="pq-status">${r ? `<b class="${r.outcome ? 'yes' : 'no'}">${r.outcome ? 'Yes' : 'No'}</b> before you answered` : 'Closed'} · not scored</div></div>`;
+    }
+    return `<article class="pq${a ? ' locked' : ''}" style="--i:${i}">
+      <a class="pq-slab" href="#/card/${escapeAttr(cardId(card))}">${slabHtml(card, 'md')}</a>
+      <div class="pq-main">
+        <div class="pq-name jp">${escapeHtml(nm)} <small>${escapeHtml(parseCardName(q.name).code)}</small></div>
+        <div class="pq-q">Will ${down ? 'a listing drop' : 'the lowest ask climb'} <span class="${down ? 'dn' : 'up'}">to ${fmtYen(q.target)} or ${down ? 'less' : 'more'}</span> by Friday?</div>
+        <div class="pq-facts"><span>now <b>${fmtYen(ask)}</b></span><span>needs <b>${fmtPct(need, 1)}</b></span><span>${escapeHtml(q.why)}</span><span>30 days <b>${fmtYen(q.lo30)}–${fmtYen(q.hi30)}</b></span></div>
+        ${meter}${body}
+      </div></article>`;
+  }
+  function renderPredict() {
+    const el = document.getElementById('predict-page'); if (!el) return;
+    const ws = predWeeks();
+    if (!ws.length) { el.innerHTML = `<div class="empty-state">No questions yet. The first price check of the week writes five of them.</div>`; return; }
+    const sc = predScore(), cur = predCurrent();
+    const local = predLocal(), unsynced = cur ? cur.questions.filter((q) => local[q.id] && !(cur.answers || {})[q.id]) : [];
+    const saveUrl = unsynced.length ? `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'predict.yml', title: `Answers ${cur.key}`, answers: unsynced.map((q) => `${q.id}: ${Math.round(local[q.id].p * 100)}`).join('\n') })}` : '';
+    const f3 = (v) => (v == null ? '—' : v.toFixed(3));
+    const past = ws.filter((w) => !cur || w.key !== cur.key).reverse();
+    const pastHtml = past.map((wk) => {
+      const wsc = sc.weeks.find((x) => x.wk.key === wk.key);
+      return `<h2 class="pq-h">Week of ${escapeHtml(wk.key.slice(5).replace('-', '/'))} <span class="muted">${wsc ? `you ${f3(wsc.you)} · model ${f3(wsc.model)} · ${wsc.you < wsc.model ? '<span class="pq-you-t">you won</span>' : wsc.model < wsc.you ? '<span class="pq-model-t">model won</span>' : 'tie'}` : 'no answers'}</span></h2>
+        <div class="pq-res">${wk.questions.map((q) => { const r = (wk.results || {})[q.id], a = predAnswer(wk, q.id), card = predCardOf(q);
+          const bu = r && a ? (a.p - r.outcome) ** 2 : null, bm = r ? (q.model - r.outcome) ** 2 : null;
+          return `<div class="pq-rrow"><span class="pq-thumb">${slabHtml(card, 'xs')}</span><div><b class="jp">${escapeHtml(parseCardName(q.name).short)}</b><div class="pq-hint">${q.dir === 'below' ? 'drop to ≤' : 'climb to ≥'}${fmtYen(q.target)}</div></div>
+            <div class="${r ? (r.outcome ? 'yes' : 'no') : 'muted'}">${r ? (r.outcome ? 'Yes' : 'No') + (r.extreme ? ` · ${fmtYen(r.extreme)}` : '') : 'open'}</div>
+            <div class="pq-num pq-you-t">${a ? Math.round(a.p * 100) + '%' : '—'}</div><div class="pq-num pq-model-t">${Math.round(q.model * 100)}%</div>
+            <div class="pq-hint">${bu != null ? `${bu.toFixed(3)} / ${bm.toFixed(3)}` : ''}</div>
+            <div>${bu == null ? '' : bu < bm - 1e-9 ? '<span class="pq-chip you">You</span>' : bm < bu - 1e-9 ? '<span class="pq-chip model">Model</span>' : '<span class="pq-chip">Tie</span>'}</div></div>`; }).join('')}</div>`;
+    }).join('');
+    const chartW = sc.weeks.length >= 2 ? (() => {
+      let cy = [], cm = [], sy = 0, sm = 0, n = 0;
+      sc.weeks.forEach((w) => { sy += w.you * w.n; sm += w.model * w.n; n += w.n; cy.push(sy / n); cm.push(sm / n); });
+      return chartSlot({ type: 'multi', height: 200, label: 'Running Brier score', days: sc.weeks.map((w) => Date.parse(w.wk.close)), fmtY: (v) => v.toFixed(2),
+        refs: [{ y: 0.25, color: 'var(--muted-2)', label: 'always 50% = 0.25' }],
+        series: [{ name: 'You', color: 'var(--accent)', vals: cy }, { name: 'Model', color: '#7cb8ff', vals: cm }] });
+    })() : '';
+    el.innerHTML = `
+      <div class="pq-board">
+        <div class="pq-side you"><div class="pq-who">You</div><div class="pq-big">${f3(sc.you)}</div><div class="pq-hint">Brier score · ${sc.rows.length} scored answer${sc.rows.length === 1 ? '' : 's'} · lower is better</div></div>
+        <div class="pq-vs"><div class="lbl">Weeks won</div><div class="pq-score"><b>${sc.wonYou}</b> – <i>${sc.wonModel}</i></div><div class="pq-hint">you – model</div></div>
+        <div class="pq-side model"><div class="pq-who">Model</div><div class="pq-big">${f3(sc.model)}</div><div class="pq-hint">same questions · limit-odds model</div></div>
+      </div>
+      <p class="pq-hint pq-note">Brier score = the average of (your odds − what happened)², with what happened = 1 or 0. Always saying 50% scores 0.25; perfect foresight scores 0.</p>
+      ${unsynced.length ? `<div class="pq-save"><span>${unsynced.length} answer${unsynced.length === 1 ? '' : 's'} locked on this device only.</span><a class="btn btn-primary" href="${escapeAttr(saveUrl)}" target="_blank" rel="noopener">Save to all devices</a></div>` : ''}
+      ${cur ? `<h2 class="pq-h">This week <span class="muted">${cur.questions.length} questions · ${cur.questions.filter((q) => predAnswer(cur, q.id)).length} locked · closes ${predClose(cur.close)}</span></h2>
+        <div class="pq-grid">${cur.questions.map((q, i) => predQuestionHtml(cur, q, i)).join('')}</div>` : `<p class="pq-hint">No open questions right now: the next five come with the first price check on Monday.</p>`}
+      ${pastHtml}
+      ${chartW ? `<h2 class="pq-h">The season so far <span class="muted">running Brier score · lower is better</span></h2><div class="pq-chart">${chartW}</div>` : ''}
+      <p class="tr-note">How it works: every week the first price check writes five questions about your cards (a drop to your limit or a tier line, or a climb for a card that's rising), keeping only ones the model gives 15–85%, and freezes the model's odds. They resolve on the lowest PSA10 ask in any check or email alert until Friday 23:59 JST. Lock in to see the model's number; "Save to all devices" sends your locked answers through a GitHub form so iPad and Mac agree. The first answer to a question is final, and answers after a question resolved don't count.</p>`;
+    el.querySelectorAll('.pq').forEach((art) => {
+      const r = art.querySelector('input[type=range]'), pct = art.querySelector('.pq-pct'), b = art.querySelector('.pq-lock');
+      if (r) r.addEventListener('input', () => { pct.textContent = r.value + '%'; });
+      if (b) b.addEventListener('click', () => {
+        const l = predLocal(); l[b.dataset.id] = { p: +r.value / 100, at: new Date().toISOString() }; store.set('psa10.predict.local', l);
+        renderPredict(); updateCounts();
+      });
+    });
+    mountCharts(el);
+    trimImages(el);
+  }
+
+  // ---------- picture viewer: tap a card picture to see it big ----------
+  function openLightbox(src, alt) {
+    let lb = document.getElementById('lightbox');
+    if (!lb) {
+      lb = document.createElement('div'); lb.id = 'lightbox'; lb.className = 'lightbox'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-modal', 'true');
+      lb.innerHTML = '<img alt=""><button type="button" class="lb-close" aria-label="Close">×</button>';
+      lb.addEventListener('click', () => closeLightbox());
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+      document.body.appendChild(lb);
+    }
+    const img = lb.querySelector('img'); img.src = src; img.alt = alt || '';
+    lb.classList.add('on'); document.body.classList.add('lb-open');
+  }
+  function closeLightbox() { const lb = document.getElementById('lightbox'); if (lb) lb.classList.remove('on'); document.body.classList.remove('lb-open'); }
+
   // ---------- Scout: cards you don't track yet that fit your criteria and look cheap ----------
   // data/scout.json is written by full checks (pricecheck/scripts/pokeca_scout.js → scripts/scout.py):
   // modern secret rares on pokeca-chart at ¥15k–150k, ranked by how far below their pre-hype price
@@ -1128,7 +1272,7 @@
       refs: c.pre ? [{ y: c.pre, label: 'pre-hype', cls: 'norm', left: true }] : [], points: ser }) : '';
     const add = `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'add-card.yml', title: 'Add card', url: c.sid ? `https://snkrdunk.com/apparels/${c.sid}` : '', notes: `Found by Scout on ${new Date().toISOString().slice(0, 10)}: ${c.nm || r.slug}` })}`;
     return `<article class="sc-card" style="--i:${i}">
-      <div class="sc-img"><img src="${escapeAttr(SCOUT_IMG(r.slug))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.sc-img').classList.add('noimg')"></div>
+      <button type="button" class="sc-img" data-big="${escapeAttr(SCOUT_IMG(r.slug).replace('-medium.', '-large.'))}" aria-label="Show the picture bigger" title="Tap for a bigger picture"><img src="${escapeAttr(SCOUT_IMG(r.slug))}" alt="${escapeAttr(c.nm || '')}" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.sc-img').classList.add('noimg')"></button>
       <div class="sc-body">
         <div class="sc-head"><b class="jp">${escapeHtml(c.nm || r.slug)}</b><span class="muted jp">${escapeHtml(c.set || '')}${c.rel ? ' · ' + escapeHtml(c.rel.replace('-', '/')) : ''}</span></div>
         <div class="sc-price"><span class="display">${fmtYen(price)}</span>${disc != null ? `<span class="sc-pill ${disc <= 0 ? 'pos' : ''}">${disc <= 0 ? '−' : '+'}${Math.abs(disc).toFixed(0)}% vs pre-hype</span>` : ''}${off != null && off >= 10 ? `<span class="sc-pill" title="2026 peak ${fmtYen(c.peak)} (${escapeAttr(c.pk || '')})">−${off.toFixed(0)}% off its ${escapeHtml((c.pk || '').replace(/^(\d{4})-(\d{2})$/, (m, y, mo) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo - 1]))} peak</span>` : ''}</div>
@@ -1164,6 +1308,7 @@
       <p class="tr-note">How it picks: modern secret rares (released 2021 or later) with a PSA10 price of ¥15k–150k on pokeca-chart that you don't track yet, trading at least 3 times a month, at most 10% above their pre-hype price (the Jul–Dec 2025 median, skipping each card's first three months). Ranked by how far below that level they are, how much of the 2026 peak they gave back, and a slab premium below its own norm; cards with a 90%+ gem rate lose a little (easy to grade, keeps getting diluted). Each day shows the next ${picks.length} from the ranked list. Full checks refresh all ${pool.length} candidates' prices and re-read about 20 card pages (${read} have data so far).${hidden.length ? ` ${hidden.length} card${hidden.length === 1 ? '' : 's'} hidden in this browser · <button type="button" class="linkish" id="sc-reset">show again</button>` : ''}</p>`;
     el.querySelector('#sc-other').addEventListener('change', (e) => { store.set('psa10.scout.other', e.target.checked); renderScout(); updateCounts(); });
     el.querySelectorAll('.sc-dismiss').forEach((b) => b.addEventListener('click', () => { const h = store.get('psa10.scout.dismissed', []); h.push(b.dataset.slug); store.set('psa10.scout.dismissed', h); renderScout(); updateCounts(); }));
+    el.querySelectorAll('.sc-img').forEach((b) => b.addEventListener('click', () => openLightbox(b.dataset.big, b.querySelector('img').alt)));
     const reset = el.querySelector('#sc-reset'); if (reset) reset.addEventListener('click', () => { store.set('psa10.scout.dismissed', []); renderScout(); updateCounts(); });
     mountCharts(el);
   }
@@ -1318,7 +1463,7 @@
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
     planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
-    compare: 'Head to head', duel: 'Budget duel', scored: 'Scored calls', scout: 'Scout',
+    compare: 'Head to head', duel: 'Budget duel', scored: 'Scored calls', scout: 'Scout', predict: 'You vs the model',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
@@ -1340,7 +1485,7 @@
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
-    if (tab && ['watching', 'record', 'market', 'tables', 'scout'].includes(navView)) tab.classList.add('on');
+    if (tab && ['watching', 'record', 'market', 'tables', 'scout', 'predict'].includes(navView)) tab.classList.add('on');
 
     const back = document.getElementById('back-link');
     back.hidden = view !== 'card' && !PARENT[view];
@@ -1435,6 +1580,7 @@
       case 'market': return `pokeca-chart indices · checked ${when}`;
       case 'tables': return 'Every tracked card side by side';
       case 'scout': return scoutSubtitle();
+      case 'predict': return predictSubtitle();
       default: return '';
     }
   }
@@ -1457,6 +1603,7 @@
       collection: market || '', watching: (cards.length - market) || '', holdings: state.holdings.length || '',
       record: tr && tr.calls_scored ? `${(tr.calls || {}).right || 0}–${(tr.calls || {}).wrong || 0}` : '',
       scout: scoutNewCount(),
+      predict: predOpenCount(),
     };
     document.querySelectorAll('em[data-count]').forEach((em) => { em.textContent = counts[em.dataset.count] || ''; });
   }
@@ -1542,6 +1689,7 @@
     renderPlanner(cards);
     renderTrackRecord();
     renderScout();
+    renderPredict();
     renderTables(cards, prevCards);
     updateCounts();
     applyRoute();
