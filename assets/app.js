@@ -1,6 +1,17 @@
 (function () {
   'use strict';
 
+  // The visible height, for the sidebar: 100vh/100dvh overshoot in some iPad web views (home-screen
+  // app, in-app browsers), which pushed the sidebar's bottom (+ Add card) off the screen.
+  const setAppHeight = () => {
+    const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    if (h) document.documentElement.style.setProperty('--app-h', Math.round(h) + 'px');
+  };
+  setAppHeight();
+  window.addEventListener('resize', setAppHeight);
+  window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 300));
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+
   const state = {
     manifest: null,
     currentIndex: -1, // index into manifest.snapshots (chronological ascending)

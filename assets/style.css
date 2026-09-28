@@ -59,7 +59,7 @@ img { display: block; }
 /* ---------- shell ---------- */
 .app { display: flex; min-height: 100vh; }
 .sidebar {
-  position: sticky; top: 0; height: 100vh; height: 100dvh; width: 240px; flex-shrink: 0;
+  position: sticky; top: 0; height: 100vh; height: 100dvh; height: var(--app-h, 100dvh); width: 240px; flex-shrink: 0;
   display: flex; flex-direction: column; gap: 26px;
   /* the home-screen app draws under the status bar and home indicator (viewport-fit=cover) */
   padding: calc(24px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));
