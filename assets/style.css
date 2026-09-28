@@ -59,8 +59,10 @@ img { display: block; }
 /* ---------- shell ---------- */
 .app { display: flex; min-height: 100vh; }
 .sidebar {
-  position: sticky; top: 0; height: 100vh; width: 240px; flex-shrink: 0;
-  display: flex; flex-direction: column; gap: 26px; padding: 24px 14px;
+  position: sticky; top: 0; height: 100vh; height: 100dvh; width: 240px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 26px;
+  /* the home-screen app draws under the status bar and home indicator (viewport-fit=cover) */
+  padding: calc(24px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));
   background: var(--side); border-right: 1px solid var(--line); overflow-y: auto;
 }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px; color: var(--text); }
@@ -77,6 +79,7 @@ img { display: block; }
 .nav svg, .tabbar svg, .back-link svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 .nav span { flex-grow: 1; }
 .nav em, .more-list em { font: 400 11px var(--sans); font-style: normal; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+@media (max-height: 1000px) { .sidebar { gap: 18px; } }
 .side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 4px; }
 .snap-select {
   background: var(--panel); color: var(--text); border: 1px solid var(--line-2); border-radius: var(--radius);
