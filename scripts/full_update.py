@@ -8,6 +8,7 @@ Publish a FULL price check from the compact lines the in-page scripts return.
     <pokeca_both.js lines>           (IDX psa10 {…} / IDX raw {…})
     MYTIER {…}                       My-tier extractor result (optional)
     PREM …                           pokeca_premium.js lines (optional; saved to data/premium.json)
+    SCP … / SC {…} / SC! …           pokeca_scout.js lines (optional; saved to data/scout.json)
     TIER {…}                         psa_tier_status (Mondays, optional)
     VOL psa10 {"volume_trend": …, "volume_note": …}   volume override (optional)
     NOTE free text                   run notes (optional)
@@ -36,6 +37,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "pricecheck"))
 import quick_update  # noqa: E402  (decode_compact: the product-page part of each line)
 import premium  # noqa: E402
+import scout  # noqa: E402
 import plan as planmod  # noqa: E402
 
 TILE_ERR = {"-": "no for-sale listings (出品待ち on the grade tile)", "?": "no price on the grade tile",
@@ -101,6 +103,7 @@ def parse(text, cards_meta, plan):
     raw = {"cards": {}, "index": {}}
     mytier = None
     prem_lines = []
+    scout_lines = []
     alt_lines = {}
     card_lines = {}
     for line in text.splitlines():
@@ -116,6 +119,8 @@ def parse(text, cards_meta, plan):
         elif head == "IDX":
             k, _, js = rest.partition(" ")
             raw["index"]["psa10" if k == "psa10" else "raw"] = json.loads(js)
+        elif head in ("SCP", "SC", "SC!"):
+            scout_lines.append(s)
         elif head == "PREM":
             prem_lines.append(s)
         elif head == "MYTIER":
@@ -178,6 +183,7 @@ def parse(text, cards_meta, plan):
         if sid not in raw["cards"]:
             notes.append(f"{sid}: no SNKRDUNK line in this run")
     raw["_premium"] = premium.decode(prem_lines)
+    raw["_scout"] = scout.decode(scout_lines) if scout_lines else None
     return raw, mytier, notes
 
 
@@ -228,6 +234,7 @@ def main():
     cards_meta = {c["snkrdunk_id"]: c for c in planmod.load_cards(ROOT)}
     raw, mytier, notes = parse(text, cards_meta, plan)
     prem = raw.pop("_premium", {})
+    sc = raw.pop("_scout", None)
     if not raw["cards"]:
         die("no SNKRDUNK card lines in the input")
     raw_path = incoming / "full-raw.json"
@@ -260,6 +267,9 @@ def main():
     if prem:
         print()
         premium.save(prem, ROOT, push="--no-push" not in args)
+    if sc:
+        print()
+        scout.update(*sc, root=ROOT, push="--no-push" not in args)
     persist_images(raw, cards_meta, dry)
 
 

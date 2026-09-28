@@ -156,7 +156,7 @@
   const OPTIONAL_DATA = {
     holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
-    insights: 'data/insights.json', premium: 'data/premium.json',
+    insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json',
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
@@ -192,6 +192,7 @@
     historyIndexPromise = Promise.resolve(state.hist);
     state.syncedLimits = (b.limits && b.limits.limits) || {};
     state.oddsModel = b.oddsModel || null;
+    state.scout = b.scout || null; // data/scout.json — untracked candidates (scripts/scout.py)
     state.premium = b.premium || null; // data/premium.json — pokeca-chart slab premium per card (scripts/premium.py)
     state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
     if (fresh) reconcileLimits(); // only against fresh data, never a cached copy
@@ -1086,6 +1087,87 @@
   function quietHtml(rows) {
     return rows.map(([k, v]) => `<div class="ins-q"><span>${k}</span><span>${v}</span></div>`).join('');
   }
+  // ---------- Scout: cards you don't track yet that fit your criteria and look cheap ----------
+  // data/scout.json is written by full checks (pricecheck/scripts/pokeca_scout.js → scripts/scout.py):
+  // modern secret rares on pokeca-chart at ¥15k–150k, ranked by how far below their pre-hype price
+  // (Jul–Dec 2025) they sit, how much of the 2026 bubble they gave back and a compressed slab premium.
+  // The page shows 3–5 of them per JST day, stepping through the ranked list so each day brings
+  // different cards (the list itself only changes when a full check runs). "Not for me" hides a card
+  // in this browser; "+ Track it" opens the Add card form with its SNKRDUNK page filled in.
+  const SCOUT_IMG = (slug) => `https://pokeca-chart-front-v2.pages.dev/images/cards/${slug}-medium.webp`;
+  function jstDayIndex() { return Math.floor((Date.now() + 9 * 36e5) / 864e5); }
+  function scoutList() {
+    const sc = state.scout; if (!sc || !sc.ranked) return [];
+    const hidden = new Set(store.get('psa10.scout.dismissed', []));
+    const tracked = new Set(((state.currentData && state.currentData.cards) || []).map((c) => cardId(c)));
+    const other = store.get('psa10.scout.other', false);
+    return sc.ranked.filter((r) => { const c = sc.pool[r.slug] || {}; return !hidden.has(r.slug) && !(c.sid && tracked.has(String(c.sid))) && (other || r.kind !== 'other'); });
+  }
+  function scoutPicks() {
+    const list = scoutList(), N = list.length;
+    if (!N) return { picks: [], list, n: 0 };
+    const n = N >= 15 ? 5 : N >= 8 ? 4 : Math.min(3, N);
+    const start = (jstDayIndex() * n) % N;
+    return { picks: Array.from({ length: n }, (_, k) => list[(start + k) % N]), list, n };
+  }
+  function scoutNewCount() {
+    const { n } = scoutPicks();
+    return n && store.get('psa10.scout.seen', 0) !== jstDayIndex() ? `${n} new` : '';
+  }
+  function scoutSubtitle() {
+    const sc = state.scout; if (!sc) return 'Cards you don\'t track yet that fit your criteria and look cheap';
+    return `New picks every day from ${scoutList().length} candidates · list updated ${fmtDateJST(sc.updated)}`;
+  }
+  function scoutCardHtml(r, i) {
+    const c = state.scout.pool[r.slug] || {};
+    const price = c.price || c.now;
+    const disc = c.pre ? (price / c.pre - 1) * 100 : null;
+    const off = c.peak && c.peak > price ? (1 - price / c.peak) * 100 : null;
+    const ser = (c.ser || '').split(',').filter(Boolean).map((x) => { const [m, v] = x.split(':'); return { x: Date.parse(`20${m.slice(0, 2)}-${m.slice(2)}-15T12:00:00+09:00`), y: +v * 1000, title: `20${m.slice(0, 2)}/${m.slice(2)}` }; });
+    const chart = ser.length >= 3 ? chartSlot({ type: 'line', xMode: 'time', height: 110, color: 'var(--accent)', label: 'PSA10 price, monthly',
+      refs: c.pre ? [{ y: c.pre, label: 'pre-hype', cls: 'norm', left: true }] : [], points: ser }) : '';
+    const add = `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'add-card.yml', title: 'Add card', url: c.sid ? `https://snkrdunk.com/apparels/${c.sid}` : '', notes: `Found by Scout on ${new Date().toISOString().slice(0, 10)}: ${c.nm || r.slug}` })}`;
+    return `<article class="sc-card" style="--i:${i}">
+      <div class="sc-img"><img src="${escapeAttr(SCOUT_IMG(r.slug))}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.sc-img').classList.add('noimg')"></div>
+      <div class="sc-body">
+        <div class="sc-head"><b class="jp">${escapeHtml(c.nm || r.slug)}</b><span class="muted jp">${escapeHtml(c.set || '')}${c.rel ? ' · ' + escapeHtml(c.rel.replace('-', '/')) : ''}</span></div>
+        <div class="sc-price"><span class="display">${fmtYen(price)}</span>${disc != null ? `<span class="sc-pill ${disc <= 0 ? 'pos' : ''}">${disc <= 0 ? '−' : '+'}${Math.abs(disc).toFixed(0)}% vs pre-hype</span>` : ''}${off != null && off >= 10 ? `<span class="sc-pill" title="2026 peak ${fmtYen(c.peak)} (${escapeAttr(c.pk || '')})">−${off.toFixed(0)}% off its ${escapeHtml((c.pk || '').replace(/^(\d{4})-(\d{2})$/, (m, y, mo) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo - 1]))} peak</span>` : ''}</div>
+        <ul class="sc-why">${r.reasons.slice(1).filter((w) => !/off its 2026 peak/.test(w)).map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
+        ${chart ? `<div class="sc-chart">${chart}</div>` : ''}
+        <div class="sc-actions">
+          ${c.sid ? `<a class="btn btn-primary" href="${escapeAttr(add)}" target="_blank" rel="noopener" title="Open the Add card form with this card's SNKRDUNK page filled in">+ Track it</a><a class="btn" href="https://snkrdunk.com/apparels/${escapeAttr(c.sid)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>` : ''}
+          <a class="btn" href="https://pokeca-chart.com/gr/${escapeAttr(r.slug)}/" target="_blank" rel="noopener">pokeca ↗</a>
+          <button type="button" class="btn sc-dismiss" data-slug="${escapeAttr(r.slug)}" title="Hide this card from the scout (this browser)">Not for me</button>
+        </div>
+      </div>
+    </article>`;
+  }
+  function renderScout() {
+    const el = document.getElementById('scout-page'); if (!el) return;
+    const sc = state.scout;
+    if (!sc || !sc.ranked) { el.innerHTML = `<div class="empty-state">No scout data yet. The next full price check reads the candidates.</div>`; return; }
+    const { picks, list } = scoutPicks();
+    const other = store.get('psa10.scout.other', false);
+    const hidden = store.get('psa10.scout.dismissed', []);
+    const pool = Object.values(sc.pool || {}), read = pool.filter((c) => c.read).length;
+    const day = new Date(Date.now() + 9 * 36e5).toISOString().slice(5, 10).replace('-', '/');
+    el.innerHTML = `
+      <div class="sc-top">
+        <div><span class="lbl">Today's scout · ${day}</span><span class="muted"> ${picks.length} of ${list.length} candidates · different cards tomorrow</span></div>
+        <label class="sc-toggle"><input type="checkbox" id="sc-other"${other ? ' checked' : ''}> Include trainers &amp; other cards</label>
+      </div>
+      ${picks.length ? `<div class="sc-grid">${picks.map(scoutCardHtml).join('')}</div>` : `<div class="empty-state">Nothing fits right now${hidden.length ? ' (some cards are hidden)' : ''}.</div>`}
+      <details class="sc-all"><summary>All ${list.length} candidates, best first</summary>
+        <table class="sc-table"><thead><tr><th>Card</th><th>PSA10</th><th>vs pre-hype</th><th>off peak</th><th>Gem rate</th></tr></thead><tbody>
+        ${list.map((r) => { const c = sc.pool[r.slug] || {}, p = c.price || c.now; return `<tr><td class="jp"><a href="https://pokeca-chart.com/gr/${escapeAttr(r.slug)}/" target="_blank" rel="noopener">${escapeHtml(c.nm || r.slug)}</a></td><td>${fmtYen(p)}</td><td class="${c.pre && p < c.pre ? 'pos' : ''}">${c.pre ? fmtPct((p / c.pre - 1) * 100, 0) : '—'}</td><td>${c.peak && c.peak > p ? '−' + ((1 - p / c.peak) * 100).toFixed(0) + '%' : '—'}</td><td>${c.gem != null ? c.gem + '%' : '—'}</td></tr>`; }).join('')}
+        </tbody></table></details>
+      <p class="tr-note">How it picks: modern secret rares (released 2021 or later) with a PSA10 price of ¥15k–150k on pokeca-chart that you don't track yet, trading at least 3 times a month, at most 10% above their pre-hype price (the Jul–Dec 2025 median, skipping each card's first three months). Ranked by how far below that level they are, how much of the 2026 peak they gave back, and a slab premium below its own norm; cards with a 90%+ gem rate lose a little (easy to grade, keeps getting diluted). Each day shows the next ${picks.length} from the ranked list. Full checks refresh all ${pool.length} candidates' prices and re-read about 20 card pages (${read} have data so far).${hidden.length ? ` ${hidden.length} card${hidden.length === 1 ? '' : 's'} hidden in this browser · <button type="button" class="linkish" id="sc-reset">show again</button>` : ''}</p>`;
+    el.querySelector('#sc-other').addEventListener('change', (e) => { store.set('psa10.scout.other', e.target.checked); renderScout(); updateCounts(); });
+    el.querySelectorAll('.sc-dismiss').forEach((b) => b.addEventListener('click', () => { const h = store.get('psa10.scout.dismissed', []); h.push(b.dataset.slug); store.set('psa10.scout.dismissed', h); renderScout(); updateCounts(); }));
+    const reset = el.querySelector('#sc-reset'); if (reset) reset.addEventListener('click', () => { store.set('psa10.scout.dismissed', []); renderScout(); updateCounts(); });
+    mountCharts(el);
+  }
+
   // ---------- slab premium: PSA10 ÷ raw A-rank ----------
   // Tested 2026-09-28 on 129 cards, 2022–26 (project doc raw-vs-psa10-leadlag): raw prices don't warn of
   // PSA10 moves (PSA10 moves first, raw follows), but a premium far from the card's OWN 6-month norm
@@ -1236,7 +1318,7 @@
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
     planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
-    compare: 'Head to head', duel: 'Budget duel', scored: 'Scored calls',
+    compare: 'Head to head', duel: 'Budget duel', scored: 'Scored calls', scout: 'Scout',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
@@ -1258,7 +1340,7 @@
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
-    if (tab && ['watching', 'record', 'market', 'tables'].includes(navView)) tab.classList.add('on');
+    if (tab && ['watching', 'record', 'market', 'tables', 'scout'].includes(navView)) tab.classList.add('on');
 
     const back = document.getElementById('back-link');
     back.hidden = view !== 'card' && !PARENT[view];
@@ -1288,6 +1370,7 @@
     document.title = view === 'overview' ? 'PSA10 Tracker' : `${title} · PSA10 Tracker`;
     if (view !== 'collection' && state.cmpMode) { state.cmpMode = false; state.cmpPick = []; }
 
+    if (view === 'scout') { store.set('psa10.scout.seen', jstDayIndex()); updateCounts(); }
     lastRoute = { view, arg };
   }
 
@@ -1351,6 +1434,7 @@
       case 'record': return 'How past calls and stated odds turned out';
       case 'market': return `pokeca-chart indices · checked ${when}`;
       case 'tables': return 'Every tracked card side by side';
+      case 'scout': return scoutSubtitle();
       default: return '';
     }
   }
@@ -1372,6 +1456,7 @@
     const counts = {
       collection: market || '', watching: (cards.length - market) || '', holdings: state.holdings.length || '',
       record: tr && tr.calls_scored ? `${(tr.calls || {}).right || 0}–${(tr.calls || {}).wrong || 0}` : '',
+      scout: scoutNewCount(),
     };
     document.querySelectorAll('em[data-count]').forEach((em) => { em.textContent = counts[em.dataset.count] || ''; });
   }
@@ -1456,6 +1541,7 @@
     renderWatchPanel(cards.filter((c) => !hasMarket(c)), prevCards);
     renderPlanner(cards);
     renderTrackRecord();
+    renderScout();
     renderTables(cards, prevCards);
     updateCounts();
     applyRoute();

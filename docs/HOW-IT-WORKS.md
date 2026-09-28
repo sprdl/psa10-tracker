@@ -622,6 +622,10 @@ of `app.js`. Nothing new is stored; every number comes from functions described 
   and the Buy line, the DIY comparison, and totals for buying all of them.
 - **Colours:** card A/B (and C/D in a duel) use `CMP_COLORS`.
 
+### Scout (#/scout)
+
+Cards you don't track yet that fit your criteria and look cheap. Full checks run `pricecheck/scripts/pokeca_scout.js` on pokeca-chart's card list: it keeps modern secret rares (card number above the set size, released 2021+, PSA10 ¥15k–150k) that aren't on the tracker, sends today's list price for all of them (`SCP` line) and reads up to 20 of their card pages (`SC` lines, oldest reading first). `scripts/scout.py` (called by `full_update.py`) merges that into `data/scout.json` and ranks the candidates; its docstring has the filters and the score. The page (`renderScout`) shows 3–5 of the ranked list per JST day, stepping through it so each day brings different cards, with "+ Track it" (the Add card form with the SNKRDUNK page filled in) and "Not for me" (hidden in this browser via localStorage). Cards without an ex/V/VMAX/VSTAR/GX name (trainers, mostly) only show with the "Include trainers" switch.
+
 ### Slab premium (DIY tab)
 
 `premiumHtml(card)` shows how many times the raw A-rank price a PSA10 costs. Three readings: SNKRDUNK's lowest asks and recent sales (`snkrPremium`, from the card itself; the per-check line comes from `history.json`'s `"r"` field, written by `build_history.py`), and pokeca-chart's 18-month history with the card's own 6-month norm (`premiumOf`, from `data/premium.json`). Full checks refresh `premium.json`: `pricecheck/scripts/pokeca_premium.js` reads each card's pokeca-chart page, `full_update.py` hands the `PREM` lines to `scripts/premium.py`. When the pokeca premium is 20%+ from its norm (`PREM_FLAG`, same threshold in `scripts/outliers.py`), "What stands out" adds a stretched/compressed finding. Its score is capped at 1.2 because the tested effect is small (project doc `raw-vs-psa10-leadlag-2026-09-28`): it never shows the overview's Insight star on its own.

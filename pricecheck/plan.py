@@ -46,6 +46,9 @@ def load_cards(root=ROOT):
     return cards
 
 
+SCOUT_READS = 20  # scout card pages read per full check (about 2.5 s each)
+
+
 def pokeca_slug(name):
     """pokeca-chart card page slug from the card name's [SET NNN/NNN] code: "[SV8a 217/187]" -> "sv8a-217-187".
     A card can override it with "pokeca_slug" in its card-list entry ("-" = not on pokeca-chart)."""
@@ -70,6 +73,7 @@ def build_plan(root=ROOT, now=None):
     for c in (snap or {}).get("cards", []):
         by_id[c.get("url", "").rstrip("/").split("/")[-1]] = c
     plan, altema, skipped, prem = [], [], {}, []
+    tracked_slugs = set()
     for c in load_cards(root):
         sid = c["snkrdunk_id"]
         prev = by_id.get(sid) or {}
@@ -77,6 +81,8 @@ def build_plan(root=ROOT, now=None):
         mode = "full" if (has_market or monday) else "tile"
         plan.append([sid, mode, 0 if c.get("image_url") else 1])
         slug = c.get("pokeca_slug") or pokeca_slug(c.get("card_name_ja", ""))
+        if slug and slug != "-":
+            tracked_slugs.add(slug)
         if has_market and slug and slug != "-":
             prem.append([sid, slug])
         url = c.get("altema_url")
@@ -103,8 +109,17 @@ def build_plan(root=ROOT, now=None):
             odds_age = (now.date() - datetime.fromisoformat(str(odds_built)[:10]).date()).days
         except Exception:
             pass
+    scout = {"skip": sorted(tracked_slugs), "read": {}, "n": SCOUT_READS}
+    sp = root / "data" / "scout.json"
+    if sp.exists():
+        try:
+            sd = json.loads(sp.read_text(encoding="utf-8"))
+            scout["skip"] = sorted(tracked_slugs | set(sd.get("dismissed") or []))
+            scout["read"] = {k: v.get("read", "") for k, v in (sd.get("pool") or {}).items() if v.get("read")}
+        except Exception:
+            pass
     return {
-        "now": now, "monday": monday, "latest": snap_path.name if snap_path else None,
+        "now": now, "monday": monday, "scout": scout, "latest": snap_path.name if snap_path else None,
         "plan": plan, "altema": altema, "altema_skipped": skipped, "premium": prem,
         "odds_model_built": odds_built, "odds_rebuild_due": odds_age is None or odds_age > 30,
     }
@@ -122,6 +137,7 @@ def main():
     print("PLAN = " + json.dumps(p["plan"]))
     print("ALTEMA = " + json.dumps(p["altema"]))
     print("PREM = " + json.dumps(p["premium"]))
+    print("SCOUT = " + json.dumps(p["scout"], separators=(",", ":")))
 
 
 if __name__ == "__main__":
