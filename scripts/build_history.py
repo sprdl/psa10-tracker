@@ -10,7 +10,9 @@ a few hundred bytes per snapshot.
     python3 scripts/build_history.py          # rebuild (add_snapshot / apply_analysis call this)
 
 Per snapshot: {"d": collected_at_jst, "m": check_mode, "i": pokeca PSA10 index, "p": {url: [price, confirmed]},
-               "h": {url: [PSA10 sales/day, raw A sales/day]}}
+               "h": {url: [PSA10 sales/day, raw A sales/day]},
+               "r": {url: [PSA10 lowest ask, raw A lowest ask, PSA10 sales median, raw A sales median]}}
+"r" feeds the card page's SNKRDUNK slab-premium line (PSA10 ÷ raw A-rank).
 
 "h" is how fast the card trades on SNKRDUNK: the number of recent completed sales in
 the snapshot (up to 20, one-copy sales) divided by the days since the oldest of them.
@@ -54,6 +56,17 @@ def sales_per_day(sales, ref):
         return None
     return round(len(ages) / max(max(ages), 0.25), 2)
 
+def sales_median(sales, ref):
+    """Median one-copy sale price: the last 7 days' sales if there are 3+, else the 5 most recent."""
+    rows = [(s.get("price"), sale_age_days(s.get("when"), ref)) for s in sales or [] if s.get("price")]
+    recent = sorted(p for p, a in rows if a is not None and a <= 7)
+    pick = recent if len(recent) >= 3 else sorted(p for p, _ in rows[-5:]) if len(rows) >= 3 else []
+    if not pick:
+        return None
+    n = len(pick)
+    return pick[n // 2] if n % 2 else round((pick[n // 2 - 1] + pick[n // 2]) / 2)
+
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -93,7 +106,7 @@ def build(root: Path = ROOT) -> Path:
             if price is None:
                 continue
             points[c.get("url")] = [price, 1 if a.get("price_source") == "sales_confirmed" else 0]
-        heat = {}
+        heat, prem = {}, {}
         try:
             ref = datetime.fromisoformat(when)
             if ref.tzinfo is None:
@@ -107,9 +120,17 @@ def build(root: Path = ROOT) -> Path:
                 b = sales_per_day((g.get("raw_a_grade") or {}).get("recent_completed_sales"), ref)
                 if a is not None or b is not None:
                     heat[c.get("url")] = [a, b]
+                pl = (g.get("psa10") or {}).get("lowest_price")
+                rl = (g.get("raw_a_grade") or {}).get("lowest_price")
+                ps = sales_median((g.get("psa10") or {}).get("recent_completed_sales"), ref)
+                rs = sales_median((g.get("raw_a_grade") or {}).get("recent_completed_sales"), ref)
+                if (pl and rl) or (ps and rs):
+                    prem[c.get("url")] = [pl, rl, ps, rs]
         entry = {"d": when, "m": s.get("check_mode", "full"), "p": points}
         if heat:
             entry["h"] = heat
+        if prem:
+            entry["r"] = prem
         if idx:
             entry["i"] = idx
         series.append(entry)

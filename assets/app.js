@@ -145,7 +145,7 @@
   const OPTIONAL_DATA = {
     holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
-    insights: 'data/insights.json',
+    insights: 'data/insights.json', premium: 'data/premium.json',
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
@@ -181,6 +181,7 @@
     historyIndexPromise = Promise.resolve(state.hist);
     state.syncedLimits = (b.limits && b.limits.limits) || {};
     state.oddsModel = b.oddsModel || null;
+    state.premium = b.premium || null; // data/premium.json — pokeca-chart slab premium per card (scripts/premium.py)
     state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
     if (fresh) reconcileLimits(); // only against fresh data, never a cached copy
 
@@ -1007,6 +1008,16 @@
     // 5) close to your limit
     if (lim != null && ask > lim && (ask / lim - 1) * 100 <= 5) out.push({ key: 'limit', score: 1.2, tone: 'up', title: `Within ${((ask / lim - 1) * 100).toFixed(1)}% of your limit`,
       lines: [`The lowest ask ${fmtYen(ask)} is ${fmtYen(ask - lim)} above your ${fmtYen(lim)} limit. A single cheaper listing would trigger a Buy signal.`] });
+    // 6) slab premium far from its own norm (pokeca-chart, see premiumHtml)
+    const pk = premiumOf(card);
+    if (pk && pk.age <= 21 && Math.abs(pk.dev) >= PREM_FLAG) {
+      const sk = snkrPremium(card), up = pk.dev > 0;
+      out.push({ key: 'premium', score: Math.min(1.2, Math.abs(pk.dev) / PREM_FLAG * 0.6), // capped like outliers.py: a small effect tone: up ? 'down' : 'up',
+        title: up ? `Slab premium stretched: ${Math.round(pk.dev)}% above its norm` : `Slab premium compressed: ${Math.round(-pk.dev)}% below its norm`,
+        lines: [`A PSA10 costs ${fmtX(pk.prem)} a raw copy on pokeca-chart (${escapeHtml(pk.asof)}), against ${fmtX(pk.norm)} over the previous six months.${sk.asks || sk.sales ? ` On SNKRDUNK today: ${[sk.asks ? fmtX(sk.asks) + ' on lowest asks' : '', sk.sales ? fmtX(sk.sales) + ' on recent sales' : ''].filter(Boolean).join(', ')}.` : ''}`,
+          up ? 'In the 2022–26 test, premiums this far above the norm tended to close within a month, mostly by raw prices catching up, while the PSA10 lagged the market by about 3 points. A small effect: context, not a reason to change the tiers.'
+             : "The slab is cheap relative to a raw copy by this card's own standard. In the 2022–26 test, the PSA10 then did about 2 points better than the market over the next month, with raw lagging. Small, but it makes buying raw to grade yourself even less attractive here."] });
+    }
     return out.sort((a, b) => b.score - a.score);
   }
   // Written analyses: paragraphs separated by blank lines; a paragraph that starts with a short
@@ -1049,6 +1060,12 @@
       const h = heatOf(card);
       out.push(['Trading', h && h.psa ? `about ${fmtRate(h.psa.rate)} PSA10 sales a day${h.prev ? ` (${fmtRate(h.prev.rate)} a week ago), steady` : ''}` : 'no trade data yet']);
     }
+    if (!fired.has('premium')) {
+      const pk = premiumOf(card), sk = snkrPremium(card), parts = [];
+      if (sk.asks) parts.push(`${fmtX(sk.asks)} on SNKRDUNK asks`);
+      if (pk) parts.push(`${pk.dev >= 0 ? '+' : '−'}${Math.abs(pk.dev).toFixed(0)}% vs its 6-month norm on pokeca-chart${pk.age > 21 ? ` (as of ${pk.asof})` : Math.abs(pk.dev) < PREM_FLAG ? ', in its usual range' : ''}`);
+      out.push(['Slab premium', parts.length ? parts.join(' · ') : 'no raw price to compare']);
+    }
     if (!fired.has('limit')) {
       const lim = getLimit(card);
       out.push(['Your limit', lim == null ? 'none set' : ask <= lim ? `lowest ask is at or below your ${fmtYen(lim)} limit` : `${fmtYen(lim)}, ${Math.round((ask / lim - 1) * 100)}% below today's ask`]);
@@ -1057,6 +1074,66 @@
   }
   function quietHtml(rows) {
     return rows.map(([k, v]) => `<div class="ins-q"><span>${k}</span><span>${v}</span></div>`).join('');
+  }
+  // ---------- slab premium: PSA10 ÷ raw A-rank ----------
+  // Tested 2026-09-28 on 129 cards, 2022–26 (project doc raw-vs-psa10-leadlag): raw prices don't warn of
+  // PSA10 moves (PSA10 moves first, raw follows), but a premium far from the card's OWN 6-month norm
+  // tends to close within a month: stretched → the PSA10 lags the market (~3 pts) while raw catches up;
+  // compressed → the reverse (~2 pts). Small next to normal swings, so it's context, never tiers.
+  // The norm needs months of history, which only pokeca-chart has (data/premium.json, 美品 raw, a
+  // cross-market average); SNKRDUNK's own asks/sales premium is shown next to it (history.json "r").
+  const PREM_FLAG = 20; // % from the norm, about the top/bottom fifth in the test; same in scripts/outliers.py
+  function premiumOf(card) {
+    const e = state.premium && state.premium.cards && state.premium.cards[card.url];
+    if (!e || !e.series || !e.series.length || e.norm == null || e.dev == null) return null;
+    return Object.assign({ age: daysBetween(e.asof + 'T12:00:00+09:00', refTime()) }, e);
+  }
+  function salesMedianOf(list) {
+    const ref = Date.parse(refTime());
+    const rows = (list || []).map((s) => ({ p: s.price, a: saleAgeDays(s.when, ref) })).filter((s) => s.p);
+    const recent = rows.filter((s) => s.a != null && s.a <= 7).map((s) => s.p);
+    return recent.length >= 3 ? median(recent) : rows.length >= 3 ? median(rows.slice(-5).map((s) => s.p)) : null;
+  }
+  function snkrPremium(card) {
+    const g = card.grades || {}, pl = (g.psa10 || {}).lowest_price, rl = (g.raw_a_grade || {}).lowest_price;
+    const ps = salesMedianOf((g.psa10 || {}).recent_completed_sales), rs = salesMedianOf((g.raw_a_grade || {}).recent_completed_sales);
+    return { asks: pl && rl ? pl / rl : null, pl, rl, sales: ps && rs ? ps / rs : null, ps, rs };
+  }
+  const fmtX = (v) => (v == null ? '—' : v.toFixed(2) + '×');
+  function premiumHtml(card) {
+    if (!hasMarket(card)) return '';
+    const sk = snkrPremium(card), pk = premiumOf(card);
+    const err = state.premium && state.premium.cards && (state.premium.cards[card.url] || {}).error;
+    if (!sk.asks && !sk.sales && !pk) return '';
+    const snaps = (state.hist && state.hist.snapshots) || [];
+    const sPts = snaps.filter((e) => e.r && e.r[card.url] && e.r[card.url][0] && e.r[card.url][1]).map((e) => {
+      const r = e.r[card.url];
+      return { x: Date.parse(e.d), y: r[0] / r[1], title: e.d.slice(0, 16).replace('T', ' ') + ' JST', sub: `PSA10 ${fmtYen(r[0])} ÷ A ${fmtYen(r[1])}${r[2] && r[3] ? ` · sales ${fmtX(r[2] / r[3])}` : ''}` };
+    });
+    const flag = pk && Math.abs(pk.dev) >= PREM_FLAG;
+    const devCls = !flag ? '' : pk.dev < 0 ? 'pos' : 'neg';
+    const meaning = !pk ? (err ? `pokeca-chart has no PSA10 page for this card, so there's no long history to compare with; only the SNKRDUNK line below.` : '')
+      : flag && pk.dev > 0 ? `Stretched: the slab costs unusually much relative to a raw copy. In the test, premiums this far above their norm tended to close within a month, mostly by raw prices catching up while the PSA10 lagged the market.`
+      : flag ? `Compressed: the slab is cheap relative to a raw copy by this card's own standard. In the test, the PSA10 then tended to do slightly better than the market over the next month, with raw lagging.`
+      : `Within its usual range (flagged at ±${PREM_FLAG}% from the norm).`;
+    const fmt = { fmt: (v) => v.toFixed(v < 10 ? 2 : 1) + '×', fmtTip: fmtX };
+    const snkrChart = sPts.length >= 2 ? chartSlot(Object.assign({ type: 'line', xMode: 'time', height: 140, color: 'var(--accent)', label: 'SNKRDUNK slab premium per check', points: sPts }, fmt)) : '';
+    const pokeChart = pk ? chartSlot(Object.assign({ type: 'line', xMode: 'time', height: 150, color: '#7cb8ff', label: 'pokeca-chart slab premium, 18 months',
+      refs: [{ y: pk.norm, label: '6-month norm', cls: 'norm', left: true }],
+      points: pk.series.map(([d, k]) => ({ x: Date.parse(d + 'T12:00:00+09:00'), y: k, title: d })) }, fmt)) : '';
+    return `<div class="prem">
+      <h4 class="prem-h">Slab premium <span class="muted">PSA10 price ÷ raw A-rank price</span></h4>
+      <div class="cd-stats">
+        <div class="cd-stat"><div class="lbl">SNKRDUNK asks</div><div class="val">${fmtX(sk.asks)}</div></div>
+        <div class="cd-stat"><div class="lbl">SNKRDUNK sales</div><div class="val">${fmtX(sk.sales)}</div></div>
+        <div class="cd-stat"><div class="lbl">pokeca-chart${pk && pk.age > 10 ? ` (${escapeHtml(pk.asof.slice(5).replace('-', '/'))})` : ''}</div><div class="val">${pk ? fmtX(pk.prem) : '—'}</div></div>
+        <div class="cd-stat"><div class="lbl">vs its 6-month norm</div><div class="val ${devCls}">${pk ? `${pk.dev >= 0 ? '+' : '−'}${Math.abs(pk.dev).toFixed(0)}%` : '—'}</div></div>
+      </div>
+      ${meaning ? `<p class="prem-mean">${meaning}</p>` : ''}
+      ${pokeChart ? `<div class="prem-ch"><div class="lbl">pokeca-chart, 18 months <span class="muted">norm ${fmtX(pk.norm)}</span></div>${pokeChart}</div>` : ''}
+      ${snkrChart ? `<div class="prem-ch"><div class="lbl">SNKRDUNK, each check since tracking began <span class="muted">lowest asks</span></div>${snkrChart}</div>` : ''}
+      <p class="cd-note">SNKRDUNK: ${sk.asks ? `lowest PSA10 ${fmtYen(sk.pl)} ÷ lowest A ${fmtYen(sk.rl)}` : 'no raw A ask right now'}${sk.sales ? `; recent sales ${fmtYen(sk.ps)} ÷ ${fmtYen(sk.rs)}` : ''}. pokeca-chart's raw price is a cross-market 美品 average, so its level differs from SNKRDUNK's: compare each line with its own history, not with each other. Tested on 129 cards (2022–26): raw prices don't warn of PSA10 moves (PSA10 moves first, raw follows), but a premium ${PREM_FLAG}%+ from its norm tended to close within a month. The effect is small (a few points against the market), so it never changes the tiers.</p>
+    </div>`;
   }
   function insightsHtml(card) {
     const list = insightsFor(card);
@@ -2004,7 +2081,7 @@
         </div>
         <div class="cd-panel" data-panel="history"${cur === 'history' ? '' : ' hidden'}><div class="history-block"><div class="loading-inline">Loading full history…</div></div></div>
         <div class="cd-panel" data-panel="listings"${cur === 'listings' ? '' : ' hidden'}>${buildGradeDetail('PSA10', psa10, getLimit(card))}${raw ? buildGradeDetail('Raw A-rank', raw) : ''}</div>
-        <div class="cd-panel" data-panel="diy"${cur === 'diy' ? '' : ' hidden'}>${diyHtml}</div>
+        <div class="cd-panel" data-panel="diy"${cur === 'diy' ? '' : ' hidden'}>${diyHtml}${premiumHtml(card)}</div>
         ${mode === 'page' ? '' : actionsHtml}
       </div>`;
   }
@@ -2546,6 +2623,7 @@
 
   function drawLineChart(box, cfg) {
     const pts = cfg.points; if (!pts.length) return;
+    const F = cfg.fmt || yenShort, FT = cfg.fmtTip || fmtYen; // axis / tooltip number format (yen by default)
     const W = Math.max(260, box.clientWidth), H = cfg.height || 170;
     const m = { l: 52, r: 12, t: 12, b: 26 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
     const ys = pts.map((p) => p.y).concat((cfg.refs || []).map((r) => r.y));
@@ -2567,10 +2645,10 @@
     const line = xy.length > 1 ? smoothPath(xy) : `M${xy[0][0]},${xy[0][1]} L${xy[0][0] + 0.1},${xy[0][1]}`;
     const base = m.t + ih;
     const area = `${line} L${xy[xy.length - 1][0].toFixed(1)},${base} L${xy[0][0].toFixed(1)},${base} Z`;
-    const refs = (cfg.refs || []).map((r) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(r.y).toFixed(1)}" y2="${Y(r.y).toFixed(1)}" class="hist-ref-line ${r.cls}"/><text x="${m.l + iw}" y="${(Y(r.y) - 4).toFixed(1)}" class="hist-ref-label ${r.cls}" text-anchor="end">${escapeHtml(r.label)} ${yenShort(r.y)}</text>`).join('');
+    const refs = (cfg.refs || []).map((r) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(r.y).toFixed(1)}" y2="${Y(r.y).toFixed(1)}" class="hist-ref-line ${r.cls}"/><text x="${r.left ? m.l + 4 : m.l + iw}" y="${(Y(r.y) - 4).toFixed(1)}" class="hist-ref-label ${r.cls}" text-anchor="${r.left ? 'start' : 'end'}">${escapeHtml(r.label)} ${F(r.y)}</text>`).join('');
     box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
       <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
-      ${ticks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${yenShort(v)}</text>`).join('')}
+      ${ticks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${F(v)}</text>`).join('')}
       ${xt.map(([x, lab]) => `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${base}" y2="${base + 4}" class="ci-axis"/><text x="${x.toFixed(1)}" y="${base + 18}" class="ci-xtick">${escapeHtml(lab)}</text>`).join('')}
       <line x1="${m.l}" x2="${m.l + iw}" y1="${base}" y2="${base}" class="ci-axis"/>
       ${refs}
@@ -2586,7 +2664,7 @@
       const [x, y] = xy[i], p = pts[i];
       g.style.display = ''; cross.setAttribute('x1', x); cross.setAttribute('x2', x); dot.setAttribute('cx', x); dot.setAttribute('cy', y);
       const prev = i > 0 ? pts[i - 1].y : null, ch = prev ? (p.y / prev - 1) * 100 : null;
-      tip.innerHTML = `<div class="ci-tip-d">${escapeHtml(p.title || '')}</div><div><b>${fmtYen(p.y)}</b>${ch != null ? ` <span class="${dirClass(ch)}">${ch === 0 ? '±0' : fmtPct(ch)}</span>` : ''}</div>${p.sub ? `<div class="muted">${escapeHtml(p.sub)}</div>` : ''}${lim ? `<div class="muted">vs your limit ${fmtPct((p.y / lim.y - 1) * 100)}</div>` : ''}`;
+      tip.innerHTML = `<div class="ci-tip-d">${escapeHtml(p.title || '')}</div><div><b>${FT(p.y)}</b>${ch != null ? ` <span class="${dirClass(ch)}">${ch === 0 ? '±0' : fmtPct(ch)}</span>` : ''}</div>${p.sub ? `<div class="muted">${escapeHtml(p.sub)}</div>` : ''}${lim ? `<div class="muted">vs your limit ${fmtPct((p.y / lim.y - 1) * 100)}</div>` : ''}`;
       tipPlace(box, tip, x, y, W);
     };
     wireHover(box, svg, pts.length, xy.map((q) => q[0]), show, () => { g.style.display = 'none'; tip.hidden = true; });

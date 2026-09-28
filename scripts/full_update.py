@@ -7,6 +7,7 @@ Publish a FULL price check from the compact lines the in-page scripts return.
     <altema_batch.js lines>          (ALT …)
     <pokeca_both.js lines>           (IDX psa10 {…} / IDX raw {…})
     MYTIER {…}                       My-tier extractor result (optional)
+    PREM …                           pokeca_premium.js lines (optional; saved to data/premium.json)
     TIER {…}                         psa_tier_status (Mondays, optional)
     VOL psa10 {"volume_trend": …, "volume_note": …}   volume override (optional)
     NOTE free text                   run notes (optional)
@@ -19,7 +20,8 @@ What it does:
      (pricecheck/plan.py) for tile-only cards and skipped/conditional altema checks;
   2. runs assemble.py with --prev = the live snapshot, printing its WARNINGS / CHANGES;
   3. (not --dry-run) pulls, publishes with scripts/add_snapshot.py, saves the My-tier index with
-     scripts/add_custom_index.py, and stores any newly found card photo URL.
+     scripts/add_custom_index.py, the slab premium with scripts/premium.py, and stores any newly
+     found card photo URL.
 Everything it writes goes to data/incoming/ (gitignored) except what the publishing scripts commit.
 """
 import json
@@ -33,6 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "pricecheck"))
 import quick_update  # noqa: E402  (decode_compact: the product-page part of each line)
+import premium  # noqa: E402
 import plan as planmod  # noqa: E402
 
 TILE_ERR = {"-": "no for-sale listings (出品待ち on the grade tile)", "?": "no price on the grade tile",
@@ -97,6 +100,7 @@ def psa_activity(toks):
 def parse(text, cards_meta, plan):
     raw = {"cards": {}, "index": {}}
     mytier = None
+    prem_lines = []
     alt_lines = {}
     card_lines = {}
     for line in text.splitlines():
@@ -112,6 +116,8 @@ def parse(text, cards_meta, plan):
         elif head == "IDX":
             k, _, js = rest.partition(" ")
             raw["index"]["psa10" if k == "psa10" else "raw"] = json.loads(js)
+        elif head == "PREM":
+            prem_lines.append(s)
         elif head == "MYTIER":
             mytier = json.loads(rest)
         elif head == "TIER":
@@ -171,6 +177,7 @@ def parse(text, cards_meta, plan):
     for sid in cards_meta:
         if sid not in raw["cards"]:
             notes.append(f"{sid}: no SNKRDUNK line in this run")
+    raw["_premium"] = premium.decode(prem_lines)
     return raw, mytier, notes
 
 
@@ -220,6 +227,7 @@ def main():
     plan = planmod.build_plan(ROOT)
     cards_meta = {c["snkrdunk_id"]: c for c in planmod.load_cards(ROOT)}
     raw, mytier, notes = parse(text, cards_meta, plan)
+    prem = raw.pop("_premium", {})
     if not raw["cards"]:
         die("no SNKRDUNK card lines in the input")
     raw_path = incoming / "full-raw.json"
@@ -249,6 +257,9 @@ def main():
         pv = (raw["index"].get("psa10") or {}).get("latest_index_value_jpy")
         print()
         run([sys.executable, "scripts/add_custom_index.py", str(ci), *(["--pokeca", str(int(pv))] if pv else []), *passthrough])
+    if prem:
+        print()
+        premium.save(prem, ROOT, push="--no-push" not in args)
     persist_images(raw, cards_meta, dry)
 
 

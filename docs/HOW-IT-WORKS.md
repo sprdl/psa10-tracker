@@ -622,6 +622,10 @@ of `app.js`. Nothing new is stored; every number comes from functions described 
   and the Buy line, the DIY comparison, and totals for buying all of them.
 - **Colours:** card A/B (and C/D in a duel) use `CMP_COLORS`.
 
+### Slab premium (DIY tab)
+
+`premiumHtml(card)` shows how many times the raw A-rank price a PSA10 costs. Three readings: SNKRDUNK's lowest asks and recent sales (`snkrPremium`, from the card itself; the per-check line comes from `history.json`'s `"r"` field, written by `build_history.py`), and pokeca-chart's 18-month history with the card's own 6-month norm (`premiumOf`, from `data/premium.json`). Full checks refresh `premium.json`: `pricecheck/scripts/pokeca_premium.js` reads each card's pokeca-chart page, `full_update.py` hands the `PREM` lines to `scripts/premium.py`. When the pokeca premium is 20%+ from its norm (`PREM_FLAG`, same threshold in `scripts/outliers.py`), "What stands out" adds a stretched/compressed finding. Its score is capped at 1.2 because the tested effect is small (project doc `raw-vs-psa10-leadlag-2026-09-28`): it never shows the overview's Insight star on its own.
+
 ### Pending-request notices
 
 `loadCardRequests()` asks GitHub's public API for open issues. It shows

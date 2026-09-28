@@ -956,3 +956,14 @@ a.pl-stat.pl-link:hover { border-color: var(--accent); background: var(--hover);
 .ins-src { font-size: 12px; line-height: 1.6; }
 .ins-written p + p { margin-top: 8px; }
 .ins-lab { display: block; font: 15px var(--display); letter-spacing: 0.08em; color: var(--accent); margin-bottom: 1px; }
+
+/* slab premium (DIY tab) */
+.prem { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+.prem-h { margin: 0 0 10px; font: 20px var(--display); letter-spacing: 0.06em; }
+.prem-h .muted { font: 400 12px var(--sans); letter-spacing: 0; margin-left: 8px; }
+.prem-mean { font-size: 13px; line-height: 1.5; color: var(--soft); margin: 10px 0 4px; }
+.prem-ch { margin-top: 14px; }
+.prem-ch > .lbl { font-size: 12px; margin-bottom: 4px; }
+.prem-ch > .lbl .muted { margin-left: 6px; }
+.hist-ref-line.norm { stroke: var(--muted); stroke-dasharray: 4 4; }
+.hist-ref-label.norm { fill: var(--muted); }

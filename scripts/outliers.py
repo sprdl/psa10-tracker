@@ -12,6 +12,7 @@ Same findings and thresholds as the site's "What stands out" panel (insightsFor 
   big move     price change since the previous check (>= 8%)
   trading      PSA10 sales per day vs a week ago (>= 50%, when either is >= 1/day)
   near limit   lowest ask within 5% above your limit
+  premium      slab premium (PSA10 ÷ raw, pokeca-chart) >= 20% from its own 6-month norm (data/premium.json)
 Score = size / threshold (weighted like the site), so 1.0 = just at the threshold.
 Each printed line carries the numbers the analysis needs; the full check reads it, looks at the
 card's data, and saves a short analysis with scripts/set_insight.py.
@@ -24,7 +25,7 @@ from pathlib import Path
 
 JST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
-T = {"gap7": 8, "gap30": 12, "move": 8, "askVsSales": 8, "heat": 50}
+T = {"gap7": 8, "gap30": 12, "move": 8, "askVsSales": 8, "heat": 50, "premium": 20}
 REL = {"秒": 1 / 86400, "分": 1 / 1440, "時間": 1 / 24, "日": 1, "週間": 7, "ヶ月": 30, "か月": 30}
 
 
@@ -66,6 +67,7 @@ def main():
     hist = load("data/history.json", {"snapshots": []})["snapshots"]
     ci = (load("data/custom_index.json", {}) or {}).get("series", [])
     limits = (load("data/limits.json", {}) or {}).get("limits", {})
+    prem = (load("data/premium.json", {}) or {}).get("cards", {})
     now_s = cur["collected_at_jst"]
     now = ts(now_s)
 
@@ -162,6 +164,12 @@ def main():
         lim = (limits.get(url) or {}).get("price")
         if lim and ask > lim and (ask / lim - 1) * 100 <= 5:
             f.append((1.2, f"lowest ask within {(ask / lim - 1) * 100:.1f}% of your limit ¥{lim:,}"))
+        pe = prem.get(url) or {}
+        if pe.get("dev") is not None and abs(pe["dev"]) >= T["premium"]:
+            age = (now - datetime.fromisoformat(pe["asof"] + "T12:00:00+09:00")).days
+            if age <= 21:
+                f.append((min(1.2, abs(pe["dev"]) / T["premium"] * 0.6),  # capped: a small effect, never the lead story on its own
+                          f"slab premium {pe['prem']:.2f}x vs its 6-month norm {pe['norm']:.2f}x ({pe['dev']:+.0f}%, pokeca-chart {pe['asof']})"))
         if not f:
             continue
         f.sort(reverse=True)

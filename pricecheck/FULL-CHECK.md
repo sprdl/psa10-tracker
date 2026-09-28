@@ -15,7 +15,7 @@ check). They make no fetch/XHR requests. Never use curl, requests or any HTTP cl
 ## 1. Setup (one `device_bash` call)
 
 ```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && git pull --ff-only --quiet; python3 pricecheck/plan.py; for f in snkrdunk_full altema_batch pokeca_both; do echo "=== $f"; grep -v '^//' pricecheck/scripts/$f.js; done; echo "=== mytier"; python3 scripts/add_custom_index.py --print-js
+R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && git pull --ff-only --quiet; python3 pricecheck/plan.py; for f in snkrdunk_full altema_batch pokeca_both pokeca_premium; do echo "=== $f"; grep -v '^//' pricecheck/scripts/$f.js; done; echo "=== mytier"; python3 scripts/add_custom_index.py --print-js
 ```
 
 `plan.py` prints the JST date and weekday (Mondays add steps 6 and 6b), the odds model's build date
@@ -74,6 +74,12 @@ and collect its `ALT …` lines with the same polling call as in step 2.
    from step 1 verbatim. Its JSON result becomes one line: `MYTIER <the JSON>`. If it returns an
    error, leave the line out and mention it (the My-tier index is skipped this run).
 
+3. Still on pokeca-chart, run the `pokeca_premium` script verbatim with its `const PREM = [...]`
+   line replaced by the `PREM` line from step 1, and collect its `PREM …` lines with the same polling
+   call as in step 2 (about 2 s per card). They carry each card's slab premium (PSA10 ÷ raw 美品) and
+   its 6-month norm; `full_update.py` saves them to `data/premium.json`. A `PREM <id> !…` line (the
+   card has no pokeca-chart page) is expected for a few cards; pass it along like the others.
+
 Each `IDX` line carries `volume_trend_suggested` (spiking if any day in the last 14 exceeds 2x the
 prior-30-day average; rising/falling if the 14-day average is ±15% vs the prior 30 days; else flat),
 which is used as-is. Only if you have a genuinely better read or a notable day worth describing, add
@@ -103,7 +109,7 @@ If nothing new was announced, change nothing. In the chat message, mention any c
 
 ## 7. Publish (one `device_bash` call)
 
-Paste every line from steps 2, 3 and 4 (plus `TIER`, `VOL` and a `NOTE <text>` line for anything
+Paste every line from steps 2, 3 and 4 (including the `PREM` lines; plus `TIER`, `VOL` and a `NOTE <text>` line for anything
 unusual worth recording, all optional) verbatim into a heredoc:
 
 ```
