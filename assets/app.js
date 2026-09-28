@@ -1115,7 +1115,7 @@
     cards.forEach((c) => { const a = storyOf(c).illustrator || 'unknown'; (byArtist[a] = byArtist[a] || []).push(c); });
     const shared = Object.entries(byArtist).filter(([, v]) => v.length > 1);
     el.innerHTML = `
-      ${shared.length ? `<p class="st-shared"><span class="lbl">Same artist</span> ${shared.map(([a, v]) => `<b>${escapeHtml(a)}</b> drew ${v.map((c) => escapeHtml(parseCardName(c.card_name_ja).short)).join(' and ')}`).join(' · ')}</p>` : ''}
+      ${shared.length ? `<p class="st-shared"><span class="lbl">Same artist</span> ${shared.map(([a, v]) => `<b>${escapeHtml(a)}</b> drew ${v.map((c) => { const n = parseCardName(c.card_name_ja); return `${escapeHtml(n.short)} <span class="muted">${escapeHtml(n.code)}</span>`; }).join(' and ')}`).join(' · ')}</p>` : ''}
       <div class="st-grid">${cards.map((c, i) => { const st = storyOf(c), nm = parseCardName(c.card_name_ja), img = bigImg(c);
         return `<a class="st-tile" href="#/card/${escapeAttr(cardId(c))}" data-story="1" style="--i:${i}">
           <span class="st-pic">${img ? `<img src="${escapeAttr(img)}" alt="" loading="lazy">` : slabHtml(c, 'md')}</span>
