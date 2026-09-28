@@ -156,7 +156,7 @@
   const OPTIONAL_DATA = {
     holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
-    insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json',
+    insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
@@ -192,6 +192,7 @@
     historyIndexPromise = Promise.resolve(state.hist);
     state.syncedLimits = (b.limits && b.limits.limits) || {};
     state.oddsModel = b.oddsModel || null;
+    state.stories = b.stories || null; // data/stories.json — the art stories (researched, with sources)
     state.predict = b.predict || null; // data/predict.json — You vs the model (scripts/predict.py)
     state.scout = b.scout || null; // data/scout.json — untracked candidates (scripts/scout.py)
     state.premium = b.premium || null; // data/premium.json — pokeca-chart slab premium per card (scripts/premium.py)
@@ -1088,6 +1089,41 @@
   function quietHtml(rows) {
     return rows.map(([k, v]) => `<div class="ins-q"><span>${k}</span><span>${v}</span></div>`).join('');
   }
+  // ---------- Stories: the art behind each card (data/stories.json, researched with sources) ----------
+  function storyOf(card) { const s = state.stories && state.stories.cards; return (s && card && s[card.url]) || null; }
+  function bigImg(card) { return card.image_url ? card.image_url.replace(/\?size=\w+$/, '') + '?size=l' : null; }
+  function storyHtml(card) {
+    const st = storyOf(card); if (!st) return '';
+    const img = bigImg(card), nm = parseCardName(card.card_name_ja);
+    return `<div class="st">
+      <button type="button" class="st-art" ${img ? `data-big="${escapeAttr(img)}" data-alt="${escapeAttr(nm.short)}"` : 'disabled'} aria-label="Show the picture bigger">${img ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(nm.short)}" loading="lazy">` : slabHtml(card, 'md')}</button>
+      <div class="st-body">
+        <div class="st-by"><span class="lbl">Illustrated by</span><b>${escapeHtml(st.illustrator || 'unknown')}</b>${st.illustrator_ja ? `<span class="jp muted">${escapeHtml(st.illustrator_ja)}</span>` : ''}</div>
+        <h4>The artwork</h4><p>${escapeHtml(st.art)}</p>
+        ${st.story ? `<h4>The story</h4><p>${escapeHtml(st.story)}</p>` : ''}
+        <h4>The set</h4><p>${escapeHtml(st.set)}</p>
+        ${st.trivia && st.trivia.length ? `<h4>Worth knowing</h4><ul>${st.trivia.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
+        ${st.english ? `<p class="st-en"><span class="lbl">English release</span> ${escapeHtml(st.english)}</p>` : ''}
+        <p class="st-src">Sources: ${(st.sources || []).map((x) => `<a href="${escapeAttr(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.title)}</a>`).join(' · ')}${st.confidence !== 'high' ? '<br>Some details about the scene come from a single source; the illustrator credit is confirmed.' : ''}</p>
+      </div></div>`;
+  }
+  function renderStories() {
+    const el = document.getElementById('stories-page'); if (!el) return;
+    const cards = ((state.currentData && state.currentData.cards) || []).filter(storyOf);
+    if (!cards.length) { el.innerHTML = '<div class="empty-state">No stories yet.</div>'; return; }
+    const byArtist = {};
+    cards.forEach((c) => { const a = storyOf(c).illustrator || 'unknown'; (byArtist[a] = byArtist[a] || []).push(c); });
+    const shared = Object.entries(byArtist).filter(([, v]) => v.length > 1);
+    el.innerHTML = `
+      ${shared.length ? `<p class="st-shared"><span class="lbl">Same artist</span> ${shared.map(([a, v]) => `<b>${escapeHtml(a)}</b> drew ${v.map((c) => escapeHtml(parseCardName(c.card_name_ja).short)).join(' and ')}`).join(' · ')}</p>` : ''}
+      <div class="st-grid">${cards.map((c, i) => { const st = storyOf(c), nm = parseCardName(c.card_name_ja), img = bigImg(c);
+        return `<a class="st-tile" href="#/card/${escapeAttr(cardId(c))}" data-story="1" style="--i:${i}">
+          <span class="st-pic">${img ? `<img src="${escapeAttr(img)}" alt="" loading="lazy">` : slabHtml(c, 'md')}</span>
+          <span class="st-tb"><b class="jp">${escapeHtml(nm.short)}</b><span class="muted">${escapeHtml(nm.code)} · by ${escapeHtml(st.illustrator || 'unknown')}</span><span class="st-teaser">${escapeHtml(st.art.split(/(?<=\.)\s/)[0])}</span></span></a>`; }).join('')}</div>`;
+    const toStory = () => { state.cardTab = 'story'; state.cardFrom = 'stories'; };
+    el.querySelectorAll('.st-tile').forEach((a) => { a.addEventListener('pointerdown', toStory); a.addEventListener('keydown', (e) => { if (e.key === 'Enter') toStory(); }); a.addEventListener('click', toStory, true); });
+  }
+
   // ---------- You vs the model (#/predict) ----------
   // data/predict.json is written by scripts/predict.py whenever a snapshot is published: five
   // questions per week (Mon → Fri 23:59 JST) about your cards, each with the limit-odds model's
@@ -1463,7 +1499,7 @@
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
     planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
-    compare: 'Head to head', duel: 'Budget duel', scored: 'Scored calls', scout: 'Scout', predict: 'You vs the model',
+    compare: 'Head to head', duel: 'Budget duel', scored: 'Scored calls', scout: 'Scout', predict: 'You vs the model', stories: 'Stories',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
@@ -1485,7 +1521,7 @@
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
-    if (tab && ['watching', 'record', 'market', 'tables', 'scout', 'predict'].includes(navView)) tab.classList.add('on');
+    if (tab && ['watching', 'record', 'market', 'tables', 'scout', 'predict', 'stories'].includes(navView)) tab.classList.add('on');
 
     const back = document.getElementById('back-link');
     back.hidden = view !== 'card' && !PARENT[view];
@@ -1581,6 +1617,7 @@
       case 'tables': return 'Every tracked card side by side';
       case 'scout': return scoutSubtitle();
       case 'predict': return predictSubtitle();
+      case 'stories': return 'The art behind your cards: who drew them, what they show and how they connect';
       default: return '';
     }
   }
@@ -1690,6 +1727,7 @@
     renderTrackRecord();
     renderScout();
     renderPredict();
+    renderStories();
     renderTables(cards, prevCards);
     updateCounts();
     applyRoute();
@@ -2289,12 +2327,12 @@
       ${rt ? `<p class="cd-note">If buying raw anyway (as a PSA hedge, not a saving): definitely buy ≤${fmtYen(rt.definitely_buy)}, buy ≤${fmtYen(rt.buy_upper)}, don't pay over ${fmtYen(rt.ceiling)}.</p>` : ''}`
       : `<div class="tier-pending">No DIY grading analysis for this card yet.</div>`;
 
-    const tabs = [['overview', 'Overview'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY']];
+    const tabs = [['overview', 'Overview'], ['story', 'Story'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY']].filter(([k]) => k !== 'story' || storyOf(card));
     const actionsHtml = `<div class="cd-actions">
           <a class="btn btn-primary" href="${escapeAttr(boughtFormUrl(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
           <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
         </div>`;
-    const cur = state.cardTab || 'overview';
+    const cur = state.cardTab === 'story' && !storyOf(card) ? 'overview' : state.cardTab || 'overview';
     const imgSize = mode === 'page' ? 'xl' : 'md';
 
     return `
@@ -2324,6 +2362,7 @@
           ${card.quick_note ? `<p class="cd-note">${escapeHtml(card.quick_note)}</p>` : ''}
           ${statsHtml}
         </div>
+        ${storyOf(card) ? `<div class="cd-panel" data-panel="story"${cur === 'story' ? '' : ' hidden'}>${storyHtml(card)}</div>` : ''}
         <div class="cd-panel" data-panel="history"${cur === 'history' ? '' : ' hidden'}><div class="history-block"><div class="loading-inline">Loading full history…</div></div></div>
         <div class="cd-panel" data-panel="listings"${cur === 'listings' ? '' : ' hidden'}>${buildGradeDetail('PSA10', psa10, getLimit(card))}${raw ? buildGradeDetail('Raw A-rank', raw) : ''}</div>
         <div class="cd-panel" data-panel="diy"${cur === 'diy' ? '' : ' hidden'}>${diyHtml}${premiumHtml(card)}</div>
@@ -2332,6 +2371,7 @@
   }
 
   function wireCardDetail(el, card) {
+    el.querySelectorAll('[data-big]').forEach((b) => b.addEventListener('click', () => openLightbox(b.dataset.big, b.dataset.alt || '')));
     wireLimitControls(el, card);
     mountCharts(el);
     let historyLoaded = false;

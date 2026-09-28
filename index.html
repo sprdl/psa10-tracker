@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://cdn.snkrdunk.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=20260928e">
+<link rel="stylesheet" href="assets/style.css?v=20260928f">
 </head>
 <body>
 <div class="app">
@@ -25,6 +25,7 @@
       <a href="#/overview" data-view="overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>Overview</span><em data-count="overview"></em></a>
       <a href="#/collection" data-view="collection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v9H4zM14 4h6v9h-6zM4 17h16"/></svg><span>Collection</span><em data-count="collection"></em></a>
       <a href="#/scout" data-view="scout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15.5 8.5l-2 5-5 2 2-5z"/></svg><span>Scout</span><em data-count="scout"></em></a>
+      <a href="#/stories" data-view="stories"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21V5M8 7h7"/></svg><span>Stories</span><em data-count="stories"></em></a>
       <a href="#/predict" data-view="predict"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>You vs model</span><em data-count="predict"></em></a>
       <a href="#/watching" data-view="watching"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg><span>Watching</span><em data-count="watching"></em></a>
       <a href="#/holdings" data-view="holdings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v12H3zM3 7l3-4h12l3 4M16 13h2"/></svg><span>Holdings</span><em data-count="holdings"></em></a>
@@ -104,6 +105,10 @@
       <div id="predict-page" class="planner"></div>
     </section>
 
+    <section class="view" data-view="stories" hidden>
+      <div id="stories-page" class="planner"></div>
+    </section>
+
     <section class="view" data-view="market" hidden>
       <div id="market-strip" class="kpis market"></div>
       <div id="custom-index" class="panel custom-index" hidden></div>
@@ -132,6 +137,7 @@
     <section class="view" data-view="more" hidden>
       <nav class="more-list" aria-label="More sections">
         <a href="#/scout"><span>Scout</span><em data-count="scout"></em></a>
+        <a href="#/stories"><span>Stories</span></a>
         <a href="#/predict"><span>You vs model</span><em data-count="predict"></em></a>
         <a href="#/watching"><span>Watching</span><em data-count="watching"></em></a>
         <a href="#/record"><span>Track record</span><em data-count="record"></em></a>
@@ -163,6 +169,6 @@
     <a href="#/more" data-view="more"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>More</span></a>
   </nav>
 </div>
-<script src="assets/app.js?v=20260928e"></script>
+<script src="assets/app.js?v=20260928f"></script>
 </body>
 </html>

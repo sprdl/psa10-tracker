@@ -622,6 +622,10 @@ of `app.js`. Nothing new is stored; every number comes from functions described 
   and the Buy line, the DIY comparison, and totals for buying all of them.
 - **Colours:** card A/B (and C/D in a duel) use `CMP_COLORS`.
 
+### Stories (#/stories and the card page's Story tab)
+
+`data/stories.json` holds a researched write-up per card (illustrator, what the art shows, its connections, set context, trivia, English release, sources), keyed by SNKRDUNK URL. It's written by hand/Claude, not by the price checks: to add a card's story, research it and add an entry in the same shape. `storyHtml(card)` renders the Story tab (tap the picture for the big version, `openLightbox`), `renderStories()` the gallery page; tiles open the card on its Story tab.
+
 ### You vs the model (#/predict)
 
 Five questions a week about your own cards ("Will a listing drop to ¥X by Friday?"), your odds against the limit-odds model's. `scripts/predict.py` writes them into `data/predict.json` the first time a snapshot is published in a week (it's called from `build_history.py`, so price checks, email alerts and evaluations all trigger it), freezes the model's odds and resolves questions from the week's snapshots; its docstring has the rules. On the page (`renderPredict`) you set a slider and "Lock in": the answer is kept in this browser (`psa10.predict.local`) and the model's odds appear. "Save to all devices" opens the `predict.yml` issue form with your locked answers; `.github/workflows/predictions.yml` runs `scripts/set_predictions.py`, which writes them into `predict.json` (first answer is final; answers after a question resolved or closed are refused). Scores are Brier scores computed in the browser. Tapping a Scout picture opens it big (`openLightbox`).

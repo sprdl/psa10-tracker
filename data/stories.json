@@ -1,0 +1,592 @@
+{
+ "about": "Stories behind the tracked cards' artwork: illustrator, what the art shows, its connections, set context and trivia. Researched from the official card database, Bulbapedia, PokeBeach, Famitsu and card media (sources per card). Shown on each card's Story tab and the Stories page.",
+ "updated": "2026-09-28T22:22:37+09:00",
+ "cards": {
+  "https://snkrdunk.com/apparels/138599": {
+   "illustrator": "Souichirou Gunjima",
+   "illustrator_ja": "軍島曹一郎",
+   "art": "Red, the Kanto protagonist, stands front and centre ready for battle while his Pikachu towers behind him in its Gigantamax form. The official set page describes Red standing tall and staying calm mid-battle, a pose meant to show his determination and pride as a battler.",
+   "story": "One half of a Red-and-Pikachu pair in the set: its partner, Pikachu V CSR (222/184), shows the two exploring; this one shows them going into battle. The Character Super Rare rarity, introduced in VMAX Climax, puts a Pokémon together with a trainer from the games.",
+   "set": "High-class pack VMAX Climax, released 3 December 2021. Mostly a Sword & Shield reprint set, it debuted Character Super Rares pairing Pokémon V/VMAX with trainers such as Red, Hop, Elesa and N.",
+   "trivia": [
+    "PokeBeach used this card as the headline example of the new Character Super Rare when VMAX Climax was announced; Bleeding Cool calls it the first CSR ever revealed.",
+    "Before turning pro, Souichirou Gunjima entered the Pokémon Card Game Illustration Grand Prix with a Metagross piece; his first official card was Indeedee (Shining Fates)."
+   ],
+   "english": "Pikachu VMAX, Lost Origin Trainer Gallery TG17/TG30",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Official card database: ピカチュウVMAX 223/184",
+     "url": "https://www.pokemon-card.com/card-search/details.php/card/41054/regu/all"
+    },
+    {
+     "title": "Official set page: VMAXクライマックス",
+     "url": "https://www.pokemon-card.com/ex/s8b/index.html"
+    },
+    {
+     "title": "Bleeding Cool: Lost Origin Part 45, Pikachu CSR",
+     "url": "https://bleedingcool.com/games/the-cards-of-pokemon-tcg-lost-origin-part-45-pikachu-csr/"
+    },
+    {
+     "title": "PokeBeach: VMAX Climax officially revealed",
+     "url": "https://www.pokebeach.com/2021/10/vmax-climax-officially-revealed-pokemon-with-trainers"
+    },
+    {
+     "title": "Bulbapedia: Souichirou Gunjima",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Souichirou_Gunjima"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/96712": {
+   "illustrator": "Ryota Murayama",
+   "illustrator_ja": "村山竜大",
+   "art": "Red stops to check his map while Pikachu sits on a rock beside him, as if looking ahead to the next adventure: a quiet travelling moment rather than a battle.",
+   "story": "The companion to Pikachu VMAX CSR (223/184): both feature Red, one exploring, one battling. Red is the protagonist of the original Kanto games and uses a Pikachu in most games where he appears as an opponent.",
+   "set": "High-class pack VMAX Climax, released 3 December 2021, which debuted Character Super Rares: full-art cards pairing Pokémon with trainers.",
+   "trivia": [
+    "Ryota Murayama also goes by 'ovopack'. He painted the booster-pack art for the English sets Roaring Skies and Ancient Origins; his first card was Druddigon (Flashfire).",
+    "Its attacks, Charge and Thunderbolt, are both moves Pikachu can learn in the games."
+   ],
+   "english": "Pikachu V, Lost Origin Trainer Gallery TG16/TG30",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Official card database: ピカチュウV 222/184",
+     "url": "https://www.pokemon-card.com/card-search/details.php/card/41053/regu/all"
+    },
+    {
+     "title": "Bleeding Cool: Lost Origin Part 45, Pikachu CSR",
+     "url": "https://bleedingcool.com/games/the-cards-of-pokemon-tcg-lost-origin-part-45-pikachu-csr/"
+    },
+    {
+     "title": "Limitless: Pikachu V LOR TG16",
+     "url": "https://limitlesstcg.com/cards/LOR/TG16"
+    },
+    {
+     "title": "Bulbapedia: Ryota Murayama",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Ryota_Murayama"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/408333": {
+   "illustrator": "GIDORA",
+   "illustrator_ja": "ぎどら",
+   "art": "Pikachu, Terastallized with the Stellar Tera Type, walks through a grassy field, lit up and glowing (Famitsu: a light-illuminated Pikachu walking through grassland). A calm, open-air scene for a card whose attack deals a huge 300 damage.",
+   "story": "It shows the Stellar Tera phenomenon from Scarlet & Violet's The Indigo Disk DLC, the theme of the whole set; Stellar Tera Pikachu ex was the set's headline card.",
+   "set": "Expansion pack Super Electric Breaker (超電ブレイカー), released 18 October 2024, centred on Stellar Tera Pokémon. Combined with Paradise Dragona it became the English Surging Sparks.",
+   "trivia": [
+    "Pikachu ex is the first Basic Pokémon card with an attack that deals 300 damage (Topaz Bolt).",
+    "GIDORA's first cards were in VMAX Climax, the same set as your two Pikachu CSRs."
+   ],
+   "english": "Pikachu ex, Surging Sparks 238/191 (Special Illustration Rare)",
+   "confidence": "medium",
+   "sources": [
+    {
+     "title": "Official card database: ピカチュウex 132/106",
+     "url": "https://www.pokemon-card.com/card-search/details.php/card/46655/regu/all"
+    },
+    {
+     "title": "Famitsu: 超電ブレイカー SAR/AR/SR",
+     "url": "https://www.famitsu.com/article/202410/21040"
+    },
+    {
+     "title": "PokeBeach: Supercharged Breaker revealed",
+     "url": "https://www.pokebeach.com/2024/09/supercharged-breaker-featuring-tera-pikachu-ex-officially-revealed"
+    },
+    {
+     "title": "Bulbapedia: GIDORA",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/GIDORA"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/455596": {
+   "illustrator": "YASHIRO Nanaco",
+   "illustrator_ja": "八館ななこ",
+   "art": "Umbreon looks up at the sky from inside what seems to be a hole in a cave. The dark rock frames the opening above, giving the card a moody, night-time feel that suits a Dark type.",
+   "story": "One of a full run of Eeveelution SARs in Terastal Fest ex, a set built around Terastallized Eevee and its evolutions. The art was first shown on Eevee Day, 21 November 2024, together with the Eevee, Glaceon and Sylveon SARs.",
+   "set": "High-class pack Terastal Fest ex, released 6 December 2024 (¥550 for 10 cards): a 'festival' of Tera Pokémon ex and Eeveelution SARs that became the English Prismatic Evolutions.",
+   "trivia": [
+    "Its attack costs one Psychic and one Darkness Energy, a nod to the Espeon/Umbreon pairing.",
+    "It was one of YASHIRO Nanaco's first Pokémon cards (her debut was Deino in Surging Sparks); she published the art book 'Wonderland: The Art of Nanaco Yashiro' in 2022."
+   ],
+   "english": "Umbreon ex, Prismatic Evolutions 161/131 (Special Illustration Rare)",
+   "confidence": "medium",
+   "sources": [
+    {
+     "title": "Official card database: ブラッキーex 217/187",
+     "url": "https://www.pokemon-card.com/card-search/details.php/card/47138/regu/all"
+    },
+    {
+     "title": "Famitsu: テラスタルフェスex SAR/AR/SR",
+     "url": "https://www.famitsu.com/article/202412/24092"
+    },
+    {
+     "title": "Inside: Eeveelution SARs first shown",
+     "url": "https://www.inside-games.jp/article/2024/11/21/161641.html"
+    },
+    {
+     "title": "Bulbapedia: YASHIRO Nanaco",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/YASHIRO_Nanaco"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/387059": {
+   "illustrator": "Mitsuhiro Arita",
+   "illustrator_ja": "有田満弘",
+   "art": "Gengar and Mimikyu pose together against a moonlit night sky, Gengar mid-motion with its trademark grin and Mimikyu behind it. Both silhouettes show off pointed ears: Gengar's spikes and the ears of Mimikyu's Pikachu disguise.",
+   "story": "Arita explained the composition himself: both Pokémon have prominent ears and a slightly spooky feel, so he put them in front of a moonlit sky. Two Ghost types, a natural Halloween duo.",
+   "set": "Expansion pack Tag Bolt (タッグボルト), released 7 December 2018: the first set with TAG TEAM Pokémon-GX, which give up 3 Prize cards when knocked out. It became the English Team Up.",
+   "trivia": [
+    "Mitsuhiro Arita has drawn for the TCG since before its release: he illustrated the iconic Base Set Charizard and Pikachu.",
+    "The same card has a famous special full-art version by Midori Harada (English Team Up 165/181).",
+    "Its attack Poltergeist later became a real move in the games (Generation VIII); Gengar can learn it, Mimikyu can't."
+   ],
+   "english": "Gengar & Mimikyu-GX, Team Up 53/181",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Official card database: ゲンガー&ミミッキュGX 038/095",
+     "url": "https://www.pokemon-card.com/card-search/details.php/card/35982/regu/all"
+    },
+    {
+     "title": "PokeBeach: Gengar & Mimikyu-GX revealed",
+     "url": "https://www.pokebeach.com/2018/11/gengar-mimikyu-gx-from-sm9-revealed"
+    },
+    {
+     "title": "Bleeding Cool: Team Up Part 13",
+     "url": "https://bleedingcool.com/games/the-cards-of-pokemon-tcg-team-up-part-13-gengar-mimikyu/"
+    },
+    {
+     "title": "Bulbapedia: Mitsuhiro Arita",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Mitsuhiro_Arita"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/224087": {
+   "illustrator": "akagi",
+   "illustrator_ja": "あかぎ うんど",
+   "art": "Greninja looks down at the viewer while throwing a Water Shuriken. The splashes are painted with a loose, paint-like texture, the standout detail of the piece (Famitsu).",
+   "story": "In the TCG this Greninja ex is Terastallized with the Fighting Tera type; the set draws on Scarlet & Violet's Kitakami DLC.",
+   "set": "Enhanced expansion Crimson Haze (クリムゾンヘイズ), released 22 March 2024 (¥180 for 5 cards), later folded into the English Twilight Masquerade.",
+   "trivia": [
+    "akagi's first Pokémon card was the Shiny Palafin illustration rare in Paldean Fates; later work includes the Kingdra ex SIR (Shrouded Fable)."
+   ],
+   "english": "Greninja ex, Twilight Masquerade 214/167 (Special Illustration Rare)",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Official card database: ゲッコウガex 090/066",
+     "url": "https://www.pokemon-card.com/card-search/details.php/card/45685/regu/all"
+    },
+    {
+     "title": "Famitsu: クリムゾンヘイズ SAR/AR/SR",
+     "url": "https://www.famitsu.com/news/202403/22336935.html"
+    },
+    {
+     "title": "Bulbapedia: akagi",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Akagi_(illustrator)"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/776365": {
+   "illustrator": "Susumu Maeya",
+   "illustrator_ja": "前屋 進",
+   "art": "Mega Greninja in a dynamic, vividly coloured pose over a pond. The card is one panel of a larger picture: its pre-evolutions sit in and above the same pond on their own cards.",
+   "story": "Put the Froakie AR, Frogadier AR and this Mega Greninja ex SAR side by side and they join into one continuous pond scene of the whole evolution line, all painted by Susumu Maeya. The set brings Mega Evolution from Pokémon Legends: Z-A into the TCG.",
+   "set": "Expansion pack Ninja Spinner (ニンジャスピナー), released 13 March 2026, built around Mega Greninja ex and the Kalos starters. It became the English Chaos Rising.",
+   "trivia": [
+    "Susumu Maeya is also a manga artist (The Food Diary of Miss Maid). Her best-known Pokémon SARs include Lillie's Clefairy ex and Marnie's Morpeko.",
+    "The three-card connected picture (Froakie → Frogadier → Mega Greninja) is the set's standout art gimmick."
+   ],
+   "english": "Mega Greninja ex, Chaos Rising 116/086 (Special Illustration Rare)",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Official card database: メガゲッコウガex 114/083",
+     "url": "https://www.pokemon-card.com/card-search/details.php/card/50213/regu/all"
+    },
+    {
+     "title": "PokeBeach: Ninja Spinner secret rares",
+     "url": "https://www.pokebeach.com/2026/03/ninja-spinner-secret-rares-revealed"
+    },
+    {
+     "title": "攻略大百科: メガゲッコウガex SAR",
+     "url": "https://premium.gamepedia.jp/pokeca/archives/21477"
+    },
+    {
+     "title": "Bulbapedia: Susumu Maeya",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Susumu_Maeya"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/585221": {
+   "illustrator": "5ban Graphics",
+   "illustrator_ja": null,
+   "art": "Reshiram ex in the monochrome 'Black White Rare' treatment. The official announcement describes Reshiram's card as built around white, while its twin, Zekrom ex BWR in Black Bolt, is built around black.",
+   "story": "BWR is a special rarity made only for Reshiram and Zekrom in this twin release, a nod to Pokémon Black & White: White Flare is the Reshiram ('truth') half, Black Bolt the Zekrom ('ideals') half. PokeBeach likens the monochrome style to the original secret rares of these legendaries from the Black & White era.",
+   "set": "White Flare and its twin Black Bolt were released on 6 June 2025. Between them they cover all 156 Unova Pokémon, each with at least one specially illustrated card.",
+   "trivia": [
+    "It's the last card in the Japanese set (#174); in English White Flare it's #173/086.",
+    "The same set also has a Reshiram ex SAR (168/086) drawn by kawayoo, who painted your Lugia V SA."
+   ],
+   "english": "Reshiram ex, White Flare 173/086 (Black White Rare)",
+   "confidence": "medium",
+   "sources": [
+    {
+     "title": "Official: BWR cards revealed",
+     "url": "https://www.pokemon-card.com/info/004996.html"
+    },
+    {
+     "title": "Serebii: White Flare #174",
+     "url": "https://www.serebii.net/card/whiteflare-jp/174.shtml"
+    },
+    {
+     "title": "PokeBeach: Reshiram and Zekrom ex BWR",
+     "url": "https://www.pokebeach.com/2025/06/reshiram-and-zekrom-ex-bwr-rares-revealed-in-english-indicates-new-secret-rare-added-to-our-sets"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/100567": {
+   "illustrator": "kawayoo",
+   "illustrator_ja": "川洋",
+   "art": "Lugia sweeps overhead, whipping up a storm. Below, a small boat is tossed by the waves and a person in it looks up at Lugia in awe: easy to miss next to Lugia, but they give the scene its scale.",
+   "story": "Lugia is the mascot of Pokémon Silver. The Silver Pokédex calls it 'the guardian of the seas' and says it is rumoured to be seen on the night of a storm; a later entry says a flap of its wings can cause a 40-day storm, exactly the moment this card shows.",
+   "set": "Expansion pack Paradigm Trigger, released 21 October 2022: the last main expansion of the Sword & Shield era, headlined by Lugia VSTAR.",
+   "trivia": [
+    "Each version of this Lugia V has a different artist: Mitsuhiro Arita drew the regular card, 5ban Graphics the full art and kawayoo this special art.",
+    "kawayoo also drew the Reshiram ex SAR in White Flare."
+   ],
+   "english": "Lugia V, Silver Tempest 186/195 (Alternate Full Art)",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Official card database: ルギアV 110/098",
+     "url": "https://www.pokemon-card.com/card-search/details.php/card/42542"
+    },
+    {
+     "title": "Bleeding Cool: Silver Tempest Part 42, Lugia V Alt",
+     "url": "https://bleedingcool.com/games/the-cards-of-pokemon-tcg-silver-tempest-part-42-lugia-v-alt/"
+    },
+    {
+     "title": "Bulbapedia: Lugia (Pokémon)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Lugia_(Pok%C3%A9mon)"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/105553": {
+   "illustrator": "Kouki Saitou",
+   "illustrator_ja": null,
+   "art": "Pikachu sits in a flower-filled meadow. The card is one panel of a nine-card painting by Kouki Saitou; in the combined picture Pikachu sits near the centre, with Riolu and Mareep anchoring the corners.",
+   "story": "The nine linked Art Rares (Riolu, Swablu, Duskull, Bidoof, Pikachu, Turtwig, Paras, Poochyena, Mareep) form one continuous landscape; their numbers break the usual type order so the cards line up into the picture.",
+   "set": "High-class pack VSTAR Universe, released 2 December 2022: the last high-class pack of the Sword & Shield era, a 172-card 'greatest hits' with more than 90 secret rares.",
+   "trivia": [
+    "In English the nine cards went into Crown Zenith's Galarian Gallery; Pikachu is GG30/GG70.",
+    "It's a plain 60 HP Pikachu with no ex or V rule: a collector favourite purely for its art."
+   ],
+   "english": "Pikachu, Crown Zenith Galarian Gallery GG30/GG70",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "PokeBeach: VSTAR Universe secret rares",
+     "url": "https://www.pokebeach.com/2022/11/vstar-universe-all-90-stunning-secret-rares-revealed"
+    },
+    {
+     "title": "Bulbapedia: Pikachu (Crown Zenith GG30)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Pikachu_(Crown_Zenith_GG30)"
+    },
+    {
+     "title": "Bleeding Cool: Crown Zenith connecting cards",
+     "url": "https://bleedingcool.com/games/cards-of-pokemon-tcg-crown-zenith-part-47-full-connecting-cards/"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/91178": {
+   "illustrator": "sowsow",
+   "illustrator_ja": null,
+   "art": "Gigantamax Gengar looms with its enormous mouth open, sucking everything around it inside, while the lower half of its body sinks into the ground. sowsow's soft, pastel-like style makes the grinning, nightmarish subject feel even more unsettling.",
+   "story": "The art matches Gigantamax Gengar's Pokédex lore from Pokémon Sword: its gigantic mouth is rumoured to lead not into its body but directly to the afterlife. The Shield entry adds that standing before it, you'll hear loved ones calling to you.",
+   "set": "High Class Deck 'Gengar VMAX', released 28 May 2021 alongside an Inteleon VMAX deck: a ready-to-play 60-card deck with every card holo. This special art was hidden in roughly one deck in four (Bulbapedia's estimate).",
+   "trivia": [
+    "This card and Gengar V were the first Gengar cards to reflect its Poison typing by being Darkness type; earlier Gengar cards were Psychic.",
+    "sowsow also illustrated the Espeon V alternate art in Evolving Skies."
+   ],
+   "english": "Gengar VMAX, Fusion Strike 271/264 (Alternate Art Secret)",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Official card database: ゲンガーVMAX 020/019",
+     "url": "https://www.pokemon-card.com/card-search/details.php/card/44975"
+    },
+    {
+     "title": "Official product page: High Class Deck Gengar VMAX",
+     "url": "https://www.pokemon-card.com/products/s/sg.html"
+    },
+    {
+     "title": "Artiholics: Gengar VMAX alternate art",
+     "url": "https://artiholics.com/the-art-of-pokemon-secret-rare-gengar-vmax-alternate-art-from-pokemon-fusion-strike/"
+    },
+    {
+     "title": "Bulbapedia: Gengar (Pokémon)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Gengar_(Pok%C3%A9mon)"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/704401": {
+   "illustrator": "danciao",
+   "illustrator_ja": "だんちゃお",
+   "art": "A jet-black Mega Charizard X breathes its signature blue flames while the rest of the family appears beside it: Charizard, Charmeleon and Charmander. Japanese guides point out the Charmander line in the lower right, easy to miss behind the blue fire.",
+   "story": "The whole Charizard line in one scene, from Charmander up to the Mega form. The set is named after the regular Mega Charizard X ex's attack, 'Inferno X'.",
+   "set": "Expansion pack Inferno X, released 26 September 2025: the second main set of the Mega Evolution era, focused on Fire and Darkness types. Its cards reached English as Phantasmal Flames.",
+   "trivia": [
+    "Each version has a different artist: takuyoa drew the regular and SR cards, danciao this SAR.",
+    "danciao also painted the Mega Gengar ex SAR (MEGA Dream ex) and the Zekrom ex SAR in Black Bolt."
+   ],
+   "english": "Mega Charizard X ex, Phantasmal Flames 125/094 (Special Illustration Rare)",
+   "confidence": "medium",
+   "sources": [
+    {
+     "title": "Bulbapedia: Mega Charizard X ex",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Mega_Charizard_X_ex_(Phantasmal_Flames_125)"
+    },
+    {
+     "title": "PokeBeach: Inferno X secret rares",
+     "url": "https://www.pokebeach.com/2025/09/inferno-x-secret-rares-revealed"
+    },
+    {
+     "title": "攻略大百科: メガリザードンXex SAR",
+     "url": "https://premium.gamepedia.jp/pokeca/archives/17008"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/724996": {
+   "illustrator": "danciao",
+   "illustrator_ja": "だんちゃお",
+   "art": "Mega Gengar in an ominous full art, surrounded by vivid purple effects that Japanese guides read as a visual nod to its ability, Shadowy Concealment (かげかくし).",
+   "story": "Mega Gengar first appeared in Pokémon X & Y and returns in the Mega Evolution era themed on Legends: Z-A. Drawn by the same artist as the Mega Charizard X ex SAR, the two make a natural matching pair.",
+   "set": "High-class pack MEGA Dream ex, released 28 November 2025: 250 cards reprinting 2024–25 highlights plus new Mega Evolutions. At release PokeBeach reported this SAR as the set's most valuable card, the first to outrank the gold MUR cards.",
+   "trivia": [
+    "The same set has a pop-art Mega Attack Rare Mega Gengar ex (230/193) drawn by Taiga Kasai."
+   ],
+   "english": "Mega Gengar ex, Ascended Heroes 284/217 (Special Illustration Rare)",
+   "confidence": "medium",
+   "sources": [
+    {
+     "title": "Limitless: Mega Gengar ex ASC 284",
+     "url": "https://limitlesstcg.com/cards/ASC/284"
+    },
+    {
+     "title": "Bulbapedia: MEGA Dream ex",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/MEGA_Dream_ex_(TCG)"
+    },
+    {
+     "title": "PokeBeach: Mega Gengar ex steals the spotlight",
+     "url": "https://www.pokebeach.com/2025/11/most-valuable-cards-from-mega-dream-ex-mega-gengar-ex-steals-the-spotlight"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/896992": {
+   "illustrator": "CHORISO",
+   "illustrator_ja": null,
+   "art": "Gengar holds a hand over its mouth as if stifling a laugh while it prances through a field ringed by buildings that look like haunted houses.",
+   "story": "Its ability, Fainting Spell (しのせんこく), is a callback: it first appeared as a Poké-POWER on Gengar in the DP-era Stormfront set, one of the set's nods to past cards.",
+   "set": "One of the 10 SARs in the expansion pack 30th CELEBRATION (M6a), released worldwide on 16 September 2026 (¥360 for 6 holo cards) for the Pokémon TCG's 30th anniversary.",
+   "trivia": [
+    "The regular RR print (076/103) is by 5ban Graphics; this SAR is CHORISO's."
+   ],
+   "english": "Gengar ex, 30th Celebration 154/128 (Special Illustration Rare)",
+   "confidence": "medium",
+   "sources": [
+    {
+     "title": "Bulbapedia: Gengar ex (30th Celebration)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Gengar_ex_(30th_Celebration_90)"
+    },
+    {
+     "title": "トレカジャパン: ゲンガーex SAR",
+     "url": "https://tradecard.jp/articles/gengarex-sar-131-30th"
+    },
+    {
+     "title": "Rare Candy: 30th Celebration SIRs",
+     "url": "https://rarecandy.com/blog/all-30th-celebration-illustration-rares-and-SIRs"
+    },
+    {
+     "title": "Official: 30th CELEBRATION",
+     "url": "https://www.30th.pokemon-card.com/product/m6a"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/896991": {
+   "illustrator": "Kuroimori",
+   "illustrator_ja": null,
+   "art": "Mew floats relaxed in a lush, fantasy-like landscape with light pouring through. Spiral motifs run through the plants and Mew's curling tail; one Japanese blogger compares its gold accents to an illuminated manuscript.",
+   "story": "Fans read the scene as the Tree of Beginning from the film Lucario and the Mystery of Mew, with the spirals as a DNA helix. Its attack, Teleportation Burst, first appeared on Rota's Mew from that film's half deck.",
+   "set": "One of the 10 SARs in the expansion pack 30th CELEBRATION (M6a), released worldwide on 16 September 2026 (¥360 for 6 holo cards) for the Pokémon TCG's 30th anniversary.",
+   "trivia": [
+    "Mew ex has three prints in the set: RR by aky CG Works, this SAR by Kuroimori and a FUR by YOSHIROTTEN."
+   ],
+   "english": "Mew ex, 30th Celebration 152/128 (Special Illustration Rare)",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Bulbapedia: Mew ex (30th Celebration)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Mew_ex_(30th_Celebration_152)"
+    },
+    {
+     "title": "ポケモンカード紹介: ミュウex SAR",
+     "url": "https://enzui.blog/archives/6369"
+    },
+    {
+     "title": "Rare Candy: 30th Celebration SIRs",
+     "url": "https://rarecandy.com/blog/all-30th-celebration-illustration-rares-and-SIRs"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/891195": {
+   "illustrator": "AKIRA EGAWA",
+   "illustrator_ja": null,
+   "art": "Jirachi twists through a starfield against a glowing, mystical background, with streaks of gold and blue trailing from its ribbons.",
+   "story": null,
+   "set": "One of the 10 SARs in the expansion pack 30th CELEBRATION (M6a), released worldwide on 16 September 2026 (¥360 for 6 holo cards) for the Pokémon TCG's 30th anniversary.",
+   "trivia": [
+    "The regular Jirachi ex was revealed on 7 July 2026: Tanabata, the star festival often associated with Jirachi."
+   ],
+   "english": "Jirachi ex, 30th Celebration 155/128 (Special Illustration Rare)",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Bulbapedia: Jirachi ex (30th Celebration)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Jirachi_ex_(30th_Celebration_102)"
+    },
+    {
+     "title": "Famitsu: 30th CELEBRATION FUR/SAR/AR",
+     "url": "https://www.famitsu.com/article/202609/87867"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/896990": {
+   "illustrator": "Yano Keiji",
+   "illustrator_ja": null,
+   "art": "A regal, menacing Mewtwo rendered in every shade of pink and purple against a sharp background (Rare Candy calls it a 'mad king').",
+   "story": "It works as the inverse of the Mew ex SAR: sharp and menacing where Mew is soft and relaxed. The set pairs Mew and Mewtwo throughout, including as its two debut FUR cards.",
+   "set": "One of the 10 SARs in the expansion pack 30th CELEBRATION (M6a), released worldwide on 16 September 2026 (¥360 for 6 holo cards) for the Pokémon TCG's 30th anniversary.",
+   "trivia": [
+    "Mewtwo ex has three prints in the set: RR by 5ban Graphics, this SAR and a FUR by YOSHIROTTEN."
+   ],
+   "english": "Mewtwo ex, 30th Celebration 151/128 (Special Illustration Rare)",
+   "confidence": "medium",
+   "sources": [
+    {
+     "title": "Bulbapedia: Mewtwo ex (30th Celebration)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Mewtwo_ex_(30th_Celebration_64)"
+    },
+    {
+     "title": "TCG Collector: Mewtwo ex 151/128",
+     "url": "https://www.tcgcollector.com/cards/89651/mewtwo-ex-30th-celebration-151-128"
+    },
+    {
+     "title": "Rare Candy: 30th Celebration SIRs",
+     "url": "https://rarecandy.com/blog/all-30th-celebration-illustration-rares-and-SIRs"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/882279": {
+   "illustrator": "kantaro",
+   "illustrator_ja": null,
+   "art": "The 'day' Pikachu: under a blue sky full of confetti, Pikachu leads a parade of Pokémon celebrating the 30th anniversary, among them Fuecoco, Sylveon, Espeon and legendaries such as Moltres, Articuno and Mew.",
+   "story": "One half of a day/night pair by the same artist; 127/103 continues the parade at night under fireworks. The crowd is a roll call of Pokémon that have cards in the set.",
+   "set": "One of the 10 SARs in the expansion pack 30th CELEBRATION (M6a), released worldwide on 16 September 2026 (¥360 for 6 holo cards) for the Pokémon TCG's 30th anniversary. Pikachu is its centrepiece: 30 different Pikachu cards by 30 illustrators.",
+   "trivia": [
+    "'Day' and 'Night' are collectors' labels, not printed names; both SARs are by kantaro."
+   ],
+   "english": "Pikachu ex, 30th Celebration 149/128 (Special Illustration Rare)",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Famitsu: 30th CELEBRATION FUR/SAR/AR",
+     "url": "https://www.famitsu.com/article/202609/87867"
+    },
+    {
+     "title": "Bulbapedia: Pikachu ex (30th Celebration)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Pikachu_ex_(30th_Celebration_53)"
+    },
+    {
+     "title": "Samurai Sword Tokyo: Pikachu ex SAR day & night",
+     "url": "https://samuraiswordtokyo.com/blogs/news/pikachu-ex-sar-day-night-30th-celebration-card-guide"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/882280": {
+   "illustrator": "kantaro",
+   "illustrator_ja": null,
+   "art": "The 'night' Pikachu: the celebration goes on under fireworks. Eevee, Hisuian Zorua, Umbreon and Gengar crowd around Pikachu, with Mewtwo and Jirachi in the background.",
+   "story": "The night half of kantaro's pair with 126/103. The crowd includes Pokémon with their own SARs in the set (Gengar, Mewtwo, Jirachi) and Umbreon and Eevee from the Espeon/Umbreon premium deck.",
+   "set": "One of the 10 SARs in the expansion pack 30th CELEBRATION (M6a), released worldwide on 16 September 2026 (¥360 for 6 holo cards) for the Pokémon TCG's 30th anniversary.",
+   "trivia": [
+    "Its regular RR counterpart (048/103) is by takuyoa rather than 5ban Graphics."
+   ],
+   "english": "Pikachu ex, 30th Celebration 150/128 (Special Illustration Rare)",
+   "confidence": "high",
+   "sources": [
+    {
+     "title": "Famitsu: 30th CELEBRATION FUR/SAR/AR",
+     "url": "https://www.famitsu.com/article/202609/87867"
+    },
+    {
+     "title": "Bulbapedia: Pikachu ex (30th Celebration)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Pikachu_ex_(30th_Celebration_54)"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/881430": {
+   "illustrator": "REND",
+   "illustrator_ja": null,
+   "art": "A bright daytime town square celebrating the 30th anniversary: clouds form a '30' in the sky, with balloons and a fountain. Victini, Cherrim, Tropius, Gardevoir and Marill appear around Espeon, with Eevee in the foreground and a 30th-anniversary Pikachu stamp on the left.",
+   "story": "The day half of a day/night pair by REND; the Umbreon ex card shows a festive town at night. It mirrors the day/night Pikachu ex SAR pair in the 30th CELEBRATION pack.",
+   "set": "From the 30th CELEBRATION Premium Deck Set Espeon & Umbreon, released 16 September 2026 (¥6,200): two 60-card decks, a playmat, coins and a tin deck case.",
+   "trivia": [
+    "The official rarity is full art (フルイラスト); 'SAR仕様' is a shop and media label, not the printed rarity."
+   ],
+   "english": null,
+   "confidence": "medium",
+   "sources": [
+    {
+     "title": "Official: Premium Deck Set Espeon & Umbreon",
+     "url": "https://www.30th.pokemon-card.com/product/mf"
+    },
+    {
+     "title": "トレカジャパン: エーフィex",
+     "url": "https://tradecard.jp/articles/espeonex-30thcelebration-deckset"
+    },
+    {
+     "title": "攻略大百科: 収録カード",
+     "url": "https://premium.gamepedia.jp/pokeca/archives/23273"
+    }
+   ]
+  },
+  "https://snkrdunk.com/apparels/881431": {
+   "illustrator": "REND",
+   "illustrator_ja": null,
+   "art": "A night-time cityscape with fireworks bursting overhead and a large '30', plus the 30th-anniversary Pikachu logo. In the foreground Eevee leans close to Umbreon.",
+   "story": "The night half of REND's pair with Espeon ex (043/040), matching Espeon and Umbreon's classic sun/moon opposition. Umbreon also appears among the fireworks on the night Pikachu ex SAR.",
+   "set": "From the 30th CELEBRATION Premium Deck Set Espeon & Umbreon, released 16 September 2026 (¥6,200): two 60-card decks, a playmat, coins and a tin deck case.",
+   "trivia": [
+    "The same deck set also has full-art Victini (by satoma) and Zeraora (by HACCAN)."
+   ],
+   "english": null,
+   "confidence": "medium",
+   "sources": [
+    {
+     "title": "Official: Premium Deck Set Espeon & Umbreon",
+     "url": "https://www.30th.pokemon-card.com/product/mf"
+    },
+    {
+     "title": "トレカジャパン: ブラッキーex",
+     "url": "https://tradecard.jp/articles/blackyex-30thcelebration-deckset"
+    },
+    {
+     "title": "攻略大百科: 収録カード",
+     "url": "https://premium.gamepedia.jp/pokeca/archives/23273"
+    }
+   ]
+  }
+ }
+}
