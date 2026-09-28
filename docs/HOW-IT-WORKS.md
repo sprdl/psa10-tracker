@@ -624,7 +624,7 @@ of `app.js`. Nothing new is stored; every number comes from functions described 
 
 ### Stories (#/stories and the card page's Story tab)
 
-`data/stories.json` holds a researched write-up per card (illustrator, what the art shows, its connections, set context, trivia, English release, sources), keyed by SNKRDUNK URL. It's written by hand/Claude, not by the price checks: to add a card's story, research it and add an entry in the same shape. `storyHtml(card)` renders the Story tab (tap the picture for the big version, `openLightbox`), `renderStories()` the gallery page; tiles open the card on its Story tab.
+`data/stories.json` holds a researched write-up per card (illustrator, what the art shows, its connections, set context, trivia, English release, sources), keyed by SNKRDUNK URL. New cards get theirs in the full check after they're added (FULL-CHECK.md step 8c): `scripts/set_story.py --missing` lists cards without a story, Claude researches them and saves each with `scripts/set_story.py <id>`, which checks the fields and pushes. `storyHtml(card)` renders the Story tab (tap the picture for the big version, `openLightbox`), `renderStories()` the gallery page; tiles open the card on its Story tab.
 
 ### You vs the model (#/predict)
 
