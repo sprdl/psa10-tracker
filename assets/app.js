@@ -1283,12 +1283,26 @@
     const other = store.get('psa10.scout.other', false);
     return sc.ranked.filter((r) => { const c = sc.pool[r.slug] || {}; return !hidden.has(r.slug) && !(c.sid && tracked.has(String(c.sid))) && (other || r.kind !== 'other'); });
   }
+  // 3 new cards a day from data/scout.json "daily" (planned two weeks ahead by scripts/scout.py, so
+  // a card isn't repeated for 30 days while unseen ones are left); topped up locally when a planned card
+  // was hidden here, is now tracked or dropped out of the ranking.
+  const SCOUT_DAILY = 3;
   function scoutPicks() {
     const list = scoutList(), N = list.length;
     if (!N) return { picks: [], list, n: 0 };
-    const n = N >= 15 ? 5 : N >= 8 ? 4 : Math.min(3, N);
-    const start = (jstDayIndex() * n) % N;
-    return { picks: Array.from({ length: n }, (_, k) => list[(start + k) % N]), list, n };
+    const other = store.get('psa10.scout.other', false), key = other ? 'a' : 'p';
+    const daily = (state.scout && state.scout.daily) || {}, today = todayJST();
+    const by = new Map(list.map((r) => [r.slug, r]));
+    const picks = ((daily[today] || {})[key] || []).map((sl) => by.get(sl)).filter(Boolean);
+    if (picks.length < SCOUT_DAILY) {
+      const since = new Date(Date.parse(today) - 30 * 864e5).toISOString().slice(0, 10), recent = new Set();
+      Object.entries(daily).forEach(([d, e]) => { if (d >= since && d < today) (e[key] || []).forEach((sl) => recent.add(sl)); });
+      for (const r of list.filter((x) => !recent.has(x.slug)).concat(list)) {
+        if (picks.length >= Math.min(SCOUT_DAILY, N)) break;
+        if (!picks.includes(r)) picks.push(r);
+      }
+    }
+    return { picks, list, n: picks.length };
   }
   function scoutNewCount() {
     const { n } = scoutPicks();
@@ -1333,7 +1347,7 @@
     const day = new Date(Date.now() + 9 * 36e5).toISOString().slice(5, 10).replace('-', '/');
     el.innerHTML = `
       <div class="sc-top">
-        <div><span class="lbl">Today's scout · ${day}</span><span class="muted"> ${picks.length} of ${list.length} candidates · different cards tomorrow</span></div>
+        <div><span class="lbl">Today's scout · ${day}</span><span class="muted"> ${picks.length} new today · ${list.length} candidates · 3 more tomorrow</span></div>
         <label class="sc-toggle"><input type="checkbox" id="sc-other"${other ? ' checked' : ''}> Include trainers &amp; other cards</label>
       </div>
       ${picks.length ? `<div class="sc-grid">${picks.map(scoutCardHtml).join('')}</div>` : `<div class="empty-state">Nothing fits right now${hidden.length ? ' (some cards are hidden)' : ''}.</div>`}
@@ -1341,7 +1355,7 @@
         <table class="sc-table"><thead><tr><th>Card</th><th>PSA10</th><th>vs pre-hype</th><th>off peak</th><th>Gem rate</th></tr></thead><tbody>
         ${list.map((r) => { const c = sc.pool[r.slug] || {}, p = c.price || c.now; return `<tr><td class="jp"><a href="https://pokeca-chart.com/gr/${escapeAttr(r.slug)}/" target="_blank" rel="noopener">${escapeHtml(c.nm || r.slug)}</a></td><td>${fmtYen(p)}</td><td class="${c.pre && p < c.pre ? 'pos' : ''}">${c.pre ? fmtPct((p / c.pre - 1) * 100, 0) : '—'}</td><td>${c.peak && c.peak > p ? '−' + ((1 - p / c.peak) * 100).toFixed(0) + '%' : '—'}</td><td>${c.gem != null ? c.gem + '%' : '—'}</td></tr>`; }).join('')}
         </tbody></table></details>
-      <p class="tr-note">How it picks: modern secret rares (released 2021 or later) with a PSA10 price of ¥15k–150k on pokeca-chart that you don't track yet, trading at least 3 times a month, at most 10% above their pre-hype price (the Jul–Dec 2025 median, skipping each card's first three months). Ranked by how far below that level they are, how much of the 2026 peak they gave back, and a slab premium below its own norm; cards with a 90%+ gem rate lose a little (easy to grade, keeps getting diluted). Each day shows the next ${picks.length} from the ranked list. Full checks refresh all ${pool.length} candidates' prices and re-read about 20 card pages (${read} have data so far).${hidden.length ? ` ${hidden.length} card${hidden.length === 1 ? '' : 's'} hidden in this browser · <button type="button" class="linkish" id="sc-reset">show again</button>` : ''}</p>`;
+      <p class="tr-note">How it picks: modern secret rares (released 2021 or later) with a PSA10 price of ¥15k–150k on pokeca-chart that you don't track yet, trading at least 3 times a month, at most 10% above their pre-hype price (the Jul–Dec 2025 median, skipping each card's first three months). Ranked by how far below that level they are, how much of the 2026 peak they gave back, and a slab premium below its own norm; cards with a 90%+ gem rate lose a little (easy to grade, keeps getting diluted). Each day brings 3 new cards; a card isn't shown again for 30 days while there are ones you haven't seen. Full checks refresh all ${pool.length} candidates' prices and re-read about 20 card pages (${read} have data so far).${hidden.length ? ` ${hidden.length} card${hidden.length === 1 ? '' : 's'} hidden in this browser · <button type="button" class="linkish" id="sc-reset">show again</button>` : ''}</p>`;
     el.querySelector('#sc-other').addEventListener('change', (e) => { store.set('psa10.scout.other', e.target.checked); renderScout(); updateCounts(); });
     el.querySelectorAll('.sc-dismiss').forEach((b) => b.addEventListener('click', () => { const h = store.get('psa10.scout.dismissed', []); h.push(b.dataset.slug); store.set('psa10.scout.dismissed', h); renderScout(); updateCounts(); }));
     el.querySelectorAll('.sc-img').forEach((b) => b.addEventListener('click', () => openLightbox(b.dataset.big, b.querySelector('img').alt)));

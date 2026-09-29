@@ -22,7 +22,8 @@ and its card page was read in the last 21 days. Score (higher = more interesting
   − 0.2 if the gem rate is 90%+               easy to grade → keeps getting diluted
 "kind" is "pokemon" for ex/V/VMAX/VSTAR/GX/BREAK names, else "other" (trainers, and the odd plain-name
 Pokémon illustration rare); the site shows Pokémon by default with a switch for the rest. The site
-shows 3–5 of the ranked cards per JST day, rotating so each day brings different ones.
+shows 3 new cards per JST day from data["daily"], which schedule() plans two weeks ahead so a card
+isn't shown again for 30 days while unseen candidates are left.
 
 data/scout.json: {"updated", "about", "pool": {slug: {...metrics, "read": date, "price": list price,
 "seen": date}}, "ranked": [{slug, score, reasons: [...]}, ...], "dismissed": [slugs]}
@@ -38,6 +39,9 @@ from urllib.parse import unquote
 JST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 TOP = 40
+DAILY = 3        # new cards on the Scout page each JST day
+AHEAD = 14       # days scheduled in advance, so new picks appear even without a price check
+COOLDOWN = 30    # a card isn't picked again within this many days while unseen ones are left
 
 
 def decode(lines):
@@ -119,6 +123,31 @@ def rank(pool, today):
     return out[:TOP]
 
 
+def schedule(data, today):
+    """data["daily"][YYYY-MM-DD] = {"p": [slugs], "a": [slugs]}: DAILY picks per day, Pokémon only ("p") and
+    all kinds ("a"). Past days and today keep what they were given; future days are re-planned each run
+    from the latest ranking. Best-ranked cards not picked in the last COOLDOWN days come first."""
+    daily = data.setdefault("daily", {})
+    for k in [k for k in daily if k < (today - timedelta(days=60)).isoformat()]:
+        del daily[k]
+    ranked = data.get("ranked", [])
+    for key, keep in (("p", lambda r: r.get("kind") == "pokemon"), ("a", lambda r: True)):
+        order = [r["slug"] for r in ranked if keep(r)]
+        for i in range(AHEAD):
+            day = today + timedelta(days=i)
+            k = day.isoformat()
+            if i == 0 and key in daily.get(k, {}):
+                continue
+            last = {}
+            for dk, e in daily.items():
+                if (day - timedelta(days=COOLDOWN)).isoformat() <= dk < k:
+                    for sl in e.get(key, []):
+                        last[sl] = max(last.get(sl, ""), dk)
+            fresh = [sl for sl in order if sl not in last]
+            stale = sorted([sl for sl in order if sl in last], key=lambda sl: last[sl])
+            daily.setdefault(k, {})[key] = (fresh + stale)[:DAILY]
+
+
 def update(prices, cards, errors, root=ROOT, push=True, now=None):
     now = now or datetime.now(JST)
     path = root / "data" / "scout.json"
@@ -142,6 +171,7 @@ def update(prices, cards, errors, root=ROOT, push=True, now=None):
         if slug in pool:
             pool[slug]["error"] = err
     data["ranked"] = rank(pool, now.date())
+    schedule(data, now.date())
     data["updated"] = now.replace(microsecond=0).isoformat()
     data["about"] = ("Scout candidates from pokeca-chart (pricecheck/scripts/pokeca_scout.js → scripts/scout.py). "
                      "See scripts/scout.py for the filters and the score.")
