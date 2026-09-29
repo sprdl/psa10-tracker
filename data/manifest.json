@@ -189,6 +189,11 @@
       "file": "20260929-0813.json",
       "collected_at_jst": "2026-09-29T08:13:48+09:00",
       "check_mode": "full"
+    },
+    {
+      "file": "20260929-2059.json",
+      "collected_at_jst": "2026-09-29T20:59:29+09:00",
+      "check_mode": "quick"
     }
   ]
 }
