@@ -28,6 +28,13 @@
    "text": "What's happening: The lowest PSA10 ask went from ¥43,800 to ¥48,000 since the last check, 13% above the recent sales median of ¥42,650. Two sales at ¥50,000 and ¥52,999 printed yesterday, and 20 sales cleared in the last 7 days (about 2.9 a day).\n\nWhy: Likely the cheapest listings were bought and the next ones are priced higher; the ¥50,000+ prints may be a few buyers paying up. This is a reading of the data. A search found no announced reprint of this card; it did show an altema page for a separate 30周年 ゲッコウガex SAR, which I did not open, so I can't say what it means for this card.\n\nFor you: The ask is just under the Ceiling (¥49,000) and above your ¥37,000 limit and the Buy line (¥43,000). Stay on Watch; the slab premium (1.25x vs a norm of about 1.73x, as of 09-16) is low, which argues against paying the higher ask.\n\nWatch: Whether asks drift back toward ¥43,000, and how the 30周年 Greninja trades once it has a PSA10 market.",
    "signals": "ask +9.6% since last check; ask +13% vs sales median; slab premium 1.25x vs norm 1.73x",
    "sources": []
+  },
+  "https://snkrdunk.com/apparels/100567": {
+   "written": "2026-09-30T16:47:49+09:00",
+   "headline": "Slab premium at 1.07x vs a usual 1.76x, ask 8% above sales",
+   "text": "What's happening: The lowest PSA10 ask is ¥143,000, about 8% above the ¥132,000 median of recent sales, and 12 of 20 listings sit within 15% of it. Sales are running at about 3.9 a day, with prints between ¥126,800 and ¥142,000 over the past week.\n\nWhy: The slab sells at only 1.07x the raw price against a six-month norm of about 1.76x (pokeca-chart, 2026-09-28), so raw is priced high relative to the slab, or the slab is cheap. This is a reading of the data; I found no reprint or supply news for this set.\n\nFor you: The ask is just under the Ceiling (¥145,000), well above the Buy line (¥128,000) and your ¥90,000 limit. The correction rule keeps this at Watch.\n\nWatch: Whether sales keep clearing near ¥130,000, and whether the raw price falls toward the slab (which would lift the premium back).",
+   "signals": "slab premium 1.07x vs norm 1.76x (-39%); ask ¥143,000 vs sales median ¥132,000",
+   "sources": []
   }
  }
 }
