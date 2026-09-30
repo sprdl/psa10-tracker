@@ -2,10 +2,10 @@
  "about": "Analyses written by the full price check for cards that stand out (scripts/outliers.py). Shown on the card page above the automatic findings. Edit with scripts/set_insight.py.",
  "insights": {
   "https://snkrdunk.com/apparels/138599": {
-   "written": "2026-09-30T09:26:07+09:00",
-   "headline": "Ask up 12% in a week, now 11% above where sales are clearing",
-   "text": "What's happening: The lowest PSA10 ask rose from ¥29,400 to ¥33,000 in a week while my tier index slipped about 2%. The last 17 sales cleared at a median of ¥29,800, about 11% under the ask, and only 6 of 20 listings sit within 15% of it.\n\nWhy: Likely sellers relisting higher after the cheapest copies sold, not new demand; that is a reading of the data, not a confirmed cause. A search for a 2026 reprint of the VMAX Climax set found nothing relevant, so I found no supply or news reason.\n\nFor you: The ask is above the Buy line (¥29,500) and well above your ¥26,000 limit. With the correction rule on, this stays a Watch. The slab premium is also low against its usual level, so a chase at this ask has little support.\n\nWatch: Whether sales keep clearing near ¥29,800 or move up to the new ask, and whether the thin book fills back in under ¥30,000.",
-   "signals": "7d +12.2% vs My-tier -2.3%; ask ¥33,000 vs sales median ¥29,800",
+   "written": "2026-10-01T07:39:32+09:00",
+   "headline": "Ask up 18% in a week to ¥34,700, 16% above where sales clear",
+   "text": "What's happening: The lowest PSA10 ask rose from ¥29,400 to ¥34,700 in a week while my tier index fell about 4%. Recent sales still cleared around ¥29,800 (latest prints up to ¥33,000), and only 8 of 20 listings sit within 15% of the ask.\n\nWhy: Most likely the cheapest copies sold and sellers relisted higher; that is a reading of the data, not a confirmed cause. I did not research external news this run.\n\nFor you: The ask is above the Buy line (¥29,500) and far above your ¥26,000 limit, and the correction rule keeps this a Watch.\n\nWatch: whether sales keep printing above ¥30,000 or drift back to ¥29,000-29,800, which would make the ask look stretched.",
+   "signals": "7d +18% vs My-tier -4%; ask +16% vs sales median ¥29,800",
    "sources": []
   },
   "https://snkrdunk.com/apparels/387059": {
@@ -23,10 +23,10 @@
    "sources": []
   },
   "https://snkrdunk.com/apparels/224087": {
-   "written": "2026-09-30T09:26:09+09:00",
-   "headline": "Cheap listings bought out; ask jumped 10% to ¥48,000 while sales sit near ¥42,650",
-   "text": "What's happening: The lowest PSA10 ask went from ¥43,800 to ¥48,000 since the last check, 13% above the recent sales median of ¥42,650. Two sales at ¥50,000 and ¥52,999 printed yesterday, and 20 sales cleared in the last 7 days (about 2.9 a day).\n\nWhy: Likely the cheapest listings were bought and the next ones are priced higher; the ¥50,000+ prints may be a few buyers paying up. This is a reading of the data. A search found no announced reprint of this card; it did show an altema page for a separate 30周年 ゲッコウガex SAR, which I did not open, so I can't say what it means for this card.\n\nFor you: The ask is just under the Ceiling (¥49,000) and above your ¥37,000 limit and the Buy line (¥43,000). Stay on Watch; the slab premium (1.25x vs a norm of about 1.73x, as of 09-16) is low, which argues against paying the higher ask.\n\nWatch: Whether asks drift back toward ¥43,000, and how the 30周年 Greninja trades once it has a PSA10 market.",
-   "signals": "ask +9.6% since last check; ask +13% vs sales median; slab premium 1.25x vs norm 1.73x",
+   "written": "2026-10-01T07:39:32+09:00",
+   "headline": "Greninja ask ¥48,000 is 12% above sales; slab premium 28% below norm",
+   "text": "What's happening: The lowest PSA10 ask is ¥48,000, 12% above the recent sales median of ¥42,900, and only 10 of 20 listings sit within 15% of it. The pokeca-chart slab premium (PSA10 over raw) was 1.25x on 2026-09-16 against a 6-month norm of 1.73x.\n\nWhy: Sales cluster at ¥41,000-44,000 while the lowest ask sits higher; a thin cheap end tends to mean the next sale prints above the old low. A low premium means the slab is cheap relative to the raw card, not that the ask is cheap. I did not research external news this run.\n\nFor you: ¥48,000 is above the Buy line (¥43,000) and your ¥37,000 limit, so it stays a Watch.\n\nWatch: sales printing back at ¥41,000-43,000 or the ask resetting below ¥44,000.",
+   "signals": "ask +12% vs sales median ¥42,900; premium 1.25x vs norm 1.73x (2026-09-16)",
    "sources": []
   },
   "https://snkrdunk.com/apparels/100567": {
@@ -34,6 +34,13 @@
    "headline": "Slab premium at 1.07x vs a usual 1.76x, ask 8% above sales",
    "text": "What's happening: The lowest PSA10 ask is ¥143,000, about 8% above the ¥132,000 median of recent sales, and 12 of 20 listings sit within 15% of it. Sales are running at about 3.9 a day, with prints between ¥126,800 and ¥142,000 over the past week.\n\nWhy: The slab sells at only 1.07x the raw price against a six-month norm of about 1.76x (pokeca-chart, 2026-09-28), so raw is priced high relative to the slab, or the slab is cheap. This is a reading of the data; I found no reprint or supply news for this set.\n\nFor you: The ask is just under the Ceiling (¥145,000), well above the Buy line (¥128,000) and your ¥90,000 limit. The correction rule keeps this at Watch.\n\nWatch: Whether sales keep clearing near ¥130,000, and whether the raw price falls toward the slab (which would lift the premium back).",
    "signals": "slab premium 1.07x vs norm 1.76x (-39%); ask ¥143,000 vs sales median ¥132,000",
+   "sources": []
+  },
+  "https://snkrdunk.com/apparels/455596": {
+   "written": "2026-10-01T07:39:32+09:00",
+   "headline": "Umbreon ask ¥69,500, up 7% in a week against a falling market",
+   "text": "What's happening: The lowest PSA10 ask moved from ¥65,000 to ¥69,500 in a week while my tier index fell about 4%. All 20 listings sit within 15% of the ask, and sales run about 11 a day, so the book is deep and liquid.\n\nWhy: A deep, active book suggests a real bid rather than a thin-market jump, but this is my reading, not a confirmed cause; I did not research external news this run.\n\nFor you: ¥69,500 is above the Buy line (¥68,500) and your ¥63,000 limit, so it stays a Watch.\n\nWatch: whether the ask holds near ¥69,000 or slips back toward your limit as the index keeps correcting.",
+   "signals": "7d +6.9% vs My-tier -4.0%; 20 sales in 7 days",
    "sources": []
   }
  }
