@@ -1,6 +1,6 @@
 {
  "about": "Stories behind the tracked cards' artwork: illustrator, what the art shows, its connections, set context and trivia. Researched from the official card database, Bulbapedia, PokeBeach, Famitsu and card media (sources per card). Shown on each card's Story tab and the Stories page.",
- "updated": "2026-09-28T22:22:37+09:00",
+ "updated": "2026-09-30T16:47:31+09:00",
  "cards": {
   "https://snkrdunk.com/apparels/138599": {
    "illustrator": "Souichirou Gunjima",
@@ -587,6 +587,26 @@
      "url": "https://premium.gamepedia.jp/pokeca/archives/23273"
     }
    ]
+  },
+  "https://snkrdunk.com/apparels/103079": {
+   "illustrator": "Kiyotaka Oshiyama",
+   "illustrator_ja": null,
+   "art": "An aerial battle between Charizard and Mewtwo, with the composition mirroring the Mewtwo VSTAR card. Diglett and Exeggcute are caught up in the fight below.",
+   "story": "It forms a two-card scene with the Mewtwo VSTAR SAR (221/172) from the same pack, designed to complement each other when displayed together.",
+   "set": "From the high-class pack 「VSTARユニバース」 (s12a), released 2022-12-02.",
+   "trivia": [
+    "Illustrated by Kiyotaka Oshiyama (credited in capitals as KIYOTAKA OSHIYAMA by Famitsu).",
+    "Its pair, the Mewtwo VSTAR SAR, is illustrated by GOSSAN."
+   ],
+   "english": null,
+   "sources": [
+    {
+     "title": "Famitsu: VSTARユニバースのSAR/ARまとめ",
+     "url": "https://www.famitsu.com/news/202212/01284594.html"
+    }
+   ],
+   "confidence": "medium",
+   "written": "2026-09-30T16:47:31+09:00"
   }
  }
 }
