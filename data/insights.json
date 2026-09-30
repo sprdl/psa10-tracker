@@ -21,6 +21,13 @@
    "text": "The lowest ask of ¥104,999 is about 11% below the median of the last 20 sales (¥118,245), and all 20 listings sit within 15% of it, so the book is deep. Trading is active at about 3.4 sales a day. It is still under the Ceiling (¥125,000) but only just under the Buy line (¥108,000), and well above your ¥70,000 limit. With the correction rule on, this stays a Watch.",
    "signals": "ask ¥104,999 vs sales median ¥118,245; 20/20 listings within 15%",
    "sources": []
+  },
+  "https://snkrdunk.com/apparels/224087": {
+   "written": "2026-09-30T09:26:09+09:00",
+   "headline": "Cheap listings bought out; ask jumped 10% to ¥48,000 while sales sit near ¥42,650",
+   "text": "What's happening: The lowest PSA10 ask went from ¥43,800 to ¥48,000 since the last check, 13% above the recent sales median of ¥42,650. Two sales at ¥50,000 and ¥52,999 printed yesterday, and 20 sales cleared in the last 7 days (about 2.9 a day).\n\nWhy: Likely the cheapest listings were bought and the next ones are priced higher; the ¥50,000+ prints may be a few buyers paying up. This is a reading of the data. A search found no announced reprint of this card; it did show an altema page for a separate 30周年 ゲッコウガex SAR, which I did not open, so I can't say what it means for this card.\n\nFor you: The ask is just under the Ceiling (¥49,000) and above your ¥37,000 limit and the Buy line (¥43,000). Stay on Watch; the slab premium (1.25x vs a norm of about 1.73x, as of 09-16) is low, which argues against paying the higher ask.\n\nWatch: Whether asks drift back toward ¥43,000, and how the 30周年 Greninja trades once it has a PSA10 market.",
+   "signals": "ask +9.6% since last check; ask +13% vs sales median; slab premium 1.25x vs norm 1.73x",
+   "sources": []
   }
  }
 }
