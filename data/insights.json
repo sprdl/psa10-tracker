@@ -2,10 +2,10 @@
  "about": "Analyses written by the full price check for cards that stand out (scripts/outliers.py). Shown on the card page above the automatic findings. Edit with scripts/set_insight.py.",
  "insights": {
   "https://snkrdunk.com/apparels/138599": {
-   "written": "2026-09-29T08:18:37+09:00",
-   "headline": "Slab priced barely above raw: 1.14x vs a usual 2.3x",
-   "text": "The PSA10 premium over the raw card is 1.14x against a six-month norm of about 2.3x (pokeca-chart, 2026-09-21), so the slab is cheap relative to the raw card, or raw is still priced high. The ask still rose 4% to ¥31,000 in a week when the market fell 8%, and only 7 of 20 listings sit within 15%, so the book is thin. The ask is above the Buy line (¥29,500) and your limit (¥26,000). Watch raw prices: if raw keeps falling, the slab has room to follow.",
-   "signals": "premium 1.14x vs 6-month norm 2.30x; ask +4.0% in 7d",
+   "written": "2026-09-30T09:26:07+09:00",
+   "headline": "Ask up 12% in a week, now 11% above where sales are clearing",
+   "text": "What's happening: The lowest PSA10 ask rose from ¥29,400 to ¥33,000 in a week while my tier index slipped about 2%. The last 17 sales cleared at a median of ¥29,800, about 11% under the ask, and only 6 of 20 listings sit within 15% of it.\n\nWhy: Likely sellers relisting higher after the cheapest copies sold, not new demand; that is a reading of the data, not a confirmed cause. A search for a 2026 reprint of the VMAX Climax set found nothing relevant, so I found no supply or news reason.\n\nFor you: The ask is above the Buy line (¥29,500) and well above your ¥26,000 limit. With the correction rule on, this stays a Watch. The slab premium is also low against its usual level, so a chase at this ask has little support.\n\nWatch: Whether sales keep clearing near ¥29,800 or move up to the new ask, and whether the thin book fills back in under ¥30,000.",
+   "signals": "7d +12.2% vs My-tier -2.3%; ask ¥33,000 vs sales median ¥29,800",
    "sources": []
   },
   "https://snkrdunk.com/apparels/387059": {
