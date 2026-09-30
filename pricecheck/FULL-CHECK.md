@@ -12,6 +12,17 @@ Each in-page script opens the sites' own pages in hidden same-origin iframes of 
 another (the same pages a person would open, in the user's browser, only when the user asks for a
 check). They make no fetch/XHR requests. Never use curl, requests or any HTTP client.
 
+## 0. Allow deletes in the repo folder (before anything else)
+
+The repo folder is mounted with deletes blocked until the user approves them. Git removes its own
+temporary files (`.git/HEAD.lock`, `ORIG_HEAD.lock`, `tmp_obj_*`) after every commit/push, so with
+deletes blocked it leaves stale locks and the next commit fails ("Another git process seems to be
+running"). Call `device_request_delete_permission` once at the start with the exact connected
+folder root for this repo (from `get_device_info.connectedFolders`, e.g. `.../psa10-tracker`, not a
+subfolder and not the nested parent folder) and a one-line reason ("let git clean up its lock
+files during the price check"). If it is declined, carry on; afterwards clear leftovers with
+`find .git -name '*.lock' -delete` only if deletion was granted, otherwise tell the user.
+
 ## 1. Setup (one `device_bash` call)
 
 ```
