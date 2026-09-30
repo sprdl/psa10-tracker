@@ -102,8 +102,8 @@ gauge positions, tier zone math — all computed client-side from these inputs, 
           "reasoning": "The break to a lower price is now confirmed by a full sales window..."
         },
 
-        "grading_fee_jpy": 9980,           // omit -> DIY-vs-slab economics section is skipped
-        "shipping_insurance_jpy": 2000,    // optional, defaults to 2000 if grading_fee_jpy is set
+        "grading_fee_jpy": 9980,           // PSA Japan Standard. omit -> DIY-vs-slab economics section is skipped
+        "shipping_insurance_jpy": 2450,    // optional, defaults to 2450 (PSA insurance & shipping ¥1,900 + handling ¥550); a legacy 2000 is read as 2450
 
         "raw_tiers": {                     // optional, only used in the DIY table's
           "definitely_buy": 48000,         // "buying raw anyway" sub-section
@@ -173,7 +173,7 @@ never hand-write those numbers here.
       "purchase_price_jpy": 65000,
       "purchase_date": "2026-09-20",
       "grading_fee_jpy": 9980,                            // only used if condition is raw_to_grade
-      "shipping_insurance_jpy": 2000,                     // optional, defaults to 2000 if grading_fee_jpy is set
+      "shipping_insurance_jpy": 2450,                     // optional, defaults to 2450 (PSA insurance & shipping ¥1,900 + handling ¥550); a legacy 2000 is read as 2450
       "notes": "optional free text"
     }
   ]

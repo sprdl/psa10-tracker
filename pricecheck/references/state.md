@@ -6,6 +6,8 @@ Read this file only when the step that needs it comes up (Monday PSA check, a ne
 
 Standard ¥9,980 / 100 business days · Priority (renamed from Regular/レギュラー, effective 2026-09-15) ¥11,980 / 80 business days (up from 60) · Express ¥29,980 / 25 business days (up from ¥22,980, effective 2026-09-10) · Value tier paused, resumption 未定 (undetermined).
 
+Standard, 1 card, full cost (PSA Japan order screen, 2026-09-30, tax incl.): grading ¥9,980 + 保険・送料 (insurance & shipping) ¥1,900 + 事務手数料 (handling) ¥550 = ¥12,430. Declared value limit ¥150,000 per card on Standard. The tracker uses grading_fee_jpy 9980 + shipping_insurance_jpy 2450.
+
 psacard.com/ja-JP has been Cloudflare-blocked to browser automation. If direct access fails, web-search for a recent source that explicitly cites PSA Japan's own announcement (a trading-card shop blog quoting PSA Japan is fine; prefer the most recently updated). If nothing changed, say so plainly in `notes`, but always call out tier renames or new effective dates even when prices match. After a run finds a change, update this section via the skill-creator / propose_skills flow.
 
 `psa_tier_status` shape: `{ "checked": true, "value_tier_paused": bool, "resumption_date_stated": "<text or 'undetermined'>", "standard_price_jpy": n, "standard_turnaround_business_days": n, "notes": "..." }`

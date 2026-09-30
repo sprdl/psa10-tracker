@@ -259,6 +259,7 @@ img.card-img {
 .cd-actions { display: flex; gap: 10px; }
 .cd-actions .btn-primary { flex-grow: 1; }
 .cd-note { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.cd-note.warn { color: var(--accent); }
 .cd-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .cd-stat { background: var(--panel-2); border-radius: var(--radius); padding: 10px 12px; min-width: 0; }
 .cd-stat .lbl { font: 400 11px var(--sans); letter-spacing: 0; color: var(--muted-2); }

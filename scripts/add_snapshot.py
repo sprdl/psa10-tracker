@@ -297,6 +297,9 @@ def carry_forward_analysis(data: dict, prev_path: Optional[Path]) -> None:
             continue
 
         forwarded = {k: copy.deepcopy(prev_analysis[k]) for k in CARRY_FORWARD_KEYS if k in prev_analysis}
+        if forwarded.get("shipping_insurance_jpy") == 2000:
+            # old estimate; PSA Japan Standard's real extras are insurance & shipping ¥1,900 + handling ¥550
+            forwarded["shipping_insurance_jpy"] = 2450
         if not forwarded:
             untouched_new.append(name)
             continue

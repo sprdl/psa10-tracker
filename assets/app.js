@@ -290,12 +290,18 @@
     return ((peakPrice - repPrice) / peakPrice) * 100;
   }
 
+  // PSA Japan Standard, 1 card, tax incl. (checked 2026-09-30): grading ¥9,980 + insurance & shipping
+  // ¥1,900 + handling fee ¥550 = ¥12,430. Declared value is capped at ¥150,000 per card on Standard.
+  // Older analyses stored shipping as a ¥2,000 estimate; that's read as the real ¥2,450.
+  const PSA_STD = { fee: 9980, ship: 1900, handling: 550, cap: 150000 };
+  function psaExtras(v) { return v == null || v === 2000 ? PSA_STD.ship + PSA_STD.handling : v; }
+
   function computeDiyEconomics(card, repPrice) {
     const a = card.analysis;
     const raw = card.grades && card.grades.raw_a_grade;
     if (!a || a.grading_fee_jpy == null || !raw || card.psa10_gem_rate_pct == null) return null;
     const gradingFee = a.grading_fee_jpy;
-    const shipping = a.shipping_insurance_jpy != null ? a.shipping_insurance_jpy : 2000;
+    const shipping = psaExtras(a.shipping_insurance_jpy);
     const gemRate = card.psa10_gem_rate_pct / 100;
     if (!gemRate) return null;
     const rawPrice = raw.lowest_price;
@@ -550,7 +556,7 @@
   function todayJST() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
   function holdingCost(h) {
     const grading = h.condition === 'raw_to_grade'
-      ? (h.grading_fee_jpy || 0) + (h.shipping_insurance_jpy != null ? h.shipping_insurance_jpy : 2000)
+      ? (h.grading_fee_jpy || 0) + psaExtras(h.shipping_insurance_jpy)
       : 0;
     return (h.purchase_price_jpy || 0) + grading;
   }
@@ -2337,7 +2343,10 @@
         <div class="cd-stat"><div class="lbl">Grade it yourself (expected)</div><div class="val">${fmtYen(diy.diyExpected)}</div></div>
         <div class="cd-stat"><div class="lbl">vs. buying the slab</div><div class="val ${diy.delta >= 0 ? 'neg' : 'pos'}">${diy.delta >= 0 ? '+' : '−'}${fmtYen(Math.abs(diy.delta))}</div></div>
       </div>
-      <p class="cd-note">Expected DIY cost = (raw ¥${Math.round(diy.rawPrice).toLocaleString()} + grading ¥${diy.gradingFee.toLocaleString()} + shipping ¥${diy.shipping.toLocaleString()}) ÷ ${card.psa10_gem_rate_pct}% gem rate.</p>
+      <p class="cd-note">Expected DIY cost = (raw ¥${Math.round(diy.rawPrice).toLocaleString()} + ${diy.gradingFee === PSA_STD.fee && diy.shipping === PSA_STD.ship + PSA_STD.handling
+        ? `PSA Standard ¥${(PSA_STD.fee + PSA_STD.ship + PSA_STD.handling).toLocaleString()}: grading ¥${PSA_STD.fee.toLocaleString()} + insurance &amp; shipping ¥${PSA_STD.ship.toLocaleString()} + handling ¥${PSA_STD.handling.toLocaleString()}`
+        : `grading ¥${diy.gradingFee.toLocaleString()} + shipping &amp; fees ¥${diy.shipping.toLocaleString()}`}) ÷ ${card.psa10_gem_rate_pct}% gem rate.</p>
+      ${rep > PSA_STD.cap ? `<p class="cd-note warn">A PSA10 is worth ${fmtYen(rep)} here, above the ¥${PSA_STD.cap.toLocaleString()} declared-value limit of PSA's Standard service, so self-grading would need a pricier tier than the one in this sum.</p>` : ''}
       ${rt ? `<p class="cd-note">If buying raw anyway (as a PSA hedge, not a saving): definitely buy ≤${fmtYen(rt.definitely_buy)}, buy ≤${fmtYen(rt.buy_upper)}, don't pay over ${fmtYen(rt.ceiling)}.</p>` : ''}`
       : `<div class="tier-pending">No DIY grading analysis for this card yet.</div>`;
 

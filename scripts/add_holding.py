@@ -19,7 +19,7 @@ Input is one holding object, or a JSON array of several, shaped like:
       "purchase_price_jpy": 65000,
       "purchase_date": "2026-09-20",
       "grading_fee_jpy": 9980,                             // only meaningful if condition is raw_to_grade
-      "shipping_insurance_jpy": 2000,                      // optional, defaults to 2000 if grading_fee_jpy is set
+      "shipping_insurance_jpy": 2450,                      // optional, defaults to 2450 (PSA insurance & shipping ¥1,900 + handling ¥550); a legacy 2000 is read as 2450
       "notes": "optional free text"
     }
 

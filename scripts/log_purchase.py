@@ -35,7 +35,8 @@ ROOT = Path(__file__).resolve().parent.parent
 HOLDINGS = ROOT / "data" / "holdings.json"
 JST = timezone(timedelta(hours=9))
 URL_RE = re.compile(r"https?://(?:www\.)?snkrdunk\.com/(?:en/)?apparels/(\d+)")
-DEFAULT_GRADING_FEE = 9980
+DEFAULT_GRADING_FEE = 9980      # PSA Japan Standard, per card, tax incl.
+DEFAULT_SHIPPING_FEES = 2450    # insurance & shipping ¥1,900 + handling fee ¥550 (total with grading ¥12,430)
 
 
 class FormError(Exception):
@@ -134,7 +135,7 @@ def build_holding(issue):
     if h["condition"] == "raw_to_grade":
         fee = parse_yen(field(form, "grading fee"), "Grading fee", required=False)
         h["grading_fee_jpy"] = fee if fee is not None else DEFAULT_GRADING_FEE
-        h["shipping_insurance_jpy"] = 2000
+        h["shipping_insurance_jpy"] = DEFAULT_SHIPPING_FEES
     notes = field(form, "notes")
     if notes:
         h["notes"] = notes[:300]
