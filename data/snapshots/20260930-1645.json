@@ -4844,6 +4844,41 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 23000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 42687,
+          "when": "June 2026",
+          "source": "pokeca-chart per-card chart, read 2026-09-30"
+        },
+        "tiers": {
+          "definitely_buy": 18000,
+          "buy_upper": 21000,
+          "ceiling": 26000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: above the Buy zone, and the market is still correcting",
+          "reasoning": "Recent sales cluster at ¥22.8-26.1k and the lowest ask is ¥22,999, about 10% above the Buy line (¥21k), which sits at this card's Oct 2025 to Mar 2026 range of ¥19-21k before the anniversary run to ¥42.7k. The My-tier index is still down about 27% over 30 days, so the correction rule allows Buy only at ¥18k or lower; the limit-odds model gives about 42% for a listing at or under ¥21k within 90 days. Population is mature (39.9k graded), so the summer grading wave matters less here than for young cards.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at or under ¥21,000 appears within 90 days",
+              "p": 0.42,
+              "type": "touch_below",
+              "price": 21000,
+              "by": "2026-12-29"
+            },
+            {
+              "text": "A PSA10 listing at or under ¥18,000 appears within 90 days",
+              "p": 0.25,
+              "type": "touch_below",
+              "price": 18000,
+              "by": "2026-12-29"
+            }
+          ]
+        }
       }
     },
     {
@@ -5089,6 +5124,41 @@
             {
               "price": 13000,
               "when": "2026/09/23"
+            }
+          ]
+        }
+      },
+      "analysis": {
+        "representative_price": 22500,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 47831,
+          "when": "June 2026",
+          "source": "pokeca-chart per-card chart, read 2026-09-30"
+        },
+        "tiers": {
+          "definitely_buy": 17500,
+          "buy_upper": 20500,
+          "ceiling": 26000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: above the Buy zone, and the market is still correcting",
+          "reasoning": "Recent sales cluster at ¥21.8-24.0k (many prints at ¥22.5k) against a lowest ask of ¥23,999; the Buy line (¥20.5k) sits at the ¥18-21k range this card held from Oct 2025 to Mar 2026, before running to ¥47.8k in June. With the My-tier index down about 27% over 30 days the correction rule allows Buy only at ¥17.5k or lower; the limit-odds model gives about 36% for a listing at or under ¥20.5k within 90 days. Population is mature (35k graded, 89% gem), and self-grading costs more (about ¥27k) than the slab.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at or under ¥20,500 appears within 90 days",
+              "p": 0.36,
+              "type": "touch_below",
+              "price": 20500,
+              "by": "2026-12-29"
+            },
+            {
+              "text": "A PSA10 listing at or under ¥17,500 appears within 90 days",
+              "p": 0.22,
+              "type": "touch_below",
+              "price": 17500,
+              "by": "2026-12-29"
             }
           ]
         }
@@ -5349,6 +5419,41 @@
             {
               "price": 3000,
               "when": "19時間前"
+            }
+          ]
+        }
+      },
+      "analysis": {
+        "representative_price": 10400,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 22400,
+          "when": "May 2026",
+          "source": "pokeca-chart per-card chart (monthly last print), read 2026-09-30"
+        },
+        "tiers": {
+          "definitely_buy": 7500,
+          "buy_upper": 9000,
+          "ceiling": 11500
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: above the Buy zone, and the market is still correcting",
+          "reasoning": "Twenty recent sales sit at ¥10.0-10.5k with the lowest ask at ¥10,500, about 17% above the Buy line (¥9k); the pre-hype range (Jul-Dec 2025) was ¥4.7-10.5k with a median near ¥8.2k, and the card peaked at about ¥22k in May 2026. The My-tier index is still down about 27% in 30 days, so only ¥7.5k or lower qualifies as Buy; the limit-odds model gives about 34% for a listing at or under ¥9k within 90 days. The slab is roughly 3x the raw price, so the grading fee makes self-grading far dearer (about ¥19k).",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at or under ¥9,000 appears within 90 days",
+              "p": 0.34,
+              "type": "touch_below",
+              "price": 9000,
+              "by": "2026-12-29"
+            },
+            {
+              "text": "A PSA10 listing at or under ¥7,500 appears within 90 days",
+              "p": 0.17,
+              "type": "touch_below",
+              "price": 7500,
+              "by": "2026-12-29"
             }
           ]
         }
