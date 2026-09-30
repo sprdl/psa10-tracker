@@ -1,6 +1,6 @@
 {
  "about": "Stories behind the tracked cards' artwork: illustrator, what the art shows, its connections, set context and trivia. Researched from the official card database, Bulbapedia, PokeBeach, Famitsu and card media (sources per card). Shown on each card's Story tab and the Stories page.",
- "updated": "2026-09-30T16:47:34+09:00",
+ "updated": "2026-09-30T16:47:37+09:00",
  "cards": {
   "https://snkrdunk.com/apparels/138599": {
    "illustrator": "Souichirou Gunjima",
@@ -627,6 +627,25 @@
    ],
    "confidence": "medium",
    "written": "2026-09-30T16:47:34+09:00"
+  },
+  "https://snkrdunk.com/apparels/128099": {
+   "illustrator": "Bun Toujo",
+   "illustrator_ja": null,
+   "art": "The Legendary Pokémon Mewtwo hovering over a city with a creepy look on its face, as described in Bleeding Cool's reveal of the card.",
+   "story": null,
+   "set": "From 強化拡張パック「ポケモンカード151」 (SV2a); Bleeding Cool says the Japanese set was released on June 16 (2023).",
+   "trivia": [
+    "Bleeding Cool reports this card as Bun Toujo's debut in the Pokémon TCG."
+   ],
+   "english": null,
+   "sources": [
+    {
+     "title": "Bleeding Cool: Pokémon TCG Reveals Pokémon Card 151 Mewtwo Illustration",
+     "url": "https://bleedingcool.com/games/pokemon-tcg-reveals-pokemon-card-151-mewtwo-illustration/"
+    }
+   ],
+   "confidence": "medium",
+   "written": "2026-09-30T16:47:37+09:00"
   }
  }
 }
