@@ -214,6 +214,11 @@
       "file": "20261001-0738.json",
       "collected_at_jst": "2026-10-01T07:38:51+09:00",
       "check_mode": "full"
+    },
+    {
+      "file": "20261001-1244.json",
+      "collected_at_jst": "2026-10-01T12:44:04+09:00",
+      "check_mode": "quick"
     }
   ]
 }
