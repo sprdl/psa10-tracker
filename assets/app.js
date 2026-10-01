@@ -299,9 +299,11 @@
   function computeDiyEconomics(card, repPrice) {
     const a = card.analysis;
     const raw = card.grades && card.grades.raw_a_grade;
-    if (!a || a.grading_fee_jpy == null || !raw || card.psa10_gem_rate_pct == null) return null;
-    const gradingFee = a.grading_fee_jpy;
-    const shipping = psaExtras(a.shipping_insurance_jpy);
+    // Computed for every card with a raw A-rank ask, a gem rate and a PSA10 price; the fees default to
+    // PSA Standard, and an evaluation may override them (grading_fee_jpy / shipping_insurance_jpy).
+    if (!raw || !raw.lowest_price || card.psa10_gem_rate_pct == null || !repPrice) return null;
+    const gradingFee = a && a.grading_fee_jpy != null ? a.grading_fee_jpy : PSA_STD.fee;
+    const shipping = psaExtras(a && a.shipping_insurance_jpy);
     const gemRate = card.psa10_gem_rate_pct / 100;
     if (!gemRate) return null;
     const rawPrice = raw.lowest_price;
@@ -2348,7 +2350,9 @@
         : `grading ¥${diy.gradingFee.toLocaleString()} + shipping &amp; fees ¥${diy.shipping.toLocaleString()}`}) ÷ ${card.psa10_gem_rate_pct}% gem rate.</p>
       ${rep > PSA_STD.cap ? `<p class="cd-note warn">A PSA10 is worth ${fmtYen(rep)} here, above the ¥${PSA_STD.cap.toLocaleString()} declared-value limit of PSA's Standard service, so self-grading would need a pricier tier than the one in this sum.</p>` : ''}
       ${rt ? `<p class="cd-note">If buying raw anyway (as a PSA hedge, not a saving): definitely buy ≤${fmtYen(rt.definitely_buy)}, buy ≤${fmtYen(rt.buy_upper)}, don't pay over ${fmtYen(rt.ceiling)}.</p>` : ''}`
-      : `<div class="tier-pending">No DIY grading analysis for this card yet.</div>`;
+      : `<div class="tier-pending">${!rep ? 'No PSA10 price yet, so there is nothing to compare grading it yourself against.'
+          : !(card.grades && card.grades.raw_a_grade && card.grades.raw_a_grade.lowest_price) ? 'No raw A-rank listing right now, so the DIY cost can\'t be worked out.'
+          : 'No PSA10 gem rate yet (the card\'s population hasn\'t been looked up), so the DIY cost can\'t be worked out.'}</div>`;
 
     const tabs = [['overview', 'Overview'], ['story', 'Story'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY']].filter(([k]) => k !== 'story' || storyOf(card));
     const actionsHtml = `<div class="cd-actions">

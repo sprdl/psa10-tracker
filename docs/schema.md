@@ -102,7 +102,7 @@ gauge positions, tier zone math — all computed client-side from these inputs, 
           "reasoning": "The break to a lower price is now confirmed by a full sales window..."
         },
 
-        "grading_fee_jpy": 9980,           // PSA Japan Standard. omit -> DIY-vs-slab economics section is skipped
+        "grading_fee_jpy": 9980,           // PSA Japan Standard; optional, the DIY tab uses 9980 when omitted
         "shipping_insurance_jpy": 2450,    // optional, defaults to 2450 (PSA insurance & shipping ¥1,900 + handling ¥550); a legacy 2000 is read as 2450
 
         "raw_tiers": {                     // optional, only used in the DIY table's
