@@ -2512,7 +2512,9 @@
     { k: 'most', label: 'Most cards', sub: 'the widest display' },
     { k: 'value', label: 'Best value', sub: 'furthest below the cards’ Buy lines' },
     { k: 'big', label: 'Fewer, bigger pieces', sub: 'the fewest cards' },
+    { k: 'odds', label: 'Most likely at my limits', sub: 'the highest average chance that a listing reaches each card’s limit within 90 days (30 days breaks ties; cards without a limit don’t count)', limitsOnly: true },
   ];
+  function cbCatsFor(mode) { return CB_CATS.filter((c) => !c.limitsOnly || mode === 'limits'); }
   function cbFit(total, avail) { return total <= avail ? total / avail : Math.max(0, 1 - (total - avail) / avail); }
 
   function comboSearch(cards, st, avail) {
@@ -2521,7 +2523,9 @@
     const pool = cards.filter((c) => lowestAsk(c) != null && !owned.has(c.url) && !excl.has(c.url)).map((c) => {
       const today = lowestAsk(c), lim = getLimit(c), useLim = st.mode === 'limits' && lim != null;
       const buy = c.analysis && c.analysis.tiers ? c.analysis.tiers.buy_upper : null;
-      return { card: c, p: useLim ? lim : today, fromLimit: useLim, buy };
+      const odds = useLim ? touchOdds(c, lim) : null;
+      return { card: c, p: useLim ? lim : today, fromLimit: useLim, buy, odds,
+               p30: odds ? (odds.reached ? 1 : odds.p30) : null, p90: odds ? (odds.reached ? 1 : odds.p90) : null };
     });
     const pinned = pool.filter((x) => pins.has(x.card.url));
     const free = pool.filter((x) => !pins.has(x.card.url) && x.p <= avail * CB_MAX).sort((a, b) => b.p - a.p);
@@ -2547,7 +2551,12 @@
       o.n = o.items.length;
       o.fit = cbFit(o.total, avail);
       o.value = o.items.reduce((s, x) => s + x.p * (x.buy ? (x.buy - x.p) / x.buy : 0), 0) / o.total;
+      const lim = o.items.filter((x) => x.p90 != null);
+      o.nLim = lim.length;
+      o.odds90 = lim.length ? lim.reduce((s, x) => s + x.p90, 0) / lim.length : 0;
+      o.odds30 = lim.length ? lim.reduce((s, x) => s + x.p30, 0) / lim.length : 0;
     });
+    const oMax = Math.max(...out.map((o) => o.odds90 + o.odds30 / 100));
     const maxN = Math.max(...out.map((o) => o.n)), minN = Math.min(...out.map((o) => o.n));
     const vMin = Math.min(...out.map((o) => o.value)), vMax = Math.max(...out.map((o) => o.value));
     const measure = {
@@ -2555,9 +2564,10 @@
       most: (o) => o.n / maxN,
       value: (o) => (vMax > vMin ? (o.value - vMin) / (vMax - vMin) : 1),
       big: (o) => minN / o.n,
+      odds: (o) => (oMax > 0 ? (o.odds90 + o.odds30 / 100) / oMax : 0),
     };
     const cats = {};
-    CB_CATS.forEach(({ k }) => {
+    cbCatsFor(st.mode).forEach(({ k }) => {
       cats[k] = out.map((o) => ({ o, m: measure[k](o), score: measure[k](o) * o.fit }))
         .sort((a, b) => b.score - a.score || b.o.fit - a.o.fit || b.o.total - a.o.total)
         .slice(0, CB_PER);
@@ -2587,7 +2597,7 @@
     const st = plannerState();
     const spent = state.holdings.reduce((s, h) => s + holdingCost(h), 0);
     const avail = st.budget - spent;
-    const cat = CB_CATS.some((c) => c.k === st.cbCat) ? st.cbCat : 'fit';
+    const cat = cbCatsFor(st.mode).some((c) => c.k === st.cbCat) ? st.cbCat : 'fit';
     const syncPlanner = () => { renderPlanner(cards); renderKpis(state.currentData); };
     const save = (patch) => { store.set(PLANNER_KEY, Object.assign(plannerState(), patch)); const r = renderCombos(); document.getElementById('page-sub').textContent = r.sub; syncPlanner(); };
     if (avail <= 0) {
@@ -2632,13 +2642,13 @@
       const base = res.pinned.reduce((s, x) => s + x.p, 0);
       body = `<div class="empty-state">${base > avail * CB_MAX ? `The pinned cards alone cost ${fmtYen(base)}, more than 120% of the budget.` : 'No combination of the cards in play lands between 90% and 120% of the budget. Put more cards back in, or change the budget.'}</div>`;
     } else {
-      const tabs = `<div class="cb-tabs" role="tablist">${CB_CATS.map((c) => `<button type="button" role="tab" data-cat="${c.k}" class="${c.k === cat ? 'on' : ''}" aria-selected="${c.k === cat}">${c.label}</button>`).join('')}</div>`;
+      const tabs = `<div class="cb-tabs" role="tablist">${cbCatsFor(st.mode).map((c) => `<button type="button" role="tab" data-cat="${c.k}" class="${c.k === cat ? 'on' : ''}" aria-selected="${c.k === cat}">${c.label}</button>`).join('')}</div>`;
       const info = CB_CATS.find((c) => c.k === cat);
       const cols = res.cats[cat].map(({ o, m, score }, i) => {
         const t = cbMeasureText(cat, o, avail);
         const over = o.total > avail;
         const why = cat === 'fit' ? `budget fit ${(o.fit * 100).toFixed(1)}%`
-          : `${cat === 'most' ? t.cards : cat === 'big' ? t.cards : t.val} (${Math.round(m * 100)}%) × budget fit ${(o.fit * 100).toFixed(1)}%`;
+          : `${cat === 'most' ? t.cards : cat === 'big' ? t.cards : cat === 'odds' ? `average chance ${Math.round(o.odds90 * 100)}% in 90 days, ${Math.round(o.odds30 * 100)}% in 30, over ${o.nLim} limit${o.nLim === 1 ? '' : 's'}` : t.val} (${Math.round(m * 100)}%) × budget fit ${(o.fit * 100).toFixed(1)}%`;
         const chips = o.items.map((x) => `<a class="cb-chip ${st.pins.includes(x.card.url) ? 'pinned' : ''}" href="#/card/${escapeAttr(cardId(x.card))}">
             <span class="wthumb cb-cthumb">${img(x.card)}</span>
             <span class="cb-cn">${escapeHtml(nameOf(x.card))}</span>
