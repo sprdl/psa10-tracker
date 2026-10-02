@@ -72,7 +72,7 @@ def build_plan(root=ROOT, now=None):
     by_id = {}
     for c in (snap or {}).get("cards", []):
         by_id[c.get("url", "").rstrip("/").split("/")[-1]] = c
-    plan, altema, skipped, prem = [], [], {}, []
+    plan, altema, skipped, prem, amiss = [], [], {}, [], []
     tracked_slugs = set()
     for c in load_cards(root):
         sid = c["snkrdunk_id"]
@@ -90,6 +90,7 @@ def build_plan(root=ROOT, now=None):
         amode = c.get("altema_mode", "daily")
         if not url:
             skipped[sid] = "no altema page on file yet"
+            amiss.append([sid, c.get("card_name_ja", "")])
         elif amode == "weekly_until_graded":
             altema.append([sid, url, "due" if monday else "ifpsa"])
         elif isinstance(pop, int) and pop >= MATURE_POP and not monday:
@@ -120,7 +121,7 @@ def build_plan(root=ROOT, now=None):
             pass
     return {
         "now": now, "monday": monday, "scout": scout, "latest": snap_path.name if snap_path else None,
-        "plan": plan, "altema": altema, "altema_skipped": skipped, "premium": prem,
+        "plan": plan, "altema": altema, "altema_skipped": skipped, "altema_missing": amiss, "premium": prem,
         "odds_model_built": odds_built, "odds_rebuild_due": odds_age is None or odds_age > 30,
     }
 
@@ -138,6 +139,8 @@ def main():
     print("ALTEMA = " + json.dumps(p["altema"]))
     print("PREM = " + json.dumps(p["premium"]))
     print("SCOUT = " + json.dumps(p["scout"], separators=(",", ":")))
+    if p["altema_missing"]:
+        print("ALTEMA MISSING (step 1c) = " + json.dumps(p["altema_missing"], ensure_ascii=False))
 
 
 if __name__ == "__main__":

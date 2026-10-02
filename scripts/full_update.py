@@ -13,7 +13,13 @@ Publish a FULL price check from the compact lines the in-page scripts return.
     VOL psa10 {"volume_trend": …, "volume_note": …}   volume override (optional)
     NOTE free text                   run notes (optional)
     EOF
-    python3 scripts/full_update.py FILE [--dry-run] [--no-push]
+    python3 scripts/full_update.py FILE [--dry-run] [--no-push] [--skip scout,premium,...]
+
+Completeness guard: the run is refused when a planned step left no lines (market index, My-tier
+index, altema pages due today, slab premiums, Scout), because a skipped step otherwise goes
+unnoticed for days (Scout was skipped on 10/1 and 10/2 without a trace). Run the missing step and
+re-run with all lines. Only if a step genuinely failed (site down, page structure changed), pass
+--skip with its name and say so in the chat message.
 
 What it does:
   1. decodes the lines into exactly the raw JSON pricecheck/scripts/assemble.py has always taken
@@ -187,6 +193,31 @@ def parse(text, cards_meta, plan):
     return raw, mytier, notes
 
 
+STEP_NAMES = {
+    "index": "market indices (step 4.1, IDX lines)",
+    "mytier": "My-tier index (step 4.2, MYTIER line)",
+    "altema": "altema pages due today (step 3, ALT lines)",
+    "premium": "slab premiums (step 4.3, PREM lines)",
+    "scout": "Scout (step 4.4, SCP/SC lines)",
+}
+
+
+def missing_steps(text, plan):
+    heads = {ln.strip().partition(" ")[0] for ln in text.splitlines() if ln.strip()}
+    miss = []
+    if "IDX" not in heads:
+        miss.append("index")
+    if "MYTIER" not in heads:
+        miss.append("mytier")
+    if any(a[2] == "due" for a in plan.get("altema", [])) and "ALT" not in heads:
+        miss.append("altema")
+    if plan.get("premium") and "PREM" not in heads:
+        miss.append("premium")
+    if plan.get("scout") and not ({"SCP", "SC", "SC!"} & heads):
+        miss.append("scout")
+    return miss
+
+
 def run(cmd):
     r = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True)
     print((r.stdout or "") + (r.stderr or ""), end="")
@@ -218,7 +249,7 @@ def persist_images(raw, cards_meta, dry):
 
 def main():
     args = sys.argv[1:]
-    files = [a for a in args if not a.startswith("--")]
+    files = [a for i, a in enumerate(args) if not a.startswith("--") and not (i and args[i - 1] == "--skip")]
     dry = "--dry-run" in args
     text = sys.stdin.read() if not files or files[0] == "-" else Path(files[0]).read_text(encoding="utf-8")
     incoming = ROOT / "data" / "incoming"
@@ -231,8 +262,23 @@ def main():
             die("`git pull --ff-only` failed — sort out the local repo first:\n" + (pull.stderr or pull.stdout))
 
     plan = planmod.build_plan(ROOT)
+    skip = set()
+    for i, a in enumerate(args):
+        if a == "--skip" and i + 1 < len(args):
+            skip |= {x.strip() for x in args[i + 1].split(",") if x.strip()}
+        elif a.startswith("--skip="):
+            skip |= {x.strip() for x in a[7:].split(",") if x.strip()}
+    miss = [m for m in missing_steps(text, plan) if m not in skip]
+    if miss:
+        die("planned steps left no lines in this run:\n" + "\n".join(f"  - {STEP_NAMES[m]}" for m in miss)
+            + "\nRun them and re-run full_update.py with all lines. If a step genuinely failed, re-run with "
+            + f"--skip {','.join(miss)} and say why in the chat message.")
+    skipped_note = [f"step skipped on purpose this run: {STEP_NAMES[m]}" for m in sorted(skip) if m in STEP_NAMES]
     cards_meta = {c["snkrdunk_id"]: c for c in planmod.load_cards(ROOT)}
     raw, mytier, notes = parse(text, cards_meta, plan)
+    notes = skipped_note + notes
+    for sid, name in plan.get("altema_missing", []):
+        notes.append(f"{sid}: no altema page on file ({name[:24]}) — find it (FULL-CHECK step 1c)")
     prem = raw.pop("_premium", {})
     sc = raw.pop("_scout", None)
     if not raw["cards"]:

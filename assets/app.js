@@ -889,6 +889,11 @@
     const reasons = [];
     if (days > TIER_MAX_AGE_DAYS) reasons.push(`over ${TIER_MAX_AGE_DAYS} days old`);
     if (mv && Math.abs(mv.pct) >= TIER_MAX_INDEX_MOVE) reasons.push(`market moved more than ${TIER_MAX_INDEX_MOVE}%`);
+    // same rules as scripts/review_due.py (FULL-CHECK step 8d)
+    const ds = card.analysis.tiers.definitely_buy, o = ds ? touchOdds(card, ds) : null;
+    if (o && !o.reached && o.p90 < 0.1 && days >= 7) reasons.push('Definitely-buy is a long shot');
+    const age = cardAgeMonths(card);
+    if (age != null && age < 9 && days >= 14) reasons.push(`young card (${age} months)`);
     return { since: t.since, days, move: mv, due: reasons.length > 0, reasons };
   }
 

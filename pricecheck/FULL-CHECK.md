@@ -56,6 +56,8 @@ progress, stop and report it rather than polling on.
   After the requests are handled, run `python3 pricecheck/plan.py` again: the new card is now in `data/tracked_cards.json`, so the plan includes it (its photo is fetched in step 2). Step 8b evaluates it once this run has published.
 - For a new card with an empty `altema_url`: find its altema page with the on-site search, using the tips in `pricecheck/references/state.md`, and confirm the 型番 matches. Save it with `python3 scripts/card_requests.py set <snkrdunk_id> altema_url=<url>`. If you can't find it, leave it empty; its population shows as unavailable until found.
 
+**1c. Find missing altema pages** (every full check). If `plan.py` printed an `ALTEMA MISSING` line, those tracked cards have no altema page on file, so they never get a population or gem rate (no DIY tab, no gem rate for evaluations). For up to 3 of them per run, find the page with altema's on-site search (tips in `pricecheck/references/state.md`), confirm the 型番 matches, and save it with `python3 scripts/card_requests.py set <snkrdunk_id> altema_url=<url>`. Then run `python3 pricecheck/plan.py` again so today's `ALTEMA` list reads them. A card altema doesn't list (e.g. a deck-only print) can stay missing; say so once in the chat message.
+
 ## 2. SNKRDUNK, all cards in one run
 
 `navigate` the tab to `https://snkrdunk.com/apparels/<first id in PLAN>`. One `javascript_tool` call:
@@ -137,6 +139,8 @@ R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | he
 <the lines>
 EOF
 ```
+
+**Completeness guard:** `full_update.py` refuses to publish when a planned step left no lines (IDX, MYTIER, ALT when altema pages were due, PREM, SCP/SC) and names the missing steps. Go back, run them, and re-run with all lines. Only when a step genuinely failed (the site is down, a script reports a changed page), re-run with `--skip <names>` (e.g. `--skip scout`) and say in the chat message which step was skipped and why. Never use `--skip` to save time.
 
 `full_update.py` keeps the input in `data/incoming/full-raw.txt`, pulls, decodes the lines into
 `data/incoming/full-raw.json` (exactly the raw shape `assemble.py` has always taken), runs
@@ -225,6 +229,8 @@ in one line (its headline).
 4. Evaluate at most 3 cards per run. Name any others in the chat message; the next full check continues with them.
 5. If an evaluation can't finish (a site is unreachable, or `apply_analysis.py` refuses the JSON), nothing is applied for that card. Say which card and why.
 
+**8d. Re-evaluate cards whose tiers are due** (full checks only, computer linked, after 8b; skip it on a run where 8b already evaluated 3 cards). One `device_bash` call: `cd "$R" && python3 scripts/review_due.py`. It lists at most 2 cards, most due first, with the reasons. A card is due when its tiers are over 30 days old, the market has moved 10%+ since they were set, its Definitely-buy is a long shot (under 10% in 90 days on the limit-odds model), or it is under 9 months old and its tiers are 2+ weeks old. The site shows the same "Review due" line. Re-run the `pokemon-tcg-card-evaluation` skill end to end for each listed card (including its step 8, `apply_analysis.py`), reusing this run's data as in 8b. A re-evaluation that keeps the tiers still counts as a review and resets the clock. Mention each in the chat message in one line ("Re-evaluated <name>: <verdict>, tiers ¥X / ¥Y / ¥Z (due: <reason>)"). The next full check continues with any cards still due.
+
 **8c. Write the story for cards that have none** (full checks only, computer linked, after step 7 has published). Every tracked card gets a Story tab on its card page and a tile on the Stories page from `data/stories.json`: who illustrated it, what the art shows, how it connects to other cards or the games, set context and a few facts. A card added in step 1b arrives without one.
 1. One `device_bash` call: `cd "$R" && python3 scripts/set_story.py --missing`. It lists tracked cards without a story (usually none).
 2. For each listed card (at most 3 per run; name any others in the chat message), research with `WebSearch` / `WebFetch` only. Never use SNKRDUNK or pokeca-chart pages for this. Start with the illustrator: the official card database (pokemon-card.com; the card's page lists イラストレーター; search e.g. `<card name> <number> イラストレーター`), then Bulbapedia or Serebii. Then the art itself and its context: Famitsu's SAR/AR round-ups, PokeBeach reveal posts, Bleeding Cool's "The Cards of Pokémon TCG" series, the official set page, the illustrator's own posts. Worth looking for: connected artworks (panels that join into one picture, day/night pairs, a trainer and Pokémon pairing), the Pokédex lore or game/anime/film moment it depicts, the set's release date and theme, the English counterpart's name and number, the illustrator's other well-known cards.
@@ -237,7 +243,7 @@ EOF
 ```
 It checks the fields, refuses SNKRDUNK/pokeca-chart sources, commits and pushes. Mention each story in the chat message in one line ("Story added: <name>, illustrated by <artist>").
 
-**Chat message (full check):** keep it short. Say where it was published (snapshot file name, or "not published" and why). Then pass on anything notable from the WARNINGS/CHANGES/FULL_UPDATE NOTES and from `add_snapshot.py`'s own warnings: a stale timestamp, the tracked-card set changing, cards whose verdict now needs a fresh review. Examples: very few live listings, a big favorite-count move, a volume spike, a site that couldn't be reached. The live site shows the rest. Include the My-tier index line `add_custom_index.py` printed (level and change), or say why it was skipped. On Mondays, add the release-calendar line from step 6b. Also report any card requests handled in step 1b ("Added: <name>" / "Couldn't add #<n>: <reason>") one line per card analysed in step 7b, one line per card evaluated in step 8b, and one line per story written in step 8c, e.g. "Evaluated <name>: Watch, tiers ¥X / ¥Y / ¥Z, 2 predictions recorded".
+**Chat message (full check):** keep it short. Say where it was published (snapshot file name, or "not published" and why). Then pass on anything notable from the WARNINGS/CHANGES/FULL_UPDATE NOTES and from `add_snapshot.py`'s own warnings: a stale timestamp, the tracked-card set changing, cards whose verdict now needs a fresh review. Examples: very few live listings, a big favorite-count move, a volume spike, a site that couldn't be reached. The live site shows the rest. Include the My-tier index line `add_custom_index.py` printed (level and change), or say why it was skipped. On Mondays, add the release-calendar line from step 6b. Also report any card requests handled in step 1b ("Added: <name>" / "Couldn't add #<n>: <reason>") one line per card analysed in step 7b, one line per card evaluated in step 8b or re-evaluated in step 8d, one line per altema page found in step 1c, and one line per story written in step 8c, e.g. "Evaluated <name>: Watch, tiers ¥X / ¥Y / ¥Z, 2 predictions recorded".
 
 ## Output shape (produced by assemble.py)
 
