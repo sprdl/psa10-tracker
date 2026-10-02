@@ -2703,9 +2703,49 @@
     { k: 'most', label: 'Most cards', sub: 'the widest display' },
     { k: 'value', label: 'Best value', sub: 'furthest below the cards’ Buy lines' },
     { k: 'big', label: 'Fewer, bigger pieces', sub: 'the fewest cards' },
+    { k: 'upside', label: 'Biggest upside', sub: 'the highest return if the next 24 months go well (the strong case: 1 in 10 outcomes are better), after selling fees', needsVm: true },
+    { k: 'likely', label: 'Most likely to gain', sub: 'the highest chance that selling the whole combo in 24 months, after fees, returns more than it cost', needsVm: true },
     { k: 'odds', label: 'Most likely at my limits', sub: 'the highest average chance that a listing reaches each card’s limit within 90 days (30 days breaks ties; cards without a limit don’t count)', limitsOnly: true },
   ];
-  function cbCatsFor(mode) { return CB_CATS.filter((c) => !c.limitsOnly || mode === 'limits'); }
+  function cbCatsFor(mode) { return CB_CATS.filter((c) => (!c.limitsOnly || mode === 'limits') && (!c.needsVm || state.valueModel)); }
+  // 24-month upside at a given buy price, from the value model (neutral market, see upsideDist)
+  function cbUpside(card, price) {
+    const d = upsideDist(card, 24, false);
+    if (!d) return null;
+    const gain = (q) => sellNet(price * Math.exp(dq(d.v, q))) - price;
+    return { p: profitOdds(d.v, price).p, typ: gain(0.5), strong: gain(0.9), k: d.k, drift: d.drift };
+  }
+  // A combo's own 24-month outcome: one shared market move for all its cards (they rise and fall
+  // together) plus each card's own part, drawn independently. Every card gets the same N market
+  // draws (seeded, so rankings are stable), and its sale proceeds per draw are worked out once;
+  // a combo is then just the sum of its cards' arrays.
+  const CB_SIMS = 2000;
+  function cbSimPrep(pool) {
+    const vm = state.valueModel, H = vm && vm.horizons && vm.horizons[24];
+    if (!H) return false;
+    const mk = H.market, cp = H.card_part, mid = mk[Math.floor(mk.length / 2)];
+    let seed = 20261002;
+    const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const m = new Float64Array(CB_SIMS);
+    for (let i = 0; i < CB_SIMS; i++) m[i] = mk[Math.floor(rnd() * mk.length)] - mid;
+    for (const x of pool) {
+      if (!x.up) continue;
+      const a = new Float64Array(CB_SIMS);
+      for (let i = 0; i < CB_SIMS; i++) a[i] = sellNet(x.p * Math.exp(m[i] + x.up.k * cp[Math.floor(rnd() * cp.length)] + x.up.drift));
+      x.sim = a;
+    }
+    return true;
+  }
+  function cbComboUpside(items) {
+    const up = items.filter((x) => x.sim);
+    if (!up.length) return null;
+    const cost = up.reduce((a, x) => a + x.p, 0), r = new Float64Array(CB_SIMS);
+    for (const x of up) for (let i = 0; i < CB_SIMS; i++) r[i] += x.sim[i];
+    let win = 0;
+    for (let i = 0; i < CB_SIMS; i++) { r[i] = r[i] / cost - 1; if (r[i] >= 0) win++; }
+    r.sort();
+    return { n: up.length, p: win / CB_SIMS, typ: dq(r, 0.5), strong: dq(r, 0.9), weak: dq(r, 0.1) };
+  }
   function cbFit(total, avail) { return total <= avail ? total / avail : Math.max(0, 1 - (total - avail) / avail); }
 
   function comboSearch(cards, st, avail) {
@@ -2715,7 +2755,8 @@
       const today = lowestAsk(c), lim = getLimit(c), useLim = st.mode === 'limits' && lim != null;
       const buy = c.analysis && c.analysis.tiers ? c.analysis.tiers.buy_upper : null;
       const odds = useLim ? touchOdds(c, lim) : null;
-      return { card: c, p: useLim ? lim : today, fromLimit: useLim, buy, odds,
+      const p = useLim ? lim : today;
+      return { card: c, p, fromLimit: useLim, buy, odds, up: cbUpside(c, p),
                p30: odds ? (odds.reached ? 1 : odds.p30) : null, p90: odds ? (odds.reached ? 1 : odds.p90) : null };
     });
     const pinned = pool.filter((x) => pins.has(x.card.url));
@@ -2738,6 +2779,7 @@
       walk(i + 1, sum);
     })(0, base);
     if (!out.length) return { pool, pinned, combos: [], cats: {} };
+    const wantUp = (st.cbCat === 'upside' || st.cbCat === 'likely') && cbSimPrep(pool);
     out.forEach((o) => {
       o.n = o.items.length;
       o.fit = cbFit(o.total, avail);
@@ -2746,7 +2788,13 @@
       o.nLim = lim.length;
       o.odds90 = lim.length ? lim.reduce((s, x) => s + x.p90, 0) / lim.length : 0;
       o.odds30 = lim.length ? lim.reduce((s, x) => s + x.p30, 0) / lim.length : 0;
+      const cu = wantUp ? cbComboUpside(o.items) : null;
+      o.nUp = cu ? cu.n : 0;
+      o.upP = cu ? cu.p : 0; o.upTyp = cu ? cu.typ : 0; o.upStrong = cu ? cu.strong : 0; o.upWeak = cu ? cu.weak : 0;
     });
+    const rel = (k) => { const v = out.map((o) => o[k]), lo = Math.min(...v), hi = Math.max(...v);
+      return (o) => (lo >= 0 ? (hi > 0 ? o[k] / hi : 1) : hi > lo ? (o[k] - lo) / (hi - lo) : 1); };
+    const relStrong = rel('upStrong'), relP = rel('upP');
     const oMax = Math.max(...out.map((o) => o.odds90 + o.odds30 / 100));
     const maxN = Math.max(...out.map((o) => o.n)), minN = Math.min(...out.map((o) => o.n));
     const vMin = Math.min(...out.map((o) => o.value)), vMax = Math.max(...out.map((o) => o.value));
@@ -2756,9 +2804,11 @@
       value: (o) => (vMax > vMin ? (o.value - vMin) / (vMax - vMin) : 1),
       big: (o) => minN / o.n,
       odds: (o) => (oMax > 0 ? (o.odds90 + o.odds30 / 100) / oMax : 0),
+      upside: relStrong,
+      likely: relP,
     };
     const cats = {};
-    cbCatsFor(st.mode).forEach(({ k }) => {
+    cbCatsFor(st.mode).filter(({ k }) => wantUp || (k !== 'upside' && k !== 'likely')).forEach(({ k }) => {
       cats[k] = out.map((o) => ({ o, m: measure[k](o), score: measure[k](o) * o.fit }))
         .sort((a, b) => b.score - a.score || b.o.fit - a.o.fit || b.o.total - a.o.total)
         .slice(0, CB_PER);
@@ -2775,6 +2825,8 @@
     return `<span class="cb-codds" title="Limit-odds model: chance the lowest PSA10 ask reaches your limit">Reaches limit: <b>${fmtOdds(o.p30)}</b> in 30 days · <b>${fmtOdds(o.p90)}</b> in 90 days <i>(${Math.round(o.drop * 100)}% below today)</i></span>`;
   }
 
+  const cbPct = (r) => `${r >= 0 ? '+' : '−'}${Math.abs(r * 100).toFixed(0)}%`;
+  const cbYen = (v) => `${v >= 0 ? '+' : '−'}${fmtYen(Math.abs(Math.round(v / 100) * 100))}`;
   function cbMeasureText(k, o, avail) {
     const over = o.total - avail;
     const budget = over > 0 ? `${fmtYen(over)} over budget` : over === 0 ? 'exactly the budget' : `${fmtYen(-over)} left`;
@@ -2839,21 +2891,23 @@
         const t = cbMeasureText(cat, o, avail);
         const over = o.total > avail;
         const why = cat === 'fit' ? `budget fit ${(o.fit * 100).toFixed(1)}%`
-          : `${cat === 'most' ? t.cards : cat === 'big' ? t.cards : cat === 'odds' ? `average chance ${Math.round(o.odds90 * 100)}% in 90 days, ${Math.round(o.odds30 * 100)}% in 30, over ${o.nLim} limit${o.nLim === 1 ? '' : 's'}` : t.val} (${Math.round(m * 100)}%) × budget fit ${(o.fit * 100).toFixed(1)}%`;
+          : `${cat === 'most' ? t.cards : cat === 'big' ? t.cards : cat === 'odds' ? `average chance ${Math.round(o.odds90 * 100)}% in 90 days, ${Math.round(o.odds30 * 100)}% in 30, over ${o.nLim} limit${o.nLim === 1 ? '' : 's'}` : cat === 'upside' ? `strong case ${cbPct(o.upStrong)} after fees` : cat === 'likely' ? `${Math.round(o.upP * 100)}% chance the combo sells at a profit` : t.val} (${Math.round(m * 100)}%) × budget fit ${(o.fit * 100).toFixed(1)}%`;
         const chips = o.items.map((x) => `<a class="cb-chip ${st.pins.includes(x.card.url) ? 'pinned' : ''}" href="#/card/${escapeAttr(cardId(x.card))}">
             <span class="wthumb cb-cthumb">${img(x.card)}</span>
             <span class="cb-cn">${escapeHtml(nameOf(x.card))}</span>
-            <span class="cb-cp">${fmtYen(x.p)}${st.mode === 'limits' ? `<i>${x.fromLimit ? 'my limit' : 'today'}</i>` : ''}</span>${cbOddsHtml(x)}</a>`).join('');
+            <span class="cb-cp">${fmtYen(x.p)}${st.mode === 'limits' ? `<i>${x.fromLimit ? 'my limit' : 'today'}</i>` : ''}</span>${cbOddsHtml(x)}${(cat === 'upside' || cat === 'likely') && x.up ? `<span class="cb-codds" title="Value model, 24 months, neutral market, after SNKRDUNK fees">24 months: <b>${Math.round(x.up.p * 100)}%</b> chance of a profit · strong case ${cbYen(x.up.strong)}</span>` : ''}</a>`).join('');
         const odds = st.mode === 'limits' ? o.items.filter((x) => x.fromLimit).map((x) => touchOdds(x.card, x.p)).filter(Boolean) : [];
         const exp = (k) => odds.reduce((a, q) => a + (q.reached ? 1 : q[k]), 0);
         const oddsLine = odds.length ? `<div class="cb-odds-sum">Limits likely reached: <b>${exp('p30').toFixed(1)}</b> of ${odds.length} cards within 30 days · <b>${exp('p90').toFixed(1)}</b> within 90 days</div>` : '';
+        const upLine = (cat === 'upside' || cat === 'likely') && o.nUp
+          ? `<div class="cb-odds-sum">The whole combo in 24 months, after fees: weak <b class="${o.upWeak >= 0 ? 'pos' : 'neg'}">${cbPct(o.upWeak)}</b> · typical <b class="${o.upTyp >= 0 ? 'pos' : 'neg'}">${cbPct(o.upTyp)}</b> (${cbYen(o.upTyp * o.total)}) · strong <b class="${o.upStrong >= 0 ? 'pos' : 'neg'}">${cbPct(o.upStrong)}</b> (${cbYen(o.upStrong * o.total)}) · chance of a profit <b>${Math.round(o.upP * 100)}%</b></div>` : '';
         return `<div class="cb-combo ${i === 0 ? 'first' : ''}">
           <div class="cb-ch"><div class="cb-rank"><span>#${i + 1}</span><b>${score >= 0.99 ? (Math.floor(score * 1000) / 10).toFixed(1) : Math.round(score * 100)}%</b><i>match</i></div>
             <div class="cb-tot">${fmtYen(o.total)}<span class="${over ? 'neg' : 'pos'}">${t.budget}</span></div></div>
           <div class="cb-bar"><div class="${over ? 'over' : ''}" style="width:${Math.min(100, (o.total / (avail * CB_MAX)) * 100).toFixed(1)}%"></div><span style="left:${(100 / CB_MAX).toFixed(1)}%" title="Budget"></span></div>
           <div class="cb-meta">${t.cards} · ${t.val}</div>
           <div class="cb-why">${escapeHtml(why)}</div>
-          ${oddsLine}
+          ${oddsLine}${upLine}
           <div class="cb-chips">${chips}</div>
           <button type="button" class="btn ${i === 0 ? 'btn-primary' : ''} cb-use" data-use="${escapeAttr(o.items.map((x) => x.card.url).join('|'))}">Tick these ${o.n} in the planner</button>
         </div>`;
@@ -2861,7 +2915,7 @@
       body = tabs + `<p class="cb-catsub">${escapeHtml(info.sub)}. Match = ${cat === 'fit' ? 'how close the total is to the budget (going over counts the same as leaving money unspent)' : 'this category’s measure, relative to the best combo, × how close the total is to the budget'}.</p><div class="cb-picks">${cols}</div>`;
     }
 
-    el.innerHTML = top + poolHtml + body + `<p class="cd-note">${res.combos.length} combination${res.combos.length === 1 ? '' : 's'} between ${Math.round(CB_MIN * 100)}% and ${Math.round(CB_MAX * 100)}% of ${fmtYen(avail)}. Within budget, only combos with no room for one more card count. ${st.mode === 'limits' ? 'Cards without a limit use today’s price. Chances of reaching a limit come from the limit-odds model (each card’s own price swings, no trend assumed). “Limits likely reached” adds them up per combo: the expected number of cards, not the chance of getting all of them, which is lower. ' : ''}Value compares each price with the card’s Buy line (cards without tiers count as neutral). Pins and left-out cards are saved in this browser.</p>`;
+    el.innerHTML = top + poolHtml + body + `<p class="cd-note">${res.combos.length} combination${res.combos.length === 1 ? '' : 's'} between ${Math.round(CB_MIN * 100)}% and ${Math.round(CB_MAX * 100)}% of ${fmtYen(avail)}. Within budget, only combos with no room for one more card count. ${st.mode === 'limits' ? 'Cards without a limit use today’s price. Chances of reaching a limit come from the limit-odds model (each card’s own price swings, no trend assumed). “Limits likely reached” adds them up per combo: the expected number of cards, not the chance of getting all of them, which is lower. ' : ''}Value compares each price with the card’s Buy line (cards without tiers count as neutral). ${state.valueModel ? 'Upside comes from the value model on each card’s Upside tab: 24 months, the market centred on no change, the age curve for young cards, and SNKRDUNK’s Regular-rank selling fees; it doesn’t model reprints, events or the coming wave of graded copies, and the combo’s range treats the market move as shared by all its cards, so a mix of cards narrows only the card-specific part. ' : ''} Pins and left-out cards are saved in this browser.</p>`;
 
     trimImages(el);
     el.querySelectorAll('.pl-mode button').forEach((b) => b.addEventListener('click', () => save({ mode: b.dataset.mode })));
