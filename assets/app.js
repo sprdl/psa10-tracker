@@ -1137,6 +1137,12 @@
           <span class="st-pic">${img ? `<img src="${escapeAttr(img)}" alt="" loading="lazy">` : slabHtml(c, 'md')}</span>
           <span class="st-tb"><b class="jp">${escapeHtml(nm.short)}</b><span class="muted">${escapeHtml(nm.code)} · by ${escapeHtml(st.illustrator || 'unknown')}</span><span class="st-teaser">${escapeHtml(st.art.split(/(?<=\.)\s/)[0])}</span></span></a>`; }).join('')}</div>`;
     const toStory = () => { state.cardTab = 'story'; state.cardFrom = 'stories'; };
+    // The SNKRDUNK photos sit on a transparent square canvas with the card in the middle (~70% of its
+    // height), so zoom each picture until the card fills its frame; full-bleed scans stay as they are.
+    el.querySelectorAll('.st-pic img').forEach((im) => {
+      const fit = () => { const r = im.naturalWidth / im.naturalHeight; if (r) im.style.setProperty('--z', r < 0.8 ? 1 : r < 1.2 ? 1.42 : 1.3); };
+      if (im.complete) fit(); else im.addEventListener('load', fit, { once: true });
+    });
     el.querySelectorAll('.st-tile').forEach((a) => { a.addEventListener('pointerdown', toStory); a.addEventListener('keydown', (e) => { if (e.key === 'Enter') toStory(); }); a.addEventListener('click', toStory, true); });
   }
 

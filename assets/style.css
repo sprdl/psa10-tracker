@@ -1083,7 +1083,8 @@ body.lb-open { overflow: hidden; }
 .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 .st-tile { display: flex; flex-direction: column; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; color: var(--text); animation: sc-in 0.45s ease both; animation-delay: calc(min(var(--i), 12) * 40ms); transition: border-color 0.15s, transform 0.15s; }
 .st-tile:hover { border-color: var(--line-3); transform: translateY(-2px); color: var(--text); }
-.st-pic img { width: 100%; aspect-ratio: 63 / 88; object-fit: contain; display: block; }
+.st-pic { display: block; aspect-ratio: 63 / 88; overflow: hidden; border-radius: 10px; }
+.st-pic img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(var(--z, 1.42)); transition: transform 0.2s; }
 .st-tb { display: flex; flex-direction: column; gap: 3px; }
 .st-tb b { font-size: 14px; }
 .st-tb .muted { font-size: 11px; }
