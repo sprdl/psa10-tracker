@@ -247,9 +247,9 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 25000,
-          "buy_upper": 29500,
-          "ceiling": 35500
+          "definitely_buy": 28000,
+          "buy_upper": 31000,
+          "ceiling": 37000
         },
         "peak": {
           "price": 74000,
@@ -260,20 +260,27 @@
         "shipping_insurance_jpy": 2450,
         "verdict": {
           "tag": "watch",
-          "label": "Watch: sitting on the Buy line",
-          "reasoning": "The last four sales were ¥29,400–29,790, just ¥100 above Buy. It bounced from a ¥26,480 low on 9/16, so the Q4-2025 floor is holding. The order book is thin, with only 4 asks within 15%, and any ask at or below ¥29,500 is a buy. There's about a 35% chance of revisiting ¥25–27k within 3 months, and roughly 10–15% downside if the broad index makes a second leg down.",
+          "label": "Watch: rebounded to ¥33–35k, wait for a listing at ≤¥31k",
+          "reasoning": "Sales climbed from ¥29.5k (9/24–28) to ¥33–35k this week and the lowest ask is ¥36k, which is now about what self-grading costs (raw ¥20k → ~¥36.9k), so ¥37k is the ceiling. The old ¥25k Definitely-buy was a long shot (~12% in 90 days), so the tiers move to ¥28k / ¥31k, which the limit-odds model puts at about 19% and 31% within 90 days; the correction rule (My-tier −26.5% over 30 days) keeps today's price at Watch. Same set, character and bubble as Pikachu V CSR, so treat the two as one bet.",
           "predictions": [
             {
-              "text": "Revisits ¥25–27k within 3 months",
-              "p": 0.35,
+              "text": "A listing at ≤¥31,000 by year-end",
+              "p": 0.31,
               "type": "touch_below",
-              "price": 27000,
-              "by": "2026-12-25",
-              "made": "2026-09-25T10:03:18+09:00"
+              "price": 31000,
+              "by": "2026-12-31"
+            },
+            {
+              "text": "A listing at ≤¥28,000 by year-end",
+              "p": 0.19,
+              "type": "touch_below",
+              "price": 28000,
+              "by": "2026-12-31"
             }
           ]
         },
-        "verdict_price_ref": 29600
+        "representative_price": 34000,
+        "price_source": "sales_confirmed"
       },
       "psa10_population": 10846,
       "psa10_gem_rate_pct": 88,
@@ -519,9 +526,9 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 20000,
-          "buy_upper": 24000,
-          "ceiling": 30000
+          "definitely_buy": 22000,
+          "buy_upper": 25000,
+          "ceiling": 31000
         },
         "peak": {
           "price": 81000,
@@ -532,28 +539,27 @@
         "shipping_insurance_jpy": 2450,
         "verdict": {
           "tag": "watch",
-          "label": "Watch: new tiers, still drifting down",
-          "reasoning": "This was the most extreme bubble of the five: ¥30k in Feb, about ¥81k in May, ¥24.7k now (−70%). Sales are still stepping down (¥26.3k on 9/18 to ¥24.4–24.8k on 9/24–25). Buy (≤¥24k) is about 65% likely within 3 months. Definitely-buy (¥20k, the Nov 2025 trough) is about 25–30% likely within 6 months. Buying today carries roughly 40% odds of a further 10–20% drop.",
+          "label": "Watch: rebounding on a thin book, wait for ≤¥25k",
+          "reasoning": "Sales rose from ¥24.8k (9/28) to ¥27.5–30k, but only 3 of 20 asks sit within 15% of the ¥28.5k lowest ask, so the rebound rests on a thin book; self-grading costs about ¥32.8k (raw ¥13.8k, 79.9% gem), which caps the ceiling at ¥31k. The old ¥20k Definitely-buy had ~16% odds in 90 days; the new ¥22k / ¥25k lines sit at about 23% and 36% on the limit-odds model, and the correction rule keeps today's price at Watch. It moves with Pikachu VMAX CSR (same set and bubble), so don't count both as diversification.",
           "predictions": [
             {
-              "text": "Reaches Buy (≤¥24k) within 3 months",
-              "p": 0.65,
+              "text": "A listing at ≤¥25,000 by year-end",
+              "p": 0.36,
               "type": "touch_below",
-              "price": 24000,
-              "by": "2026-12-25",
-              "made": "2026-09-25T10:03:18+09:00"
+              "price": 25000,
+              "by": "2026-12-31"
             },
             {
-              "text": "Reaches Definitely-buy (¥20k) within 6 months",
-              "p": 0.275,
+              "text": "A listing at ≤¥22,000 by year-end",
+              "p": 0.23,
               "type": "touch_below",
-              "price": 20000,
-              "by": "2027-03-25",
-              "made": "2026-09-25T10:03:18+09:00"
+              "price": 22000,
+              "by": "2026-12-31"
             }
           ]
         },
-        "verdict_price_ref": 24700
+        "representative_price": 28000,
+        "price_source": "sales_confirmed"
       },
       "psa10_population": 8140,
       "psa10_gem_rate_pct": 79.9,
@@ -1400,9 +1406,9 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 32000,
-          "buy_upper": 38000,
-          "ceiling": 46000
+          "definitely_buy": 38000,
+          "buy_upper": 42000,
+          "ceiling": 48000
         },
         "peak": {
           "price": 55000,
@@ -1418,28 +1424,27 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch: correction less advanced than peers",
-          "reasoning": "This card peaked 3 months after the others and is only −24% off its peak, versus −40% to −70% for the rest. Its Jun 2025–Mar 2026 plateau was a flat ¥29–33k, which implies another 20–25% of room to fall. Buy (≤¥38k) looks about 45% likely within 3 months and ¥32k about 25% likely within 6. Separately, it still doesn't meet your modern-SAR display rule.",
+          "label": "Watch: asks jumped to ¥50k; grading a raw copy (~¥39.5k) is cheaper",
+          "reasoning": "Sales ran ¥43.8–48k this week and the lowest ask is now ¥50k, while raw A-rank fell to ¥16k, so a self-graded slab costs about ¥39.5k (72% gem): well below the slab, which is why the Definitely-buy moves up to that floor (¥38k) from a ¥32k line that had only ~11% odds in 90 days. On the limit-odds model ¥42k is about 32% and ¥38k about 22% likely by year-end; asks above ¥48k are not worth paying. It still falls outside your modern-SAR display rule, and its correction started later than the other cards'.",
           "predictions": [
             {
-              "text": "Reaches Buy (≤¥38k) within 3 months",
-              "p": 0.45,
+              "text": "A listing at ≤¥42,000 by year-end",
+              "p": 0.32,
               "type": "touch_below",
-              "price": 38000,
-              "by": "2026-12-25",
-              "made": "2026-09-25T10:03:18+09:00"
+              "price": 42000,
+              "by": "2026-12-31"
             },
             {
-              "text": "Reaches ¥32k within 6 months",
-              "p": 0.25,
+              "text": "A listing at ≤¥38,000 by year-end",
+              "p": 0.22,
               "type": "touch_below",
-              "price": 32000,
-              "by": "2027-03-25",
-              "made": "2026-09-25T10:03:18+09:00"
+              "price": 38000,
+              "by": "2026-12-31"
             }
           ]
         },
-        "verdict_price_ref": 42000
+        "representative_price": 45000,
+        "price_source": "sales_confirmed"
       },
       "psa10_population": 13373,
       "psa10_gem_rate_pct": 72,
@@ -2635,28 +2640,27 @@
         "shipping_insurance_jpy": 2450,
         "verdict": {
           "tag": "watch",
-          "label": "Watch: at replacement cost, raw still falling",
-          "reasoning": "The card is in print with a 94.7% gem rate and a backlog-suppressed population (6,882 at 6.5 months old). PSA10 now equals DIY cost (about ¥30k), so it tracks raw A, which is still dropping about 25%/month (¥16–17.5k now, buyback ¥12k). The Buy zone is most likely Nov 2026–Feb 2027 as summer PSA submissions return: about 55% odds of ≤¥25k within 3 months and 35% of ≤¥22k within 6. Buying today carries roughly 60% odds of a further 10–25% drop.",
+          "label": "Watch: tiers kept; young card, graded supply still to come",
+          "reasoning": "Tiers kept: ¥25k is about 50% likely within 30 days on the limit-odds model and ¥22k about 33% within 90, both inside the reachability range, and ¥30k is still the self-grading cost (raw ¥15.8k, 94.7% gem). At 7 months old the card sits on the tail of the age curve (cards this age fell about 5% against the market over the next 3 months), and the summer PSA submissions return Nov–Feb, so the odds of the lower lines are a little better than the model alone says. The correction rule keeps Buy-zone prices at Watch until ¥22k or until the market steadies.",
           "predictions": [
             {
-              "text": "Reaches Buy (≤¥25k) within 3 months",
+              "text": "A listing at ≤¥25,000 by year-end",
               "p": 0.55,
               "type": "touch_below",
               "price": 25000,
-              "by": "2026-12-25",
-              "made": "2026-09-25T15:15:03+09:00"
+              "by": "2026-12-31"
             },
             {
-              "text": "Reaches ≤¥22k within 6 months",
-              "p": 0.35,
+              "text": "A listing at ≤¥22,000 by end of January",
+              "p": 0.4,
               "type": "touch_below",
               "price": 22000,
-              "by": "2027-03-25",
-              "made": "2026-09-25T15:15:03+09:00"
+              "by": "2027-01-31"
             }
           ]
         },
-        "verdict_price_ref": 28000
+        "representative_price": 25900,
+        "price_source": "sales_confirmed"
       }
     },
     {
@@ -4847,9 +4851,9 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 18000,
-          "buy_upper": 21000,
-          "ceiling": 26000
+          "definitely_buy": 19500,
+          "buy_upper": 22500,
+          "ceiling": 27500
         },
         "peak": {
           "price": 42687,
@@ -4858,26 +4862,27 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch: above the Buy zone, and the market is still correcting",
-          "reasoning": "Recent sales cluster at ¥22.8-26.1k and the lowest ask is ¥22,999, about 10% above the Buy line (¥21k), which sits at this card's Oct 2025 to Mar 2026 range of ¥19-21k before the anniversary run to ¥42.7k. The My-tier index is still down about 27% over 30 days, so the correction rule allows Buy only at ¥18k or lower; the limit-odds model gives about 42% for a listing at or under ¥21k within 90 days. Population is mature (39.9k graded), so the summer grading wave matters less here than for young cards.",
+          "label": "Watch: rebounded to ¥25k, wait for ≤¥22.5k",
+          "reasoning": "Sales rose from ¥21.8k (9/30) to ¥24.5–25.6k and 18 of 20 asks sit within 15% of the ¥25.4k lowest ask, so the book is deep; the population is now on file (39,174 at 86.6%), putting self-grading at about ¥27.6k, which sets the ceiling. The old ¥18k / ¥21k lines had about 17% and 30% odds in 90 days; the new ¥19.5k / ¥22.5k lines sit at about 23% and 38%, still around its Oct 2025–Feb 2026 level of ¥19–21k. The correction rule keeps today's price at Watch.",
           "predictions": [
             {
-              "text": "A PSA10 listing at or under ¥21,000 appears within 90 days",
-              "p": 0.42,
+              "text": "A listing at ≤¥22,500 by year-end",
+              "p": 0.38,
               "type": "touch_below",
-              "price": 21000,
-              "by": "2026-12-29"
+              "price": 22500,
+              "by": "2026-12-31"
             },
             {
-              "text": "A PSA10 listing at or under ¥18,000 appears within 90 days",
-              "p": 0.25,
+              "text": "A listing at ≤¥19,500 by year-end",
+              "p": 0.23,
               "type": "touch_below",
-              "price": 18000,
-              "by": "2026-12-29"
+              "price": 19500,
+              "by": "2026-12-31"
             }
           ]
         },
-        "verdict_price_ref": 23000
+        "representative_price": 25000,
+        "price_source": "sales_confirmed"
       }
     },
     {
@@ -5132,9 +5137,9 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 17500,
-          "buy_upper": 20500,
-          "ceiling": 26000
+          "definitely_buy": 19500,
+          "buy_upper": 22500,
+          "ceiling": 27000
         },
         "peak": {
           "price": 47831,
@@ -5143,26 +5148,27 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch: above the Buy zone, and the market is still correcting",
-          "reasoning": "Recent sales cluster at ¥21.8-24.0k (many prints at ¥22.5k) against a lowest ask of ¥23,999; the Buy line (¥20.5k) sits at the ¥18-21k range this card held from Oct 2025 to Mar 2026, before running to ¥47.8k in June. With the My-tier index down about 27% over 30 days the correction rule allows Buy only at ¥17.5k or lower; the limit-odds model gives about 36% for a listing at or under ¥20.5k within 90 days. Population is mature (35k graded, 89% gem), and self-grading costs more (about ¥27k) than the slab.",
+          "label": "Watch: rebounded to ¥26k, wait for ≤¥22.5k",
+          "reasoning": "Sales climbed from ¥22.5k (9/29) to ¥25–26k with a ¥26.4k lowest ask; with the population now on file (34,343 at 89%) self-grading costs about ¥26.9k, so ¥27k is the ceiling. The old ¥17.5k / ¥20.5k lines had only ~16% and 28% odds in 90 days; ¥19.5k / ¥22.5k sit at about 24% and 36% on the limit-odds model, near its Oct 2025–Feb 2026 range of ¥18–20k. The correction rule keeps today's price at Watch.",
           "predictions": [
             {
-              "text": "A PSA10 listing at or under ¥20,500 appears within 90 days",
+              "text": "A listing at ≤¥22,500 by year-end",
               "p": 0.36,
               "type": "touch_below",
-              "price": 20500,
-              "by": "2026-12-29"
+              "price": 22500,
+              "by": "2026-12-31"
             },
             {
-              "text": "A PSA10 listing at or under ¥17,500 appears within 90 days",
-              "p": 0.22,
+              "text": "A listing at ≤¥19,500 by year-end",
+              "p": 0.24,
               "type": "touch_below",
-              "price": 17500,
-              "by": "2026-12-29"
+              "price": 19500,
+              "by": "2026-12-31"
             }
           ]
         },
-        "verdict_price_ref": 22500
+        "representative_price": 25500,
+        "price_source": "sales_confirmed"
       }
     },
     {
@@ -5428,8 +5434,8 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 7500,
-          "buy_upper": 9000,
+          "definitely_buy": 8000,
+          "buy_upper": 9500,
           "ceiling": 11500
         },
         "peak": {
@@ -5439,26 +5445,27 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch: above the Buy zone, and the market is still correcting",
-          "reasoning": "Twenty recent sales sit at ¥10.0-10.5k with the lowest ask at ¥10,500, about 17% above the Buy line (¥9k); the pre-hype range (Jul-Dec 2025) was ¥4.7-10.5k with a median near ¥8.2k, and the card peaked at about ¥22k in May 2026. The My-tier index is still down about 27% in 30 days, so only ¥7.5k or lower qualifies as Buy; the limit-odds model gives about 34% for a listing at or under ¥9k within 90 days. The slab is roughly 3x the raw price, so the grading fee makes self-grading far dearer (about ¥19k).",
+          "label": "Watch: steady at ¥10k, wait for ≤¥9.5k",
+          "reasoning": "Twenty straight sales at ¥10.0–10.5k and 20 of 20 asks within 15% make ¥10k a well-defended level; self-grading costs about ¥18.9k (raw ¥3.7k, 85.2% gem, now on file), so the slab is the cheap route. Buy moves to ¥9.5k (about 41% likely by year-end on the limit-odds model) and Definitely-buy to ¥8k (about 23%) from ¥9k / ¥7.5k, which were further out than the card's tight trading range suggests. The correction rule keeps today's price at Watch.",
           "predictions": [
             {
-              "text": "A PSA10 listing at or under ¥9,000 appears within 90 days",
-              "p": 0.34,
+              "text": "A listing at ≤¥9,500 by year-end",
+              "p": 0.41,
               "type": "touch_below",
-              "price": 9000,
-              "by": "2026-12-29"
+              "price": 9500,
+              "by": "2026-12-31"
             },
             {
-              "text": "A PSA10 listing at or under ¥7,500 appears within 90 days",
-              "p": 0.17,
+              "text": "A listing at ≤¥8,000 by year-end",
+              "p": 0.23,
               "type": "touch_below",
-              "price": 7500,
-              "by": "2026-12-29"
+              "price": 8000,
+              "by": "2026-12-31"
             }
           ]
         },
-        "verdict_price_ref": 10400
+        "representative_price": 10200,
+        "price_source": "sales_confirmed"
       }
     }
   ],
