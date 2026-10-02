@@ -1285,3 +1285,16 @@ body.lb-open { overflow: hidden; }
 .rt-ovc i { font-style: normal; font-size: 11px; }
 .rt-ovc small { grid-column: 1 / -1; font-size: 11px; }
 .rt-ovc small.amb { color: var(--accent); }
+
+/* rate my portfolio: hover a card to remove it */
+.rt-item { position: relative; transition: padding-left .2s ease; }
+.rt-item .cb-chip { transition: border-color .2s ease; }
+.rt-del { position: absolute; left: 0; top: 50%; width: 28px; height: 28px; margin-top: -14px; border-radius: 50%; border: 1px solid var(--line-3, #444); background: var(--panel-2); color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; opacity: 0; transform: translateX(-6px); transition: opacity .2s ease, transform .2s ease, color .15s, border-color .15s; pointer-events: none; }
+.rt-item:hover, .rt-item:focus-within { padding-left: 36px; }
+.rt-item:hover .rt-del, .rt-item:focus-within .rt-del { opacity: 1; transform: none; pointer-events: auto; }
+.rt-del:hover, .rt-del:focus-visible { color: var(--red); border-color: var(--red); }
+@media (hover: none) {
+  .rt-item { padding-left: 36px; }
+  .rt-del { opacity: 1; transform: none; pointer-events: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .rt-item, .rt-del { transition: none; } }

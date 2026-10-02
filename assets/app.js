@@ -3149,9 +3149,9 @@
         ${picked.length >= 2 && picked.length <= CMP_MAX_DUEL ? `<a class="btn" href="#/duel/${picked.map((c) => escapeAttr(cardId(c))).join(',')}">⇄ Compare these ${picked.length}</a>` : ''}
         <a class="btn" href="#/combos">✦ Combination finder</a>
       </div>`;
-    const chips = o.items.map((x) => `<a class="cb-chip" href="#/card/${escapeAttr(cardId(x.card))}">
+    const chips = o.items.map((x) => `<div class="rt-item"><button type="button" class="rt-del" data-del="${escapeAttr(x.card.url)}" aria-label="Remove ${escapeAttr(nameOf(x.card))} from the portfolio" title="Remove from the portfolio">×</button><a class="cb-chip" href="#/card/${escapeAttr(cardId(x.card))}">
         <span class="wthumb cb-cthumb">${img(x.card)}</span><span class="cb-cn">${escapeHtml(nameOf(x.card))}</span>
-        <span class="cb-cp">${fmtYen(x.p)}${st.mode === 'limits' ? `<i>${x.fromLimit ? 'my limit' : 'today'}</i>` : ''}</span>${cbOddsHtml(x)}${x.up ? `<span class="cb-codds" title="Value model, 24 months, neutral market, after SNKRDUNK fees">24 months: <b>${Math.round(x.up.p * 100)}%</b> chance of a profit · strong case ${cbYen(x.up.strong)}</span>` : ''}</a>`).join('');
+        <span class="cb-cp">${fmtYen(x.p)}${st.mode === 'limits' ? `<i>${x.fromLimit ? 'my limit' : 'today'}</i>` : ''}</span>${cbOddsHtml(x)}${x.up ? `<span class="cb-codds" title="Value model, 24 months, neutral market, after SNKRDUNK fees">24 months: <b>${Math.round(x.up.p * 100)}%</b> chance of a profit · strong case ${cbYen(x.up.strong)}</span>` : ''}</a></div>`).join('');
     const rels = [];
     for (let i = 0; i < picked.length; i++) for (let j = i + 1; j < picked.length; j++) {
       const r = relation(picked[i], picked[j]);
@@ -3207,6 +3207,13 @@
     el.querySelectorAll('[data-cat]').forEach((x) => x.addEventListener('click', () => { store.set(PLANNER_KEY, Object.assign(plannerState(), { cbCat: x.dataset.cat })); location.hash = '#/combos'; }));
     const fb = el.querySelector('.rt-find-btn');
     if (fb) fb.addEventListener('click', () => { state.rateFind = !state.rateFind; const r = renderRate(arg); document.getElementById('page-sub').textContent = r.sub; });
+    el.querySelectorAll('[data-del]').forEach((x) => x.addEventListener('click', (e) => {
+      e.preventDefault();
+      const urls = picked.map((c) => c.url).filter((u) => u !== x.dataset.del);
+      store.set(PLANNER_KEY, Object.assign(plannerState(), { selected: plannerState().selected.filter((u) => u !== x.dataset.del) }));
+      renderPlanner(cards); renderKpis(state.currentData);
+      location.hash = urls.length ? '#/rate/' + urls.map((u) => cardId({ url: u })).join(',') : '#/planner';
+    }));
     el.querySelectorAll('[data-take]').forEach((x) => x.addEventListener('click', () => {
       const urls = x.dataset.take.split('|');
       store.set(PLANNER_KEY, Object.assign(plannerState(), { selected: urls }));
