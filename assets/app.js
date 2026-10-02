@@ -1156,18 +1156,23 @@
   }
   function predWeeks() { const w = (state.predict && state.predict.weeks) || {}; return Object.keys(w).sort().map((k) => Object.assign({ key: k }, w[k])); }
   function predCurrent() { const ws = predWeeks(); const last = ws[ws.length - 1]; return last && Date.parse(last.close) > Date.now() ? last : null; }
-  function predOpen(wk, q) { return !(wk.results || {})[q.id] && Date.parse(wk.close) > Date.now(); }
+  // Answers close 48 hours before the questions resolve (Wednesday 23:59 JST for a Friday close).
+  function predAnswerBy(wk) { return wk.answer_by ? Date.parse(wk.answer_by) : Date.parse(wk.close) - 48 * 36e5; }
+  function predOpen(wk, q) { return !(wk.results || {})[q.id] && predAnswerBy(wk) > Date.now(); }
   function predOpenCount() {
     const wk = predCurrent(); if (!wk) return '';
     const n = wk.questions.filter((q) => predOpen(wk, q) && !predAnswer(wk, q.id)).length;
     return n ? `${n} open` : '';
   }
   function predClose(iso) { const d = new Date(Date.parse(iso) + 9 * 36e5); return `Fri ${d.getUTCMonth() + 1}/${d.getUTCDate()} 23:59 JST`; }
+  function predCutoff(wk) { const d = new Date(predAnswerBy(wk) + 9 * 36e5); return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()]} ${d.getUTCMonth() + 1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} JST`; }
   function predictSubtitle() {
     const wk = predCurrent();
     if (!wk) return 'Five questions a week about your cards: your odds against the model\'s';
-    const left = Date.parse(wk.close) - Date.now(), d = Math.floor(left / 864e5), h = Math.floor((left % 864e5) / 36e5);
-    return `Five questions about your cards · closes ${predClose(wk.close)} · ${d ? `${d}d ` : ''}${h}h left`;
+    const left = predAnswerBy(wk) - Date.now(), d = Math.floor(left / 864e5), h = Math.floor((left % 864e5) / 36e5);
+    return left > 0
+      ? `Five questions about your cards · answer by ${predCutoff(wk)} · ${d ? `${d}d ` : ''}${h}h left · resolves ${predClose(wk.close)}`
+      : `Answers closed ${predCutoff(wk)} · this week's questions resolve ${predClose(wk.close)}`;
   }
   function predScore() {
     // every answered question that has a result, plus per-week means
@@ -1205,7 +1210,7 @@
       body = `<div class="pq-slider"><input type="range" min="0" max="100" step="5" value="50" aria-label="Your odds"><span class="pq-pct">50%</span></div>
         <div class="pq-row"><button type="button" class="btn btn-primary pq-lock" data-id="${escapeAttr(q.id)}">Lock in</button><span class="pq-hint">The model's odds appear once you lock in.</span></div>`;
     } else {
-      body = `<div class="pq-reveal"><div><div class="pq-hint">Model said</div><div class="pq-model">${Math.round(q.model * 100)}%</div></div><div class="pq-status">${r ? `<b class="${r.outcome ? 'yes' : 'no'}">${r.outcome ? 'Yes' : 'No'}</b> before you answered` : 'Closed'} · not scored</div></div>`;
+      body = `<div class="pq-reveal"><div><div class="pq-hint">Model said</div><div class="pq-model">${Math.round(q.model * 100)}%</div></div><div class="pq-status">${r ? `<b class="${r.outcome ? 'yes' : 'no'}">${r.outcome ? 'Yes' : 'No'}</b> before you answered` : Date.parse(wk.close) > Date.now() ? `Answers closed ${escapeHtml(predCutoff(wk))} · resolves ${escapeHtml(predClose(wk.close))}` : 'Closed'} · not scored</div></div>`;
     }
     return `<article class="pq${a ? ' locked' : ''}" style="--i:${i}">
       <a class="pq-slab" href="#/card/${escapeAttr(cardId(card))}">${slabHtml(card, 'md')}</a>
@@ -1250,12 +1255,12 @@
         <div class="pq-side model"><div class="pq-who">Model</div><div class="pq-big">${f3(sc.model)}</div><div class="pq-hint">same questions · limit-odds model</div></div>
       </div>
       <p class="pq-hint pq-note">Brier score = the average of (your odds − what happened)², with what happened = 1 or 0. Always saying 50% scores 0.25; perfect foresight scores 0.</p>
-      ${unsynced.length ? `<div class="pq-save"><span>${unsynced.length} answer${unsynced.length === 1 ? '' : 's'} locked on this device only.</span><a class="btn btn-primary" href="${escapeAttr(saveUrl)}" target="_blank" rel="noopener">Save to all devices</a></div>` : ''}
-      ${cur ? `<h2 class="pq-h">This week <span class="muted">${cur.questions.length} questions · ${cur.questions.filter((q) => predAnswer(cur, q.id)).length} locked · closes ${predClose(cur.close)}</span></h2>
+      ${unsynced.length ? `<div class="pq-save"><span>${unsynced.length} answer${unsynced.length === 1 ? '' : 's'} locked on this device only${predAnswerBy(cur) > Date.now() ? ` · save before ${predCutoff(cur)} to count` : ' · the answer window has closed, so they won\u2019t count'}.</span><a class="btn btn-primary" href="${escapeAttr(saveUrl)}" target="_blank" rel="noopener">Save to all devices</a></div>` : ''}
+      ${cur ? `<h2 class="pq-h">This week <span class="muted">${cur.questions.length} questions · ${cur.questions.filter((q) => predAnswer(cur, q.id)).length} locked · ${predAnswerBy(cur) > Date.now() ? `answer by ${predCutoff(cur)}` : `answers closed ${predCutoff(cur)}`} · resolves ${predClose(cur.close)}</span></h2>
         <div class="pq-grid">${cur.questions.map((q, i) => predQuestionHtml(cur, q, i)).join('')}</div>` : `<p class="pq-hint">No open questions right now: the next five come with the first price check on Monday.</p>`}
       ${pastHtml}
       ${chartW ? `<h2 class="pq-h">The season so far <span class="muted">running Brier score · lower is better</span></h2><div class="pq-chart">${chartW}</div>` : ''}
-      <p class="tr-note">How it works: every week the first price check writes five questions about your cards (a drop to your limit or a tier line, or a climb for a card that's rising), keeping only ones the model gives 15–85%, and freezes the model's odds. They resolve on the lowest PSA10 ask in any check or email alert until Friday 23:59 JST. Lock in to see the model's number; "Save to all devices" sends your locked answers through a GitHub form so iPad and Mac agree. The first answer to a question is final, and answers after a question resolved don't count.</p>`;
+      <p class="tr-note">How it works: every week the first price check writes five questions about your cards (a drop to your limit or a tier line, or a climb for a card that's rising), keeping only ones the model gives 15–85%, and freezes the model's odds. They resolve on the lowest PSA10 ask in any check or email alert until Friday 23:59 JST, but answers close 48 hours earlier (Wednesday 23:59 JST), so the last two days can't be read off the prices before you answer. Lock in to see the model's number; "Save to all devices" sends your locked answers through a GitHub form so iPad and Mac agree. The first answer to a question is final, and answers after a question resolved don't count.</p>`;
     el.querySelectorAll('.pq').forEach((art) => {
       const r = art.querySelector('input[type=range]'), pct = art.querySelector('.pq-pct'), b = art.querySelector('.pq-lock');
       if (r) r.addEventListener('input', () => { pct.textContent = r.value + '%'; });

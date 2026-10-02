@@ -10,14 +10,15 @@ Runs inside GitHub Actions (.github/workflows/predictions.yml) when you submit t
 
 The form's Answers field has one line per question, "<question id>: <percent>", e.g.
 "2026-09-28-1: 35". The first saved answer to a question is final (that's what "Lock in" means).
-Answers to questions that already resolved, or after Friday's close, are not accepted.
+Answers to questions that already resolved, or after the answer cutoff (Wednesday 23:59 JST, 48 hours
+before the questions resolve on Friday), are not accepted.
 """
 import json
 import re
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from log_purchase import JST, ROOT, FormError, field, finish, gh, git, parse_form
@@ -60,8 +61,9 @@ def apply(data, answers, when):
         if r and ts(r["at"]) <= when:
             skipped.append(f"{qid}: already resolved")
             continue
-        if when > ts(wk["close"]):
-            skipped.append(f"{qid}: the week closed")
+        cutoff = ts(wk["answer_by"]) if wk.get("answer_by") else ts(wk["close"]) - timedelta(hours=48)
+        if when > cutoff:
+            skipped.append(f"{qid}: answers closed {cutoff:%a %m/%d %H:%M} JST")
             continue
         wk.setdefault("answers", {})[qid] = {"p": round(p, 2), "at": when.isoformat(timespec="seconds")}
         saved.append(f"{q['name'][:24]}: {round(p * 100)}%")

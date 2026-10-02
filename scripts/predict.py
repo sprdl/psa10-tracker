@@ -8,7 +8,9 @@
 build_history.py calls update() whenever a snapshot is published (price checks, email alerts,
 evaluations), so questions appear with the first publish of a week and resolve as prices come in.
 
-A week runs Monday 00:00 → Friday 23:59 JST. Questions are made from the latest snapshot, one per
+A week runs Monday 00:00 → Friday 23:59 JST. Answers close 48 hours before that, Wednesday 23:59 JST
+(ANSWER_LEAD_H), so nobody answers with Thursday's and Friday's prices already in view; questions are
+only made while at least a day of answering is left (Monday and Tuesday). Questions are made from the latest snapshot, one per
 card, at most one "climb" question:
   - "Will a listing drop to ¥X or less by Friday?" with X = your limit, the Definitely-buy or Buy line
     (when 2–15% below today's lowest ask), otherwise a round price about 5% below;
@@ -37,6 +39,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 JST = timezone(timedelta(hours=9))
 N_QUESTIONS = 5
+ANSWER_LEAD_H = 48      # answers close this many hours before the questions resolve (Friday 23:59 JST)
 P_MIN, P_MAX = 0.15, 0.85
 
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -84,6 +87,10 @@ def snapshots(root):
 
 def load_snap(root, s):
     return json.loads((root / "data" / "snapshots" / s["file"]).read_text(encoding="utf-8"))
+
+
+def answer_by(close):
+    return close - timedelta(hours=ANSWER_LEAD_H)
 
 
 def generate(root, now, monday):
@@ -136,7 +143,8 @@ def generate(root, now, monday):
     for i, q in enumerate(picked, 1):
         q.pop("_score")
         q["id"] = f"{monday.isoformat()}-{i}"
-    return {"created": now.replace(microsecond=0).isoformat(), "close": close.isoformat(), "questions": picked,
+    return {"created": now.replace(microsecond=0).isoformat(), "close": close.isoformat(),
+            "answer_by": answer_by(close).isoformat(), "questions": picked,
             "answers": {}, "results": {}}
 
 
@@ -180,14 +188,19 @@ def update(root=ROOT, now=None, write=True):
     monday = week_start(now)
     key = monday.isoformat()
     made = False
-    # new questions from Monday until Thursday night, so there's always at least a day to answer
-    if key not in weeks and now.astimezone(JST).weekday() <= 3:
+    # new questions only while at least a day of answering is left (answers close Wednesday 23:59 JST)
+    if key not in weeks and now <= answer_by(close_of(monday)) - timedelta(hours=24):
         w = generate(root, now, monday)
         if w and w["questions"]:
             weeks[key] = w
             made = True
+    backfilled = False
+    for w in weeks.values():                 # weeks written before the cutoff existed
+        if "answer_by" not in w:
+            w["answer_by"] = answer_by(ts(w["close"])).isoformat()
+            backfilled = True
     resolved = sum(resolve(root, w, now) for w in weeks.values())
-    if write and (made or resolved or not path.exists()):
+    if write and (made or resolved or backfilled or not path.exists()):
         data["about"] = "You vs the model: weekly questions, answers and results. See scripts/predict.py."
         path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return made, resolved, data
