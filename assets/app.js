@@ -2927,6 +2927,22 @@
         }
         mine.cats[k] = { m: measure[k](mineO), score: my, rank: above + 1, beats: out.length ? below / out.length : null, best, bestScore: bs, bestM: best ? measure[k](best) : null, keep };
       });
+      // Best match overall: the combo keeping every ticked card with the highest average match over
+      // all categories (each category counts the same).
+      const ks = Object.keys(mine.cats);
+      if (keeps.length && ks.length) {
+        const avg = (o) => ks.reduce((a, k) => a + measure[k](o) * o.fit, 0) / ks.length;
+        let ob = null, ov = -1;
+        for (const o of keeps) { const v = avg(o); if (v > ov) { ov = v; ob = o; } }
+        const per = {};
+        for (const k of ks) {
+          const v = measure[k](ob) * ob.fit;
+          let ab = 0, be = 0;
+          for (const o of out) { const w = measure[k](o) * o.fit; if (w > v + 1e-9) ab++; else if (w < v - 1e-9) be++; }
+          per[k] = { score: v, rank: ab + 1, beats: out.length ? be / out.length : null, mine: mine.cats[k].score };
+        }
+        mine.overall = { o: ob, avg: ov, myAvg: avg(mineO), per, added: ob.items.filter((x) => !mineUrls.includes(x.card.url)) };
+      }
     }
     return { pool, pinned, combos: out, cats, mine };
   }
@@ -3077,6 +3093,12 @@
   // against every combination the finder would consider for the same budget (pins and left-out
   // cards ignored, so the comparison is with everything on the tracker).
   // "Find best match": the best combination in one category that keeps every card of the portfolio.
+  function rtThumb(c) {
+    return `<span class="wthumb rt-th">${c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>`;
+  }
+  function rtAddHtml(added, nameOf) {
+    return `<div class="rt-kh"><span>Add</span><div class="rt-adds">${added.map((x) => `<a class="rt-add" href="#/card/${escapeAttr(cardId(x.card))}">${rtThumb(x.card)}<span><b>${escapeHtml(nameOf(x.card))}</b><i>${fmtYen(x.p)}${x.fromLimit ? ' · my limit' : ''}</i></span></a>`).join('')}</div></div>`;
+  }
   function rtKeepHtml(r, k, o, avail, pct, nameOf, N) {
     const kp = r.keep;
     if (!kp) return '';
@@ -3086,7 +3108,7 @@
     const addCost = kp.added.reduce((a, x) => a + x.p, 0);
     return `<div class="rt-keep${gain <= 0.05 ? ' same' : ''}">
       ${gain <= 0.05 ? '<div>No addition raises this score; the best way to fill the budget anyway:</div>' : ''}
-      <div class="rt-kh"><span>Add</span> ${kp.added.map((x) => `<a href="#/card/${escapeAttr(cardId(x.card))}"><b>${escapeHtml(nameOf(x.card))}</b> ${fmtYen(x.p)}</a>`).join(' + ')}</div>
+      ${rtAddHtml(kp.added, nameOf)}
       <div class="rt-kn">→ ${fmtYen(kp.o.total)} total (${cbMeasureText(k, kp.o, avail).budget}) · <b>${pct(kp.score)}</b> match <span class="${gain > 0.05 ? 'pos' : gain < -0.05 ? 'neg' : 'muted'}">(${gain >= 0 ? '+' : '−'}${Math.abs(gain).toFixed(gain < 10 && gain > -10 ? 1 : 0)} pts)</span>
         · <span class="${tone}">#${kp.rank} of ${N + 1}, better than ${kp.beats != null ? Math.round(kp.beats * 100) : '—'}%</span></div>
       <div class="cb-why">${escapeHtml(cbWhy(k, kp.o, kp.m, avail))} · adds ${fmtYen(addCost)}</div>
@@ -3149,6 +3171,19 @@
           <span class="muted">${find ? (P.nKeeps ? `Best way to complete your ${o.n} card${o.n === 1 ? '' : 's'} in each category, from ${P.nKeeps} combination${P.nKeeps === 1 ? '' : 's'} that keep all of them.` : `No combination keeps all ${o.n} cards within 90–120% of the budget${o.total > avail * CB_MAX ? ': they already cost more than 120%' : ''}.`) : 'Keeps every card you ticked and suggests what to add, per category.'}</span></div>
         ${o.total < avail * CB_MIN || o.total > avail * CB_MAX ? `<p class="cd-note warn">The total is ${((o.total / avail) * 100).toFixed(1)}% of the budget, outside the finder's 90–120% range, so the budget fit pulls every score down.</p>` : ''}
       </section>`;
+    let overall = '';
+    if (find && P.overall) {
+      const ov = P.overall, gain = (ov.avg - ov.myAvg) * 100;
+      overall = `<section class="panel rt-overall">
+        <div class="rt-ch"><h3>✦ Best match overall</h3><span class="rt-score">${pct(ov.avg)}<i>average match</i></span></div>
+        <div class="rt-kn">Highest average across all ${cats.length} categories among the ${P.nKeeps} combinations that keep your cards · now ${pct(ov.myAvg)} <span class="${gain > 0.05 ? 'pos' : 'muted'}">(${gain >= 0 ? '+' : '−'}${Math.abs(gain).toFixed(1)} pts)</span></div>
+        ${ov.added.length ? rtAddHtml(ov.added, nameOf) : '<div class="rt-kn">Your cards on their own already score best on average.</div>'}
+        <div class="rt-kn">→ ${fmtYen(ov.o.total)} total (${cbMeasureText('fit', ov.o, avail).budget}) · ${ov.o.n} cards</div>
+        <div class="rt-ovcats">${cats.filter((c) => ov.per[c.k]).map((c) => { const q = ov.per[c.k], d = (q.score - q.mine) * 100, b = q.beats != null ? Math.round(q.beats * 100) : null;
+          return `<div class="rt-ovc"><span>${escapeHtml(c.label)}</span><b>${pct(q.score)}</b><i class="${d > 0.05 ? 'pos' : d < -0.05 ? 'neg' : 'muted'}">${d >= 0 ? '+' : '−'}${Math.abs(d).toFixed(d < 10 && d > -10 ? 1 : 0)}</i><small class="${b == null ? '' : b >= 80 ? 'pos' : b >= 40 ? 'amb' : 'neg'}">better than ${b ?? '—'}%</small></div>`; }).join('')}</div>
+        ${ov.added.length ? `<button type="button" class="btn btn-primary rt-take" data-take="${escapeAttr(ov.o.items.map((x) => x.card.url).join('|'))}">Tick these ${ov.o.n} and rate them</button>` : ''}
+      </section>`;
+    }
     const grid = cats.map((c) => {
       const r = P.cats[c.k], b = r.best;
       const isBest = b && b.items.length === o.items.length && b.items.every((x) => o.items.some((y) => y.card.url === x.card.url));
@@ -3164,7 +3199,7 @@
           <button type="button" class="btn rt-open" data-cat="${c.k}">Open in the finder</button></div>` : b ? '<div class="rt-best pos">Your portfolio is the best combination in this category.</div>' : ''}
       </article>`;
     }).join('');
-    el.innerHTML = top + summary + `<div class="rt-grid">${grid}</div>
+    el.innerHTML = top + summary + overall + `<div class="rt-grid">${grid}</div>
       <p class="cd-note">Rated with the combination finder's measures against all ${N} combination${N === 1 ? '' : 's'} it finds for ${fmtYen(avail)} (90–120% of the budget, no room for one more card), using every card on the tracker: pins and left-out cards in the finder don't apply here. Match = the category's measure relative to the best combo × budget fit, exactly as in the finder. ${st.mode === 'limits' ? 'Cards without a limit use today’s price. ' : ''}Upside uses the value model (24 months, market centred on no change, selling fees); limit odds use the limit-odds model. The ticks are saved in this browser; change them in the planner.</p>`;
     trimImages(el);
     const save = (patch) => { store.set(PLANNER_KEY, Object.assign(plannerState(), patch)); const r = renderRate(arg); document.getElementById('page-sub').textContent = r.sub; renderPlanner(cards); renderKpis(state.currentData); };
