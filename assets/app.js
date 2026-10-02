@@ -2150,9 +2150,30 @@
     trimImages(el);
   }
 
+  // Previous / next card on the card page, in the same order as the collection and the overview list
+  // (their shared sort). Arrow keys ← → do the same.
+  function cardNavHtml(card) {
+    const list = sortedMarketCards((state.currentData && state.currentData.cards) || []);
+    const i = list.findIndex((c) => c.url === card.url);
+    if (i < 0 || list.length < 2) return '';
+    const prev = list[(i - 1 + list.length) % list.length], next = list[(i + 1) % list.length];
+    const link = (c, dir) => `<a class="cn-btn cn-${dir}" href="#/card/${escapeAttr(cardId(c))}" data-nav="${dir}" title="${dir === 'prev' ? 'Previous' : 'Next'} card (${dir === 'prev' ? '←' : '→'})">
+        ${dir === 'prev' ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>' : ''}
+        <span class="wthumb cn-thumb">${c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+        <span class="cn-txt"><small>${dir === 'prev' ? 'Previous' : 'Next'}</small><b class="jp">${escapeHtml(parseCardName(c.card_name_ja).short)}</b></span>
+        ${dir === 'next' ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' : ''}</a>`;
+    return `<nav class="card-nav" aria-label="Browse cards">${link(prev, 'prev')}<span class="cn-pos">${i + 1} / ${list.length}</span>${link(next, 'next')}</nav>`;
+  }
+  document.addEventListener('keydown', (e) => {
+    if (parseRoute().view !== 'card' || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    const a = document.querySelector(`#card-page .card-nav [data-nav="${e.key === 'ArrowLeft' ? 'prev' : e.key === 'ArrowRight' ? 'next' : ''}"]`);
+    if (a) { e.preventDefault(); location.hash = a.getAttribute('href'); }
+  });
+
   function renderCardPage(card) {
     const el = document.getElementById('card-page');
-    el.innerHTML = buildCardDetail(card, prevCardOf(card), 'page');
+    el.innerHTML = cardNavHtml(card) + buildCardDetail(card, prevCardOf(card), 'page');
     wireCardDetail(el, card);
     trimImages(el);
   }
