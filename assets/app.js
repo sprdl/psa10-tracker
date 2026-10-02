@@ -2565,9 +2565,18 @@
     return { pool, pinned, combos: out, cats };
   }
 
+  // At your limits: the limit-odds model's chance that a listing reaches each card's limit.
+  function cbOddsHtml(x) {
+    if (!x.fromLimit) return '';
+    const o = touchOdds(x.card, x.p);
+    if (!o) return '';
+    if (o.reached) return '<span class="cb-codds hit">A listing is already at or below your limit</span>';
+    return `<span class="cb-codds" title="Limit-odds model: chance the lowest PSA10 ask reaches your limit">Reaches limit: <b>${fmtOdds(o.p30)}</b> in 30 days · <b>${fmtOdds(o.p90)}</b> in 90 days <i>(${Math.round(o.drop * 100)}% below today)</i></span>`;
+  }
+
   function cbMeasureText(k, o, avail) {
     const over = o.total - avail;
-    const budget = over > 0 ? `${fmtYen(over)} over budget` : `${fmtYen(-over)} left`;
+    const budget = over > 0 ? `${fmtYen(over)} over budget` : over === 0 ? 'exactly the budget' : `${fmtYen(-over)} left`;
     const val = `${Math.abs(o.value * 100).toFixed(0)}% ${o.value >= 0 ? 'below' : 'above'} Buy lines`;
     return { budget, val, cards: `${o.n} card${o.n === 1 ? '' : 's'}` };
   }
@@ -2633,13 +2642,17 @@
         const chips = o.items.map((x) => `<a class="cb-chip ${st.pins.includes(x.card.url) ? 'pinned' : ''}" href="#/card/${escapeAttr(cardId(x.card))}">
             <span class="wthumb cb-cthumb">${img(x.card)}</span>
             <span class="cb-cn">${escapeHtml(nameOf(x.card))}</span>
-            <span class="cb-cp">${fmtYen(x.p)}${st.mode === 'limits' ? `<i>${x.fromLimit ? 'my limit' : 'today'}</i>` : ''}</span></a>`).join('');
+            <span class="cb-cp">${fmtYen(x.p)}${st.mode === 'limits' ? `<i>${x.fromLimit ? 'my limit' : 'today'}</i>` : ''}</span>${cbOddsHtml(x)}</a>`).join('');
+        const odds = st.mode === 'limits' ? o.items.filter((x) => x.fromLimit).map((x) => touchOdds(x.card, x.p)).filter(Boolean) : [];
+        const exp = (k) => odds.reduce((a, q) => a + (q.reached ? 1 : q[k]), 0);
+        const oddsLine = odds.length ? `<div class="cb-odds-sum">Limits likely reached: <b>${exp('p30').toFixed(1)}</b> of ${odds.length} cards within 30 days · <b>${exp('p90').toFixed(1)}</b> within 90 days</div>` : '';
         return `<div class="cb-combo ${i === 0 ? 'first' : ''}">
           <div class="cb-ch"><div class="cb-rank"><span>#${i + 1}</span><b>${score >= 0.99 ? (Math.floor(score * 1000) / 10).toFixed(1) : Math.round(score * 100)}%</b><i>match</i></div>
             <div class="cb-tot">${fmtYen(o.total)}<span class="${over ? 'neg' : 'pos'}">${t.budget}</span></div></div>
           <div class="cb-bar"><div class="${over ? 'over' : ''}" style="width:${Math.min(100, (o.total / (avail * CB_MAX)) * 100).toFixed(1)}%"></div><span style="left:${(100 / CB_MAX).toFixed(1)}%" title="Budget"></span></div>
           <div class="cb-meta">${t.cards} · ${t.val}</div>
           <div class="cb-why">${escapeHtml(why)}</div>
+          ${oddsLine}
           <div class="cb-chips">${chips}</div>
           <button type="button" class="btn ${i === 0 ? 'btn-primary' : ''} cb-use" data-use="${escapeAttr(o.items.map((x) => x.card.url).join('|'))}">Tick these ${o.n} in the planner</button>
         </div>`;
@@ -2647,7 +2660,7 @@
       body = tabs + `<p class="cb-catsub">${escapeHtml(info.sub)}. Match = ${cat === 'fit' ? 'how close the total is to the budget (going over counts the same as leaving money unspent)' : 'this category’s measure, relative to the best combo, × how close the total is to the budget'}.</p><div class="cb-picks">${cols}</div>`;
     }
 
-    el.innerHTML = top + poolHtml + body + `<p class="cd-note">${res.combos.length} combination${res.combos.length === 1 ? '' : 's'} between ${Math.round(CB_MIN * 100)}% and ${Math.round(CB_MAX * 100)}% of ${fmtYen(avail)}. Within budget, only combos with no room for one more card count. ${st.mode === 'limits' ? 'Cards without a limit use today’s price. ' : ''}Value compares each price with the card’s Buy line (cards without tiers count as neutral). Pins and left-out cards are saved in this browser.</p>`;
+    el.innerHTML = top + poolHtml + body + `<p class="cd-note">${res.combos.length} combination${res.combos.length === 1 ? '' : 's'} between ${Math.round(CB_MIN * 100)}% and ${Math.round(CB_MAX * 100)}% of ${fmtYen(avail)}. Within budget, only combos with no room for one more card count. ${st.mode === 'limits' ? 'Cards without a limit use today’s price. Chances of reaching a limit come from the limit-odds model (each card’s own price swings, no trend assumed). “Limits likely reached” adds them up per combo: the expected number of cards, not the chance of getting all of them, which is lower. ' : ''}Value compares each price with the card’s Buy line (cards without tiers count as neutral). Pins and left-out cards are saved in this browser.</p>`;
 
     trimImages(el);
     el.querySelectorAll('.pl-mode button').forEach((b) => b.addEventListener('click', () => save({ mode: b.dataset.mode })));
