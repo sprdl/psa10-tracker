@@ -2599,7 +2599,8 @@
 
   // ---------- upside and tier check (data/value_model.json, scripts/value_model_builder.js) ----------
   // 12/24-month outcome = the mature market's move (every start month 2022–26) + the card's own part
-  // (card vs market, pooled over cards 9+ months old, scaled by this card's own swing) + the age
+  // (card vs market, pooled over cards 9+ months old, scaled only lightly by this card's own swing:
+  // (swing / pool)^0.15, because past swings barely predicted later ones in the 2026-10-02 backtest) + the age
   // curve for young cards. Neutral by default: the market part is centred on zero, because 2022–26
   // contains one big rally and one crash and its average says little about the next year.
   // Selling on SNKRDUNK costs a fee by member rank (Regular 9.5% … Platinum 7%), a ¥200/¥300
@@ -2627,7 +2628,7 @@
     if (!vm || !vm.horizons || !vm.horizons[h]) return null;
     const H = vm.horizons[h], mk = H.market, mid = mk[Math.floor(mk.length / 2)];
     const sw = (vm.swing && vm.swing[vmCode(card)]) || vm.swing_pool;
-    const k = Math.min(2, Math.max(0.6, sw / vm.swing_pool));
+    const k = Math.pow(sw / vm.swing_pool, vm.swing_power != null ? vm.swing_power : 0.15);
     const drift = ageDrift(cardAgeMonths(card), h);
     const out = [];
     for (const m of mk) for (const c of H.card_part) out.push(m - (historical ? 0 : mid) + k * c + drift);
@@ -2665,7 +2666,7 @@
     const age = cardAgeMonths(card), d12 = upsideDist(card, 12, false);
     const ageNote = age != null && age < 12 && d12 && d12.drift < -0.01
       ? `<p class="cd-note warn">This card is ${age} month${age === 1 ? '' : 's'} old. Cards this young have kept falling against the market (on average ${Math.round(-Math.expm1(d12.drift) * 100)}% over the next 12 months), so the middle of the range is lower than for an older card.</p>` : '';
-    const sw = d12 ? (d12.k > 1.15 ? 'swings more than most modern cards, so its range is wider' : d12.k < 0.85 ? 'swings less than most modern cards, so its range is narrower' : 'swings about as much as most modern cards') : '';
+    const sw = d12 ? (d12.k > 1.04 ? 'has swung more than most modern cards lately, so its range is a little wider (only a little: in the backtest, a card’s past swings barely predicted its later ones)' : d12.k < 0.96 ? 'has swung less than most modern cards lately, so its range is a little narrower (only a little: in the backtest, calm cards later moved almost as much as the rest)' : 'swings about as much as most modern cards') : '';
     return `<div class="up-wrap">
       <div class="up-cols">${upsideCol(card, ask, "Bought today")}${lim != null && lim < ask ? upsideCol(card, lim, 'Bought at my limit') : ''}</div>
       ${ageNote}
