@@ -1530,11 +1530,12 @@
   // ---------- app shell: views + routing ----------
   // Hash routes: #/overview, #/collection, #/watching, #/holdings, #/planner,
   // #/record, #/market, #/tables, #/more (phone), #/card/<snkrdunk id>,
-  // #/compare/<id>,<id> (head to head), #/duel/<id>,<id>,… (budget duel) and #/combos (combination finder).
+  // #/compare/<id>,<id> (head to head), #/duel/<id>,<id>,… (budget duel), #/combos (combination finder)
+  // and #/rate/<id>,<id>,… (rate my portfolio).
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
     planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
-    compare: 'Head to head', duel: 'Budget duel', combos: 'Combination finder', scored: 'Scored calls', scout: 'Scout', predict: 'You vs the model', stories: 'Stories',
+    compare: 'Head to head', duel: 'Budget duel', combos: 'Combination finder', rate: 'Rate my portfolio', scored: 'Scored calls', scout: 'Scout', predict: 'You vs the model', stories: 'Stories',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
@@ -1552,7 +1553,7 @@
     if (!state.currentData) return;
     const { view, arg } = parseRoute();
     document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== view; });
-    const PARENT = { compare: 'collection', duel: 'planner', combos: 'planner', scored: 'record' };
+    const PARENT = { compare: 'collection', duel: 'planner', combos: 'planner', rate: 'planner', scored: 'record' };
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
@@ -1577,7 +1578,7 @@
     } else if (PARENT[view]) {
       back.href = '#/' + PARENT[view];
       back.querySelector('span').textContent = VIEWS[PARENT[view]];
-      ({ title, sub } = view === 'compare' ? renderCompare(arg) : view === 'duel' ? renderDuel(arg) : view === 'combos' ? renderCombos() : renderScored());
+      ({ title, sub } = view === 'compare' ? renderCompare(arg) : view === 'duel' ? renderDuel(arg) : view === 'combos' ? renderCombos() : view === 'rate' ? renderRate(arg) : renderScored());
     } else {
       state.cardFrom = view === 'more' ? 'overview' : view;
     }
@@ -2562,6 +2563,7 @@
         <button type="button" data-mode="limits" class="${st.mode === 'limits' ? 'on' : ''}">My limits</button>
       </div>
       <a class="btn pl-finder" href="#/combos">✦ Combination finder</a>
+      ${picked.length ? `<a class="btn pl-finder pl-rate" href="#/rate/${picked.map((r) => escapeAttr(cardId(r.card))).join(',')}">★ Rate this portfolio (${picked.length})</a>` : ''}
       ${picked.length >= 2 && picked.length <= CMP_MAX_DUEL
         ? `<a class="btn btn-primary pl-compare" href="#/duel/${picked.map((r) => escapeAttr(cardId(r.card))).join(',')}">⇄ Compare ${picked.length} cards</a>`
         : `<span class="pl-cmp-hint">${picked.length > CMP_MAX_DUEL ? `Compare works with up to ${CMP_MAX_DUEL} cards` : 'Tick two or more cards to compare them side by side'}</span>`}</div>
@@ -2749,17 +2751,22 @@
   }
   function cbFit(total, avail) { return total <= avail ? total / avail : Math.max(0, 1 - (total - avail) / avail); }
 
-  function comboSearch(cards, st, avail) {
+  // opt.mine: urls of a portfolio to rate (#/rate): it's scored with the same measures, normalised
+  // together with every combo, and ranked in every category (opt.allCats).
+  function comboSearch(cards, st, avail, opt = {}) {
     const owned = new Set(state.holdings.map((h) => h.card_url));
     const pins = new Set(st.pins), excl = new Set(st.excl);
-    const pool = cards.filter((c) => lowestAsk(c) != null && !owned.has(c.url) && !excl.has(c.url)).map((c) => {
+    const entry = (c) => {
       const today = lowestAsk(c), lim = getLimit(c), useLim = st.mode === 'limits' && lim != null;
       const buy = c.analysis && c.analysis.tiers ? c.analysis.tiers.buy_upper : null;
       const odds = useLim ? touchOdds(c, lim) : null;
       const p = useLim ? lim : today;
       return { card: c, p, fromLimit: useLim, buy, odds, up: cbUpside(c, p),
                p30: odds ? (odds.reached ? 1 : odds.p30) : null, p90: odds ? (odds.reached ? 1 : odds.p90) : null };
-    });
+    };
+    const pool = cards.filter((c) => lowestAsk(c) != null && !owned.has(c.url) && !excl.has(c.url)).map(entry);
+    const mineItems = (opt.mine || []).map((u) => pool.find((x) => x.card.url === u) || (() => { const c = cards.find((k) => k.url === u); return c && lowestAsk(c) != null ? entry(c) : null; })()).filter(Boolean);
+    const mineO = mineItems.length ? { items: mineItems.slice().sort((a, b) => b.p - a.p), total: mineItems.reduce((a, x) => a + x.p, 0), mine: true } : null;
     const pinned = pool.filter((x) => pins.has(x.card.url));
     const free = pool.filter((x) => !pins.has(x.card.url) && x.p <= avail * CB_MAX).sort((a, b) => b.p - a.p);
     const base = pinned.reduce((s, x) => s + x.p, 0);
@@ -2779,9 +2786,10 @@
       if (sum + x.p <= hi) { pick.push(x); walk(i + 1, sum + x.p); pick.pop(); }
       walk(i + 1, sum);
     })(0, base);
-    if (!out.length) return { pool, pinned, combos: [], cats: {} };
-    const wantUp = (st.cbCat === 'upside' || st.cbCat === 'likely') && cbSimPrep(pool);
-    out.forEach((o) => {
+    if (!out.length && !mineO) return { pool, pinned, combos: [], cats: {} };
+    const wantUp = (opt.allCats || st.cbCat === 'upside' || st.cbCat === 'likely') && cbSimPrep(pool.concat(mineItems.filter((x) => !pool.includes(x))));
+    const scored = mineO ? out.concat(mineO) : out;
+    scored.forEach((o) => {
       o.n = o.items.length;
       o.fit = cbFit(o.total, avail);
       o.value = o.items.reduce((s, x) => s + x.p * (x.buy ? (x.buy - x.p) / x.buy : 0), 0) / o.total;
@@ -2793,12 +2801,12 @@
       o.nUp = cu ? cu.n : 0;
       o.upP = cu ? cu.p : 0; o.upTyp = cu ? cu.typ : 0; o.upStrong = cu ? cu.strong : 0; o.upWeak = cu ? cu.weak : 0;
     });
-    const rel = (k) => { const v = out.map((o) => o[k]), lo = Math.min(...v), hi = Math.max(...v);
+    const rel = (k) => { const v = scored.map((o) => o[k]), lo = Math.min(...v), hi = Math.max(...v);
       return (o) => (lo >= 0 ? (hi > 0 ? o[k] / hi : 1) : hi > lo ? (o[k] - lo) / (hi - lo) : 1); };
     const relStrong = rel('upStrong'), relP = rel('upP');
-    const oMax = Math.max(...out.map((o) => o.odds90 + o.odds30 / 100));
-    const maxN = Math.max(...out.map((o) => o.n)), minN = Math.min(...out.map((o) => o.n));
-    const vMin = Math.min(...out.map((o) => o.value)), vMax = Math.max(...out.map((o) => o.value));
+    const oMax = Math.max(...scored.map((o) => o.odds90 + o.odds30 / 100));
+    const maxN = Math.max(...scored.map((o) => o.n)), minN = Math.min(...scored.map((o) => o.n));
+    const vMin = Math.min(...scored.map((o) => o.value)), vMax = Math.max(...scored.map((o) => o.value));
     const measure = {
       fit: () => 1,
       most: (o) => o.n / maxN,
@@ -2814,7 +2822,36 @@
         .sort((a, b) => b.score - a.score || b.o.fit - a.o.fit || b.o.total - a.o.total)
         .slice(0, CB_PER);
     });
-    return { pool, pinned, combos: out, cats };
+    let mine = null;
+    if (mineO) {
+      mine = { o: mineO, cats: {} };
+      cbCatsFor(st.mode).filter(({ k }) => wantUp || (k !== 'upside' && k !== 'likely')).forEach(({ k }) => {
+        const sc = (o) => measure[k](o) * o.fit, my = sc(mineO);
+        let best = null, bs = -1, above = 0, below = 0;
+        for (const o of out) { const v = sc(o); if (v > my + 1e-9) above++; else if (v < my - 1e-9) below++; if (v > bs || (v === bs && best && o.fit > best.fit)) { bs = v; best = o; } }
+        mine.cats[k] = { m: measure[k](mineO), score: my, rank: above + 1, beats: out.length ? below / out.length : null, best, bestScore: bs, bestM: best ? measure[k](best) : null };
+      });
+    }
+    return { pool, pinned, combos: out, cats, mine };
+  }
+
+  // The "why" line of a combo in one category: its own measure, then × budget fit.
+  function cbWhy(cat, o, m, avail) {
+    const t = cbMeasureText(cat, o, avail);
+    if (cat === 'fit') return `budget fit ${(o.fit * 100).toFixed(1)}%`;
+    const own = cat === 'most' || cat === 'big' ? t.cards
+      : cat === 'odds' ? `average chance ${Math.round(o.odds90 * 100)}% in 90 days, ${Math.round(o.odds30 * 100)}% in 30, over ${o.nLim} limit${o.nLim === 1 ? '' : 's'}`
+      : cat === 'upside' ? `strong case ${cbPct(o.upStrong)} after fees`
+      : cat === 'likely' ? `${Math.round(o.upP * 100)}% chance the combo sells at a profit` : t.val;
+    return `${own} (${Math.round(m * 100)}%) × budget fit ${(o.fit * 100).toFixed(1)}%`;
+  }
+  function cbUpLine(o, label) {
+    return o.nUp ? `<div class="cb-odds-sum">${label} in 24 months, after fees: weak <b class="${o.upWeak >= 0 ? 'pos' : 'neg'}">${cbPct(o.upWeak)}</b> · typical <b class="${o.upTyp >= 0 ? 'pos' : 'neg'}">${cbPct(o.upTyp)}</b> (${cbYen(o.upTyp * o.total)}) · strong <b class="${o.upStrong >= 0 ? 'pos' : 'neg'}">${cbPct(o.upStrong)}</b> (${cbYen(o.upStrong * o.total)}) · chance of a profit <b>${Math.round(o.upP * 100)}%</b></div>` : '';
+  }
+  function cbOddsLine(o, mode) {
+    const odds = mode === 'limits' ? o.items.filter((x) => x.fromLimit).map((x) => touchOdds(x.card, x.p)).filter(Boolean) : [];
+    const exp = (k) => odds.reduce((a, q) => a + (q.reached ? 1 : q[k]), 0);
+    return odds.length ? `<div class="cb-odds-sum">Limits likely reached: <b>${exp('p30').toFixed(1)}</b> of ${odds.length} cards within 30 days · <b>${exp('p90').toFixed(1)}</b> within 90 days</div>` : '';
   }
 
   // At your limits: the limit-odds model's chance that a listing reaches each card's limit.
@@ -2891,17 +2928,13 @@
       const cols = res.cats[cat].map(({ o, m, score }, i) => {
         const t = cbMeasureText(cat, o, avail);
         const over = o.total > avail;
-        const why = cat === 'fit' ? `budget fit ${(o.fit * 100).toFixed(1)}%`
-          : `${cat === 'most' ? t.cards : cat === 'big' ? t.cards : cat === 'odds' ? `average chance ${Math.round(o.odds90 * 100)}% in 90 days, ${Math.round(o.odds30 * 100)}% in 30, over ${o.nLim} limit${o.nLim === 1 ? '' : 's'}` : cat === 'upside' ? `strong case ${cbPct(o.upStrong)} after fees` : cat === 'likely' ? `${Math.round(o.upP * 100)}% chance the combo sells at a profit` : t.val} (${Math.round(m * 100)}%) × budget fit ${(o.fit * 100).toFixed(1)}%`;
+        const why = cbWhy(cat, o, m, avail);
         const chips = o.items.map((x) => `<a class="cb-chip ${st.pins.includes(x.card.url) ? 'pinned' : ''}" href="#/card/${escapeAttr(cardId(x.card))}">
             <span class="wthumb cb-cthumb">${img(x.card)}</span>
             <span class="cb-cn">${escapeHtml(nameOf(x.card))}</span>
             <span class="cb-cp">${fmtYen(x.p)}${st.mode === 'limits' ? `<i>${x.fromLimit ? 'my limit' : 'today'}</i>` : ''}</span>${cbOddsHtml(x)}${(cat === 'upside' || cat === 'likely') && x.up ? `<span class="cb-codds" title="Value model, 24 months, neutral market, after SNKRDUNK fees">24 months: <b>${Math.round(x.up.p * 100)}%</b> chance of a profit · strong case ${cbYen(x.up.strong)}</span>` : ''}</a>`).join('');
-        const odds = st.mode === 'limits' ? o.items.filter((x) => x.fromLimit).map((x) => touchOdds(x.card, x.p)).filter(Boolean) : [];
-        const exp = (k) => odds.reduce((a, q) => a + (q.reached ? 1 : q[k]), 0);
-        const oddsLine = odds.length ? `<div class="cb-odds-sum">Limits likely reached: <b>${exp('p30').toFixed(1)}</b> of ${odds.length} cards within 30 days · <b>${exp('p90').toFixed(1)}</b> within 90 days</div>` : '';
-        const upLine = (cat === 'upside' || cat === 'likely') && o.nUp
-          ? `<div class="cb-odds-sum">The whole combo in 24 months, after fees: weak <b class="${o.upWeak >= 0 ? 'pos' : 'neg'}">${cbPct(o.upWeak)}</b> · typical <b class="${o.upTyp >= 0 ? 'pos' : 'neg'}">${cbPct(o.upTyp)}</b> (${cbYen(o.upTyp * o.total)}) · strong <b class="${o.upStrong >= 0 ? 'pos' : 'neg'}">${cbPct(o.upStrong)}</b> (${cbYen(o.upStrong * o.total)}) · chance of a profit <b>${Math.round(o.upP * 100)}%</b></div>` : '';
+        const oddsLine = cbOddsLine(o, st.mode);
+        const upLine = cat === 'upside' || cat === 'likely' ? cbUpLine(o, 'The whole combo') : '';
         return `<div class="cb-combo ${i === 0 ? 'first' : ''}">
           <div class="cb-ch"><div class="cb-rank"><span>#${i + 1}</span><b>${score >= 0.99 ? (Math.floor(score * 1000) / 10).toFixed(1) : Math.round(score * 100)}%</b><i>match</i></div>
             <div class="cb-tot">${fmtYen(o.total)}<span class="${over ? 'neg' : 'pos'}">${t.budget}</span></div></div>
@@ -2940,6 +2973,86 @@
     }));
     const sub = res.combos.length ? `${res.combos.length} combinations · ${st.mode === 'limits' ? 'at your limits' : "at today's prices"} · checked ${fmtDateJST(state.currentData.collected_at_jst)}` : '';
     return { title: 'Combination finder', sub };
+  }
+
+
+  // ---------- rate my portfolio (#/rate/<id>,<id>,…, opened from the budget planner) ----------
+  // The cards ticked in the planner, scored with the combination finder's measures and ranked
+  // against every combination the finder would consider for the same budget (pins and left-out
+  // cards ignored, so the comparison is with everything on the tracker).
+  function renderRate(arg) {
+    const el = document.getElementById('rate-page');
+    const cards = (state.currentData && state.currentData.cards) || [];
+    const picked = cardsFromArg(arg).filter(hasMarket);
+    if (!picked.length) {
+      el.innerHTML = `<div class="empty-state">Tick the cards of your portfolio in the <a href="#/planner">budget planner</a>, then press “Rate this portfolio”.</div>`;
+      return { title: 'Rate my portfolio', sub: '' };
+    }
+    const st = plannerState();
+    const spent = state.holdings.reduce((s, h) => s + holdingCost(h), 0);
+    const avail = st.budget - spent;
+    if (avail <= 0) {
+      el.innerHTML = `<div class="empty-state">Nothing left of the ${fmtYen(st.budget)} budget. Raise it in the <a href="#/planner">budget planner</a>.</div>`;
+      return { title: 'Rate my portfolio', sub: '' };
+    }
+    const res = comboSearch(cards, Object.assign({}, st, { pins: [], excl: [] }), avail, { mine: picked.map((c) => c.url), allCats: true });
+    const P = res.mine, o = P.o, N = res.combos.length;
+    const nameOf = (c) => parseCardName(c.card_name_ja).short;
+    const img = (c) => (c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '');
+    const t = cbMeasureText('fit', o, avail), over = o.total > avail;
+    const pct = (v) => (v >= 0.99 ? (Math.floor(v * 1000) / 10).toFixed(1) : Math.round(v * 100)) + '%';
+    const cats = cbCatsFor(st.mode).filter((c) => P.cats[c.k]);
+    const ranked = cats.filter((c) => c.k !== 'fit' && P.cats[c.k].beats != null).sort((a, b) => P.cats[b.k].beats - P.cats[a.k].beats);
+    const top = `<div class="pl-top">
+        <div class="pl-mode" role="group" aria-label="Price basis">
+          <button type="button" data-mode="today" class="${st.mode === 'today' ? 'on' : ''}">Today's prices</button>
+          <button type="button" data-mode="limits" class="${st.mode === 'limits' ? 'on' : ''}">My limits</button>
+        </div>
+        <span class="cb-budget">Budget ${fmtYen(st.budget)}${spent ? ` · ${fmtYen(avail)} left after ${fmtYen(spent)} spent` : ''} <a href="#/planner">change</a></span>
+        ${picked.length >= 2 && picked.length <= CMP_MAX_DUEL ? `<a class="btn" href="#/duel/${picked.map((c) => escapeAttr(cardId(c))).join(',')}">⇄ Compare these ${picked.length}</a>` : ''}
+        <a class="btn" href="#/combos">✦ Combination finder</a>
+      </div>`;
+    const chips = o.items.map((x) => `<a class="cb-chip" href="#/card/${escapeAttr(cardId(x.card))}">
+        <span class="wthumb cb-cthumb">${img(x.card)}</span><span class="cb-cn">${escapeHtml(nameOf(x.card))}</span>
+        <span class="cb-cp">${fmtYen(x.p)}${st.mode === 'limits' ? `<i>${x.fromLimit ? 'my limit' : 'today'}</i>` : ''}</span>${cbOddsHtml(x)}${x.up ? `<span class="cb-codds" title="Value model, 24 months, neutral market, after SNKRDUNK fees">24 months: <b>${Math.round(x.up.p * 100)}%</b> chance of a profit · strong case ${cbYen(x.up.strong)}</span>` : ''}</a>`).join('');
+    const rels = [];
+    for (let i = 0; i < picked.length; i++) for (let j = i + 1; j < picked.length; j++) {
+      const r = relation(picked[i], picked[j]);
+      if (r.kind === 'one' || r.kind === 'partly') rels.push(`<li><b>${escapeHtml(nameOf(picked[i]))} + ${escapeHtml(nameOf(picked[j]))}</b>: ${escapeHtml(r.text)}</li>`);
+    }
+    const headline = ranked.length
+      ? `Strongest: <b>${escapeHtml(ranked[0].label)}</b> (better than ${Math.round(P.cats[ranked[0].k].beats * 100)}% of the combinations)${ranked.length > 1 ? ` · weakest: <b>${escapeHtml(ranked[ranked.length - 1].label)}</b> (better than ${Math.round(P.cats[ranked[ranked.length - 1].k].beats * 100)}%)` : ''}` : '';
+    const summary = `<section class="panel rt-sum cb-combo first">
+        <div class="cb-ch"><div class="cb-rank"><span>Mine</span><b>${o.n}</b><i>card${o.n === 1 ? '' : 's'}</i></div>
+          <div class="cb-tot">${fmtYen(o.total)}<span class="${over ? 'neg' : 'pos'}">${t.budget} · budget fit ${(o.fit * 100).toFixed(1)}%</span></div></div>
+        <div class="cb-bar"><div class="${over ? 'over' : ''}" style="width:${Math.min(100, (o.total / (avail * CB_MAX)) * 100).toFixed(1)}%"></div><span style="left:${(100 / CB_MAX).toFixed(1)}%" title="Budget"></span></div>
+        ${headline ? `<div class="rt-head">${headline}</div>` : ''}
+        ${cbOddsLine(o, st.mode)}${cbUpLine(o, 'The whole portfolio')}
+        <div class="cb-chips">${chips}</div>
+        ${rels.length ? `<ul class="rt-rel">${rels.join('')}</ul>` : ''}
+        ${o.total < avail * CB_MIN || o.total > avail * CB_MAX ? `<p class="cd-note warn">The total is ${((o.total / avail) * 100).toFixed(1)}% of the budget, outside the finder's 90–120% range, so the budget fit pulls every score down.</p>` : ''}
+      </section>`;
+    const grid = cats.map((c) => {
+      const r = P.cats[c.k], b = r.best;
+      const isBest = b && b.items.length === o.items.length && b.items.every((x) => o.items.some((y) => y.card.url === x.card.url));
+      const beat = r.beats != null ? Math.round(r.beats * 100) : null;
+      const tone = beat == null ? '' : beat >= 80 ? 'pos' : beat >= 40 ? 'amb' : 'neg';
+      return `<article class="panel rt-cat">
+        <div class="rt-ch"><h3>${escapeHtml(c.label)}</h3><span class="rt-score">${pct(r.score)}<i>match</i></span></div>
+        <div class="rt-rank ${tone}">${N ? `#${r.rank} of ${N + 1} · better than ${beat}% of the combinations` : 'No combinations to compare with'}</div>
+        <div class="rt-bar"><i class="${tone}" style="width:${beat == null ? 0 : Math.max(3, beat)}%"></i></div>
+        <div class="cb-why">${escapeHtml(cbWhy(c.k, o, r.m, avail))}</div>
+        ${b && !isBest ? `<div class="rt-best"><span class="muted">Best in this category (${pct(r.bestScore)}):</span> ${b.items.map((x) => escapeHtml(nameOf(x.card))).join(' · ')} <span class="muted">· ${fmtYen(b.total)}</span>
+          <button type="button" class="btn rt-open" data-cat="${c.k}">Open in the finder</button></div>` : b ? '<div class="rt-best pos">Your portfolio is the best combination in this category.</div>' : ''}
+      </article>`;
+    }).join('');
+    el.innerHTML = top + summary + `<div class="rt-grid">${grid}</div>
+      <p class="cd-note">Rated with the combination finder's measures against all ${N} combination${N === 1 ? '' : 's'} it finds for ${fmtYen(avail)} (90–120% of the budget, no room for one more card), using every card on the tracker: pins and left-out cards in the finder don't apply here. Match = the category's measure relative to the best combo × budget fit, exactly as in the finder. ${st.mode === 'limits' ? 'Cards without a limit use today’s price. ' : ''}Upside uses the value model (24 months, market centred on no change, selling fees); limit odds use the limit-odds model. The ticks are saved in this browser; change them in the planner.</p>`;
+    trimImages(el);
+    const save = (patch) => { store.set(PLANNER_KEY, Object.assign(plannerState(), patch)); const r = renderRate(arg); document.getElementById('page-sub').textContent = r.sub; renderPlanner(cards); renderKpis(state.currentData); };
+    el.querySelectorAll('.pl-mode button').forEach((x) => x.addEventListener('click', () => save({ mode: x.dataset.mode })));
+    el.querySelectorAll('[data-cat]').forEach((x) => x.addEventListener('click', () => { store.set(PLANNER_KEY, Object.assign(plannerState(), { cbCat: x.dataset.cat })); location.hash = '#/combos'; }));
+    return { title: 'Rate my portfolio', sub: `${picked.length} card${picked.length === 1 ? '' : 's'} · ${st.mode === 'limits' ? 'at your limits' : "at today's prices"} · against ${N} combinations · checked ${fmtDateJST(state.currentData.collected_at_jst)}` };
   }
 
   // ---------- track record: how past calls and stated odds turned out ----------
@@ -3500,11 +3613,11 @@
   // numbers side by side, grouped, and marks which card is closer to a good buy on each row;
   // tab 2 "Price race" overlays both price histories (indexed to 100 or as % below peak) with
   // the My-tier index, plus a zone ladder scaled to each card's own Buy line.
-  // Budget duel: 2–4 cards ticked in the budget planner, priced today and at your limits, with
+  // Budget duel: 2–8 cards ticked in the budget planner, priced today and at your limits, with
   // the odds of reaching them and what's left of the budget. Everything is computed here from
   // data the site already loads; nothing new is stored.
-  const CMP_COLORS = ['#ffd23f', '#7cb4ff', '#c9a0ff', '#5fd4b8'];
-  const CMP_MAX_DUEL = 4;
+  const CMP_COLORS = ['#ffd23f', '#7cb4ff', '#c9a0ff', '#5fd4b8', '#ff9a6b', '#f28cc0', '#a8d672', '#9fb3c8'];
+  const CMP_MAX_DUEL = 8;
   state.cmpMode = false;   // collection page is in "pick two cards" mode
   state.cmpPick = [];      // urls picked there, in order
   state.cmpTab = 'tape';
@@ -3826,11 +3939,12 @@
     }
     const all = cards.length === 2 ? 'Both' : `All ${cards.length}`;
     el.innerHTML = `
-      <div class="du-grid du-n${cards.length}">${cols}</div>
+      <div class="du-grid du-n${cards.length > 4 ? 'many' : cards.length}">${cols}</div>
       <section class="panel du-sum">
         <div class="du-p"><span class="lbl">${all}, at today's prices</span><span class="display">${fmtYen(today)}</span><small class="${avail - today >= 0 ? 'pos' : 'neg'}">${avail - today >= 0 ? fmtYen(avail - today) + ' left' : fmtYen(today - avail) + ' over budget'}</small></div>
         <div class="du-p"><span class="lbl">${all}, at my limits</span><span class="display acc">${fmtYen(atLim)}</span><small class="${avail - atLim >= 0 ? 'pos' : 'neg'}">${avail - atLim >= 0 ? fmtYen(avail - atLim) + ' left' : fmtYen(atLim - avail) + ' over budget'}${today > atLim ? ' · saves ' + fmtYen(today - atLim) : ''}${noLim ? ` · ${noLim} without a limit at today's price` : ''}</small></div>
         <div class="du-rel">${rels.length ? `<ul>${rels.join('')}</ul>` : `<span class="h2h-rel rel-none">Separate bets: different sets and characters.</span>`}</div>
+        <a class="btn du-rate" href="#/rate/${cards.map((c) => escapeAttr(cardId(c))).join(',')}">★ Rate these ${cards.length} as a portfolio</a>
       </section>
       <p class="cd-note">Budget ${fmtYen(st.budget)}${spent ? `, ${fmtYen(spent)} already spent` : ''} (set in the <a href="#/planner">budget planner</a>). Odds come from the limit-odds model: no trend assumed; bold bar 30 days, faint bar 90 days.</p>`;
     trimImages(el);
