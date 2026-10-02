@@ -1517,11 +1517,11 @@
   // ---------- app shell: views + routing ----------
   // Hash routes: #/overview, #/collection, #/watching, #/holdings, #/planner,
   // #/record, #/market, #/tables, #/more (phone), #/card/<snkrdunk id>,
-  // #/compare/<id>,<id> (head to head) and #/duel/<id>,<id>,… (budget duel).
+  // #/compare/<id>,<id> (head to head), #/duel/<id>,<id>,… (budget duel) and #/combos (combination finder).
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
     planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
-    compare: 'Head to head', duel: 'Budget duel', scored: 'Scored calls', scout: 'Scout', predict: 'You vs the model', stories: 'Stories',
+    compare: 'Head to head', duel: 'Budget duel', combos: 'Combination finder', scored: 'Scored calls', scout: 'Scout', predict: 'You vs the model', stories: 'Stories',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
@@ -1539,7 +1539,7 @@
     if (!state.currentData) return;
     const { view, arg } = parseRoute();
     document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== view; });
-    const PARENT = { compare: 'collection', duel: 'planner', scored: 'record' };
+    const PARENT = { compare: 'collection', duel: 'planner', combos: 'planner', scored: 'record' };
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
@@ -1564,7 +1564,7 @@
     } else if (PARENT[view]) {
       back.href = '#/' + PARENT[view];
       back.querySelector('span').textContent = VIEWS[PARENT[view]];
-      ({ title, sub } = view === 'compare' ? renderCompare(arg) : view === 'duel' ? renderDuel(arg) : renderScored());
+      ({ title, sub } = view === 'compare' ? renderCompare(arg) : view === 'duel' ? renderDuel(arg) : view === 'combos' ? renderCombos() : renderScored());
     } else {
       state.cardFrom = view === 'more' ? 'overview' : view;
     }
@@ -2425,7 +2425,9 @@
     const st = store.get(PLANNER_KEY, {});
     return { budget: typeof st.budget === 'number' ? st.budget : 200000,
              mode: st.mode === 'limits' ? 'limits' : 'today',
-             selected: Array.isArray(st.selected) ? st.selected : [] };
+             selected: Array.isArray(st.selected) ? st.selected : [],
+             pins: Array.isArray(st.pins) ? st.pins : [], excl: Array.isArray(st.excl) ? st.excl : [],
+             cbCat: typeof st.cbCat === 'string' ? st.cbCat : 'fit' };
   }
 
   function renderPlanner(cards) {
@@ -2463,6 +2465,7 @@
         <button type="button" data-mode="today" class="${st.mode === 'today' ? 'on' : ''}">Today's prices</button>
         <button type="button" data-mode="limits" class="${st.mode === 'limits' ? 'on' : ''}">My limits</button>
       </div>
+      <a class="btn pl-finder" href="#/combos">✦ Combination finder</a>
       ${picked.length >= 2 && picked.length <= CMP_MAX_DUEL
         ? `<a class="btn btn-primary pl-compare" href="#/duel/${picked.map((r) => escapeAttr(cardId(r.card))).join(',')}">⇄ Compare ${picked.length} cards</a>`
         : `<span class="pl-cmp-hint">${picked.length > CMP_MAX_DUEL ? `Compare works with up to ${CMP_MAX_DUEL} cards` : 'Tick two or more cards to compare them side by side'}</span>`}</div>
@@ -2494,6 +2497,180 @@
     }));
     const bud = box.querySelector('.pl-budget');
     if (bud) bud.addEventListener('change', () => { const v = Number(bud.value); save({ budget: v >= 0 ? v : 0 }); });
+  }
+
+
+  // ---------- combination finder (#/combos, opened from the budget planner) ----------
+  // Tries every mix of the cards in play (pinned ones always in, left-out and owned ones skipped)
+  // priced today or at your limits, and keeps those spending 90–120% of what's left of the budget.
+  // An in-budget combo only counts if no other card still fits, so it isn't a smaller copy of
+  // another. Each category ranks them by a match score (0–100%): the category's own measure times
+  // how close the total is to the budget (going over costs the same as leaving money unspent).
+  const CB_MIN = 0.9, CB_MAX = 1.2, CB_PER = 3;
+  const CB_CATS = [
+    { k: 'fit', label: 'Best use of budget', sub: 'closest to spending exactly the budget' },
+    { k: 'most', label: 'Most cards', sub: 'the widest display' },
+    { k: 'value', label: 'Best value', sub: 'furthest below the cards’ Buy lines' },
+    { k: 'big', label: 'Fewer, bigger pieces', sub: 'the fewest cards' },
+  ];
+  function cbFit(total, avail) { return total <= avail ? total / avail : Math.max(0, 1 - (total - avail) / avail); }
+
+  function comboSearch(cards, st, avail) {
+    const owned = new Set(state.holdings.map((h) => h.card_url));
+    const pins = new Set(st.pins), excl = new Set(st.excl);
+    const pool = cards.filter((c) => lowestAsk(c) != null && !owned.has(c.url) && !excl.has(c.url)).map((c) => {
+      const today = lowestAsk(c), lim = getLimit(c), useLim = st.mode === 'limits' && lim != null;
+      const buy = c.analysis && c.analysis.tiers ? c.analysis.tiers.buy_upper : null;
+      return { card: c, p: useLim ? lim : today, fromLimit: useLim, buy };
+    });
+    const pinned = pool.filter((x) => pins.has(x.card.url));
+    const free = pool.filter((x) => !pins.has(x.card.url) && x.p <= avail * CB_MAX).sort((a, b) => b.p - a.p);
+    const base = pinned.reduce((s, x) => s + x.p, 0);
+    const lo = avail * CB_MIN, hi = avail * CB_MAX;
+    const out = [];
+    const pick = [];
+    // depth-first over the free cards (most expensive first), pruning once the total passes 120%
+    (function walk(i, sum) {
+      if (i === free.length) {
+        const all = pinned.concat(pick);
+        if (!all.length || sum < lo || sum > hi) return;
+        if (sum <= avail && free.some((x) => !pick.includes(x) && sum + x.p <= avail)) return; // room for another card
+        out.push({ items: all.slice().sort((a, b) => b.p - a.p), total: sum });
+        return;
+      }
+      const x = free[i];
+      if (sum + x.p <= hi) { pick.push(x); walk(i + 1, sum + x.p); pick.pop(); }
+      walk(i + 1, sum);
+    })(0, base);
+    if (!out.length) return { pool, pinned, combos: [], cats: {} };
+    out.forEach((o) => {
+      o.n = o.items.length;
+      o.fit = cbFit(o.total, avail);
+      o.value = o.items.reduce((s, x) => s + x.p * (x.buy ? (x.buy - x.p) / x.buy : 0), 0) / o.total;
+    });
+    const maxN = Math.max(...out.map((o) => o.n)), minN = Math.min(...out.map((o) => o.n));
+    const vMin = Math.min(...out.map((o) => o.value)), vMax = Math.max(...out.map((o) => o.value));
+    const measure = {
+      fit: () => 1,
+      most: (o) => o.n / maxN,
+      value: (o) => (vMax > vMin ? (o.value - vMin) / (vMax - vMin) : 1),
+      big: (o) => minN / o.n,
+    };
+    const cats = {};
+    CB_CATS.forEach(({ k }) => {
+      cats[k] = out.map((o) => ({ o, m: measure[k](o), score: measure[k](o) * o.fit }))
+        .sort((a, b) => b.score - a.score || b.o.fit - a.o.fit || b.o.total - a.o.total)
+        .slice(0, CB_PER);
+    });
+    return { pool, pinned, combos: out, cats };
+  }
+
+  function cbMeasureText(k, o, avail) {
+    const over = o.total - avail;
+    const budget = over > 0 ? `${fmtYen(over)} over budget` : `${fmtYen(-over)} left`;
+    const val = `${Math.abs(o.value * 100).toFixed(0)}% ${o.value >= 0 ? 'below' : 'above'} Buy lines`;
+    return { budget, val, cards: `${o.n} card${o.n === 1 ? '' : 's'}` };
+  }
+
+  function renderCombos() {
+    const el = document.getElementById('combos-page');
+    const cards = (state.currentData && state.currentData.cards) || [];
+    const st = plannerState();
+    const spent = state.holdings.reduce((s, h) => s + holdingCost(h), 0);
+    const avail = st.budget - spent;
+    const cat = CB_CATS.some((c) => c.k === st.cbCat) ? st.cbCat : 'fit';
+    const syncPlanner = () => { renderPlanner(cards); renderKpis(state.currentData); };
+    const save = (patch) => { store.set(PLANNER_KEY, Object.assign(plannerState(), patch)); const r = renderCombos(); document.getElementById('page-sub').textContent = r.sub; syncPlanner(); };
+    if (avail <= 0) {
+      el.innerHTML = `<div class="empty-state">Nothing left of the ${fmtYen(st.budget)} budget. Raise it in the <a href="#/planner">budget planner</a>.</div>`;
+      return { title: 'Combination finder', sub: '' };
+    }
+    const res = comboSearch(cards, st, avail);
+    const nameOf = (c) => parseCardName(c.card_name_ja).short;
+    const img = (c, cls) => (c.image_url ? `<img class="card-img ${cls || ''}" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '');
+
+    const pinsTxt = res.pool.filter((x) => st.pins.includes(x.card.url)).map((x) => nameOf(x.card));
+    const exclTxt = cards.filter((c) => st.excl.includes(c.url)).map(nameOf);
+    const poolRows = cards.filter((c) => lowestAsk(c) != null).sort((a, b) => lowestAsk(b) - lowestAsk(a)).map((c) => {
+      const pin = st.pins.includes(c.url), off = st.excl.includes(c.url), lim = getLimit(c);
+      const owned = state.holdings.some((h) => h.card_url === c.url);
+      const price = st.mode === 'limits' && lim != null ? lim : lowestAsk(c);
+      return `<div class="cb-prow ${pin ? 'pin' : ''} ${off || owned ? 'off' : ''}">
+        <span class="wthumb cb-pthumb">${img(c)}</span>
+        <span class="cb-pn">${escapeHtml(nameOf(c))}${owned ? ' <span class="pl-owned">owned</span>' : ''}</span>
+        <span class="cb-pp">${fmtYen(price)}<i>${st.mode === 'limits' ? (lim != null ? 'my limit' : 'today, no limit') : lim != null ? 'limit ' + fmtYen(lim) : 'no limit'}</i></span>
+        <span class="cb-ptg">
+          <button type="button" data-pin="${escapeAttr(c.url)}" class="${pin ? 'on' : ''}" title="${pin ? 'Unpin' : 'Always include'}" aria-pressed="${pin}" ${owned ? 'disabled' : ''}>📌</button>
+          <button type="button" data-excl="${escapeAttr(c.url)}" class="${off ? 'on' : ''}" title="${off ? 'Put back in' : 'Leave out'}" aria-pressed="${off}" ${owned ? 'disabled' : ''}>✕</button>
+        </span>
+        ${price > avail * CB_MAX && !off ? '<em>over 120% of the budget on its own</em>' : ''}
+      </div>`;
+    }).join('');
+
+    const top = `<div class="pl-top">
+        <div class="pl-mode" role="group" aria-label="Price basis">
+          <button type="button" data-mode="today" class="${st.mode === 'today' ? 'on' : ''}">Today's prices</button>
+          <button type="button" data-mode="limits" class="${st.mode === 'limits' ? 'on' : ''}">My limits</button>
+        </div>
+        <span class="cb-budget">Budget ${fmtYen(st.budget)}${spent ? ` · ${fmtYen(avail)} left after ${fmtYen(spent)} spent` : ''} <a href="#/planner">change</a></span>
+      </div>`;
+    const poolHtml = `<details class="cb-pool" ${store.get('psa10.cb.poolOpen', true) ? 'open' : ''}>
+        <summary>Cards in play${pinsTxt.length ? ` · <b>📌 ${escapeHtml(pinsTxt.join(', '))}</b>` : ''}${exclTxt.length ? ` · <b>✕ ${escapeHtml(exclTxt.join(', '))}</b>` : ''}<span class="cb-hint">📌 always include · ✕ leave out</span></summary>
+        <div class="cb-pgrid">${poolRows}</div></details>`;
+
+    let body;
+    if (!res.combos.length) {
+      const base = res.pinned.reduce((s, x) => s + x.p, 0);
+      body = `<div class="empty-state">${base > avail * CB_MAX ? `The pinned cards alone cost ${fmtYen(base)}, more than 120% of the budget.` : 'No combination of the cards in play lands between 90% and 120% of the budget. Put more cards back in, or change the budget.'}</div>`;
+    } else {
+      const tabs = `<div class="cb-tabs" role="tablist">${CB_CATS.map((c) => `<button type="button" role="tab" data-cat="${c.k}" class="${c.k === cat ? 'on' : ''}" aria-selected="${c.k === cat}">${c.label}</button>`).join('')}</div>`;
+      const info = CB_CATS.find((c) => c.k === cat);
+      const cols = res.cats[cat].map(({ o, m, score }, i) => {
+        const t = cbMeasureText(cat, o, avail);
+        const over = o.total > avail;
+        const why = cat === 'fit' ? `budget fit ${(o.fit * 100).toFixed(1)}%`
+          : `${cat === 'most' ? t.cards : cat === 'big' ? t.cards : t.val} (${Math.round(m * 100)}%) × budget fit ${(o.fit * 100).toFixed(1)}%`;
+        const chips = o.items.map((x) => `<a class="cb-chip ${st.pins.includes(x.card.url) ? 'pinned' : ''}" href="#/card/${escapeAttr(cardId(x.card))}">
+            <span class="wthumb cb-cthumb">${img(x.card)}</span>
+            <span class="cb-cn">${escapeHtml(nameOf(x.card))}</span>
+            <span class="cb-cp">${fmtYen(x.p)}${st.mode === 'limits' ? `<i>${x.fromLimit ? 'my limit' : 'today'}</i>` : ''}</span></a>`).join('');
+        return `<div class="cb-combo ${i === 0 ? 'first' : ''}">
+          <div class="cb-ch"><div class="cb-rank"><span>#${i + 1}</span><b>${score >= 0.99 ? (Math.floor(score * 1000) / 10).toFixed(1) : Math.round(score * 100)}%</b><i>match</i></div>
+            <div class="cb-tot">${fmtYen(o.total)}<span class="${over ? 'neg' : 'pos'}">${t.budget}</span></div></div>
+          <div class="cb-bar"><div class="${over ? 'over' : ''}" style="width:${Math.min(100, (o.total / (avail * CB_MAX)) * 100).toFixed(1)}%"></div><span style="left:${(100 / CB_MAX).toFixed(1)}%" title="Budget"></span></div>
+          <div class="cb-meta">${t.cards} · ${t.val}</div>
+          <div class="cb-why">${escapeHtml(why)}</div>
+          <div class="cb-chips">${chips}</div>
+          <button type="button" class="btn ${i === 0 ? 'btn-primary' : ''} cb-use" data-use="${escapeAttr(o.items.map((x) => x.card.url).join('|'))}">Tick these ${o.n} in the planner</button>
+        </div>`;
+      }).join('');
+      body = tabs + `<p class="cb-catsub">${escapeHtml(info.sub)}. Match = ${cat === 'fit' ? 'how close the total is to the budget (going over counts the same as leaving money unspent)' : 'this category’s measure, relative to the best combo, × how close the total is to the budget'}.</p><div class="cb-picks">${cols}</div>`;
+    }
+
+    el.innerHTML = top + poolHtml + body + `<p class="cd-note">${res.combos.length} combination${res.combos.length === 1 ? '' : 's'} between ${Math.round(CB_MIN * 100)}% and ${Math.round(CB_MAX * 100)}% of ${fmtYen(avail)}. Within budget, only combos with no room for one more card count. ${st.mode === 'limits' ? 'Cards without a limit use today’s price. ' : ''}Value compares each price with the card’s Buy line (cards without tiers count as neutral). Pins and left-out cards are saved in this browser.</p>`;
+
+    trimImages(el);
+    el.querySelectorAll('.pl-mode button').forEach((b) => b.addEventListener('click', () => save({ mode: b.dataset.mode })));
+    el.querySelectorAll('.cb-tabs button').forEach((b) => b.addEventListener('click', () => save({ cbCat: b.dataset.cat })));
+    const det = el.querySelector('.cb-pool');
+    if (det) det.addEventListener('toggle', () => store.set('psa10.cb.poolOpen', det.open));
+    el.querySelectorAll('[data-pin]').forEach((b) => b.addEventListener('click', (e) => {
+      e.preventDefault();
+      const u = b.dataset.pin, s = plannerState();
+      save({ pins: s.pins.includes(u) ? s.pins.filter((x) => x !== u) : s.pins.concat(u), excl: s.excl.filter((x) => x !== u) });
+    }));
+    el.querySelectorAll('[data-excl]').forEach((b) => b.addEventListener('click', (e) => {
+      e.preventDefault();
+      const u = b.dataset.excl, s = plannerState();
+      save({ excl: s.excl.includes(u) ? s.excl.filter((x) => x !== u) : s.excl.concat(u), pins: s.pins.filter((x) => x !== u) });
+    }));
+    el.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => {
+      store.set(PLANNER_KEY, Object.assign(plannerState(), { selected: b.dataset.use.split('|') }));
+      syncPlanner();
+      location.hash = '#/planner';
+    }));
+    const sub = res.combos.length ? `${res.combos.length} combinations · ${st.mode === 'limits' ? 'at your limits' : "at today's prices"} · checked ${fmtDateJST(state.currentData.collected_at_jst)}` : '';
+    return { title: 'Combination finder', sub };
   }
 
   // ---------- track record: how past calls and stated odds turned out ----------
