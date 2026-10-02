@@ -2146,7 +2146,7 @@
     const card = ((state.currentData && state.currentData.cards) || []).find((c) => c.url === state.selectedUrl);
     if (!card) { el.innerHTML = ''; return; }
     el.innerHTML = buildCardDetail(card, prevCardOf(card), 'drawer');
-    wireCardDetail(el, card);
+    wireLimitControls(el, card);
     trimImages(el);
   }
 
@@ -2331,7 +2331,7 @@
       </div>`;
 
     const displayTag = displayTagFor(card);
-    let verdictHtml;
+    let verdictHtml, dv = null;
     if (analysis && analysis.verdict) {
       const v = analysis.verdict;
       const headline = verdictHeadline(v.label);
@@ -2356,6 +2356,8 @@
         }
       }
       verdictHtml = `<div class="verdict">${headline ? `<h3 class="verdict-head">${escapeHtml(headline)}</h3>` : ''}<p>${escapeHtml(v.reasoning || '')}</p>${staleHtml}</div>`;
+      const firstSentence = (String(v.reasoning || '').match(/^[\s\S]*?[.!?](?=\s|$)/) || [v.reasoning || ''])[0];
+      dv = { headline, line: staleHtml ? staleHtml.replace(/<[^>]+>/g, '') : firstSentence, held: !!staleHtml };
     } else if (gaugeHtml) {
       verdictHtml = displayTag
         ? `<div class="verdict"><p>Zone computed from the live price vs. this card's tiers. No written analysis yet.</p></div>`
@@ -2363,6 +2365,8 @@
     } else {
       verdictHtml = `<div class="tier-pending">Tiers not yet established for this card, showing raw stats only.</div>`;
     }
+
+    if (mode === 'drawer') return drawerHtml(card, { shortName, code, pack, repPrice, deltaHtml, ownedHtml, gaugeHtml, dv, displayTag, peak });
 
     const rep = getRep(card);
     const diy = computeDiyEconomics(card, rep);
@@ -2426,6 +2430,62 @@
         <div class="cd-panel" data-panel="upside"${cur === 'upside' ? '' : ' hidden'}>${upsideHtml(card)}</div>
         ${mode === 'page' ? '' : actionsHtml}
       </div>`;
+  }
+
+
+  // Overview side panel: only what's needed to decide "act or wait"; the card page has the rest.
+  function drawerHtml(card, o) {
+    const id = cardId(card), lim = getLimit(card), ask = lowestAsk(card);
+    const tone = o.displayTag === 'definitely_buy' || o.displayTag === 'buy' ? 'buyzone' : o.displayTag === 'dont_buy' ? 'dontbuy' : '';
+    const verdict = o.dv
+      ? `<div class="dw-verdict ${o.dv.held ? 'buyzone' : tone}">${o.dv.headline && !o.dv.held ? `<b>${escapeHtml(o.dv.headline)}.</b> ` : ''}${escapeHtml(o.dv.line)}</div>`
+      : `<div class="dw-verdict muted">No written verdict yet${o.displayTag ? ': the zone comes from the live price vs. the tiers' : ''}.</div>`;
+    const due = tierReview(card);
+    const odds = lim != null ? touchOdds(card, lim) : null;
+    const limTile = `<div class="dw-st dw-lim limit-row">
+        <div class="k">My limit</div>
+        <div class="v">${lim != null ? fmtYen(lim) : '—'}</div>
+        <div class="s">${lim == null ? 'set one to get a Buy signal' : limitHit(card) ? '<b class="pos">a listing is at or below it</b>'
+          : `${ask != null ? fmtYen(ask - lim) + ' above' : ''}${odds && !odds.reached ? ` · <b class="amb">${fmtOdds(odds.p90)}</b> in 90 days` : ''}`}</div>
+        <div class="dw-lact">${lim != null
+          ? '<button type="button" class="limit-btn dw-mini" data-act="edit" title="Change your limit">Edit</button><button type="button" class="limit-btn dw-mini" data-act="clear" title="Remove your limit">Clear</button>'
+          : '<button type="button" class="limit-btn dw-mini" data-act="edit">+ Set my limit</button>'}</div>
+      </div>`;
+    const last = priceChangeLast(card), d7 = priceChangeAgo(card, 7), d30 = priceChangeAgo(card, 30);
+    const pc = (c) => (c ? `<span class="${dirClass(c.pct)}">${c.pct === 0 ? '±0' : fmtPct(c.pct)}</span>` : '—');
+    const main = d7 || last;
+    const moves = `<div class="dw-st"><div class="k">Moves</div><div class="v">${pc(main)} <small>${d7 ? '7d' : 'last'}</small></div><div class="s">${d7 ? `last ${pc(last)} · ` : ''}30d ${pc(d30)}</div></div>`;
+    const pk = o.peak && o.peak.price ? computeOffPeakPct(o.peak.price, o.repPrice) : null;
+    const peakTile = `<div class="dw-st"><div class="k">Off peak</div><div class="v ${pk != null && pk > 0 ? 'neg' : ''}">${pk != null ? `${pk >= 0 ? '−' : '+'}${Math.abs(pk).toFixed(0)}%` : '—'}</div><div class="s">${pk != null ? `from ${fmtYen(o.peak.price)}${o.peak.when ? ' (' + escapeHtml(o.peak.when) + ')' : ''}` : 'peak unknown'}</div></div>`;
+    const ud = ask ? upsideDist(card, 24, false) : null;
+    const hold = ud ? profitOdds(ud.v, ask).p : null;
+    const holdTile = `<div class="dw-st"><div class="k">Hold value</div><div class="v">${hold != null ? Math.round(hold * 100) + '%' : '—'}</div><div class="s">chance of a profit after fees in 24 months</div></div>`;
+    const w = state.insights && state.insights.insights && state.insights.insights[card.url];
+    const ins = w && w.headline
+      ? `<a class="dw-ins" href="#/card/${escapeAttr(id)}">${INS_ICON}<span><b>${escapeHtml(w.headline)}</b> <i>Read the analysis →</i></span></a>`
+      : hasInsight(card) ? `<a class="dw-ins" href="#/card/${escapeAttr(id)}">${INS_ICON}<span>Something stands out in the numbers. <i>See the card page →</i></span></a>` : '';
+    return `<div class="cd cd-drawer dw" data-url="${escapeAttr(card.url)}">
+      <div class="dw-head">
+        ${slabHtml(card, 'md')}
+        <div class="dw-info">
+          <a class="cd-name jp" href="#/card/${escapeAttr(id)}">${escapeHtml(o.shortName)}</a>
+          <span class="cd-meta">${escapeHtml([o.code, o.pack].filter(Boolean).join(' · '))}</span>
+          <span class="cd-price display">${fmtYen(o.repPrice)}</span>
+          <span class="dw-delta">${o.deltaHtml}</span>
+          <span class="cd-tags">${tagChip(card)}${heatChip(card)}${o.ownedHtml}</span>
+        </div>
+      </div>
+      ${verdict}
+      ${due && due.due ? `<div class="dw-due">Tiers due for a review: ${escapeHtml(due.reasons.join(', '))}</div>` : ''}
+      ${o.gaugeHtml}
+      ${ins}
+      <div class="dw-stats">${limTile}${moves}${peakTile}${holdTile}</div>
+      <div class="dw-acts">
+        <a class="btn btn-primary" href="#/card/${escapeAttr(id)}">Open card page →</a>
+        <a class="btn" href="${escapeAttr(boughtFormUrl(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
+        <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
+      </div>
+    </div>`;
   }
 
   function wireCardDetail(el, card) {
