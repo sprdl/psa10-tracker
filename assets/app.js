@@ -19,6 +19,7 @@
     previousData: null,
     calls: null, // data/calls.json — track record of past calls (scripts/build_calls.py)
     oddsModel: null, // data/odds_model.json — odds of a listing reaching a price
+    valueModel: null, // data/value_model.json — upside ranges and the age curve (scripts/value_model_builder.js)
     syncedLimits: {}, // data/limits.json — limits saved for every device
     hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
@@ -157,6 +158,7 @@
     holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
+    valueModel: 'data/value_model.json',
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
@@ -192,6 +194,7 @@
     historyIndexPromise = Promise.resolve(state.hist);
     state.syncedLimits = (b.limits && b.limits.limits) || {};
     state.oddsModel = b.oddsModel || null;
+    state.valueModel = b.valueModel || null;
     state.stories = b.stories || null; // data/stories.json — the art stories (researched, with sources)
     state.predict = b.predict || null; // data/predict.json — You vs the model (scripts/predict.py)
     state.scout = b.scout || null; // data/scout.json — untracked candidates (scripts/scout.py)
@@ -2354,7 +2357,7 @@
           : !(card.grades && card.grades.raw_a_grade && card.grades.raw_a_grade.lowest_price) ? 'No raw A-rank listing right now, so the DIY cost can\'t be worked out.'
           : 'No PSA10 gem rate yet (the card\'s population hasn\'t been looked up), so the DIY cost can\'t be worked out.'}</div>`;
 
-    const tabs = [['overview', 'Overview'], ['story', 'Story'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY']].filter(([k]) => k !== 'story' || storyOf(card));
+    const tabs = [['overview', 'Overview'], ['story', 'Story'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY'], ['upside', 'Upside']].filter(([k]) => k !== 'story' || storyOf(card));
     const actionsHtml = `<div class="cd-actions">
           <a class="btn btn-primary" href="${escapeAttr(boughtFormUrl(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
           <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
@@ -2382,6 +2385,7 @@
         <div class="cd-panel" data-panel="overview"${cur === 'overview' ? '' : ' hidden'}>
           ${gaugeHtml}
           ${tierReviewHtml(card)}
+          ${tierCheckHtml(card)}
           ${limitRowHtml}
           ${insightsHtml(card)}
           ${vsMarketHtml(card)}
@@ -2393,6 +2397,7 @@
         <div class="cd-panel" data-panel="history"${cur === 'history' ? '' : ' hidden'}><div class="history-block"><div class="loading-inline">Loading full history…</div></div></div>
         <div class="cd-panel" data-panel="listings"${cur === 'listings' ? '' : ' hidden'}>${buildGradeDetail('PSA10', psa10, getLimit(card))}${raw ? buildGradeDetail('Raw A-rank', raw) : ''}</div>
         <div class="cd-panel" data-panel="diy"${cur === 'diy' ? '' : ' hidden'}>${diyHtml}${premiumHtml(card)}</div>
+        <div class="cd-panel" data-panel="upside"${cur === 'upside' ? '' : ' hidden'}>${upsideHtml(card)}</div>
         ${mode === 'page' ? '' : actionsHtml}
       </div>`;
   }
@@ -2499,6 +2504,101 @@
     if (bud) bud.addEventListener('change', () => { const v = Number(bud.value); save({ budget: v >= 0 ? v : 0 }); });
   }
 
+
+
+  // ---------- upside and tier check (data/value_model.json, scripts/value_model_builder.js) ----------
+  // 12/24-month outcome = the mature market's move (every start month 2022–26) + the card's own part
+  // (card vs market, pooled over cards 9+ months old, scaled by this card's own swing) + the age
+  // curve for young cards. Neutral by default: the market part is centred on zero, because 2022–26
+  // contains one big rally and one crash and its average says little about the next year.
+  // Selling on SNKRDUNK costs a fee by member rank (Regular 9.5% … Platinum 7%), a ¥200/¥300
+  // transfer fee and the seller's shipping; Regular is used because the rank depends on recent
+  // trading volume, which you won't have when you sell years later.
+  const SELL_FEE = 0.095, SELL_SHIP = 1000;
+  function sellNet(price) { return price * (1 - SELL_FEE) - (price >= 30000 ? 300 : 200) - SELL_SHIP; }
+  function vmCode(card) { return (parseCardName(card.card_name_ja).code || '').toLowerCase().trim(); }
+  function cardAgeMonths(card) {
+    const vm = state.valueModel, rel = vm && vm.release && vm.release[vmCode(card)];
+    if (!rel) return null;
+    const now = new Date(Date.now() + 9 * 3600e3);
+    return (now.getUTCFullYear() * 12 + now.getUTCMonth()) - (+rel.slice(0, 4) * 12 + (+rel.slice(5, 7) - 1));
+  }
+  function ageDrift(age, h) {
+    const vm = state.valueModel;
+    if (age == null || !vm) return 0;
+    let s = 0;
+    for (let i = 0; i < h; i++) { const a = age + i; const b = vm.age_curve.find((x) => a >= x.from && a < x.to); if (b && a < 12) s += b.monthly; }
+    return s;
+  }
+  // sorted log outcomes for horizon h (12 or 24), neutral or as in 2022–26
+  function upsideDist(card, h, historical) {
+    const vm = state.valueModel;
+    if (!vm || !vm.horizons || !vm.horizons[h]) return null;
+    const H = vm.horizons[h], mk = H.market, mid = mk[Math.floor(mk.length / 2)];
+    const sw = (vm.swing && vm.swing[vmCode(card)]) || vm.swing_pool;
+    const k = Math.min(2, Math.max(0.6, sw / vm.swing_pool));
+    const drift = ageDrift(cardAgeMonths(card), h);
+    const out = [];
+    for (const m of mk) for (const c of H.card_part) out.push(m - (historical ? 0 : mid) + k * c + drift);
+    return { v: out.sort((a, b) => a - b), k, drift, mid };
+  }
+  const dq = (v, p) => v[Math.min(v.length - 1, Math.max(0, Math.round(p * (v.length - 1))))];
+  const pAbove = (v, x) => v.filter((r) => r >= x).length / v.length;
+  function profitOdds(v, buy) {     // share of outcomes where selling nets at least the purchase price
+    let lo = -3, hi = 3;            // find the break-even log return
+    for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (sellNet(buy * Math.exp(m)) >= buy) hi = m; else lo = m; }
+    return { p: pAbove(v, hi), need: Math.expm1(hi) };
+  }
+
+  function upsideCol(card, buy, label) {
+    const peak = card.analysis && card.analysis.peak && card.analysis.peak.price;
+    const rows = [12, 24].map((h) => {
+      const d = upsideDist(card, h, false), dh = upsideDist(card, h, true);
+      if (!d) return '';
+      const sell = (p) => buy * Math.exp(dq(d.v, p));
+      const pr = profitOdds(d.v, buy), prh = profitOdds(dh.v, buy);
+      const pk = peak && peak > buy ? pAbove(d.v, Math.log(peak / buy)) : null;
+      const cell = (p, cls) => { const s = sell(p), net = sellNet(s) - buy; return `<div class="up-cell ${cls}"><b>${fmtYen(s)}</b><span class="${net >= 0 ? 'pos' : 'neg'}">${net >= 0 ? '+' : '−'}${fmtYen(Math.abs(net))} after fees</span></div>`; };
+      return `<div class="up-h"><div class="up-hl">In ${h} months</div>
+        <div class="up-range">${cell(0.1, 'lo')}${cell(0.5, 'mid')}${cell(0.9, 'hi')}</div>
+        <div class="up-lbls"><span>Weak (1 in 10 worse)</span><span>Typical</span><span>Strong (1 in 10 better)</span></div>
+        <div class="up-odds">Chance of selling at a profit after fees: <b>${Math.round(pr.p * 100)}%</b> <i>(needs +${Math.round(pr.need * 100)}%; ${Math.round(prh.p * 100)}% if the market behaves like 2022–26)</i>${pk != null ? ` · reaches the ${fmtYen(peak)} peak again: <b>${Math.round(pk * 100)}%</b>` : ''}</div></div>`;
+    }).join('');
+    return `<div class="up-col"><div class="up-buy"><span>${escapeHtml(label)}</span><strong>${fmtYen(buy)}</strong></div>${rows}</div>`;
+  }
+
+  function upsideHtml(card) {
+    const vm = state.valueModel, ask = lowestAsk(card), lim = getLimit(card);
+    if (!vm) return '<div class="tier-pending">No value model yet.</div>';
+    if (!ask) return '<div class="tier-pending">No PSA10 price yet, so there is nothing to start from.</div>';
+    const age = cardAgeMonths(card), d12 = upsideDist(card, 12, false);
+    const ageNote = age != null && age < 12 && d12 && d12.drift < -0.01
+      ? `<p class="cd-note warn">This card is ${age} month${age === 1 ? '' : 's'} old. Cards this young have kept falling against the market (on average ${Math.round(-Math.expm1(d12.drift) * 100)}% over the next 12 months), so the middle of the range is lower than for an older card.</p>` : '';
+    const sw = d12 ? (d12.k > 1.15 ? 'swings more than most modern cards, so its range is wider' : d12.k < 0.85 ? 'swings less than most modern cards, so its range is narrower' : 'swings about as much as most modern cards') : '';
+    return `<div class="up-wrap">
+      <div class="up-cols">${upsideCol(card, ask, "Bought today")}${lim != null && lim < ask ? upsideCol(card, lim, 'Bought at my limit') : ''}</div>
+      ${ageNote}
+      ${lim != null && lim < ask ? `<p class="cd-note">The chance of a profit is about the same in both columns: if a listing does drop to your limit, history gives no sign that the price then recovers faster or slower, so the limit buys the same chances for less money, if it fills (${(() => { const o = touchOdds(card, lim); return o && !o.reached ? `${fmtOdds(o.p90)} within 90 days` : 'already reachable'; })()}).</p>` : ''}
+      <p class="cd-note">How it's worked out: every 12- and 24-month stretch of 125 modern PSA10s on pokeca-chart, ${escapeHtml((vm.source || '').replace(/^.*cards, /, ''))}. The market part comes from how the whole tier moved, centred on no change, because 2022–26 holds one big rally and one crash. The card part is how far single cards strayed from the market; this card ${sw}. Selling costs SNKRDUNK's Regular-rank fee (9.5%), the ¥300 transfer fee and about ¥1,000 shipping. Not modelled: events for this Pokémon, reprints and the coming wave of graded copies. The 2022–26 data has only one full boom and bust, so treat these as rough ranges, not forecasts.</p>
+    </div>`;
+  }
+
+  // Tier check: how reachable each tier line is, from the limit-odds model, plus age and DIY context.
+  function tierCheckHtml(card) {
+    const t = card.analysis && card.analysis.tiers, ask = lowestAsk(card);
+    if (!t || !ask) return '';
+    const bits = [];
+    for (const [lbl, v] of [['Definitely-buy', t.definitely_buy], ['Buy', t.buy_upper]]) {
+      if (!v) continue;
+      const o = touchOdds(card, v);
+      if (!o) continue;
+      if (o.reached) { bits.push(`${lbl} ${fmtYen(v)}: a listing is already there`); continue; }
+      bits.push(`${lbl} ${fmtYen(v)}: <b>${fmtOdds(o.p30)}</b> in 30 days, <b>${fmtOdds(o.p90)}</b> in 90${o.p90 < 0.1 ? ' <span class="tc-flag">a long shot</span>' : ''}`);
+    }
+    if (!bits.length) return '';
+    const age = cardAgeMonths(card), drift = age != null && age < 9 ? ageDrift(age, 3) : 0;
+    return `<div class="tier-check"><span class="tc-lbl">Tier check</span> ${bits.join(' · ')}${drift < -0.02 ? `<span class="tc-note">Young card (${age} months): cards this age have fallen about ${Math.round(-Math.expm1(drift) * 100)}% against the market over the next 3 months, which these odds don't include.</span>` : ''}</div>`;
+  }
 
   // ---------- combination finder (#/combos, opened from the budget planner) ----------
   // Tries every mix of the cards in play (pinned ones always in, left-out and owned ones skipped)

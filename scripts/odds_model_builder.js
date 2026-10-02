@@ -30,6 +30,7 @@ window.__oddsBuilder = async (step) => {
     const extra = (window.__oddsExtra || ['098/SV-P', 'SGG 020/019']).filter(e => seen[e]);
     const list = [...new Set([...pool.map(p => p[0]), ...extra])].map(c => seen[c].href);
     LS.setItem('om_list', JSON.stringify(list)); LS.setItem('om_started', String(Date.now()));
+    LS.setItem('ci_cards', JSON.stringify(seen)); // card names, sets and release months, for scripts/value_model_builder.js
     return `pool: ${list.length} cards`;
   }
   if (step === 'grab') {

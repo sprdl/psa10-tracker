@@ -109,7 +109,9 @@ a line `VOL psa10 {"volume_trend": "...", "volume_note": "..."}` (or `VOL raw �
 3. `javascript_tool`: `await __oddsBuilder('grab')` → repeat until it returns "done". Each call reads up to 35 cards. A card that fails is retried on the next call, up to twice; "done" reports how many were read.
 4. `javascript_tool`: `await __oddsBuilder('build')` → a JSON string of about 7 KB.
 5. One `device_bash` call: write it with a heredoc to `data/incoming/odds-model.json`, then `python3 scripts/save_odds_model.py data/incoming/odds-model.json`. It refuses thin builds (under 60 cards) and keeps the model's `about` block, then commits and pushes.
-Mention the rebuild in the chat message in one line ("Limit-odds model rebuilt: 125 cards, pool volatility 20%/39% per 30/90 days"). If any step fails, keep the old model and say so.
+6. Value model (same browser tab, right after step 5; it reuses the histories the grab step left in the page's storage, so no more page reads): `python3 scripts/save_value_model.py --codes` via `device_bash` prints a `window.__valueCodes = [...]` line; then `cat "$R/scripts/value_model_builder.js"` and paste the file's contents plus that line verbatim into `javascript_tool`, then `javascript_tool`: `await __valueBuilder()` → a JSON string of about 4 KB.
+7. One `device_bash` call: write it with a heredoc to `data/incoming/value-model.json`, then `python3 scripts/save_value_model.py data/incoming/value-model.json`. It refuses thin builds and adds the release months pokeca-chart lacks, then commits and pushes. The site's Upside tab and Tier check read it.
+Mention the rebuild in the chat message in one line ("Limit-odds model rebuilt: 125 cards, pool volatility 20%/39% per 30/90 days; value model rebuilt"). If any step fails, keep the old model and say so.
 
 **6. Monday only: PSA tier status.** Follow `pricecheck/references/state.md`. On other days skip it entirely.
 Put the result on one line: `TIER <the psa_tier_status JSON>`.
