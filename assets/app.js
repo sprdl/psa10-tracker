@@ -165,13 +165,21 @@
   async function loadFreshBundle() {
     const optional = (path) => fetchJSON(path).catch(() => null);
     const manifestP = fetchJSON('data/manifest.json');
+    // Most loads have no new snapshot: fetch the two the cached manifest names in parallel with the
+    // manifest, and only fetch again if the manifest says there's a newer one.
+    const early = {};
+    try {
+      const cs = ((store.get(CACHE_KEY, null) || {}).manifest || {}).snapshots || [];
+      cs.slice(-2).forEach((x) => { early[x.file] = fetchJSON('data/snapshots/' + x.file); early[x.file].catch(() => null); });
+    } catch (e) { /* no cache */ }
+    const snapFile = (f) => early[f] || fetchJSON('data/snapshots/' + f);
     const restP = Promise.all(Object.entries(OPTIONAL_DATA).map(([k, path]) => optional(path).then((v) => [k, v])));
     const manifest = await manifestP;
     const snaps = manifest.snapshots || [];
     if (!snaps.length) return { manifest, empty: true };
     const [cur, prev, rest] = await Promise.all([
-      fetchJSON('data/snapshots/' + snaps[snaps.length - 1].file),
-      snaps.length > 1 ? optional('data/snapshots/' + snaps[snaps.length - 2].file) : null,
+      snapFile(snaps[snaps.length - 1].file),
+      snaps.length > 1 ? snapFile(snaps[snaps.length - 2].file).catch(() => null) : null,
       restP,
     ]);
     return Object.assign({ manifest, cur, prev }, Object.fromEntries(rest));
@@ -1553,6 +1561,7 @@
     if (!state.currentData) return;
     const { view, arg } = parseRoute();
     document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== view; });
+    renderLazy(view);
     const PARENT = { compare: 'collection', duel: 'planner', combos: 'planner', rate: 'planner', scored: 'record' };
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
@@ -1691,6 +1700,10 @@
   const TRIM_KEY = 'psa10.imgTrim.v1';
   const trimCache = store.get(TRIM_KEY, {});
   const trimPending = {};
+  // When the CDN refuses the CORS request, every measurement fails and each photo would be fetched a
+  // second time on every page load. Remember the refusal for a week (TRIM_RETRY) and use the default zoom.
+  const TRIM_FAIL_KEY = 'psa10.imgTrim.fail', TRIM_RETRY = 7 * 864e5;
+  let trimFails = 0, trimOff = Date.now() - (+store.get(TRIM_FAIL_KEY, 0) || 0) < TRIM_RETRY;
   function measureTrim(url) {
     return new Promise((resolve) => {
       const im = new Image();
@@ -1712,7 +1725,7 @@
               }
             }
           }
-          if (x1 < 0 || (y1 - y0) < H * 0.2) return resolve(null);
+          if (x1 < 0 || (y1 - y0) < H * 0.2) return resolve(false);
           resolve({ x0: x0 / W, y0: y0 / H, x1: (x1 + 1) / W, y1: (y1 + 1) / H });
         } catch (e) { resolve(null); } // canvas tainted: no CORS on the CDN
       };
@@ -1730,8 +1743,9 @@
       const url = img.getAttribute('src');
       if (!url) return;
       if (trimCache[url]) { applyTrim(img, trimCache[url]); return; }
+      if (trimOff) return;
       (trimPending[url] = trimPending[url] || measureTrim(url)).then((t) => {
-        if (!t) return;
+        if (!t) { if (t === null && ++trimFails >= 3 && !Object.keys(trimCache).length) { trimOff = true; store.set(TRIM_FAIL_KEY, Date.now()); } return; }
         if (!trimCache[url]) { trimCache[url] = t; store.set(TRIM_KEY, trimCache); }
         if (img.isConnected) applyTrim(img, t);
         document.querySelectorAll('img.card-img').forEach((o) => { if (o.getAttribute('src') === url) applyTrim(o, t); });
@@ -1760,14 +1774,34 @@
     renderCollection(cards);
     renderWatchPanel(cards.filter((c) => !hasMarket(c)), prevCards);
     renderPlanner(cards);
-    renderTrackRecord();
-    renderScout();
-    renderPredict();
-    renderStories();
-    renderTables(cards, prevCards);
+    // Pages that aren't on screen are built when first opened, or in the background once the
+    // browser is idle, so the first paint doesn't wait for them.
+    lazyPending = { record: renderTrackRecord, scout: renderScout, predict: renderPredict, stories: renderStories, tables: () => renderTables(cards, prevCards) };
     updateCounts();
     applyRoute();
     trimImages(document);
+    scheduleLazy();
+  }
+  let lazyPending = {}, lazyTimer = null;
+  function renderLazy(view) {
+    const f = lazyPending[view];
+    if (!f) return;
+    delete lazyPending[view];
+    f();
+    const sec = document.querySelector(`.view[data-view="${view}"]`);
+    if (sec) trimImages(sec);
+  }
+  function scheduleLazy() {
+    if (lazyTimer) return;
+    const idle = window.requestIdleCallback ? (fn) => requestIdleCallback(fn, { timeout: 2000 }) : (fn) => setTimeout(fn, 300);
+    const step = () => {
+      lazyTimer = null;
+      const next = Object.keys(lazyPending)[0];
+      if (!next) return;
+      renderLazy(next);
+      lazyTimer = idle(step);
+    };
+    lazyTimer = idle(step);
   }
 
   // Order used by the list and the display case: cards with a listing at or below
@@ -2723,31 +2757,80 @@
   // draws (seeded, so rankings are stable), and its sale proceeds per draw are worked out once;
   // a combo is then just the sum of its cards' arrays.
   const CB_SIMS = 2000;
+  // Draws are seeded per card (from its url), so a card's simulated outcomes don't depend on which
+  // other cards are in play, and both the per-card arrays and each combo's result can be cached.
+  const cbSimCache = new Map(), cbComboCache = new Map();
+  let cbSimFor = null, cbMarket = null, cbSaveTimer = null;
+  // Combo results are also kept in this browser (psa10.cbUp.v1, per value-model build), so reopening
+  // the finder or a portfolio rating after a reload doesn't recompute ~1,500 simulations.
+  const CB_STORE = 'psa10.cbUp.v1';
+  function cbLoadStore(vm) {
+    const st = store.get(CB_STORE, null);
+    if (!st || st.built !== (vm.built || '') || st.sims !== CB_SIMS) return;
+    for (const [k, v] of Object.entries(st.r || {})) cbComboCache.set(k, { n: v[0], p: v[1], typ: v[2], strong: v[3], weak: v[4] });
+  }
+  function cbSaveStore() {
+    if (cbSaveTimer) return;
+    cbSaveTimer = setTimeout(() => {
+      cbSaveTimer = null;
+      const r = {};
+      let i = 0;
+      for (const [k, v] of cbComboCache) { if (i++ >= 6000) break; r[k] = [v.n, +v.p.toFixed(4), +v.typ.toFixed(4), +v.strong.toFixed(4), +v.weak.toFixed(4)]; }
+      try { store.set(CB_STORE, { built: (cbSimFor && cbSimFor.built) || '', sims: CB_SIMS, r }); } catch (e) { /* storage full: keep it in memory only */ }
+    }, 1500);
+  }
+  function cbRng(seed) {
+    return () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  function cbHash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h | 0; }
   function cbSimPrep(pool) {
     const vm = state.valueModel, H = vm && vm.horizons && vm.horizons[24];
     if (!H) return false;
+    if (cbSimFor !== vm) { cbSimFor = vm; cbSimCache.clear(); cbComboCache.clear(); cbMarket = null; cbLoadStore(vm); }
     const mk = H.market, cp = H.card_part, mid = mk[Math.floor(mk.length / 2)];
-    let seed = 20261002;
-    const rnd = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    const m = new Float64Array(CB_SIMS);
-    for (let i = 0; i < CB_SIMS; i++) m[i] = mk[Math.floor(rnd() * mk.length)] - mid;
+    if (!cbMarket) { const rnd = cbRng(20261002); cbMarket = new Float64Array(CB_SIMS); for (let i = 0; i < CB_SIMS; i++) cbMarket[i] = mk[Math.floor(rnd() * mk.length)] - mid; }
     for (const x of pool) {
       if (!x.up) continue;
-      const a = new Float64Array(CB_SIMS);
-      for (let i = 0; i < CB_SIMS; i++) a[i] = sellNet(x.p * Math.exp(m[i] + x.up.k * cp[Math.floor(rnd() * cp.length)] + x.up.drift));
+      const key = `${x.card.url}@${x.p}@${x.up.k}@${x.up.drift}`;
+      let a = cbSimCache.get(key);
+      if (!a) {
+        const rnd = cbRng(cbHash(x.card.url));
+        a = new Float64Array(CB_SIMS);
+        for (let i = 0; i < CB_SIMS; i++) a[i] = sellNet(x.p * Math.exp(cbMarket[i] + x.up.k * cp[Math.floor(rnd() * cp.length)] + x.up.drift));
+        cbSimCache.set(key, a);
+      }
       x.sim = a;
+      x.simKey = key;
     }
     return true;
+  }
+  // k-th smallest value of a[lo..hi] (in place, Hoare quickselect): same result as sorting first.
+  function cbSelect(a, k, lo, hi) {
+    while (lo < hi) {
+      const pv = a[(lo + hi) >> 1];
+      let i = lo, j = hi;
+      while (i <= j) { while (a[i] < pv) i++; while (a[j] > pv) j--; if (i <= j) { const t = a[i]; a[i] = a[j]; a[j] = t; i++; j--; } }
+      if (k <= j) hi = j; else if (k >= i) lo = i; else return a[k];
+    }
+    return a[k];
   }
   function cbComboUpside(items) {
     const up = items.filter((x) => x.sim);
     if (!up.length) return null;
+    const key = String(cbHash(up.map((x) => x.simKey).sort().join('|')) >>> 0).padStart(10, '0') + up.length;
+    const hit = cbComboCache.get(key);
+    if (hit) return hit;
     const cost = up.reduce((a, x) => a + x.p, 0), r = new Float64Array(CB_SIMS);
-    for (const x of up) for (let i = 0; i < CB_SIMS; i++) r[i] += x.sim[i];
+    for (const x of up) { const s = x.sim; for (let i = 0; i < CB_SIMS; i++) r[i] += s[i]; }
     let win = 0;
     for (let i = 0; i < CB_SIMS; i++) { r[i] = r[i] / cost - 1; if (r[i] >= 0) win++; }
-    r.sort();
-    return { n: up.length, p: win / CB_SIMS, typ: dq(r, 0.5), strong: dq(r, 0.9), weak: dq(r, 0.1) };
+    const n = CB_SIMS - 1, k5 = Math.round(0.5 * n), k1 = Math.round(0.1 * n), k9 = Math.round(0.9 * n);
+    const typ = cbSelect(r, k5, 0, n), weak = cbSelect(r, k1, 0, k5), strong = cbSelect(r, k9, k5, n);
+    const res = { n: up.length, p: win / CB_SIMS, typ, strong, weak };
+    if (cbComboCache.size > 20000) cbComboCache.clear();
+    cbComboCache.set(key, res);
+    cbSaveStore();
+    return res;
   }
   function cbFit(total, avail) { return total <= avail ? total / avail : Math.max(0, 1 - (total - avail) / avail); }
 
