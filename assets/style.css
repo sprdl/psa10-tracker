@@ -1259,3 +1259,15 @@ body.lb-open { overflow: hidden; }
 .rt-best { font-size: 12px; line-height: 1.5; display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
 .rt-best .rt-open { min-height: 32px; padding: 4px 10px; font-size: 12px; margin-left: auto; }
 .du-rate { margin-top: 8px; align-self: flex-start; }
+
+.rt-find { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; margin-top: 4px; }
+.rt-keep { border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; background: rgba(255, 210, 63, 0.05); }
+.rt-keep.same { border-color: var(--line, #333); color: var(--muted); background: none; }
+.rt-kh { line-height: 1.6; }
+.rt-kh > span { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-right: 4px; }
+.rt-kh a { color: var(--text); text-decoration: none; white-space: nowrap; }
+.rt-kh a b { font-weight: 600; }
+.rt-kn { color: var(--muted); }
+.rt-kn b { color: var(--text); }
+.rt-kn .amb { color: var(--accent); }
+.rt-take { align-self: flex-start; min-height: 32px; padding: 4px 10px; font-size: 12px; }

@@ -2908,11 +2908,24 @@
     let mine = null;
     if (mineO) {
       mine = { o: mineO, cats: {} };
+      // Combos that keep every card of the portfolio (for "Find best match": what to add).
+      const mineUrls = mineItems.map((x) => x.card.url);
+      const keeps = out.filter((o) => mineUrls.every((u) => o.items.some((x) => x.card.url === u)));
+      mine.nKeeps = keeps.length;
       cbCatsFor(st.mode).filter(({ k }) => wantUp || (k !== 'upside' && k !== 'likely')).forEach(({ k }) => {
         const sc = (o) => measure[k](o) * o.fit, my = sc(mineO);
         let best = null, bs = -1, above = 0, below = 0;
         for (const o of out) { const v = sc(o); if (v > my + 1e-9) above++; else if (v < my - 1e-9) below++; if (v > bs || (v === bs && best && o.fit > best.fit)) { bs = v; best = o; } }
-        mine.cats[k] = { m: measure[k](mineO), score: my, rank: above + 1, beats: out.length ? below / out.length : null, best, bestScore: bs, bestM: best ? measure[k](best) : null };
+        let kb = null, ks = -1;
+        for (const o of keeps) { const v = sc(o); if (v > ks + 1e-12 || (Math.abs(v - ks) <= 1e-12 && kb && o.fit > kb.fit)) { ks = v; kb = o; } }
+        let keep = null;
+        if (kb) {
+          let ab = 0, be = 0;
+          for (const o of out) { const v = sc(o); if (v > ks + 1e-9) ab++; else if (v < ks - 1e-9) be++; }
+          keep = { o: kb, score: ks, m: measure[k](kb), rank: ab + 1, beats: out.length ? be / out.length : null,
+                   added: kb.items.filter((x) => !mineUrls.includes(x.card.url)) };
+        }
+        mine.cats[k] = { m: measure[k](mineO), score: my, rank: above + 1, beats: out.length ? below / out.length : null, best, bestScore: bs, bestM: best ? measure[k](best) : null, keep };
       });
     }
     return { pool, pinned, combos: out, cats, mine };
@@ -3063,6 +3076,24 @@
   // The cards ticked in the planner, scored with the combination finder's measures and ranked
   // against every combination the finder would consider for the same budget (pins and left-out
   // cards ignored, so the comparison is with everything on the tracker).
+  // "Find best match": the best combination in one category that keeps every card of the portfolio.
+  function rtKeepHtml(r, k, o, avail, pct, nameOf, N) {
+    const kp = r.keep;
+    if (!kp) return '';
+    if (!kp.added.length) return '<div class="rt-keep same">Already the best you can do here while keeping all your cards.</div>';
+    const gain = (kp.score - r.score) * 100;
+    const tone = kp.beats == null ? '' : kp.beats >= 0.8 ? 'pos' : kp.beats >= 0.4 ? 'amb' : 'neg';
+    const addCost = kp.added.reduce((a, x) => a + x.p, 0);
+    return `<div class="rt-keep${gain <= 0.05 ? ' same' : ''}">
+      ${gain <= 0.05 ? '<div>No addition raises this score; the best way to fill the budget anyway:</div>' : ''}
+      <div class="rt-kh"><span>Add</span> ${kp.added.map((x) => `<a href="#/card/${escapeAttr(cardId(x.card))}"><b>${escapeHtml(nameOf(x.card))}</b> ${fmtYen(x.p)}</a>`).join(' + ')}</div>
+      <div class="rt-kn">→ ${fmtYen(kp.o.total)} total (${cbMeasureText(k, kp.o, avail).budget}) · <b>${pct(kp.score)}</b> match <span class="${gain > 0.05 ? 'pos' : gain < -0.05 ? 'neg' : 'muted'}">(${gain >= 0 ? '+' : '−'}${Math.abs(gain).toFixed(gain < 10 && gain > -10 ? 1 : 0)} pts)</span>
+        · <span class="${tone}">#${kp.rank} of ${N + 1}, better than ${kp.beats != null ? Math.round(kp.beats * 100) : '—'}%</span></div>
+      <div class="cb-why">${escapeHtml(cbWhy(k, kp.o, kp.m, avail))} · adds ${fmtYen(addCost)}</div>
+      <button type="button" class="btn rt-take" data-take="${escapeAttr(kp.o.items.map((x) => x.card.url).join('|'))}">Tick these ${kp.o.n} and rate them</button>
+    </div>`;
+  }
+
   function renderRate(arg) {
     const el = document.getElementById('rate-page');
     const cards = (state.currentData && state.currentData.cards) || [];
@@ -3079,6 +3110,7 @@
       return { title: 'Rate my portfolio', sub: '' };
     }
     const res = comboSearch(cards, Object.assign({}, st, { pins: [], excl: [] }), avail, { mine: picked.map((c) => c.url), allCats: true });
+    const find = !!state.rateFind;
     const P = res.mine, o = P.o, N = res.combos.length;
     const nameOf = (c) => parseCardName(c.card_name_ja).short;
     const img = (c) => (c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '');
@@ -3113,6 +3145,8 @@
         ${cbOddsLine(o, st.mode)}${cbUpLine(o, 'The whole portfolio')}
         <div class="cb-chips">${chips}</div>
         ${rels.length ? `<ul class="rt-rel">${rels.join('')}</ul>` : ''}
+        <div class="rt-find"><button type="button" class="btn ${find ? '' : 'btn-primary'} rt-find-btn">${find ? 'Hide suggestions' : '✦ Find best match'}</button>
+          <span class="muted">${find ? (P.nKeeps ? `Best way to complete your ${o.n} card${o.n === 1 ? '' : 's'} in each category, from ${P.nKeeps} combination${P.nKeeps === 1 ? '' : 's'} that keep all of them.` : `No combination keeps all ${o.n} cards within 90–120% of the budget${o.total > avail * CB_MAX ? ': they already cost more than 120%' : ''}.`) : 'Keeps every card you ticked and suggests what to add, per category.'}</span></div>
         ${o.total < avail * CB_MIN || o.total > avail * CB_MAX ? `<p class="cd-note warn">The total is ${((o.total / avail) * 100).toFixed(1)}% of the budget, outside the finder's 90–120% range, so the budget fit pulls every score down.</p>` : ''}
       </section>`;
     const grid = cats.map((c) => {
@@ -3125,6 +3159,7 @@
         <div class="rt-rank ${tone}">${N ? `#${r.rank} of ${N + 1} · better than ${beat}% of the combinations` : 'No combinations to compare with'}</div>
         <div class="rt-bar"><i class="${tone}" style="width:${beat == null ? 0 : Math.max(3, beat)}%"></i></div>
         <div class="cb-why">${escapeHtml(cbWhy(c.k, o, r.m, avail))}</div>
+        ${find ? rtKeepHtml(r, c.k, o, avail, pct, nameOf, N) : ''}
         ${b && !isBest ? `<div class="rt-best"><span class="muted">Best in this category (${pct(r.bestScore)}):</span> ${b.items.map((x) => escapeHtml(nameOf(x.card))).join(' · ')} <span class="muted">· ${fmtYen(b.total)}</span>
           <button type="button" class="btn rt-open" data-cat="${c.k}">Open in the finder</button></div>` : b ? '<div class="rt-best pos">Your portfolio is the best combination in this category.</div>' : ''}
       </article>`;
@@ -3135,6 +3170,14 @@
     const save = (patch) => { store.set(PLANNER_KEY, Object.assign(plannerState(), patch)); const r = renderRate(arg); document.getElementById('page-sub').textContent = r.sub; renderPlanner(cards); renderKpis(state.currentData); };
     el.querySelectorAll('.pl-mode button').forEach((x) => x.addEventListener('click', () => save({ mode: x.dataset.mode })));
     el.querySelectorAll('[data-cat]').forEach((x) => x.addEventListener('click', () => { store.set(PLANNER_KEY, Object.assign(plannerState(), { cbCat: x.dataset.cat })); location.hash = '#/combos'; }));
+    const fb = el.querySelector('.rt-find-btn');
+    if (fb) fb.addEventListener('click', () => { state.rateFind = !state.rateFind; const r = renderRate(arg); document.getElementById('page-sub').textContent = r.sub; });
+    el.querySelectorAll('[data-take]').forEach((x) => x.addEventListener('click', () => {
+      const urls = x.dataset.take.split('|');
+      store.set(PLANNER_KEY, Object.assign(plannerState(), { selected: urls }));
+      renderPlanner(cards); renderKpis(state.currentData);
+      location.hash = '#/rate/' + urls.map((u) => cardId({ url: u })).join(',');
+    }));
     return { title: 'Rate my portfolio', sub: `${picked.length} card${picked.length === 1 ? '' : 's'} · ${st.mode === 'limits' ? 'at your limits' : "at today's prices"} · against ${N} combinations · checked ${fmtDateJST(state.currentData.collected_at_jst)}` };
   }
 
