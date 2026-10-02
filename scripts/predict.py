@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-"You vs the model": five weekly questions about your own cards, scored against the limit-odds model.
+"You vs the model": ten weekly questions about your own cards, scored against the limit-odds model.
 
     python3 scripts/predict.py              # generate this week's questions if missing, resolve, print
     python3 scripts/predict.py --dry-run    # same, without writing data/predict.json
@@ -10,11 +10,14 @@ evaluations), so questions appear with the first publish of a week and resolve a
 
 A week runs Monday 00:00 → Friday 23:59 JST. Answers close 48 hours before that, Wednesday 23:59 JST
 (ANSWER_LEAD_H), so nobody answers with Thursday's and Friday's prices already in view; questions are
-only made while at least a day of answering is left (Monday and Tuesday). Questions are made from the latest snapshot, one per
-card, at most one "climb" question:
+only made while at least a day of answering is left (Monday and Tuesday). Questions are made from the latest snapshot:
+up to N_QUESTIONS (10), first one per card, then a second one for cards that still have a different good
+question (other direction, or a target at least 4% away), at most MAX_ABOVE (3) "climb" questions:
   - "Will a listing drop to ¥X or less by Friday?" with X = your limit, the Definitely-buy or Buy line
-    (when 2–15% below today's lowest ask), otherwise a round price about 5% below;
-  - "Will the lowest ask climb to ¥X or more?" about 6% above, for the card that rose most this week.
+    (when 2–15% below today's lowest ask), or a round price about 5% or 10% below;
+  - "Will the lowest ask climb to ¥X or more?" about 6% above, cards that rose this week first.
+Ten a week (raised from five on 2026-10-02) so the score settles sooner; two questions on one card are
+correlated, so the Track record's numbers are a little less certain than the count suggests.
 Only questions the model gives between 15% and 85% are used, so neither side gets a free point.
 The model's odds use the limit-odds model (data/odds_model.json) scaled to the days until Friday:
 z = ln(target / ask) / (σ30 · √(days/30)), P = 1.29 × share of historical 30-day endpoints beyond z
@@ -38,7 +41,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 JST = timezone(timedelta(hours=9))
-N_QUESTIONS = 5
+N_QUESTIONS = 10
+PER_CARD = 2
+MAX_ABOVE = 3
 ANSWER_LEAD_H = 48      # answers close this many hours before the questions resolve (Friday 23:59 JST)
 P_MIN, P_MAX = 0.15, 0.85
 
@@ -123,6 +128,7 @@ def generate(root, now, monday):
             if v and 0.02 <= 1 - v / ask <= 0.15:
                 opts.append(("below", int(v), label, bonus))
         opts.append(("below", _round(ask * 0.95), "about 5% below today", 0))
+        opts.append(("below", _round(ask * 0.90), "about 10% below today", -0.5))
         opts.append(("above", _round(ask * 1.06), "about 6% above today", 0.5 if move7 > 0.02 else -1))
         for d, target, why, bonus in opts:
             p = short_odds(model, name, ask, target, days)
@@ -131,15 +137,20 @@ def generate(root, now, monday):
             cands.append({"url": url, "name": name, "dir": d, "target": target, "ask": ask, "lo30": lo30, "hi30": hi30,
                           "model": p, "why": why, "days": round(days, 1), "_score": bonus - abs(p - 0.5)})
     cands.sort(key=lambda q: -q["_score"])
-    picked, used, above = [], set(), 0
-    for q in cands:
-        if q["url"] in used or (q["dir"] == "above" and above >= 1):
-            continue
-        used.add(q["url"])
-        above += q["dir"] == "above"
-        picked.append(q)
-        if len(picked) == N_QUESTIONS:
-            break
+    picked, per, above = [], {}, 0
+
+    def distinct(q):     # a second question on a card must ask something different
+        return all(o["dir"] != q["dir"] or abs(o["target"] / q["target"] - 1) >= 0.04 for o in per.get(q["url"], []))
+
+    for limit in (1, PER_CARD):          # first pass: one per card; second pass: fill up with a second one
+        for q in cands:
+            if len(picked) == N_QUESTIONS:
+                break
+            if q in picked or len(per.get(q["url"], [])) >= limit or (q["dir"] == "above" and above >= MAX_ABOVE) or not distinct(q):
+                continue
+            per.setdefault(q["url"], []).append(q)
+            above += q["dir"] == "above"
+            picked.append(q)
     for i, q in enumerate(picked, 1):
         q.pop("_score")
         q["id"] = f"{monday.isoformat()}-{i}"

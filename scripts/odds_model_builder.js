@@ -70,13 +70,22 @@ window.__oddsBuilder = async (step) => {
     const seen = new Set();
     obs = obs.filter(o => { const k = o.code + '|' + Math.floor(o.t / 14); if (seen.has(k)) return false; seen.add(k); return true; }).sort((a, b) => a.t - b.t);
     const sd = a => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length); };
+    // Market-volatility factor (2026-10-02 backtest): when the whole market has been moving a lot over the
+    // last 90 days, every card's sigma is widened (and narrowed when it's calm) by
+    // (RMS of the market's 30-day moves over the last 90 days / RMS over all earlier history) ^ 0.25.
+    // Market 30-day move = average of all cards' 30-day returns starting in the same 14-day bucket.
+    const MK_POW = 0.25, MK_WIN = 90, rms = a => Math.sqrt(a.reduce((x, y) => x + y * y, 0) / a.length);
+    const mkB = {}; for (const o of obs) if (o.r30 != null) { const b = Math.floor(o.t / 14); (mkB[b] = mkB[b] || []).push(o.r30); }
+    const mkt = Object.entries(mkB).filter(([, a]) => a.length >= 10).map(([b, a]) => ({ t: +b * 14, r: a.reduce((x, y) => x + y, 0) / a.length })).sort((a, b) => a.t - b.t);
+    const mkFactor = t => { const past = mkt.filter(m => m.t + 30 <= t); if (past.length < 12) return 1; const rc = past.filter(m => m.t + 30 > t - MK_WIN).map(m => m.r); return rc.length < 3 ? 1 : Math.pow(rms(rc) / rms(past.map(m => m.r)), MK_POW); };
     const sigmaAt = (H, h, code, t) => {
       const past = obs.filter(q => q[H] != null && q.t + h <= t); if (past.length < 300) return null;
       const recent = past.filter(q => q.t + h > t - 180);
       const own = past.filter(q => q.code === code).slice(-8);
       const sRec = recent.length > 50 ? sd(recent.map(q => q[H])) : sd(past.map(q => q[H]));
       const sOwn = own.length >= 4 ? sd(own.map(q => q[H])) : sRec, w = own.length / (own.length + 6);
-      return { s: Math.sqrt(w * sOwn ** 2 + (1 - w) * sRec ** 2), sRec, nOwn: own.length };
+      const f = mkFactor(t);
+      return { s: Math.sqrt(w * sOwn ** 2 + (1 - w) * sRec ** 2) * f, sRec: sRec * f, nOwn: own.length };
     };
     const from = end - 1000;  // ~2.7 years of forecasts for the z-curves
     const z90 = [], z30 = [];
@@ -90,7 +99,7 @@ window.__oddsBuilder = async (step) => {
     for (const code of Object.keys(series)) { const a = sigmaAt('r30', 30, code, end + 1), b = sigmaAt('r90', 90, code, end + 1); if (a && b) cards[code.toLowerCase()] = [+a.s.toFixed(4), +b.s.toFixed(4), a.nOwn]; }
     const p30 = sigmaAt('r30', 30, '__pool__', end + 1).sRec, p90 = sigmaAt('r90', 90, '__pool__', end + 1).sRec;
     return JSON.stringify({ built: new Date(end * 864e5).toISOString().slice(0, 10), source: `pokeca-chart PSA10 price history, ${Object.keys(series).length} modern cards`,
-      pool_sigma: [+p30.toFixed(4), +p90.toFixed(4)], z_end30: q(z30, 100), z_touch90: q(z90, 100), n: [z30.length, z90.length], cards });
+      pool_sigma: [+p30.toFixed(4), +p90.toFixed(4)], market_vol: { factor: +mkFactor(end + 1).toFixed(3), power: MK_POW, window_days: MK_WIN }, z_end30: q(z30, 100), z_touch90: q(z90, 100), n: [z30.length, z90.length], cards });
   }
   return 'step must be list, grab or build';
 };

@@ -546,7 +546,7 @@
     if (o.reached) return `<div class="limit-odds">A listing is already at or below ${fmtYen(price)}.</div>`;
     const ev = evalOddsNear(card, price);
     return `<div class="limit-odds">Chance a listing reaches ${fmtYen(price)} (${Math.round(o.drop * 100)}% below today's lowest ask): <b>${fmtOdds(o.p30)}</b> within 30 days · <b>${fmtOdds(o.p90)}</b> within 90 days
-      <span class="limit-odds-note">${o.own ? `From this card's own price swings over the last months` : `This card has no pokeca-chart history, so it uses the typical swings of modern PSA10s`}, calibrated on ~2 years of prices for 125 modern PSA10s and tested on 2024–26 data. It assumes no trend, because trend and momentum made the backtest worse.${ev ? ` The written evaluation said ${Math.round(ev.p * 100)}% for ≤${fmtYen(ev.price)} by ${escapeHtml(ev.by)}.` : ''}</span></div>`;
+      <span class="limit-odds-note">${o.own ? `From this card's own price swings over the last months` : `This card has no pokeca-chart history, so it uses the typical swings of modern PSA10s`}, widened a little when the whole market has been moving a lot over the last 90 days (narrowed when it's calm), calibrated on ~2 years of prices for 125 modern PSA10s and tested on 2024–26 data. It assumes no trend, because trend and momentum made the backtest worse.${ev ? ` The written evaluation said ${Math.round(ev.p * 100)}% for ≤${fmtYen(ev.price)} by ${escapeHtml(ev.by)}.` : ''}</span></div>`;
   }
 
   // A limit is "hit" when a PSA10 listing you could buy right now is at or below it —
@@ -1168,10 +1168,10 @@
   function predCutoff(wk) { const d = new Date(predAnswerBy(wk) + 9 * 36e5); return `${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()]} ${d.getUTCMonth() + 1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')} JST`; }
   function predictSubtitle() {
     const wk = predCurrent();
-    if (!wk) return 'Five questions a week about your cards: your odds against the model\'s';
+    if (!wk) return 'Ten questions a week about your cards: your odds against the model\'s';
     const left = predAnswerBy(wk) - Date.now(), d = Math.floor(left / 864e5), h = Math.floor((left % 864e5) / 36e5);
     return left > 0
-      ? `Five questions about your cards · answer by ${predCutoff(wk)} · ${d ? `${d}d ` : ''}${h}h left · resolves ${predClose(wk.close)}`
+      ? `${wk.questions.length} questions about your cards · answer by ${predCutoff(wk)} · ${d ? `${d}d ` : ''}${h}h left · resolves ${predClose(wk.close)}`
       : `Answers closed ${predCutoff(wk)} · this week's questions resolve ${predClose(wk.close)}`;
   }
   function predScore() {
@@ -1224,7 +1224,7 @@
   function renderPredict() {
     const el = document.getElementById('predict-page'); if (!el) return;
     const ws = predWeeks();
-    if (!ws.length) { el.innerHTML = `<div class="empty-state">No questions yet. The first price check of the week writes five of them.</div>`; return; }
+    if (!ws.length) { el.innerHTML = `<div class="empty-state">No questions yet. The first price check of the week writes them (up to ten).</div>`; return; }
     const sc = predScore(), cur = predCurrent();
     const local = predLocal(), unsynced = cur ? cur.questions.filter((q) => local[q.id] && !(cur.answers || {})[q.id]) : [];
     const saveUrl = unsynced.length ? `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'predict.yml', title: `Answers ${cur.key}`, answers: unsynced.map((q) => `${q.id}: ${Math.round(local[q.id].p * 100)}`).join('\n') })}` : '';
@@ -1257,10 +1257,10 @@
       <p class="pq-hint pq-note">Brier score = the average of (your odds − what happened)², with what happened = 1 or 0. Always saying 50% scores 0.25; perfect foresight scores 0.</p>
       ${unsynced.length ? `<div class="pq-save"><span>${unsynced.length} answer${unsynced.length === 1 ? '' : 's'} locked on this device only${predAnswerBy(cur) > Date.now() ? ` · save before ${predCutoff(cur)} to count` : ' · the answer window has closed, so they won\u2019t count'}.</span><a class="btn btn-primary" href="${escapeAttr(saveUrl)}" target="_blank" rel="noopener">Save to all devices</a></div>` : ''}
       ${cur ? `<h2 class="pq-h">This week <span class="muted">${cur.questions.length} questions · ${cur.questions.filter((q) => predAnswer(cur, q.id)).length} locked · ${predAnswerBy(cur) > Date.now() ? `answer by ${predCutoff(cur)}` : `answers closed ${predCutoff(cur)}`} · resolves ${predClose(cur.close)}</span></h2>
-        <div class="pq-grid">${cur.questions.map((q, i) => predQuestionHtml(cur, q, i)).join('')}</div>` : `<p class="pq-hint">No open questions right now: the next five come with the first price check on Monday.</p>`}
+        <div class="pq-grid">${cur.questions.map((q, i) => predQuestionHtml(cur, q, i)).join('')}</div>` : `<p class="pq-hint">No open questions right now: the next ones (up to ten) come with the first price check on Monday or Tuesday.</p>`}
       ${pastHtml}
       ${chartW ? `<h2 class="pq-h">The season so far <span class="muted">running Brier score · lower is better</span></h2><div class="pq-chart">${chartW}</div>` : ''}
-      <p class="tr-note">How it works: every week the first price check writes five questions about your cards (a drop to your limit or a tier line, or a climb for a card that's rising), keeping only ones the model gives 15–85%, and freezes the model's odds. They resolve on the lowest PSA10 ask in any check or email alert until Friday 23:59 JST, but answers close 48 hours earlier (Wednesday 23:59 JST), so the last two days can't be read off the prices before you answer. Lock in to see the model's number; "Save to all devices" sends your locked answers through a GitHub form so iPad and Mac agree. The first answer to a question is final, and answers after a question resolved don't count.</p>`;
+      <p class="tr-note">How it works: every week the first price check writes up to ten questions about your cards (a drop to your limit, a tier line or a round price below, or a climb, up to three; at most two per card), keeping only ones the model gives 15–85%, and freezes the model's odds. They resolve on the lowest PSA10 ask in any check or email alert until Friday 23:59 JST, but answers close 48 hours earlier (Wednesday 23:59 JST), so the last two days can't be read off the prices before you answer. Lock in to see the model's number; "Save to all devices" sends your locked answers through a GitHub form so iPad and Mac agree. The first answer to a question is final, and answers after a question resolved don't count.</p>`;
     el.querySelectorAll('.pq').forEach((art) => {
       const r = art.querySelector('input[type=range]'), pct = art.querySelector('.pq-pct'), b = art.querySelector('.pq-lock');
       if (r) r.addEventListener('input', () => { pct.textContent = r.value + '%'; });
