@@ -98,7 +98,8 @@
      "at": "2026-09-29T20:59:29+09:00",
      "extreme": 24800
     }
-   }
+   },
+   "answer_by": "2026-09-30T23:59:59+09:00"
   }
  },
  "about": "You vs the model: weekly questions, answers and results. See scripts/predict.py."
