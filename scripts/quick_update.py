@@ -282,6 +282,10 @@ def main():
     print()
     passthrough = [a for a in args if a == "--no-push"]
     r = subprocess.run([sys.executable, str(root / "scripts" / "add_snapshot.py"), str(built), *passthrough], cwd=root)
+    if r.returncode == 0:
+        sys.path.insert(0, str(root / "scripts"))
+        import mercari
+        mercari.print_due(root)
     sys.exit(r.returncode)
 
 

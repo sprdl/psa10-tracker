@@ -158,7 +158,7 @@
     holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
-    valueModel: 'data/value_model.json', removed: 'data/removed_cards.json',
+    valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', mercari: 'data/mercari.json',
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
@@ -206,6 +206,7 @@
     state.stories = b.stories || null; // data/stories.json — the art stories (researched, with sources)
     state.predict = b.predict || null; // data/predict.json — You vs the model (scripts/predict.py)
     state.scout = b.scout || null; // data/scout.json — untracked candidates (scripts/scout.py)
+    state.mercari = b.mercari || null; // data/mercari.json — Mercari PSA10 listings for cards near the limit (scripts/mercari.py)
     state.premium = b.premium || null; // data/premium.json — pokeca-chart slab premium per card (scripts/premium.py)
     state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
     if (fresh) reconcileLimits(); // only against fresh data, never a cached copy
@@ -680,11 +681,76 @@
     return `${REPO_URL}/issues/new?${q}`;
   }
 
+  // ---------- Mercari (data/mercari.json, scripts/mercari.py) ----------
+  // Read during price checks, only for cards whose SNKRDUNK ask is within 5% of the limit. eff = price +
+  // あんしん鑑定 fee (¥1,700, free from ¥100,000). Auction prices are the current bid, so a lower bound.
+  // Alerts: a fixed-price listing at or under the limit (read in the last 36 h, it may have sold since),
+  // or an auction still at or under the limit that ends within 2 hours.
+  const MERC_FRESH_H = 36, MERC_ENDING_MIN = 120;
+  function mercariOf(card) {
+    const e = state.mercari && state.mercari.cards && state.mercari.cards[card.url];
+    if (!e) return null;
+    const now = Date.now(), lim = getLimit(card);
+    const ageH = (now - Date.parse(e.checked)) / 3600000;
+    const items = (e.items || []).filter((x) => x.grade !== false && x.num !== false)
+      .map((x) => Object.assign({}, x, { left: x.ends ? (Date.parse(x.ends) - now) / 60000 : null }))
+      .filter((x) => x.left == null || x.left > 0);
+    const under = (x) => lim != null && x.eff <= lim;
+    const fixedHit = ageH <= MERC_FRESH_H ? items.find((x) => !x.auction && under(x)) : null;
+    const ending = items.find((x) => x.auction && under(x) && x.left != null && x.left <= MERC_ENDING_MIN);
+    return { e, items, best: items[0] || null, ageH, lim, fixedHit, ending, alert: fixedHit || ending || null };
+  }
+  function fmtLeft(min) {
+    if (min == null) return '';
+    if (min < 60) return Math.max(1, Math.round(min)) + 'm';
+    if (min < 48 * 60) return Math.floor(min / 60) + 'h ' + String(Math.round(min % 60)).padStart(2, '0') + 'm';
+    return Math.round(min / 1440) + 'd';
+  }
+  const mercHM = (iso) => { const d = new Date(Date.parse(iso) + 9 * 3600000); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
+  const mercDay = (iso) => { const d = new Date(Date.parse(iso) + 9 * 3600000); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (d.getUTCMonth() + 1) + '/' + d.getUTCDate(); };
+  function mercItemText(x) {
+    return x.auction ? `auction, current bid ${fmtYen(x.price)}${x.fee ? ' + ' + fmtYen(x.fee) + ' fee' : ''}, ends ${mercDay(x.ends)} ${mercHM(x.ends)} (<span data-ends="${escapeAttr(x.ends)}">${fmtLeft(x.left)}</span> left)`
+      : `fixed price ${fmtYen(x.price)}${x.fee ? ' + ' + fmtYen(x.fee) + ' あんしん鑑定' : ''}`;
+  }
+  function mercariRowHtml(card) {
+    const m = mercariOf(card);
+    const lim = getLimit(card), ask = lowestAsk(card);
+    const near = lim != null && ask != null && ask <= lim * 1.05;
+    if (!m) {
+      return near ? `<div class="merc-row muted"><span class="merc-lbl">Mercari</span> not read yet: the next price check reads it for this card (its ask is within 5% of your limit).</div>` : '';
+    }
+    const read = `read ${mercDay(m.e.checked)} ${mercHM(m.e.checked)}`;
+    if (m.e.error) return `<div class="merc-row muted"><span class="merc-lbl">Mercari</span> couldn't be read (${escapeHtml(m.e.error)}), ${read}.</div>`;
+    if (!m.best) return `<div class="merc-row"><span class="merc-lbl">Mercari</span> no PSA10 listing for this card${m.e.matched ? ' near the price range' : ''} (${read}).${near ? '' : ' <span class="muted">Read again once the ask is within 5% of your limit.</span>'}</div>`;
+    const rows = m.items.slice(0, 3).map((x) => {
+      const hit = lim != null && x.eff <= lim;
+      const cls = hit && (x === m.fixedHit || x === m.ending) ? ' hit' : hit ? ' under' : '';
+      return `<li class="merc-item${cls}"><a href="${escapeAttr(x.url)}" target="_blank" rel="noopener"><b>${fmtYen(x.eff)}</b> ${mercItemText(x)}</a>${x.anshin === false ? ' <span class="merc-warn" title="The seller did not enable あんしん鑑定, so Mercari will not verify the slab">no あんしん鑑定: check the cert yourself</span>' : ''}${hit ? ` <span class="merc-ok">≤ limit</span>` : lim != null ? ` <span class="muted">${fmtPct((x.eff / lim - 1) * 100)} vs limit</span>` : ''}</li>`;
+    }).join('');
+    const vs = ask != null ? ` vs SNKRDUNK ${fmtYen(ask)} (${fmtPct((m.best.eff / ask - 1) * 100)})` : '';
+    const stale = m.ageH > MERC_FRESH_H ? ' <span class="merc-warn">old reading: listings may have sold</span>' : '';
+    const alert = m.ending ? `<div class="merc-alert">Auction ending in <span data-ends="${escapeAttr(m.ending.ends)}">${fmtLeft(m.ending.left)}</span> is still at or under your limit</div>`
+      : m.fixedHit ? `<div class="merc-alert">A listing is at or under your limit, including the あんしん鑑定 fee</div>` : '';
+    return `<div class="merc-row${m.alert ? ' alert' : ''}">${alert}<div><span class="merc-lbl">Mercari</span> cheapest PSA10 <strong>${fmtYen(m.best.eff)}</strong> incl. fee${vs} · ${read}${stale}</div><ul class="merc-list">${rows}</ul><div class="muted merc-foot">${m.e.matched || 0} PSA10 listing(s) matched of ${m.e.seen || 0} read. Prices include the ¥1,700 あんしん鑑定 fee (free from ¥100,000); auction prices are the current bid.</div></div>`;
+  }
+  // keep "Xh YYm left" current without re-rendering
+  setInterval(() => {
+    document.querySelectorAll('[data-ends]').forEach((el) => { const l = (Date.parse(el.dataset.ends) - Date.now()) / 60000; el.textContent = l > 0 ? fmtLeft(l) : 'ended'; });
+  }, 30000);
+
   function computeSignals(cards) {
     const out = [];
     cards.forEach((card, i) => {
       if (lowestAsk(card) == null) return;
       const name = parseCardName(card.card_name_ja).short;
+      const mc = mercariOf(card);
+      if (mc && mc.ending) {
+        out.push({ key: card.url + '|merc|' + mc.ending.id, i, card, name, kind: 'mercari', rank: -1,
+          text: `Mercari auction ends ${mercHM(mc.ending.ends)} (in ${fmtLeft(mc.ending.left)}): bid + fee ${fmtYen(mc.ending.eff)} ≤ your limit ${fmtYen(mc.lim)}` });
+      } else if (mc && mc.fixedHit) {
+        out.push({ key: card.url + '|merc|' + mc.fixedHit.id, i, card, name, kind: 'mercari', rank: -1,
+          text: `Mercari listing ${fmtYen(mc.fixedHit.eff)} incl. あんしん鑑定 ≤ your limit ${fmtYen(mc.lim)} (read ${mercHM(mc.e.checked)})${mc.fixedHit.anshin === false ? ', no あんしん鑑定' : ''}` });
+      }
       if (limitHit(card)) {
         out.push({ key: card.url + '|limit', i, card, name, kind: 'limit', rank: 0,
           text: `Lowest ask ${fmtYen(lowestAsk(card))} is at or below your limit ${fmtYen(getLimit(card))}` });
@@ -713,7 +779,7 @@
     } else {
       el.innerHTML = `<div class="signals-head">Buy signals</div>` + signals.map((s) => {
         const isNew = isLatest && !seen.has(s.key);
-        const pill = s.kind === 'limit' ? '<span class="sig-pill limit">My limit</span>' : `<span class="vtag ${s.kind}">${escapeHtml(tagLabel(s.kind))}</span>`;
+        const pill = s.kind === 'limit' ? '<span class="sig-pill limit">My limit</span>' : s.kind === 'mercari' ? '<span class="sig-pill merc">Mercari</span>' : `<span class="vtag ${s.kind}">${escapeHtml(tagLabel(s.kind))}</span>`;
         return `<button type="button" class="signal" data-idx="${s.i}">${pill}<span class="sig-name">${escapeHtml(s.name)}</span><span class="sig-text">${escapeHtml(s.text)}</span>${isNew ? '<span class="sig-new">NEW</span>' : ''}</button>`;
       }).join('');
       el.querySelectorAll('.signal').forEach((b) => b.addEventListener('click', () => {
@@ -2264,7 +2330,7 @@
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg')}${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg wl-c30')}
-        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
+        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
         <span class="wl-heat">${heatChip(card)}</span>
       </a>`;
     }).join('');
@@ -2553,6 +2619,7 @@
           ${tierReviewHtml(card)}
           ${tierCheckHtml(card)}
           ${limitRowHtml}
+          ${mercariRowHtml(card)}
           ${insightsHtml(card)}
           ${vsMarketHtml(card)}
           ${verdictHtml}

@@ -321,6 +321,8 @@ def main():
         scout.update(*sc, root=ROOT, push="--no-push" not in args)
     persist_images(raw, cards_meta, dry)
     print_eval_due()
+    import mercari
+    mercari.print_due(ROOT)
 
 
 def eval_due(root=ROOT, now=None):
