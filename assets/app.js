@@ -2832,6 +2832,7 @@
   // how close the total is to the budget (going over costs the same as leaving money unspent).
   const CB_MIN = 0.9, CB_MAX = 1.2, CB_PER = 3;
   const CB_CATS = [
+    { k: 'overall', label: 'Best overall', sub: 'the 5 combinations with the highest average match across all the other categories (each category counts the same)', top: 5 },
     { k: 'fit', label: 'Best use of budget', sub: 'closest to spending exactly the budget' },
     { k: 'most', label: 'Most cards', sub: 'the widest display' },
     { k: 'value', label: 'Best value', sub: 'furthest below the cards’ Buy lines' },
@@ -2966,7 +2967,7 @@
       walk(i + 1, sum);
     })(0, base);
     if (!out.length && !mineO) return { pool, pinned, combos: [], cats: {} };
-    const wantUp = (opt.allCats || st.cbCat === 'upside' || st.cbCat === 'likely') && cbSimPrep(pool.concat(mineItems.filter((x) => !pool.includes(x))));
+    const wantUp = (opt.allCats || st.cbCat === 'upside' || st.cbCat === 'likely' || st.cbCat === 'overall') && cbSimPrep(pool.concat(mineItems.filter((x) => !pool.includes(x))));
     const scored = mineO ? out.concat(mineO) : out;
     scored.forEach((o) => {
       o.n = o.items.length;
@@ -2995,11 +2996,18 @@
       upside: relStrong,
       likely: relP,
     };
+    // "Best overall": the average of every other category's match (measure × budget fit).
+    const baseKs = cbCatsFor(st.mode).map((c) => c.k).filter((k) => k !== 'overall' && (wantUp || (k !== 'upside' && k !== 'likely')));
+    measure.overall = (o) => {
+      if (!o._per) { o._per = {}; for (const k of baseKs) o._per[k] = measure[k](o) * o.fit; }
+      return baseKs.reduce((a, k) => a + o._per[k], 0) / (baseKs.length || 1);
+    };
+    const scoreOf = (k, o) => (k === 'overall' ? measure.overall(o) : measure[k](o) * o.fit);
     const cats = {};
-    cbCatsFor(st.mode).filter(({ k }) => wantUp || (k !== 'upside' && k !== 'likely')).forEach(({ k }) => {
-      cats[k] = out.map((o) => ({ o, m: measure[k](o), score: measure[k](o) * o.fit }))
+    cbCatsFor(st.mode).filter(({ k }) => wantUp || (k !== 'upside' && k !== 'likely' && k !== 'overall')).forEach(({ k, top }) => {
+      cats[k] = out.map((o) => ({ o, m: measure[k](o), score: scoreOf(k, o) }))
         .sort((a, b) => b.score - a.score || b.o.fit - a.o.fit || b.o.total - a.o.total)
-        .slice(0, CB_PER);
+        .slice(0, top || CB_PER);
     });
     let mine = null;
     if (mineO) {
@@ -3008,8 +3016,8 @@
       const mineUrls = mineItems.map((x) => x.card.url);
       const keeps = out.filter((o) => mineUrls.every((u) => o.items.some((x) => x.card.url === u)));
       mine.nKeeps = keeps.length;
-      cbCatsFor(st.mode).filter(({ k }) => wantUp || (k !== 'upside' && k !== 'likely')).forEach(({ k }) => {
-        const sc = (o) => measure[k](o) * o.fit, my = sc(mineO);
+      cbCatsFor(st.mode).filter(({ k }) => wantUp || (k !== 'upside' && k !== 'likely' && k !== 'overall')).forEach(({ k }) => {
+        const sc = (o) => scoreOf(k, o), my = sc(mineO);
         let best = null, bs = -1, above = 0, below = 0;
         for (const o of out) { const v = sc(o); if (v > my + 1e-9) above++; else if (v < my - 1e-9) below++; if (v > bs || (v === bs && best && o.fit > best.fit)) { bs = v; best = o; } }
         let kb = null, ks = -1;
@@ -3025,7 +3033,7 @@
       });
       // Best match overall: the combo keeping every ticked card with the highest average match over
       // all categories (each category counts the same).
-      const ks = Object.keys(mine.cats);
+      const ks = Object.keys(mine.cats).filter((k) => k !== 'overall');
       if (keeps.length && ks.length) {
         const avg = (o) => ks.reduce((a, k) => a + measure[k](o) * o.fit, 0) / ks.length;
         let ob = null, ov = -1;
@@ -3047,6 +3055,10 @@
   function cbWhy(cat, o, m, avail) {
     const t = cbMeasureText(cat, o, avail);
     if (cat === 'fit') return `budget fit ${(o.fit * 100).toFixed(1)}%`;
+    if (cat === 'overall') {
+      const per = o._per || {};
+      return `average of ${Object.keys(per).length} categories: ` + Object.entries(per).map(([k, v]) => `${(CB_CATS.find((c) => c.k === k) || {}).label} ${Math.round(v * 100)}%`).join(' · ');
+    }
     const own = cat === 'most' || cat === 'big' ? t.cards
       : cat === 'odds' ? `average chance ${Math.round(o.odds90 * 100)}% in 90 days, ${Math.round(o.odds30 * 100)}% in 30, over ${o.nLim} limit${o.nLim === 1 ? '' : 's'}`
       : cat === 'upside' ? `strong case ${cbPct(o.upStrong)} after fees`
@@ -3154,7 +3166,7 @@
           <button type="button" class="btn ${i === 0 ? 'btn-primary' : ''} cb-use" data-use="${escapeAttr(o.items.map((x) => x.card.url).join('|'))}">Tick these ${o.n} in the planner</button>
         </div>`;
       }).join('');
-      body = tabs + `<p class="cb-catsub">${escapeHtml(info.sub)}. Match = ${cat === 'fit' ? 'how close the total is to the budget (going over counts the same as leaving money unspent)' : 'this category’s measure, relative to the best combo, × how close the total is to the budget'}.</p><div class="cb-picks">${cols}</div>`;
+      body = tabs + `<p class="cb-catsub">${escapeHtml(info.sub)}. Match = ${cat === 'fit' ? 'how close the total is to the budget (going over counts the same as leaving money unspent)' : cat === 'overall' ? 'the average of the other categories’ matches, each already including the budget fit' : 'this category’s measure, relative to the best combo, × how close the total is to the budget'}.</p><div class="cb-picks">${cols}</div>`;
     }
 
     el.innerHTML = top + poolHtml + body + `<p class="cd-note">${res.combos.length} combination${res.combos.length === 1 ? '' : 's'} between ${Math.round(CB_MIN * 100)}% and ${Math.round(CB_MAX * 100)}% of ${fmtYen(avail)}. Within budget, only combos with no room for one more card count. ${st.mode === 'limits' ? 'Cards without a limit use today’s price. Chances of reaching a limit come from the limit-odds model (each card’s own price swings, no trend assumed). “Limits likely reached” adds them up per combo: the expected number of cards, not the chance of getting all of them, which is lower. ' : ''}Value compares each price with the card’s Buy line (cards without tiers count as neutral). ${state.valueModel ? 'Upside comes from the value model on each card’s Upside tab: 24 months, the market centred on no change, the age curve for young cards, and SNKRDUNK’s Regular-rank selling fees; it doesn’t model reprints, events or the coming wave of graded copies, and the combo’s range treats the market move as shared by all its cards, so a mix of cards narrows only the card-specific part. ' : ''} Pins and left-out cards are saved in this browser.</p>`;
