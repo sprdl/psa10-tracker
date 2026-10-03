@@ -1,6 +1,6 @@
 {
  "about": "Stories behind the tracked cards' artwork: illustrator, what the art shows, its connections, set context and trivia. Researched from the official card database, Bulbapedia, PokeBeach, Famitsu and card media (sources per card). Shown on each card's Story tab and the Stories page.",
- "updated": "2026-09-30T16:47:37+09:00",
+ "updated": "2026-10-03T13:07:50+09:00",
  "cards": {
   "https://snkrdunk.com/apparels/138599": {
    "illustrator": "Souichirou Gunjima",
@@ -646,6 +646,43 @@
    ],
    "confidence": "medium",
    "written": "2026-09-30T16:47:37+09:00"
+  },
+  "https://snkrdunk.com/apparels/722239": {
+   "illustrator": "Saboteri",
+   "illustrator_ja": null,
+   "art": "Mega Charizard X unleashes its attack in a bold, American-comic-style composition, with the attack's name, INFERNO X, written in huge English letters across the top of the card. That comic look, with the Pokémon and attack name printed in colour, is the signature of the Mega Attack Rare (MA) design.",
+   "story": "The attack in the title is Inferno X (インフェルノX), the same name as the M2 expansion that introduced Mega Charizard X ex a few months earlier.",
+   "set": "From the high-class pack MEGA Dream ex (M2a), released in Japan on November 28, 2025. The set introduced the new Mega Attack Rare rarity: ten MA cards, numbered 223 to 232, all in this pack.",
+   "trivia": [
+    "Mega Charizard X ex is the most expensive of the ten Mega Attack Rares.",
+    "Some Japanese MA cards were printed with the texture layer meant for the Traditional Chinese edition, so the texture looks cut out around the text; those error copies sold for roughly seven to ten times the normal price in late 2025.",
+    "Every box of MEGA Dream ex contains at least one MA card."
+   ],
+   "english": null,
+   "sources": [
+    {
+     "title": "TCG Collector: Mega Charizard X ex (MEGA Dream ex 223/193)",
+     "url": "https://www.tcgcollector.com/cards/51807/mega-charizard-x-ex-mega-dream-ex-223-193"
+    },
+    {
+     "title": "DexTCG: Mega Charizard X ex (M2a 223)",
+     "url": "https://dextcg.com/cards/jpn_m2a-223"
+    },
+    {
+     "title": "ポケカジラ: 「MA（メガアタックレア）」収録！MEGAドリームex",
+     "url": "https://pokecazilla.com/column/m2a-pickup-cards/"
+    },
+    {
+     "title": "カード抽選まとめ: ポケカMA(メガアタックレア)とは？",
+     "url": "https://cardchusen.com/guide/pokeka-ma"
+    },
+    {
+     "title": "PokeBeach: MEGA Dream ex secret rares printed with wrong texture",
+     "url": "https://www.pokebeach.com/2025/11/mega-dream-ex-secret-rares-printed-with-wrong-texture-skyrocketing-their-prices"
+    }
+   ],
+   "confidence": "medium",
+   "written": "2026-10-03T13:07:50+09:00"
   }
  }
 }
