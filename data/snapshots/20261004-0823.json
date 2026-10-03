@@ -2070,7 +2070,23 @@
           "tag": "watch",
           "label": "Watch: ask is above the ceiling, sales still ¥42–50k",
           "reasoning": "The lowest PSA10 ask is ¥49,500, up 16% from ¥42,750 and now above the ¥49k ceiling, so the ¥40–42k listing the last verdict waited for has not appeared. Sales from 9/29 to 10/1 ran ¥41.5–55k, mostly ¥44–50k, and 9 of 20 asks sit within 15% of the low. Raw A is ¥36,999, so the slab carries a modest premium over raw. Under the correction rule a Buy needs ≤¥38k. I'd wait for a listing at ≤¥43k; the old ≤¥42k prediction stays on the Track record until its deadline.",
-          "written": "2026-10-04T08:24:32+09:00"
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥43k (Buy) within 30 days",
+              "p": 0.24,
+              "type": "touch_below",
+              "price": 43000,
+              "by": "2026-11-03"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥38k (Definitely buy) within 90 days",
+              "p": 0.22,
+              "type": "touch_below",
+              "price": 38000,
+              "by": "2027-01-02"
+            }
+          ],
+          "written": "2026-10-04T08:29:01+09:00"
         },
         "verdict_price_ref": 49500
       },
@@ -2637,7 +2653,16 @@
           "tag": "watch",
           "label": "Watch: in the Buy zone, but the correction rule says wait",
           "reasoning": "The lowest PSA10 ask is ¥102,500, down 14% from ¥119,000 and now inside the ¥98–108k Buy zone. Sales have reset lower, ¥98–108k since 9/28 (mostly ~¥100–105k), and 12 of 20 asks are within 15% of the low, so the book has real depth. Raw A is ¥64,999, a slab premium of about 58%. The My-tier index is still well down on the month, so the correction rule keeps this at Watch unless a listing hits ¥98k or below, which sales at ¥97.9–100k show is possible. A rebound above ¥108k would change the call.",
-          "written": "2026-10-04T08:24:32+09:00"
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥98k (Definitely buy) within 30 days",
+              "p": 0.48,
+              "type": "touch_below",
+              "price": 98000,
+              "by": "2026-11-03"
+            }
+          ],
+          "written": "2026-10-04T08:29:01+09:00"
         },
         "verdict_price_ref": 102500
       },

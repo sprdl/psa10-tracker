@@ -14,7 +14,7 @@
   },
   "calls_scored": 8,
   "odds_resolved": 4,
-  "odds_open": 44,
+  "odds_open": 47,
   "brier": 0.229,
   "expected_yes": 2.1,
   "actual_yes": 4,
@@ -491,6 +491,34 @@
    "gap_pct": -8.7
   },
   {
+   "url": "https://snkrdunk.com/apparels/224087",
+   "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
+   "text": "A PSA10 listing at ≤¥43k (Buy) within 30 days",
+   "p": 0.24,
+   "type": "touch_below",
+   "price": 43000,
+   "by": "2026-11-03",
+   "made": "2026-10-04T08:23:55+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 49500,
+   "gap_pct": -13.1
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/585221",
+   "name": "レシラムex BWR [SV11W 174/086](拡張パック「ホワイトフレア」)",
+   "text": "A PSA10 listing at ≤¥98k (Definitely buy) within 30 days",
+   "p": 0.48,
+   "type": "touch_below",
+   "price": 98000,
+   "by": "2026-11-03",
+   "made": "2026-10-04T08:23:55+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 102500,
+   "gap_pct": -4.4
+  },
+  {
    "url": "https://snkrdunk.com/apparels/387059",
    "name": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
    "text": "Reaches Buy (≤¥38k) within 3 months",
@@ -965,6 +993,20 @@
    "why": "88 days left",
    "now": 25590,
    "gap_pct": -23.8
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/224087",
+   "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
+   "text": "A PSA10 listing at ≤¥38k (Definitely buy) within 90 days",
+   "p": 0.22,
+   "type": "touch_below",
+   "price": 38000,
+   "by": "2027-01-02",
+   "made": "2026-10-04T08:23:55+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 49500,
+   "gap_pct": -23.2
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
