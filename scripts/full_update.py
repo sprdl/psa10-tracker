@@ -35,6 +35,7 @@ import json
 import re
 import subprocess
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -45,6 +46,8 @@ import quick_update  # noqa: E402  (decode_compact: the product-page part of eac
 import premium  # noqa: E402
 import scout  # noqa: E402
 import plan as planmod  # noqa: E402
+
+JST = timezone(timedelta(hours=9))
 
 TILE_ERR = {"-": "no for-sale listings (出品待ち on the grade tile)", "?": "no price on the grade tile",
             "x": "grade tile not found", "!": "grade tiles not found"}
@@ -317,6 +320,34 @@ def main():
         print()
         scout.update(*sc, root=ROOT, push="--no-push" not in args)
     persist_images(raw, cards_meta, dry)
+    print_eval_due()
+
+
+def eval_due(root=ROOT, now=None):
+    """Cards FULL-CHECK step 8b must evaluate: a PSA10 ask on the tracker and no tiers, with no verdict
+    at all, or a `defer` verdict on a Monday (deferred cards get one fresh look a week)."""
+    snap_path, snap = planmod.latest_snapshot(root)
+    monday = (now or datetime.now(JST)).weekday() == 0
+    out = []
+    for c in (snap or {}).get("cards", []):
+        a = c.get("analysis") or {}
+        ask = ((c.get("grades") or {}).get("psa10") or {}).get("lowest_price")
+        tag = (a.get("verdict") or {}).get("tag")
+        if ask and not a.get("tiers") and (not tag or (tag == "defer" and monday)):
+            out.append((c["url"], ask, c.get("card_name_ja", "")))
+    return out
+
+
+def print_eval_due():
+    due = eval_due()
+    if not due:
+        print("\nEVALUATE NOW: none (every card with a PSA10 market has tiers).")
+        return
+    print("\nEVALUATE NOW (FULL-CHECK step 8b) — the run is not finished until these have tiers and a verdict:")
+    for i, (url, ask, name) in enumerate(due):
+        print(f"  {'' if i < 3 else '(next run) '}{url}  PSA10 ask ¥{ask:,}  {name}")
+    print("  Run the pokemon-tcg-card-evaluation skill for each (at most 3 per run), including apply_analysis.py.")
+    print("  A new card is exactly what this step is for; 'it has no tiers yet' is the reason to evaluate, not to skip.")
 
 
 if __name__ == "__main__":
