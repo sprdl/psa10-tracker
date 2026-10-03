@@ -2,10 +2,10 @@
  "about": "Analyses written by the full price check for cards that stand out (scripts/outliers.py). Shown on the card page above the automatic findings. Edit with scripts/set_insight.py.",
  "insights": {
   "https://snkrdunk.com/apparels/138599": {
-   "written": "2026-10-02T08:10:51+09:00",
-   "headline": "Ask up 22% in a week to ¥36,000, 20% above where sales clear",
-   "text": "What's happening: The lowest PSA10 ask climbed from ¥29,400 to ¥36,000 in a week while my tier index slipped about 2.5%. Recent sales median is ¥30,000, though the latest prints reached ¥35,000, and sales pace rose to about 2.5 a day from 1.4. Only 12 of 20 listings sit within 15% of the ask.\n\nWhy: The cheap copies are being bought and sellers relist higher; the rising sales pace and last prints near ¥34,700-35,000 show some real buying, but this is my reading of the data, not a confirmed cause. I did not research external news this run.\n\nFor you: ¥36,000 is above the Buy line (¥29,500) and the ¥35,500 ceiling, far above your ¥26,000 limit. It stays a Watch.\n\nWatch: whether sales keep printing at ¥34,000+ or fall back toward ¥30,000.",
-   "signals": "7d +22% vs My-tier -2.5%; ask +20% vs sales median ¥30,000; slab premium 1.23x vs 2.29x norm",
+   "written": "2026-10-03T09:03:03+09:00",
+   "headline": "Pikachu VMAX CSR ask +22% in a week while the market was flat",
+   "text": "What's happening: The lowest PSA10 ask rose from ¥29,500 to ¥35,999 in 7 days, 14% above the recent sales median of ¥31,500, while the My-tier index barely moved (+0.3%).\nWhy: Likely sellers re-pricing upward after thin supply near ¥30,000; the sold prices rose too (median ¥31,500 vs ¥29,500 before). A search for a reprint of the set found no relevant news.\nFor you: ¥35,999 is far above your ¥29,000 limit and the ¥31,000 Buy line, so it stays Watch.\nWatch: Whether sales keep clearing above ¥31,000, or the ask falls back toward ¥30,000.",
+   "signals": "7d price +22.0% (¥29,500→¥35,999) vs My-tier index +0.3%; slab premium 1.14x vs 2.30x norm",
    "sources": []
   },
   "https://snkrdunk.com/apparels/387059": {
@@ -23,10 +23,10 @@
    "sources": []
   },
   "https://snkrdunk.com/apparels/224087": {
-   "written": "2026-10-02T08:10:51+09:00",
-   "headline": "Greninja ask ¥47,900 is 12% above sales; slab premium 20% below norm",
-   "text": "What's happening: The lowest PSA10 ask is ¥47,900, 12% above the recent sales median of ¥42,800, with 11 of 20 listings within 15% of it. The pokeca-chart slab premium was 1.36x on 2026-09-10 against a 6-month norm of 1.71x (that reading is three weeks old).\n\nWhy: Sales cluster at ¥41,000-44,000 while the cheapest listings sit higher, so the next sale could print above the old low. I did not research external news this run.\n\nFor you: ¥47,900 is above the Buy line (¥43,000) and your ¥37,000 limit, so it stays a Watch.\n\nWatch: sales returning to ¥41,000-43,000 or the ask resetting below ¥44,000.",
-   "signals": "ask +12% vs sales median ¥42,800; premium 1.36x vs norm 1.71x (2026-09-10)",
+   "written": "2026-10-03T09:03:04+09:00",
+   "headline": "Greninja ex SAR ask up 18% to ¥49,500, thin book",
+   "text": "What's happening: The lowest PSA10 ask rose from about ¥42,000 to ¥49,500 in a week, trading speed more than doubled to 3.4 a day, and only 7 of 20 listings sit within 15% of the ask.\nWhy: Likely cheaper listings were bought out, leaving a thin book above; this is a hypothesis, not news-based.\nFor you: ¥49,500 is above the ¥43,000 Buy line and your ¥37,000 limit, so Watch.\nWatch: Whether the ask holds near ¥49,500 or returns toward ¥43,000 as new listings arrive.",
+   "signals": "7d price +17.9% (¥41,999→¥49,500) vs My-tier index +0.3%; sales/day 3.4 vs 1.5",
    "sources": []
   },
   "https://snkrdunk.com/apparels/100567": {
@@ -41,6 +41,13 @@
    "headline": "Umbreon ask ¥67,800, within 4.3% of your ¥65,000 limit",
    "text": "What's happening: The lowest PSA10 ask is ¥67,800, down from ¥69,500 earlier this week and 4.3% above your ¥65,000 limit. The book is deep (all 20 listings within 15% of the ask) and trades about 13 times a day, so a price at your limit can be reached by a normal move.\n\nWhy: The ask follows the falling market: the PSA10 index is down about 25% over the month. This is my reading, not a confirmed cause.\n\nFor you: ¥67,800 is just under the Buy line (¥68,500), but the correction rule is active, so it stays a Watch unless a listing reaches Definitely-buy (¥58,000).\n\nWatch: a listing at or below ¥65,000, your limit.",
    "signals": "ask ¥67,800 vs limit ¥65,000; 20/20 listings within 15%; 13 sales/day",
+   "sources": []
+  },
+  "https://snkrdunk.com/apparels/776365": {
+   "written": "2026-10-03T09:03:03+09:00",
+   "headline": "Mega Greninja SAR trading speed tripled; ask only up 4% to ¥27,000",
+   "text": "What's happening: PSA10 sales jumped to about 26 a day from about 9 a week ago, while the lowest ask moved only from ¥26,000 to ¥27,000 and 17 of 20 listings sit within 15% of it.\nWhy: Likely heavy turnover of a young, in-print card as supply arrives; a search for a reprint or new card found no relevant news, so no cause is confirmed.\nFor you: ¥27,000 is above the ¥25,000 Buy line and your ¥20,000 limit, and the correction rule keeps this at Watch.\nWatch: Whether the sales pace holds while the ask stays flat, or the ask slides as slabs come back from grading.",
+   "signals": "PSA10 sales/day 25.9 vs 8.6 a week ago (+200%)",
    "sources": []
   }
  }
