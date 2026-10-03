@@ -5207,6 +5207,41 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 10700,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 38700,
+          "when": "April 2026",
+          "source": "SNKRDUNK PSA10 1枚 daily sale prices, April median (single-day prints up to ¥65.6k on 8/18 treated as outliers)"
+        },
+        "tiers": {
+          "definitely_buy": 8500,
+          "buy_upper": 9500,
+          "ceiling": 11500
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: still sliding about 10–15% a month, wait for ≤¥9,500",
+          "reasoning": "Twenty sales in the last day at ¥10.0–11.0k and 20 of 20 asks within 15% make ¥10.7k a well-traded price, but the card has fallen every month since April (¥38.7k → ¥12.7k in September → ¥10.7k now), raw A-rank is still slipping (¥4.0k → ¥3.5k in two weeks) and 67k PSA10 copies exist at a 91% gem rate, so there is no scarcity or self-grading floor (DIY costs about ¥17.7k, well above the slab). The limit-odds model puts ¥9,500 at about 42% within 30 days and ¥8,500 at about 34% within 90; the correction rule (My-tier −25.8% over 30 days) would hold even a Buy-zone price at Watch until ¥8,500.",
+          "predictions": [
+            {
+              "text": "A listing at ≤¥9,500 within 30 days",
+              "p": 0.42,
+              "type": "touch_below",
+              "price": 9500,
+              "by": "2026-11-02"
+            },
+            {
+              "text": "A listing at ≤¥8,500 by year-end",
+              "p": 0.34,
+              "type": "touch_below",
+              "price": 8500,
+              "by": "2026-12-31"
+            }
+          ]
+        }
       }
     }
   ],
