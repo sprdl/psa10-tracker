@@ -39,6 +39,11 @@ if _tracked.exists():
     _t = json.loads(_tracked.read_text(encoding="utf-8"))
     _have = {c["snkrdunk_id"] for c in CARDS}
     CARDS += [c for c in ((_t.get("cards") if isinstance(_t, dict) else _t) or []) if c.get("snkrdunk_id") and c["snkrdunk_id"] not in _have]
+# Cards removed with the site's Remove card button (data/removed_cards.json) are left out.
+_removed = HERE.parent.parent / "data" / "removed_cards.json"
+if _removed.exists():
+    _gone = set((json.loads(_removed.read_text(encoding="utf-8")).get("removed") or {}).keys())
+    CARDS = [c for c in CARDS if c.get("snkrdunk_id") not in _gone]
 LISTING_FIELDS = ["lowest_price", "threshold_115pct_of_lowest", "top20_cheapest_listings",
                   "listings_within_15pct_of_lowest", "count_within_15pct", "count_excluded_over_15pct"]
 INDEX_FIELDS = ["latest_index_value_jpy", "day_change_jpy", "day_change_pct", "month_change_jpy",

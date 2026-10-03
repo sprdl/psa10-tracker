@@ -1298,3 +1298,15 @@ body.lb-open { overflow: hidden; }
   .rt-del { opacity: 1; transform: none; pointer-events: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .rt-item, .rt-del { transition: none; } }
+
+/* remove / restore cards */
+.cd-remove { color: var(--muted); }
+.cd-remove:hover:not(:disabled) { color: var(--red); border-color: var(--red); }
+.cd-remove.armed { color: #fff; background: var(--red); border-color: var(--red); }
+.cd-remove:disabled { opacity: .45; cursor: not-allowed; }
+.rm-list { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 14px; margin-top: 6px; display: flex; flex-direction: column; gap: 8px; }
+.rm-list h3 { margin: 0 0 2px; font-size: 14px; }
+.rm-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.rm-name { font-weight: 600; }
+.rm-st { flex: 1; font-size: 12px; }
+.rm-row .btn { min-height: 32px; padding: 4px 12px; font-size: 12px; }

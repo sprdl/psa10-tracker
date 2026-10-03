@@ -157,6 +157,16 @@ def check_timestamp_freshness(data: dict) -> None:
               f"before trusting this snapshot.", file=sys.stderr)
 
 
+def removed_ids(root: Path) -> set:
+    p = root / "data" / "removed_cards.json"
+    if not p.exists():
+        return set()
+    try:
+        return set((json.loads(p.read_text(encoding="utf-8")).get("removed") or {}).keys())
+    except (OSError, json.JSONDecodeError):
+        return set()
+
+
 def check_card_set_drift(data: dict, manifest: dict, snapshots_dir: Path) -> None:
     """Warns (non-fatal) if this run's tracked-card URLs differ from the most
     recently saved snapshot's. Added/removed cards should be a deliberate,
@@ -177,7 +187,8 @@ def check_card_set_drift(data: dict, manifest: dict, snapshots_dir: Path) -> Non
     except (OSError, json.JSONDecodeError):
         return
 
-    prev_urls = {c.get("url") for c in latest_data.get("cards", []) if c.get("url")}
+    gone = removed_ids(find_repo_root())   # removed on purpose: not drift
+    prev_urls = {c.get("url") for c in latest_data.get("cards", []) if c.get("url") and c["url"].rstrip("/").split("/")[-1] not in gone}
     new_urls = {c.get("url") for c in data.get("cards", []) if c.get("url")}
     added, removed = new_urls - prev_urls, prev_urls - new_urls
     if not (added or removed):
@@ -389,6 +400,13 @@ def main():
               f"to the app's nested grades.psa10/raw_a_grade shape.")
 
     check_timestamp_freshness(data)
+
+    removed = removed_ids(root)
+    if removed:
+        before = len(data.get("cards", []))
+        data["cards"] = [c for c in data.get("cards", []) if str(c.get("url", "")).rstrip("/").split("/")[-1] not in removed]
+        if len(data["cards"]) < before:
+            print(f"Left out {before - len(data['cards'])} card(s) removed with the site's Remove card button (data/removed_cards.json).")
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest.setdefault("snapshots", [])

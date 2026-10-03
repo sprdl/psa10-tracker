@@ -1,0 +1,17 @@
+name: Restore card
+description: Track a removed card again.
+title: "Restore card"
+labels: ["restore-card"]
+body:
+  - type: input
+    id: id
+    attributes:
+      label: SNKRDUNK id
+      description: Filled in by the Restore button on the site, e.g. 387059.
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Card
+      description: Filled in by the site, for the record.

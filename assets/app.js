@@ -158,7 +158,7 @@
     holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
-    valueModel: 'data/value_model.json',
+    valueModel: 'data/value_model.json', removed: 'data/removed_cards.json',
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
@@ -227,8 +227,11 @@
     if (!sortUiReady) { initSortUi(); sortUiReady = true; }
 
     state.currentIndex = snaps.length - 1;
-    state.currentData = b.cur;
-    state.previousData = b.prev || null;
+    state.removed = (b.removed && b.removed.removed) || {};
+    if (fresh) reconcileRemovals();
+    state.rawCur = b.cur; state.rawPrev = b.prev || null;
+    state.currentData = withoutRemoved(b.cur);
+    state.previousData = withoutRemoved(b.prev || null);
     render();
   }
 
@@ -265,12 +268,104 @@
   async function loadIndex(idx) {
     const snaps = state.manifest.snapshots;
     state.currentIndex = idx;
-    [state.currentData, state.previousData] = await Promise.all([
+    [state.rawCur, state.rawPrev] = await Promise.all([
       fetchJSON('data/snapshots/' + snaps[idx].file),
       idx > 0 ? fetchJSON('data/snapshots/' + snaps[idx - 1].file) : null,
     ]);
+    state.currentData = withoutRemoved(state.rawCur);
+    state.previousData = withoutRemoved(state.rawPrev);
     render();
   }
+
+  // ---------- removing cards from the tracker ----------
+  // "Remove card" (card page) opens a pre-filled GitHub issue form; .github/workflows/cards.yml then
+  // adds the card to data/removed_cards.json, which hides it here and makes price checks skip it.
+  // Until that file shows up, this browser hides the card itself (psa10.removing) so the click has an
+  // immediate effect; "Undo" drops that, and a pending entry expires after 3 days if the form was never
+  // submitted. "Restore" on a removed card opens the restore form and shows the card again right away.
+  const RM_KEY = 'psa10.removing', RS_KEY = 'psa10.restoring', RM_TTL = 3 * 864e5;
+  function removedIdSet() {
+    const synced = Object.keys(state.removed || {});
+    const restoring = store.get(RS_KEY, {}), removing = store.get(RM_KEY, {});
+    return new Set(synced.filter((id) => !restoring[id]).concat(Object.keys(removing)));
+  }
+  function withoutRemoved(d) {
+    if (!d || !d.cards) return d;
+    const gone = removedIdSet();
+    return gone.size ? Object.assign({}, d, { cards: d.cards.filter((c) => !gone.has(cardId(c))) }) : d;
+  }
+  function reconcileRemovals() {
+    const now = Date.now(), synced = state.removed || {};
+    const rm = store.get(RM_KEY, {}), rs = store.get(RS_KEY, {});
+    for (const id of Object.keys(rm)) if (synced[id] || now - rm[id].at > RM_TTL) delete rm[id];
+    for (const id of Object.keys(rs)) if (!synced[id] || now - rs[id].at > RM_TTL) delete rs[id];
+    store.set(RM_KEY, rm); store.set(RS_KEY, rs);
+  }
+  function refreshRemoved() {
+    state.currentData = withoutRemoved(state.rawCur);
+    state.previousData = withoutRemoved(state.rawPrev);
+    render();
+  }
+  function removeCardFormUrl(card) {
+    const q = new URLSearchParams({ template: 'remove-card.yml', title: 'Remove card: ' + parseCardName(card.card_name_ja).short,
+      id: cardId(card), name: card.card_name_ja || '' });
+    return `${REPO_URL}/issues/new?${q}`;
+  }
+  function restoreCardFormUrl(id, name) {
+    const q = new URLSearchParams({ template: 'restore-card.yml', title: 'Restore card: ' + parseCardName(name || '').short, id, name: name || '' });
+    return `${REPO_URL}/issues/new?${q}`;
+  }
+  function removeBtnHtml(card) {
+    const owned = holdingsFor(card).length;
+    return owned
+      ? `<button type="button" class="btn cd-remove" disabled title="You've logged this card as bought; remove the purchase first">Remove card</button>`
+      : `<button type="button" class="btn cd-remove" data-remove-card="${escapeAttr(card.url)}" title="Stop tracking this card">Remove card</button>`;
+  }
+  // The rows on the collection page that list removed cards, with Undo / Restore.
+  function removedListHtml() {
+    const rm = store.get(RM_KEY, {}), rs = store.get(RS_KEY, {}), synced = state.removed || {};
+    const rows = [];
+    for (const [id, v] of Object.entries(rm)) rows.push({ id, name: v.name, pending: true });
+    for (const [id, v] of Object.entries(synced)) if (!rm[id] && !rs[id]) rows.push({ id, name: v.name, at: v.at });
+    if (!rows.length) return '';
+    return `<div class="rm-list"><h3>Removed cards <span class="muted">${rows.length}</span></h3>${rows.map((r) => `<div class="rm-row">
+        <span class="rm-name jp">${escapeHtml(parseCardName(r.name || r.id).short || r.id)}</span>
+        <span class="rm-st muted">${r.pending ? 'waiting for the GitHub form: submit it to remove the card for good' : `removed ${escapeHtml(fmtDateShort(r.at || ''))}`}</span>
+        ${r.pending ? `<button type="button" class="btn rm-undo" data-undo-remove="${escapeAttr(r.id)}">Undo</button>`
+          : `<a class="btn rm-restore" data-restore-card="${escapeAttr(r.id)}" href="${escapeAttr(restoreCardFormUrl(r.id, r.name))}" target="_blank" rel="noopener">Restore</a>`}
+      </div>`).join('')}</div>`;
+  }
+  document.addEventListener('click', (e) => {
+    const rb = e.target.closest('[data-remove-card]');
+    if (rb) {
+      e.preventDefault();
+      if (!rb.dataset.armed) {   // two-step: the first click asks for confirmation
+        rb.dataset.armed = '1'; rb.classList.add('armed'); rb.textContent = 'Click again to remove';
+        setTimeout(() => { if (rb.isConnected) { delete rb.dataset.armed; rb.classList.remove('armed'); rb.textContent = 'Remove card'; } }, 4000);
+        return;
+      }
+      const card = ((state.rawCur && state.rawCur.cards) || []).find((c) => c.url === rb.dataset.removeCard);
+      if (!card) return;
+      window.open(removeCardFormUrl(card), '_blank', 'noopener');
+      const rm = store.get(RM_KEY, {}); rm[cardId(card)] = { at: Date.now(), name: card.card_name_ja || '' }; store.set(RM_KEY, rm);
+      const sel = plannerState().selected.filter((u) => u !== card.url);
+      store.set(PLANNER_KEY, Object.assign(plannerState(), { selected: sel }));
+      location.hash = '#/collection';
+      refreshRemoved();
+      return;
+    }
+    const ub = e.target.closest('[data-undo-remove]');
+    if (ub) {
+      const rm = store.get(RM_KEY, {}); delete rm[ub.dataset.undoRemove]; store.set(RM_KEY, rm);
+      refreshRemoved();
+      return;
+    }
+    const sb = e.target.closest('[data-restore-card]');
+    if (sb) {   // the link opens the restore form; show the card again here straight away
+      const rs = store.get(RS_KEY, {}); rs[sb.dataset.restoreCard] = { at: Date.now() }; store.set(RS_KEY, rs);
+      setTimeout(refreshRemoved, 0);
+    }
+  });
 
   // ---------- derived-value helpers ----------
   // Everything here is computed fresh from raw inputs each render — never store a derived
@@ -2242,7 +2337,7 @@
         ${zoneBarHtml(card, 'thin')}
         <span class="tile-meta">${escapeHtml(code)} · Pop ${pop}</span>
       </a>`;
-    }).join('') + (state.cmpMode ? '' : `<a class="tile tile-add" href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span class="display">+</span>Add a card to track${reqEl && !reqEl.hidden ? `<small>${escapeHtml(reqEl.textContent)}</small>` : ''}</a>`);
+    }).join('') + (state.cmpMode ? '' : `<a class="tile tile-add" href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span class="display">+</span>Add a card to track${reqEl && !reqEl.hidden ? `<small>${escapeHtml(reqEl.textContent)}</small>` : ''}</a>${removedListHtml()}`);
     if (state.cmpMode) {
       el.querySelectorAll('a.tile[data-url]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); togglePick(a.dataset.url); }));
     }
@@ -2431,6 +2526,7 @@
     const actionsHtml = `<div class="cd-actions">
           <a class="btn btn-primary" href="${escapeAttr(boughtFormUrl(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
           <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
+          ${mode === 'page' ? removeBtnHtml(card) : ''}
         </div>`;
     const cur = state.cardTab === 'story' && !storyOf(card) ? 'overview' : state.cardTab || 'overview';
     const imgSize = mode === 'page' ? 'xl' : 'md';

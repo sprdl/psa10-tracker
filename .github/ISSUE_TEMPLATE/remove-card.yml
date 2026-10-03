@@ -1,0 +1,21 @@
+name: Remove card
+description: Stop tracking a card (it disappears from the site and price checks skip it).
+title: "Remove card"
+labels: ["remove-card"]
+body:
+  - type: input
+    id: id
+    attributes:
+      label: SNKRDUNK id
+      description: Filled in by the Remove card button on the site, e.g. 387059.
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Card
+      description: Filled in by the site, for the record.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Reason (optional)

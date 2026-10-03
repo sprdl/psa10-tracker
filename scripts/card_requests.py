@@ -110,8 +110,13 @@ def git(*args, check=True):
                           env={**__import__("os").environ, "GIT_TERMINAL_PROMPT": "0"})
 
 
-def commit_and_push(message):
-    git("add", str(TRACKED.relative_to(ROOT)))
+def base_ids():
+    p = ROOT / "pricecheck" / "references" / "cards.json"
+    return {c["snkrdunk_id"] for c in json.loads(p.read_text(encoding="utf-8"))["cards"]} if p.exists() else set()
+
+
+def commit_and_push(message, extra=()):
+    git("add", str(TRACKED.relative_to(ROOT)), *extra)
     c = git("commit", "-m", message, check=False)
     if c.returncode != 0:
         print("Nothing to commit.")
@@ -166,8 +171,15 @@ def cmd_add(args):
     sid = m.group(1)
 
     tracked = load_tracked()
-    already = sid in {c["snkrdunk_id"] for c in tracked["cards"]} or sid in latest_snapshot_ids()
-    if already:
+    rp = ROOT / "data" / "removed_cards.json"
+    rem = json.loads(rp.read_text(encoding="utf-8")) if rp.exists() else {"removed": {}}
+    restored = sid in (rem.get("removed") or {})
+    if restored:   # removed earlier with the site's button: an Add card request brings it back
+        del rem["removed"][sid]
+    already = not restored and (sid in {c["snkrdunk_id"] for c in tracked["cards"]} or sid in latest_snapshot_ids())
+    if restored:
+        msg = f"Restored: {name} (https://snkrdunk.com/apparels/{sid}) was removed earlier and is tracked again."
+    elif already:
         msg = f"Already tracked: {name} (https://snkrdunk.com/apparels/{sid}). Nothing to add."
     else:
         entry = {"snkrdunk_id": sid, "card_name_ja": name, "url": f"https://snkrdunk.com/apparels/{sid}",
@@ -181,7 +193,15 @@ def cmd_add(args):
     if dry:
         print("(dry run — nothing written, issue left open)")
         return
-    if not already:
+    if restored:
+        rp.write_text(json.dumps(rem, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        if sid not in {c["snkrdunk_id"] for c in tracked["cards"]} and sid not in base_ids():
+            tracked["cards"].append({"snkrdunk_id": sid, "card_name_ja": name, "url": f"https://snkrdunk.com/apparels/{sid}",
+                                     "image_url": flag(args, "--image", ""), "altema_url": flag(args, "--altema", ""),
+                                     "altema_mode": mode, "note": f"restored from issue #{num}", "added": datetime.now(JST).strftime("%Y-%m-%d")})
+            save_tracked(tracked)
+        commit_and_push(f"restore {name} (requested in #{num})", extra=["data/removed_cards.json"])
+    elif not already:
         save_tracked(tracked)
         commit_and_push(f"track {name} (requested in #{num})")
     api("POST", f"/issues/{num}/comments", {"body": msg})

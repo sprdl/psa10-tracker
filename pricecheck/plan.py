@@ -43,6 +43,10 @@ def load_cards(root=ROOT):
         for c in (t.get("cards") if isinstance(t, dict) else t) or []:
             if c.get("snkrdunk_id") and c["snkrdunk_id"] not in seen:
                 cards.append(dict(c, _source="tracked")); seen.add(c["snkrdunk_id"])
+    rp = root / "data" / "removed_cards.json"   # removed with the site's Remove card button
+    if rp.exists():
+        gone = set((json.loads(rp.read_text(encoding="utf-8")).get("removed") or {}).keys())
+        cards = [c for c in cards if c["snkrdunk_id"] not in gone]
     return cards
 
 

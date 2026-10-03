@@ -1,0 +1,32 @@
+name: Remove or restore card
+
+# Runs when you submit the site's "Remove card" or "Restore" form (a GitHub issue).
+# Only issues opened by the repo owner are processed.
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: cards-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: >-
+      github.event.issue.state == 'open' &&
+      github.event.issue.user.login == github.repository_owner &&
+      (contains(github.event.issue.labels.*.name, 'remove-card') ||
+       contains(github.event.issue.labels.*.name, 'restore-card') ||
+       startsWith(github.event.issue.title, 'Remove card') || startsWith(github.event.issue.title, 'Restore card'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update data/removed_cards.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/remove_card.py "$GITHUB_EVENT_PATH"
