@@ -10,7 +10,7 @@
    "right": 7,
    "wrong": 1,
    "neutral": 0,
-   "pending": 13
+   "pending": 14
   },
   "calls_scored": 8,
   "odds_resolved": 4,
@@ -28,6 +28,25 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/224087",
+   "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
+   "tag": "watch",
+   "label": "Watch: ask is above the ceiling, sales still ¥42–50k",
+   "latest_label": "Watch: ask is above the ceiling, sales still ¥42–50k",
+   "reaffirmed": 0,
+   "made": "2026-10-04T08:23:55+09:00",
+   "price": 49500,
+   "window_end": "2026-11-03T08:23:55+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05
+  },
   {
    "url": "https://snkrdunk.com/apparels/722239",
    "name": "メガリザードンXex MA [M2a 223/193](ハイクラスパック「MEGAドリームex」)",
@@ -147,8 +166,8 @@
    "name": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
    "tag": "watch",
    "label": "Watch: market still correcting",
-   "latest_label": "Watch: market still correcting",
-   "reaffirmed": 0,
+   "latest_label": "Watch: asks have jumped, sales haven't followed",
+   "reaffirmed": 1,
    "made": "2026-09-26T19:34:04+09:00",
    "price": 57999,
    "window_end": "2026-10-26T19:34:04+09:00",
@@ -185,8 +204,8 @@
    "name": "レシラムex BWR [SV11W 174/086](拡張パック「ホワイトフレア」)",
    "tag": "watch",
    "label": "Watch: near its highs while the market corrects",
-   "latest_label": "Watch: near its highs while the market corrects",
-   "reaffirmed": 0,
+   "latest_label": "Watch: in the Buy zone, but the correction rule says wait",
+   "reaffirmed": 1,
    "made": "2026-09-26T09:04:31+09:00",
    "price": 117900,
    "window_end": "2026-10-26T09:04:31+09:00",

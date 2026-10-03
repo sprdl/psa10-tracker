@@ -2067,30 +2067,12 @@
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2450,
         "verdict": {
-          "tag": "buy",
-          "label": "Buy: top edge, wait for a ¥40–42k listing",
-          "reasoning": "The price is back to its H1-2025 organic range (¥41–48k), depth is good (12 of 20 asks within 15%), and the slab trades only about 13% above raw A (it was about 45%), so buying the slab is about ¥16k cheaper than grading yourself. It's still falling about 5%/week, likely due to M4 Mega Greninja cannibalization. There's about a 60% chance of ≤¥42k within a month and 30% of ≤¥38k in 3–6 months. Downside is roughly 40% odds of another 8–12%.",
-          "predictions": [
-            {
-              "text": "A listing at ≤¥42k within a month",
-              "p": 0.6,
-              "type": "touch_below",
-              "price": 42000,
-              "by": "2026-10-25",
-              "made": "2026-09-25T15:15:03+09:00"
-            },
-            {
-              "text": "Reaches ≤¥38k within 3–6 months",
-              "p": 0.3,
-              "type": "touch_below",
-              "price": 38000,
-              "by": "2027-03-25",
-              "made": "2026-09-25T15:15:03+09:00"
-            }
-          ],
-          "written": "2026-09-25T15:15:03+09:00"
+          "tag": "watch",
+          "label": "Watch: ask is above the ceiling, sales still ¥42–50k",
+          "reasoning": "The lowest PSA10 ask is ¥49,500, up 16% from ¥42,750 and now above the ¥49k ceiling, so the ¥40–42k listing the last verdict waited for has not appeared. Sales from 9/29 to 10/1 ran ¥41.5–55k, mostly ¥44–50k, and 9 of 20 asks sit within 15% of the low. Raw A is ¥36,999, so the slab carries a modest premium over raw. Under the correction rule a Buy needs ≤¥38k. I'd wait for a listing at ≤¥43k; the old ≤¥42k prediction stays on the Track record until its deadline.",
+          "written": "2026-10-04T08:24:32+09:00"
         },
-        "verdict_price_ref": 42750
+        "verdict_price_ref": 49500
       },
       "psa10_population": 15191,
       "psa10_gem_rate_pct": 84.6,
@@ -2653,34 +2635,11 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch: near its highs while the market corrects",
-          "reasoning": "Sales slipped from ¥128k (9/19) to ¥117.5–120k this week, but the card is still 1.5× its Jan 2026 level (~¥78k) and has not given back the anniversary run the way the PSA10 index has (−27% in a month). There's about a 45% chance of a listing at ≤¥108k (June's correction range) within 3 months and 25% of ≤¥98k within 6, against roughly 20% odds it's back above ¥130k by then. Grading a raw copy yourself costs about ¥94–100k expected at an 82% gem rate, so the slab carries a ¥20k+ premium today.",
-          "predictions": [
-            {
-              "text": "A listing at ≤¥108k (Buy) within 3 months",
-              "p": 0.45,
-              "type": "touch_below",
-              "price": 108000,
-              "by": "2026-12-26"
-            },
-            {
-              "text": "Reaches Definitely-buy (≤¥98k) within 6 months",
-              "p": 0.25,
-              "type": "touch_below",
-              "price": 98000,
-              "by": "2027-03-26"
-            },
-            {
-              "text": "Lowest ask back at ≥¥130k within 3 months",
-              "p": 0.2,
-              "type": "touch_above",
-              "price": 130000,
-              "by": "2026-12-26"
-            }
-          ],
-          "written": "2026-09-26T09:04:31+09:00"
+          "label": "Watch: in the Buy zone, but the correction rule says wait",
+          "reasoning": "The lowest PSA10 ask is ¥102,500, down 14% from ¥119,000 and now inside the ¥98–108k Buy zone. Sales have reset lower, ¥98–108k since 9/28 (mostly ~¥100–105k), and 12 of 20 asks are within 15% of the low, so the book has real depth. Raw A is ¥64,999, a slab premium of about 58%. The My-tier index is still well down on the month, so the correction rule keeps this at Watch unless a listing hits ¥98k or below, which sales at ¥97.9–100k show is possible. A rebound above ¥108k would change the call.",
+          "written": "2026-10-04T08:24:32+09:00"
         },
-        "verdict_price_ref": 119000
+        "verdict_price_ref": 102500
       },
       "psa10_population": 13363,
       "psa10_gem_rate_pct": 82.2,
@@ -3237,27 +3196,11 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch: market still correcting",
-          "reasoning": "PSA10 has given back about 50% from the April peak and is back at January 2026 levels (¥55k), but the My-tier index is down 27% over 30 days, so under the correction rule only a listing at or below ¥45k (Oct-Dec 2025 level) is a Buy. Population is mature (17,949, 83.8% gem), so scarcity is not the story; the risk is another leg down with the index, roughly 35% odds of a further 10%+ drop by year-end.",
-          "predictions": [
-            {
-              "text": "A PSA10 listing at or below ¥52k (Buy zone) appears within 3 months",
-              "p": 0.55,
-              "type": "touch_below",
-              "price": 52000,
-              "by": "2026-12-26"
-            },
-            {
-              "text": "A PSA10 listing at or below ¥45k (Definitely buy) appears within 6 months",
-              "p": 0.25,
-              "type": "touch_below",
-              "price": 45000,
-              "by": "2027-03-26"
-            }
-          ],
-          "written": "2026-09-26T19:34:04+09:00"
+          "label": "Watch: asks have jumped, sales haven't followed",
+          "reasoning": "The lowest PSA10 ask is ¥65,000, up 18% from ¥55,000 at the last verdict and exactly at the ceiling, but recent sales still cluster at ¥54–56k (10/1) with a few at ¥58–63k. The 15 asks within 15% of the low (¥65–73.7k) suggest sellers are repricing above the market rather than a real bid. Raw A is ¥38,900 (up from ¥30,000), so the slab premium is about 67%. The My-tier index is still roughly down on the month, so under the correction rule only a listing at or below ¥45k counts as a Buy. A ¥52k listing would be the first sign of a real dip; a run of ¥60k+ sales would mean the jump is holding.",
+          "written": "2026-10-04T08:24:32+09:00"
         },
-        "verdict_price_ref": 55000
+        "verdict_price_ref": 65000
       },
       "psa10_population": 17949,
       "psa10_gem_rate_pct": 83.8,
