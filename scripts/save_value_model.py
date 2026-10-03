@@ -41,7 +41,7 @@ ABOUT = {
         "Market part = the mature market's move over every 12/24-month window since 2022 (market quantiles).",
         "Card part = single cards' move minus the market over the same windows, pooled over cards 9+ months old, centred; scaled on the site by (card's own swing / pool swing) ** swing_power (0.15), so a card twice as swingy as the pool gets an 11% wider range.",
         "Age curve = average monthly change vs the mature market by card age; the site adds it for cards under 12 months.",
-        "The site centres the market part on zero (neutral) and also shows the result with the 2022-26 market as it was.",
+        "The site shifts the outcomes so the median of market part + card part is zero (neutral: typical = no change; until 2026-10-03 only the market part was centred, which left the typical 12-month outcome at -10% and the 24-month one at +11%) and also shows the result with the 2022-26 market as it was.",
         "Selling: SNKRDUNK Regular rank 9.5% fee, ¥300 transfer fee (¥200 under ¥30k), about ¥1,000 shipping.",
     ],
     "findings_2026_10_02": [

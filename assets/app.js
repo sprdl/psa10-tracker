@@ -2856,11 +2856,24 @@
     for (let i = 0; i < h; i++) { const a = age + i; const b = vm.age_curve.find((x) => a >= x.from && a < x.to); if (b && a < 12) s += b.monthly; }
     return s;
   }
+  // Neutral = the TYPICAL outcome (market part + card part together) is no change. Centring only the
+  // market part on its own median isn't enough: 2022–26 market moves are lopsided (a long crash tail at
+  // 12 months, a long rally tail at 24), so the median of the sum landed at −10% (12m) and +11% (24m)
+  // until 2026-10-03. The shift is the median of every market × card-part combination.
+  function vmShift(H) {
+    if (H._shift == null) {
+      const a = [];
+      for (const m of H.market) for (const c of H.card_part) a.push(m + c);
+      a.sort((x, y) => x - y);
+      H._shift = a[Math.round(0.5 * (a.length - 1))];
+    }
+    return H._shift;
+  }
   // sorted log outcomes for horizon h (12 or 24), neutral or as in 2022–26
   function upsideDist(card, h, historical) {
     const vm = state.valueModel;
     if (!vm || !vm.horizons || !vm.horizons[h]) return null;
-    const H = vm.horizons[h], mk = H.market, mid = mk[Math.floor(mk.length / 2)];
+    const H = vm.horizons[h], mk = H.market, mid = vmShift(H);
     const sw = (vm.swing && vm.swing[vmCode(card)]) || vm.swing_pool;
     const k = Math.pow(sw / vm.swing_pool, vm.swing_power != null ? vm.swing_power : 0.15);
     const drift = ageDrift(cardAgeMonths(card), h);
@@ -2905,7 +2918,7 @@
       <div class="up-cols">${upsideCol(card, ask, "Bought today")}${lim != null && lim < ask ? upsideCol(card, lim, 'Bought at my limit') : ''}</div>
       ${ageNote}
       ${lim != null && lim < ask ? `<p class="cd-note">The chance of a profit is about the same in both columns: if a listing does drop to your limit, history gives no sign that the price then recovers faster or slower, so the limit buys the same chances for less money, if it fills (${(() => { const o = touchOdds(card, lim); return o && !o.reached ? `${fmtOdds(o.p90)} within 90 days` : 'already reachable'; })()}).</p>` : ''}
-      <p class="cd-note">How it's worked out: every 12- and 24-month stretch of 125 modern PSA10s on pokeca-chart, ${escapeHtml((vm.source || '').replace(/^.*cards, /, ''))}. The market part comes from how the whole tier moved, centred on no change, because 2022–26 holds one big rally and one crash. The card part is how far single cards strayed from the market; this card ${sw}. Selling costs SNKRDUNK's Regular-rank fee (9.5%), the ¥300 transfer fee and about ¥1,000 shipping. Not modelled: events for this Pokémon, reprints and the coming wave of graded copies. The 2022–26 data has only one full boom and bust, so treat these as rough ranges, not forecasts.</p>
+      <p class="cd-note">How it's worked out: every 12- and 24-month stretch of 125 modern PSA10s on pokeca-chart, ${escapeHtml((vm.source || '').replace(/^.*cards, /, ''))}. The market part comes from how the whole tier moved, shifted so the typical outcome is no change (no market growth assumed), because 2022–26 holds one big rally and one crash and its average says little about the next years. So “Typical” is roughly today's price, and the loss shown there is the cost of selling; the italic figure shows the odds if the market repeats 2022–26. The card part is how far single cards strayed from the market; this card ${sw}. Selling costs SNKRDUNK's Regular-rank fee (9.5%), the ¥300 transfer fee and about ¥1,000 shipping. Not modelled: events for this Pokémon, reprints and the coming wave of graded copies. The 2022–26 data has only one full boom and bust, so treat these as rough ranges, not forecasts.</p>
     </div>`;
   }
 
@@ -2962,7 +2975,7 @@
   let cbSimFor = null, cbMarket = null, cbSaveTimer = null;
   // Combo results are also kept in this browser (psa10.cbUp.v1, per value-model build), so reopening
   // the finder or a portfolio rating after a reload doesn't recompute ~1,500 simulations.
-  const CB_STORE = 'psa10.cbUp.v1';
+  const CB_STORE = 'psa10.cbUp.v2'; // v2: neutral centring fixed 2026-10-03
   function cbLoadStore(vm) {
     const st = store.get(CB_STORE, null);
     if (!st || st.built !== (vm.built || '') || st.sims !== CB_SIMS) return;
@@ -2986,7 +2999,7 @@
     const vm = state.valueModel, H = vm && vm.horizons && vm.horizons[24];
     if (!H) return false;
     if (cbSimFor !== vm) { cbSimFor = vm; cbSimCache.clear(); cbComboCache.clear(); cbMarket = null; cbLoadStore(vm); }
-    const mk = H.market, cp = H.card_part, mid = mk[Math.floor(mk.length / 2)];
+    const mk = H.market, cp = H.card_part, mid = vmShift(H);
     if (!cbMarket) { const rnd = cbRng(20261002); cbMarket = new Float64Array(CB_SIMS); for (let i = 0; i < CB_SIMS; i++) cbMarket[i] = mk[Math.floor(rnd() * mk.length)] - mid; }
     for (const x of pool) {
       if (!x.up) continue;
