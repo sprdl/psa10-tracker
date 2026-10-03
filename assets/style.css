@@ -1337,3 +1337,30 @@ body.lb-open { overflow: hidden; }
 .verdict-written[open] summary::before { content: '▾ '; }
 .verdict-written p { margin-top: 8px; }
 .verdict-written-note { font-size: 11px; color: var(--muted, #8a8a94); margin-top: 6px; line-height: 1.5; }
+
+/* hype exposure (data/hype.json) */
+.hype { margin-top: 10px; background: var(--panel-2); border: 1px solid #2c2c32; border-left: 3px solid var(--muted); border-radius: var(--radius); padding: 12px 14px; font-size: 13px; line-height: 1.55; }
+.hype-high { border-left-color: var(--red); }
+.hype-medium { border-left-color: var(--amber); }
+.hype-low { border-left-color: var(--green); }
+.hype-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.hype-lbl { font: 14px var(--display); letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+.hype-level { font: 24px var(--display); letter-spacing: 0.04em; font-weight: 400; line-height: 1; }
+.hype-high .hype-level { color: var(--red); }
+.hype-medium .hype-level { color: var(--amber); }
+.hype-low .hype-level { color: var(--green); }
+.hype-na .hype-level { color: var(--muted); font-size: 18px; }
+.hype-sub { color: var(--muted); font-size: 12px; }
+.hype-meter { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; margin: 10px 0 8px; height: 18px; border-radius: 9px; overflow: visible;
+  background: linear-gradient(90deg, rgba(69,212,131,.35) 0 33.3%, rgba(245,165,36,.35) 33.3% 66.7%, rgba(240,82,77,.4) 66.7% 100%); }
+.hype-meter span { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--text); opacity: .75; display: flex; align-items: center; justify-content: center; }
+.hype-meter i { position: absolute; top: -4px; width: 4px; height: 26px; margin-left: -2px; background: var(--text); border-radius: 2px; box-shadow: 0 0 0 2px var(--panel-2); }
+.hype-row { display: grid; grid-template-columns: 130px 70px 1fr; align-items: center; gap: 10px; margin: 3px 0; font-size: 12.5px; }
+.hype-k { color: var(--muted); }
+.hype-mini { height: 6px; background: #2c2c32; border-radius: 3px; overflow: hidden; }
+.hype-mini i { display: block; height: 100%; background: var(--text); opacity: .7; }
+.hype-v b { color: var(--text); }
+.hype-means { margin: 8px 0 4px; color: var(--soft, var(--text)); }
+.hype-foot { margin: 0; font-size: 11px; color: var(--muted); }
+.hype-chip { font: 11px var(--display); letter-spacing: 0.06em; color: #fff; background: var(--red); padding: 2px 5px 0; border-radius: 3px; margin-left: 4px; }
+@media (max-width: 600px) { .hype-row { grid-template-columns: 1fr; gap: 2px; } .hype-mini { display: none; } }

@@ -4,7 +4,7 @@
 // Each card page opens in a hidden same-origin iframe, one after another; the script reads the
 // price chart's own data (React props: item_status 0 = 美品 raw, 2 = PSA10). No fetch/XHR.
 // Returns at once; poll window.__pj like snkrdunk_full.js. About 2 s per card.
-// Line: PREM <snkrdunk id> d<yymmdd latest> r<raw> p<PSA10> m<6-month norm ratio|-> n<points> s<yymmdd:ratio,...>
+// Line: PREM <snkrdunk id> d<yymmdd latest> r<raw> p<PSA10> m<6-month norm ratio|-> n<points> g<hype: base:now:vol:base date:date|-> s<yymmdd:ratio,...>
 //       PREM <snkrdunk id> !<uri-encoded error>
 // The norm is the median premium of the points 30–210 days before the latest one (needs 4+);
 // the series covers the last 18 months. Decoded by scripts/full_update.py into data/premium.json.
@@ -49,7 +49,18 @@
       const hist = pts.filter((p) => last.t - p.t >= 30 && last.t - p.t <= 210).map((p) => p.k).sort((a, b) => a - b);
       const norm = hist.length >= 4 ? (hist.length % 2 ? hist[hist.length >> 1] : (hist[hist.length / 2 - 1] + hist[hist.length / 2]) / 2) : null;
       const series = pts.filter((p) => last.t - p.t <= 548).map((p) => ymd(p.d) + ':' + p.k.toFixed(2)).join(',');
-      q.lines.push(`PREM ${sid} d${ymd(last.d)} r${last.raw} p${last.psa} m${norm ? norm.toFixed(3) : '-'} n${pts.length} s${series}`);
+      // hype exposure (scripts/hype.py): same measure as __hypeOf in scripts/odds_model_builder.js
+      const hp = rows.filter((r) => r.item_status === 2 && r.price > 0).map((r) => [Date.parse(r.date) / 864e5, r.price, r.volume || 0]).sort((a, b) => a[0] - b[0]);
+      let g = '-';
+      if (hp.length) {
+        const end = hp[hp.length - 1][0], med = (a) => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[s.length >> 1] : null; };
+        const now = med(hp.filter((p) => end - p[0] <= 30).map((p) => p[1]));
+        const base = hp[0][0] > end - 485 ? null : med(hp.filter((p) => end - p[0] >= 335 && end - p[0] <= 395).map((p) => p[1]));  // too young: no base
+        const vol = hp.filter((p) => end - p[0] <= 120).reduce((a, p) => a + p[2], 0) / 4;
+        const d6 = (t) => new Date(t * 864e5).toISOString().slice(2, 10).replace(/-/g, '');
+        g = `${base || '-'}:${now}:${Math.round(vol * 10) / 10}:${d6(end - 365)}:${d6(end)}`;
+      }
+      q.lines.push(`PREM ${sid} d${ymd(last.d)} r${last.raw} p${last.psa} m${norm ? norm.toFixed(3) : '-'} n${pts.length} g${g} s${series}`);
       q.i++;
       await sleep(250);
     }

@@ -4,6 +4,22 @@
 //   await __oddsBuilder('list')    -> picks the pool (modern Pokémon ex/V/VMAX/VSTAR/GX, 2021 to 6+ months ago, PSA10 ¥10k–300k)
 //   await __oddsBuilder('grab')    -> fetches up to 35 cards' PSA10 history per call; repeat until it says done
 //   await __oddsBuilder('build')   -> returns the model JSON; save it with scripts/save_odds_model.py
+//   await __oddsBuilder('hype')    -> HREF lines for scripts/hype.py --ref (hype-exposure reference pool)
+// Hype exposure measure (kept identical in pricecheck/scripts/pokeca_premium.js): from PSA10 points
+// [date, price, volume], the median price of the last 30 days, the median 335–395 days before the latest
+// point, and the PSA10 volume of the last 120 days ÷ 4. Returns "<base>:<now>:<vol>:<base date>:<latest date>" or null.
+window.__hypeOf = (rows) => {
+  const pts = (rows || []).filter((r) => r[1] > 0).map((r) => [Date.parse(r[0]) / 864e5, r[1], r[2] || 0, r[0]]).sort((a, b) => a[0] - b[0]);
+  if (!pts.length) return null;
+  const end = pts[pts.length - 1][0], med = (a) => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[s.length >> 1] : null; };
+  const now = med(pts.filter((p) => end - p[0] <= 30).map((p) => p[1]));
+  // no base for a card whose history starts less than ~3 months before the base window: launch prices
+  // would make it look like it had shed a hype run when it only aged
+  const base = pts[0][0] > end - 485 ? null : med(pts.filter((p) => end - p[0] >= 335 && end - p[0] <= 395).map((p) => p[1]));
+  const vol = pts.filter((p) => end - p[0] <= 120).reduce((a, p) => a + p[2], 0) / 4;
+  const ymd = (t) => new Date(t * 864e5).toISOString().slice(2, 10).replace(/-/g, '');
+  return `${base || '-'}:${now}:${Math.round(vol * 10) / 10}:${ymd(end - 365)}:${ymd(end)}`;
+};
 window.__oddsBuilder = async (step) => {
   const sleep = window.__wsleep || (window.__wsleep = (() => { // timers from a Web Worker: a hidden tab throttles page timers to 1/s, then 1/min
     const P = {}; let n = 0, w = null;
@@ -101,6 +117,20 @@ window.__oddsBuilder = async (step) => {
     return JSON.stringify({ built: new Date(end * 864e5).toISOString().slice(0, 10), source: `pokeca-chart PSA10 price history, ${Object.keys(series).length} modern cards`,
       pool_sigma: [+p30.toFixed(4), +p90.toFixed(4)], market_vol: { factor: +mkFactor(end + 1).toFixed(3), power: MK_POW, window_days: MK_WIN }, z_end30: q(z30, 100), z_touch90: q(z90, 100), n: [z30.length, z90.length], cards });
   }
-  return 'step must be list, grab or build';
+  if (step === 'hype') {
+    // Hype-exposure reference (scripts/hype.py --ref): one line per card from the histories the grab step
+    // left in storage. Same measure as pricecheck/scripts/pokeca_premium.js's g token, so a tracked card's
+    // reading can be ranked against this pool. No page reads.
+    const lines = [];
+    for (const k of Object.keys(LS).filter(k => k.startsWith('ci_h:') || k.startsWith('rx_h:'))) {
+      const v = JSON.parse(LS.getItem(k)), rows = Array.isArray(v) ? v : v.rows, code = Array.isArray(v) ? k.slice(5) : v.code;
+      // rx_h: the extra cards read once for the 2026-10-03 study; used only while they're recent
+      if (k.startsWith('rx_h:') && rows.length && Date.now() - Date.parse(rows[rows.length - 1][0]) > 45 * 864e5) continue;
+      const h = window.__hypeOf(rows);
+      if (h) lines.push(`HREF ${encodeURIComponent(code)} ${h}`);
+    }
+    return lines.join('\n');
+  }
+  return 'step must be list, grab, build or hype';
 };
 'ready';

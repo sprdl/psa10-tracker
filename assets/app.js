@@ -158,7 +158,7 @@
     holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
-    valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', mercari: 'data/mercari.json',
+    valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
@@ -206,6 +206,7 @@
     state.stories = b.stories || null; // data/stories.json — the art stories (researched, with sources)
     state.predict = b.predict || null; // data/predict.json — You vs the model (scripts/predict.py)
     state.scout = b.scout || null; // data/scout.json — untracked candidates (scripts/scout.py)
+    state.hype = b.hype || null; // data/hype.json — hype exposure per card (scripts/hype.py)
     state.mercari = b.mercari || null; // data/mercari.json — Mercari PSA10 listings for cards near the limit (scripts/mercari.py)
     state.premium = b.premium || null; // data/premium.json — pokeca-chart slab premium per card (scripts/premium.py)
     state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
@@ -679,6 +680,48 @@
     const q = new URLSearchParams({ template: 'remove-purchase.yml',
       title: 'Remove purchase: ' + parseCardName(h.card_name_ja || '').short, id: h.id });
     return `${REPO_URL}/issues/new?${q}`;
+  }
+
+  // ---------- hype exposure (data/hype.json, scripts/hype.py; project doc crash-resilience-study) ----------
+  // Two things separated the cards that held up from those that fell hardest in every market fall since
+  // 2021: how much of a hype run the card still carries (12-month change vs the market) and how actively
+  // it trades. Both are ranked against ~250 PSA10s; exposure is the combined rank. It says how hard a card
+  // swings WITH the market, both ways, not whether it's a good buy.
+  function hypeOf(card) { const h = state.hype && state.hype.cards && state.hype.cards[card.url]; return h || null; }
+  function hypeHtml(card) {
+    const h = hypeOf(card), hy = state.hype || {};
+    if (!h) return '';
+    const ev = hy.evidence || {}, f = ev.fall || {}, r = ev.rise || {};
+    const gapF = f.low != null ? Math.round(f.low - f.high) : 11, gapR = r.high != null ? Math.round(r.high - r.low) : 7;
+    const n = (hy.ref && hy.ref.n) || 250;
+    const cs = correctionState();
+    const falling = cs.active || (cs.pct != null && cs.pct < 0);
+    const lvlTxt = { high: 'High', medium: 'Medium', low: 'Low' }[h.level];
+    const bar = (v) => `<span class="hype-mini"><i style="width:${Math.max(2, Math.min(100, v))}%"></i></span>`;
+    const gainRow = h.gain_rank == null
+      ? `<div class="hype-row"><span class="hype-k">Hype still carried</span><span class="hype-v muted">too new to judge: it needs about 16 months of PSA10 prices, otherwise launch prices would look like hype it has shed</span></div>`
+      : `<div class="hype-row"><span class="hype-k">Hype still carried</span>${bar(h.gain_rank)}<span class="hype-v">${h.gain_pct >= 0 ? `up <b>${Math.round(h.gain_pct)}% more</b> than the market over 12 months` : `<b>${Math.round(-h.gain_pct)}% behind</b> the market over 12 months (hype given back)`} · more hype left than ${Math.round(h.gain_rank)}% of cards</span></div>`;
+    const tradeRow = h.trade_rank == null ? '' : `<div class="hype-row"><span class="hype-k">Trading activity</span>${bar(h.trade_rank)}<span class="hype-v">busier than <b>${Math.round(h.trade_rank)}%</b> of cards</span></div>`;
+    let means;
+    if (!h.level) means = `Only trading activity can be measured so far, so there's no overall reading yet.`;
+    else if (falling) {
+      const mkt = cs.pct != null ? ` (${escapeHtml(cs.name || 'market')} ${fmtPct(cs.pct)} over 30 days)` : '';
+      means = h.level === 'high' ? `The market is falling${mkt}. In falling stretches since 2021, the most exposed third of cards did about <b>${gapF} points worse</b> over the next 3 months than the least exposed third (${f.high_worse || 13} of ${f.windows || 14} times). Expect this card to slide faster than the market until it turns.`
+        : h.level === 'low' ? `The market is falling${mkt}. In falling stretches since 2021, the least exposed third of cards held up about <b>${gapF} points better</b> over 3 months than the most exposed third (${f.high_worse || 13} of ${f.windows || 14} times). This card is among the better placed if the slide continues.`
+        : `The market is falling${mkt}. This card sits in the middle: in past falls, cards like it did roughly as well as the market.`;
+    } else {
+      means = h.level === 'high' ? `When the market rises, cards like this have gained about <b>${gapR} points more</b> over 3 months than the least exposed ones (${r.high_better_pct || 78}% of rising stretches), and fallen about ${gapF} points more when it turns.`
+        : h.level === 'low' ? `Cards like this have held up about <b>${gapF} points better</b> than the most exposed ones in falling stretches, and lagged by about ${gapR} points in rising ones.`
+        : `This card sits in the middle: in past market moves, cards like it moved roughly with the market.`;
+    }
+    const pos = h.score != null ? h.score : null;
+    return `<div class="hype hype-${h.level || 'na'}">
+      <div class="hype-head"><span class="hype-lbl">Hype exposure</span><b class="hype-level">${lvlTxt || 'Not enough history'}</b>${pos != null ? `<span class="hype-sub">swings harder with the market than ${Math.round(pos)}% of ${n} modern PSA10s</span>` : ''}</div>
+      ${pos != null ? `<div class="hype-meter"><span>Low</span><span>Medium</span><span>High</span><i style="left:${pos}%"></i></div>` : ''}
+      ${gainRow}${tradeRow}
+      <p class="hype-means">${means}</p>
+      <p class="hype-foot">It describes how hard this card moves <i>with</i> the market, not whether it's a good buy. Reading from ${escapeHtml((h.d || '').slice(5).replace('-', '/'))}, ranked against ${n} PSA10s on pokeca-chart${hy.ref && hy.ref.built ? ` (pool from ${escapeHtml(hy.ref.built.slice(5).replace('-', '/'))})` : ''}.</p>
+    </div>`;
   }
 
   // ---------- today's call, computed from the snapshot being shown ----------
@@ -2364,7 +2407,7 @@
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg')}${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg wl-c30')}
-        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
+        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}${(mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
         <span class="wl-heat">${heatChip(card)}</span>
       </a>`;
     }).join('');
@@ -2657,6 +2700,7 @@
           ${mercariRowHtml(card)}
           ${insightsHtml(card)}
           ${vsMarketHtml(card)}
+          ${hypeHtml(card)}
           ${verdictHtml}
           ${card.quick_note ? `<p class="cd-note">${escapeHtml(card.quick_note)}</p>` : ''}
           ${statsHtml}

@@ -58,7 +58,7 @@ def decode(lines):
                 series.append([_date(d), float(k)])
         out[sid] = {"asof": _date(tok["d"]), "raw": raw, "psa": psa, "prem": round(prem, 3),
                     "norm": norm, "dev": round((prem / norm - 1) * 100, 1) if norm else None,
-                    "n": int(tok.get("n", "0")), "series": series}
+                    "n": int(tok.get("n", "0")), "series": series, "_g": tok.get("g")}
     return out
 
 
@@ -71,6 +71,7 @@ def save(entries, root=ROOT, push=True):
                      "(pricecheck/scripts/pokeca_premium.js → scripts/premium.py). norm = median of the points "
                      "30–210 days before the latest; dev = % from the norm.")
     cards = data.setdefault("cards", {})
+    hype_g = {sid: e.pop("_g", None) for sid, e in entries.items()}
     for sid, e in entries.items():
         url = f"https://snkrdunk.com/apparels/{sid}"
         if "error" in e and "series" in cards.get(url, {}):
@@ -83,9 +84,14 @@ def save(entries, root=ROOT, push=True):
     print(f"premium: {sum(1 for e in entries.values() if 'error' not in e)} card(s) saved"
           + (f", {len(entries) - sum(1 for e in entries.values() if 'error' not in e)} not on pokeca-chart" if any('error' in e for e in entries.values()) else "")
           + (" · far from norm: " + ", ".join(f"{s} {d:+.0f}%" for s, d in flagged) if flagged else ""))
+    try:  # hype exposure rides on the same card pages (g token); written before the commit below
+        import hype
+        hype.save({sid: hype.parse_g(g) for sid, g in hype_g.items() if g}, root, push=False)
+    except Exception as ex:  # never break the premium step over this
+        print(f"hype: skipped ({ex})")
     if not push:
         return
-    for cmd in (["git", "add", str(path)], ["git", "commit", "-q", "-m", "premium: pokeca-chart slab premium"], ["git", "push", "-q"]):
+    for cmd in (["git", "add", str(path), str(root / "data" / "hype.json")], ["git", "commit", "-q", "-m", "premium: pokeca-chart slab premium + hype exposure"], ["git", "push", "-q"]):
         r = subprocess.run(cmd, cwd=root, text=True, capture_output=True)
         if r.returncode != 0 and "nothing to commit" not in (r.stdout + r.stderr):
             print(f"premium: {' '.join(cmd)} failed: {(r.stderr or r.stdout).strip()}")
