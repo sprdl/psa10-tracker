@@ -5,6 +5,7 @@ Apply card evaluations (tiers, peak, verdict, ...) to the tracker's latest snaps
 Usage:
     python3 scripts/apply_analysis.py                  # reads the JSON from the clipboard (macOS pbpaste)
     python3 scripts/apply_analysis.py path/to/eval.json
+    python3 scripts/apply_analysis.py - <<'JSON' … JSON   # from stdin (e.g. a verdict refresh, FULL-CHECK 8g)
     python3 scripts/apply_analysis.py --dry-run        # show what would change, write nothing
     python3 scripts/apply_analysis.py --no-push        # write + commit locally, don't push
     python3 scripts/apply_analysis.py --card "SV5a 090/066"   # input is ONE bare analysis object
@@ -94,6 +95,8 @@ def read_input(args: List[str]) -> str:
         i = args.index("--card")
         if i + 1 < len(args) and args[i + 1] in files:
             files.remove(args[i + 1])
+    if files and files[0] == "-":
+        return sys.stdin.read()
     if files:
         p = Path(files[0])
         if not p.exists():

@@ -14,6 +14,13 @@ A card is due when it has tiers and a PSA10 market and at least one of:
     because young cards keep falling against the market (age curve, 2026-10-02 backtest).
 The same rules drive the site's "Review due" line (assets/app.js tierReview). Without --all it
 prints at most 2 cards: the number step 8d evaluates per full check.
+
+    python3 scripts/review_due.py --text [--all]
+
+Lists cards whose WRITTEN verdict no longer matches the price (FULL-CHECK step 8g): the lowest ask
+has moved 5%+ from the price the verdict was written at (analysis.representative_price, else
+verdict_price_ref), and the card isn't already due for a full review above (that rewrites it anyway).
+Biggest move first, at most 3 per run. The refresh keeps the tiers and rewrites only the verdict.
 """
 import json
 import sys
@@ -26,6 +33,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import odds_model  # noqa: E402
 
 MAX_AGE_DAYS, MAX_MOVE, LONGSHOT, LONGSHOT_MIN_DAYS, YOUNG_MONTHS, YOUNG_MIN_DAYS = 30, 10, 0.10, 7, 9, 14
+TEXT_DRIFT, TEXT_PER_RUN, REVIEW_PER_RUN = 5.0, 3, 2   # % move that makes the written verdict stale
 
 
 def ts(s):
@@ -33,16 +41,17 @@ def ts(s):
     return d if d.tzinfo else d.replace(tzinfo=JST)
 
 
-def main():
-    m = json.loads((ROOT / "data" / "manifest.json").read_text(encoding="utf-8"))
+def compute(root=ROOT):
+    """(review-due list, text-due list). review: (score, url, name, ask, reasons); text: (abs drift, url, name, ask, ref, drift)."""
+    m = json.loads((root / "data" / "manifest.json").read_text(encoding="utf-8"))
     latest = sorted(m["snapshots"], key=lambda s: s["collected_at_jst"])[-1]["file"]
-    snap = json.loads((ROOT / "data" / "snapshots" / latest).read_text(encoding="utf-8"))
-    hist = json.loads((ROOT / "data" / "history.json").read_text(encoding="utf-8"))
+    snap = json.loads((root / "data" / "snapshots" / latest).read_text(encoding="utf-8"))
+    hist = json.loads((root / "data" / "history.json").read_text(encoding="utf-8"))
     tiers_state = hist.get("tiers", {})
     now = ts(snap["collected_at_jst"])
     idx = ((snap.get("pokeca_chart_index") or {}).get("psa10") or {}).get("latest_index_value_jpy")
-    model = odds_model.load_model(ROOT)
-    vp = ROOT / "data" / "value_model.json"
+    model = odds_model.load_model(root)
+    vp = root / "data" / "value_model.json"
     release = json.loads(vp.read_text(encoding="utf-8")).get("release", {}) if vp.exists() else {}
     due = []
     for c in snap.get("cards", []):
@@ -73,10 +82,49 @@ def main():
         if reasons:
             due.append((score, c["url"], name, ask, reasons))
     due.sort(key=lambda x: -x[0])
+    review_urls = {d[1] for d in due[:REVIEW_PER_RUN]}
+    text = []
+    for c in snap.get("cards", []):
+        a = c.get("analysis") or {}
+        v = a.get("verdict") or {}
+        ask = ((c.get("grades") or {}).get("psa10") or {}).get("lowest_price")
+        ref = a.get("representative_price") or a.get("verdict_price_ref")
+        if not v.get("reasoning") or v.get("tag") == "defer" or not ask or not ref or c["url"] in review_urls:
+            continue
+        drift = (ask / ref - 1) * 100
+        if abs(drift) >= TEXT_DRIFT:
+            text.append((abs(drift), c["url"], c.get("card_name_ja", ""), ask, ref, drift))
+    text.sort(key=lambda x: -x[0])
+    return due, text
+
+
+def print_text_due(root=ROOT, show_all=False):
+    """The REFRESH VERDICTS block printed at the end of full_update.py."""
+    try:
+        _, text = compute(root)
+    except Exception as e:  # never break a price check over this
+        print(f"\nREFRESH VERDICTS: could not work out the due cards ({e}).")
+        return
+    if not text:
+        print("\nREFRESH VERDICTS: none (every written verdict is within 5% of today's ask).")
+        return
+    shown = text if show_all else text[:TEXT_PER_RUN]
+    print("\nREFRESH VERDICTS NOW (FULL-CHECK step 8g) — the written verdict no longer matches the price; rewrite it (tiers stay):")
+    for _, url, name, ask, ref, drift in shown:
+        print(f"  {url}  ask ¥{ask:,} vs written at ¥{ref:,} ({drift:+.1f}%)  {name}")
+    if len(text) > len(shown):
+        print(f"  ({len(text) - len(shown)} more; the next full checks continue with them)")
+
+
+def main():
+    if "--text" in sys.argv:
+        print_text_due(ROOT, "--all" in sys.argv)
+        return
+    due, _ = compute(ROOT)
     if not due:
         print("No tiers due for review.")
         return
-    shown = due if "--all" in sys.argv else due[:2]
+    shown = due if "--all" in sys.argv else due[:REVIEW_PER_RUN]
     for _, url, name, ask, reasons in shown:
         print(f"{url}  ask ¥{ask:,}  {name}\n    due: {'; '.join(reasons)}")
     if len(due) > len(shown):

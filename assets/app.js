@@ -2589,9 +2589,9 @@
       const when = v.written ? `${mercDay(v.written)}` : '';
       const tagNote = v.tag && v.tag !== 'defer' && displayTag && v.tag !== displayTag ? ` It called it ${tagLabel(v.tag)}; today's call above is ${tagLabel(displayTag)}.` : '';
       const drift = refP != null && repPrice != null && refP ? (repPrice / refP - 1) * 100 : null;
-      const driftNote = drift != null && Math.abs(drift) >= 5 ? ` The price has ${drift < 0 ? 'fallen' : 'risen'} ${Math.abs(drift).toFixed(0)}% since.` : '';
+      const driftNote = drift != null && Math.abs(drift) >= 5 ? ` The price has ${drift < 0 ? 'fallen' : 'risen'} ${Math.abs(drift).toFixed(0)}% since, so the next full check rewrites it (a 5% move does).` : '';
       const writtenHtml = `<details class="verdict-written"><summary>Written analysis${when ? ' · ' + escapeHtml(when) : ''}${refP != null ? ' at ' + fmtYen(refP) : ''}${headline ? ': ' + escapeHtml(headline) : ''}</summary>
-        <p>${escapeHtml(v.reasoning || '')}</p><div class="verdict-written-note">Written when the tiers were last reviewed; its numbers are from that day.${tagNote}${driftNote} The full check re-evaluates a card when its review is due (30 days, a 10% market move, or a long-shot Definitely-buy).</div></details>`;
+        <p>${escapeHtml(v.reasoning || '')}</p><div class="verdict-written-note">Written when the tiers were last reviewed; its numbers are from that day.${tagNote}${driftNote} The full check rewrites it once the ask moves 5% from that price, and re-evaluates the tiers when their review is due.</div></details>`;
       verdictHtml = `<div class="verdict">${live ? `<h3 class="verdict-head">${escapeHtml(live.head)}</h3><p>${live.lines.map(escapeHtml).join(' ')}</p>` : ''}${staleHtml}${writtenHtml}</div>`;
       dv = { headline: live ? live.head : headline, line: staleHtml ? staleHtml.replace(/<[^>]+>/g, '') : (live ? live.lines[0] : (String(v.reasoning || '').match(/^[\s\S]*?[.!?](?=\s|$)/) || [''])[0]), held: !!staleHtml };
     } else if (gaugeHtml) {

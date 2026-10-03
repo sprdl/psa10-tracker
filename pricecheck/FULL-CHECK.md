@@ -233,6 +233,20 @@ in one line (its headline).
 
 **8e. After a release: measure the event rule** (full checks only, computer linked). When a major release in `data/events.json` is 4–10 days in the past and this is the first full check since then that hasn't reported it, run `cd "$R" && python3 scripts/event_study.py` in one `device_bash` call. It compares how far the lowest ask dropped in the 4 days after a check inside the rule window (3 days before → release day) with the same measure on other days, using our own snapshots; pokeca-chart's older history is too coarse for this (30-day averages). Put one line in the chat message: "<release>: median dip after the rule window X% (≥5% dip in Y% of cards) vs Z% on other days; N releases measured so far." Don't change the rule from this alone; once 4–5 releases are in, suggest keeping, loosening or dropping it.
 
+**8g. Refresh written verdicts that no longer match the price** (full checks only, computer linked, after 8b and 8d). **Required.** `full_update.py` prints a `REFRESH VERDICTS` block: cards whose lowest ask has moved 5%+ from the price their written verdict was based on (at most 3 per run, biggest move first; `python3 scripts/review_due.py --text` prints it again). Cards 8d is reviewing this run are excluded, since that rewrites them anyway. For each listed card, rewrite only the verdict from this run's data, keeping the tiers:
+- `tag`: the live zone of today's ask against the existing tiers, with the guardrails applied (correction or event rule: a Buy-zone price becomes `watch`; keep `defer` only if its reason still holds).
+- `label`: `"<Tag> — <one-line takeaway>"`.
+- `reasoning`: 3–5 sentences with today's numbers: the ask and its move since the old verdict, the recent sales range, depth and activity, the market (My-tier index 30-day move), what changed versus the old text, and what would change the call. Never copy a number from the old text without re-checking it today.
+- `predictions`: only if the reasoning states a probability (each with price and deadline, as in the evaluation skill). Otherwise leave the key out; the old predictions stay on the Track record and keep being scored.
+
+Save each with one `device_bash` call (same credential rules as step 7):
+```
+cd "$R" && python3 scripts/apply_analysis.py - <<'JSON'
+{"<SNKRDUNK url>": {"verdict": {"tag": "...", "label": "...", "reasoning": "..."}}}
+JSON
+```
+`apply_analysis.py` dates the new verdict and resets its reference price to today's ask, so the card leaves the list. One line per card in the chat message: "Verdict refreshed: <name> <old tag> → <new tag> (<move>)".
+
 **8f. Mercari for cards near the limit** (full and quick checks, computer linked, after step 7 has published). `full_update.py` ends with a `MERCARI` block. When it says `MERCARI NOW`, follow `pricecheck/MERCARI.md` (one script call on jp.mercari.com, then `scripts/mercari.py` saves `data/mercari.json`); when it says `none due`, skip it. Alerts it prints (`** AT/UNDER LIMIT`, `** AUCTION ending`) go first in the chat message, with the item link.
 
 **8c. Write the story for cards that have none** (full checks only, computer linked, after step 7 has published). **Required, not optional**, like 8b: `full_update.py` ends by printing a `WRITE STORIES NOW` block with these cards, and the run is not finished while it lists cards you haven't written a story for (a 2026-10-03 run left a new card without one). Every tracked card gets a Story tab on its card page and a tile on the Stories page from `data/stories.json`: who illustrated it, what the art shows, how it connects to other cards or the games, set context and a few facts. A card added in step 1b arrives without one.
