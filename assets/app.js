@@ -68,7 +68,7 @@
   // (after the dash) as a bold lead-in sentence above the reasoning paragraph.
   function verdictHeadline(label) {
     if (!label) return '';
-    const m = label.match(/—\s*(.+)$/);
+    const m = label.match(/(?:—|:)\s*(.+)$/);
     return capitalize((m ? m[1] : label).trim());
   }
 
@@ -679,6 +679,40 @@
     const q = new URLSearchParams({ template: 'remove-purchase.yml',
       title: 'Remove purchase: ' + parseCardName(h.card_name_ja || '').short, id: h.id });
     return `${REPO_URL}/issues/new?${q}`;
+  }
+
+  // ---------- today's call, computed from the snapshot being shown ----------
+  function liveVerdict(card) {
+    const a = card.analysis || {}, t = a.tiers, rep = getRep(card), ask = lowestAsk(card);
+    if (rep == null || !t) return null;
+    const tag = displayTagFor(card), zone = liveTagOf(t, rep);
+    const held = heldByCorrection(card) || heldByEvent(card);
+    const head = tag === 'defer' ? 'Defer: the written analysis says to hold off whatever the price'
+      : zone === 'definitely_buy' ? `Definitely buy: ${fmtYen(rep)} is at or under ${fmtYen(t.definitely_buy)}`
+      : zone === 'buy' && held ? `Watch: in the Buy zone, held by the ${heldByEvent(card) ? 'event' : 'correction'} rule`
+      : zone === 'buy' ? `Buy: ${fmtYen(rep)} is in the Buy zone (≤${fmtYen(t.buy_upper)})`
+      : zone === 'watch' ? `Watch: ${fmtYen(rep - t.buy_upper)} (${((rep / t.buy_upper - 1) * 100).toFixed(1)}%) above the Buy line`
+      : `Don't buy: above the ${fmtYen(t.ceiling)} ceiling`;
+    const lines = [];
+    const c1 = priceChangeLast(card), c7 = priceChangeAgo(card, 7);
+    const chg = [c1 ? `${c1.pct === 0 ? '±0%' : fmtPct(c1.pct)} since the last check` : '', c7 ? `${fmtPct(c7.pct)} over 7 days` : ''].filter(Boolean).join(', ');
+    lines.push(`Lowest ask ${fmtYen(ask != null ? ask : rep)}${chg ? ' (' + chg + ')' : ''}.`);
+    const ref = Date.parse(refTime());
+    const sales = (((card.grades || {}).psa10 || {}).recent_completed_sales || []).map((x) => ({ p: x.price, d: saleAgeDays(x.when, ref) })).filter((x) => x.p && x.d != null && x.d <= 7);
+    if (sales.length >= 2) {
+      const ps = sales.map((x) => x.p);
+      lines.push(`${sales.length >= 20 ? '20+' : sales.length} sales in the last ${((n) => n === 1 ? 'day' : n + ' days')(Math.max(1, Math.ceil(Math.max(...sales.map((x) => x.d)))))} at ${fmtYen(Math.min(...ps))}–${fmtYen(Math.max(...ps))}, median ${fmtYen(median(ps))}.`);
+    }
+    lines.push(`Tiers: Definitely-buy ≤${fmtYen(t.definitely_buy)}, Buy ≤${fmtYen(t.buy_upper)}, ceiling ${fmtYen(t.ceiling)}.`);
+    const lim = getLimit(card);
+    if (lim != null && ask != null) {
+      if (ask <= lim) lines.push(`A listing is at or under your ${fmtYen(lim)} limit.`);
+      else {
+        const o = touchOdds(card, lim);
+        lines.push(`Your limit ${fmtYen(lim)} is ${fmtYen(ask - lim)} (${((ask / lim - 1) * 100).toFixed(1)}%) below the ask${o && !o.reached ? `; chance a listing reaches it: ${fmtOdds(o.p30)} in 30 days, ${fmtOdds(o.p90)} in 90` : ''}.`);
+      }
+    }
+    return { head, lines, tag };
   }
 
   // ---------- Mercari (data/mercari.json, scripts/mercari.py) ----------
@@ -2547,18 +2581,19 @@
       } else if (heldByCorrection(card)) {
         const cs = correctionState();
         staleHtml = `<div class="verdict-stale">Price is in the Buy zone, shown as Watch by the correction rule (${escapeHtml(cs.name)} ${fmtPct(cs.pct)} over 30 days). It becomes a buy at Definitely-buy (≤${fmtYen(analysis.tiers.definitely_buy)}) or once the market steadies.</div>`;
-      } else if (v.tag && v.tag !== 'defer' && displayTag && v.tag !== displayTag) {
-        staleHtml = `<div class="verdict-stale">Price is now in the ${tagLabel(displayTag)} zone. The written analysis called it ${tagLabel(v.tag)}${refP != null ? ' at ' + fmtYen(refP) : ''}, worth a fresh look.</div>`;
-      } else if (!analysis.price_source && analysis.verdict_price_ref != null && repPrice != null) {
-        const ref = analysis.verdict_price_ref;
-        const diffPct = ref ? ((repPrice - ref) / ref) * 100 : 0;
-        if (Math.abs(diffPct) >= 5) {
-          staleHtml = `<div class="verdict-stale">Last fully reviewed at ${fmtYen(ref)}. The price has since ${diffPct < 0 ? 'fallen' : 'risen'} to ${fmtYen(repPrice)} (${diffPct >= 0 ? '+' : '−'}${Math.abs(diffPct).toFixed(0)}%), worth a fresh look before trusting the call below.</div>`;
-        }
       }
-      verdictHtml = `<div class="verdict">${headline ? `<h3 class="verdict-head">${escapeHtml(headline)}</h3>` : ''}<p>${escapeHtml(v.reasoning || '')}</p>${staleHtml}</div>`;
-      const firstSentence = (String(v.reasoning || '').match(/^[\s\S]*?[.!?](?=\s|$)/) || [v.reasoning || ''])[0];
-      dv = { headline, line: staleHtml ? staleHtml.replace(/<[^>]+>/g, '') : firstSentence, held: !!staleHtml };
+      // The written verdict is an evaluation from one day (apply_analysis.py); prices move every check.
+      // So the box leads with a summary computed from THIS snapshot, and the written analysis sits below,
+      // dated and folded, as the longer-term reasoning.
+      const live = liveVerdict(card);
+      const when = v.written ? `${mercDay(v.written)}` : '';
+      const tagNote = v.tag && v.tag !== 'defer' && displayTag && v.tag !== displayTag ? ` It called it ${tagLabel(v.tag)}; today's call above is ${tagLabel(displayTag)}.` : '';
+      const drift = refP != null && repPrice != null && refP ? (repPrice / refP - 1) * 100 : null;
+      const driftNote = drift != null && Math.abs(drift) >= 5 ? ` The price has ${drift < 0 ? 'fallen' : 'risen'} ${Math.abs(drift).toFixed(0)}% since.` : '';
+      const writtenHtml = `<details class="verdict-written"><summary>Written analysis${when ? ' · ' + escapeHtml(when) : ''}${refP != null ? ' at ' + fmtYen(refP) : ''}${headline ? ': ' + escapeHtml(headline) : ''}</summary>
+        <p>${escapeHtml(v.reasoning || '')}</p><div class="verdict-written-note">Written when the tiers were last reviewed; its numbers are from that day.${tagNote}${driftNote} The full check re-evaluates a card when its review is due (30 days, a 10% market move, or a long-shot Definitely-buy).</div></details>`;
+      verdictHtml = `<div class="verdict">${live ? `<h3 class="verdict-head">${escapeHtml(live.head)}</h3><p>${live.lines.map(escapeHtml).join(' ')}</p>` : ''}${staleHtml}${writtenHtml}</div>`;
+      dv = { headline: live ? live.head : headline, line: staleHtml ? staleHtml.replace(/<[^>]+>/g, '') : (live ? live.lines[0] : (String(v.reasoning || '').match(/^[\s\S]*?[.!?](?=\s|$)/) || [''])[0]), held: !!staleHtml };
     } else if (gaugeHtml) {
       verdictHtml = displayTag
         ? `<div class="verdict"><p>Zone computed from the live price vs. this card's tiers. No written analysis yet.</p></div>`

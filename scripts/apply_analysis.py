@@ -37,7 +37,7 @@ import subprocess
 import sys
 import unicodedata
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 VALID_TAGS = {"definitely_buy", "buy", "watch", "dont_buy", "defer"}
@@ -292,6 +292,9 @@ def main():
             lowest = (card.get("grades", {}).get("psa10") or {}).get("lowest_price")
             if lowest is not None and merged.get("representative_price") is None:
                 merged["verdict_price_ref"] = lowest
+        # the date the verdict text was written: the site shows it on the folded "Written analysis"
+        if isinstance(new.get("verdict"), dict) and not new["verdict"].get("written"):
+            merged["verdict"] = {**merged["verdict"], "written": datetime.now(timezone(timedelta(hours=9))).replace(microsecond=0).isoformat()}
         live_price = merged.get("representative_price")
         if live_price is None:
             live_price = (card.get("grades", {}).get("psa10") or {}).get("lowest_price")
