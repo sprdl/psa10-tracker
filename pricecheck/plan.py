@@ -114,6 +114,12 @@ def build_plan(root=ROOT, now=None):
             odds_age = (now.date() - datetime.fromisoformat(str(odds_built)[:10]).date()).days
         except Exception:
             pass
+    rp = root / "data" / "removed_cards.json"   # removed cards aren't suggested again by Scout
+    if rp.exists():
+        for v in (json.loads(rp.read_text(encoding="utf-8")).get("removed") or {}).values():
+            slug = pokeca_slug(v.get("name"))
+            if slug:
+                tracked_slugs.add(slug)
     scout = {"skip": sorted(tracked_slugs), "read": {}, "n": SCOUT_READS}
     sp = root / "data" / "scout.json"
     if sp.exists():

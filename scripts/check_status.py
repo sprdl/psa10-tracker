@@ -34,5 +34,8 @@ print(json.dumps({
 # The cards a quick check reads (every card in the latest snapshot), as a ready-made JS array.
 if snaps:
     latest = json.loads((root / "data" / "snapshots" / snaps[-1]["file"]).read_text(encoding="utf-8"))
+    rp = root / "data" / "removed_cards.json"   # removed with the site's Remove card button: not read any more
+    gone = set((json.loads(rp.read_text(encoding="utf-8")).get("removed") or {}).keys()) if rp.exists() else set()
     ids = [c.get("url", "").rstrip("/").split("/")[-1] for c in latest.get("cards", []) if c.get("url")]
+    ids = [i for i in ids if i not in gone]
     print("quick_ids = " + json.dumps(ids))
