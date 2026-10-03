@@ -338,7 +338,20 @@ def eval_due(root=ROOT, now=None):
     return out
 
 
+def print_story_due():
+    import set_story
+    miss = set_story.missing()
+    if not miss:
+        print("\nWRITE STORIES NOW: none (every tracked card has a story).")
+        return
+    print("\nWRITE STORIES NOW (FULL-CHECK step 8c) — the run is not finished until these have a story:")
+    for i, (sid, name) in enumerate(miss):
+        print(f"  {'' if i < 3 else '(next run) '}{sid}  {name}")
+    print("  Research with WebSearch/WebFetch (never SNKRDUNK or pokeca-chart) and save with scripts/set_story.py <id>.")
+
+
 def print_eval_due():
+    print_story_due()
     due = eval_due()
     if not due:
         print("\nEVALUATE NOW: none (every card with a PSA10 market has tiers).")
