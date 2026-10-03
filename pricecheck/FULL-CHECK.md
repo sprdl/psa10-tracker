@@ -12,6 +12,12 @@ Each in-page script opens the sites' own pages in hidden same-origin iframes of 
 another (the same pages a person would open, in the user's browser, only when the user asks for a
 check). They make no fetch/XHR requests. Never use curl, requests or any HTTP client.
 
+## Tool pitfalls (read before the first browser call)
+
+- **Browser JavaScript tool.** The browser tools are often deferred (and again after a context compaction). Before the first call, load them with `ToolSearch` (`select:mcp__remote-devices__Claude_Browser__javascript_tool,...navigate,...tabs_close`) and read the schema. `javascript_tool` takes `action: "javascript_exec"` and `text` (the code). A call with wrong parameter names does not fail: it prints `undefined`. A correct call that returns nothing prints a value or an error, so **if you see `undefined` twice, stop retrying and check the tool's parameters** (the old "extra no-op call" trick only applies to a correct call). The code is a REPL expression: no `return` at top level; wrap async work as `await (async () => {...})()`.
+- **Pasting scripts.** Always use the script text printed by `--print-js` / `cat`, never a shortened stand-in.
+- **JSON for `apply_analysis.py` / `set_story.py`.** Build it with `python3 -c`/`json.dumps` or write it to a file and run `python3 -m json.tool file` before applying; hand-written JSON lost a closing brace on 2026-10-04 (nothing was saved; the script rejects bad JSON). Also include `predictions` whenever the reasoning states odds (price + deadline), or the warning "reasoning states odds but verdict.predictions is missing" appears.
+
 ## 0. Allow deletes in the repo folder (before anything else)
 
 The repo folder is mounted with deletes blocked until the user approves them. Git removes its own
