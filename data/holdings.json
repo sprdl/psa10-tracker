@@ -10,7 +10,9 @@
       "date": "2026-09-16",
       "pulls": [],
       "where": "Pokemon Center Online",
-      "url": "https://snkrdunk.com/apparels/881421"
+      "url": "https://snkrdunk.com/apparels/881421",
+      "snkrdunk_name": "ポケモンカードゲームMEGA 拡張パック「30th CELEBRATION」ボックス",
+      "image": "https://cdn.snkrdunk.com/upload_bg_removed/9e6e18b1-ace5-4782-b975-81a17803faee.webp?size=l"
     },
     {
       "id": "s48",
@@ -22,7 +24,9 @@
       "date": "2026-09-30",
       "pulls": [],
       "where": "Pokemon Center Online",
-      "notes": "Arrives January 2027"
+      "notes": "Arrives January 2027",
+      "snkrdunk_name": "ポケモンカードゲームMEGA 拡張パック「30th CELEBRATION」ボックス",
+      "image": "https://cdn.snkrdunk.com/upload_bg_removed/9e6e18b1-ace5-4782-b975-81a17803faee.webp?size=l"
     },
     {
       "id": "s49",
@@ -34,7 +38,9 @@
       "date": "2026-08-30",
       "pulls": [],
       "where": "Pokemon Center Online",
-      "notes": "Arrives November 2026"
+      "notes": "Arrives November 2026",
+      "snkrdunk_name": "ポケモンカードゲームMEGA 構築デッキ「30th CELEBRATION プレミアムデッキセット エーフィ・ブラッキー」",
+      "image": "https://cdn.snkrdunk.com/upload_bg_removed/cc064fc3-beb0-4c57-8cfe-2d638e672975.webp?size=l"
     },
     {
       "id": "s50",
@@ -45,7 +51,9 @@
       "price_jpy": 3600,
       "date": "2026-09-29",
       "pulls": [],
-      "where": "Pokemon Center Ikebukuro"
+      "where": "Pokemon Center Ikebukuro",
+      "snkrdunk_name": "ポケモンカードゲームMEGA 拡張パック「30th CELEBRATION」パック",
+      "image": "https://cdn.snkrdunk.com/upload_bg_removed/5aa1e23e-b91f-4163-b78f-9e3856c86ed2.webp?size=l"
     },
     {
       "id": "s51",
@@ -57,7 +65,9 @@
       "date": "2026-09-30",
       "pulls": [],
       "where": "Pokemon Center Online",
-      "notes": "Arrives Between October/November 2026"
+      "notes": "Arrives Between October/November 2026",
+      "snkrdunk_name": "ポケモンカードゲームMEGA「30th CELEBRATION カードセット フシギダネ・ヒトカゲ・ゼニガメ」",
+      "image": "https://cdn.snkrdunk.com/upload_bg_removed/77d23f9e-6ee0-479d-a3c7-545c0b0cdc6c.webp?size=l"
     }
   ]
 }
