@@ -1,3 +1,15 @@
 {
-  "holdings": []
+  "holdings": [],
+  "sealed": [
+    {
+      "id": "s46",
+      "kind": "box",
+      "name": "30th CELEBRATION 20パックBOX",
+      "qty": 1,
+      "price_jpy": 7200,
+      "date": "2026-09-16",
+      "pulls": [],
+      "where": "Pokemon Center Online"
+    }
+  ]
 }
