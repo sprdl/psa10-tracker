@@ -1397,3 +1397,13 @@ body.lb-open { overflow: hidden; }
 @media (max-width: 600px) { .sl-pull, .sl-empty, .sl-add { padding-left: 16px; } .sl-name { font-size: 19px; } }
 .sl-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 600px) { .sl-summary { gap: 8px; } .sl-summary .pf-stat { padding: 10px; } .sl-summary .val { font-size: 20px; } .sl-summary .lbl { font-size: 12px; } .sl-icon { display: none; } }
+
+/* Holdings page: totals at the top right (singles + sealed, not the budget) */
+.page-aside { display: grid; grid-template-columns: repeat(3, auto); gap: 4px 22px; text-align: right; align-self: flex-end; }
+.page-aside[hidden] { display: none; }
+.pa-cell { display: flex; flex-direction: column; align-items: flex-end; }
+.pa-cell .lbl { font: 13px var(--display); letter-spacing: 0.1em; color: var(--muted-2); }
+.pa-cell .v { font: 28px var(--display); letter-spacing: 0.02em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.pa-pct { font-size: 12px; font-weight: 600; }
+.pa-note { grid-column: 1 / -1; font-size: 11px; color: var(--muted-2); }
+@media (max-width: 700px) { .page-head:has(.page-aside:not([hidden])) { flex-wrap: wrap; } .page-aside { width: 100%; grid-template-columns: repeat(3, 1fr); text-align: left; } .pa-cell { align-items: flex-start; } .pa-cell .v { font-size: 22px; } }

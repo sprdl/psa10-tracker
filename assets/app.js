@@ -1832,6 +1832,7 @@
     }
     document.getElementById('page-title').textContent = title;
     document.getElementById('page-sub').textContent = sub;
+    renderHoldingsAside();
     document.title = view === 'overview' ? 'PSA10 Tracker' : `${title} · PSA10 Tracker`;
     if (view !== 'collection' && state.cmpMode) { state.cmpMode = false; state.cmpPick = []; }
 
@@ -2243,7 +2244,42 @@
     return head + sum + `<div class="sl-list">${blocks}</div>`;
   }
 
+  // Totals for the Holdings page header: everything bought (singles + sealed) vs what it's worth now.
+  // Singles at today's price (getRep); a sealed product at the value of its logged pulls (raw A-rank
+  // ask, PSA10 price once a 10, or your estimate), or at its price while no pull is logged yet
+  // (unopened). Separate from the budget, which counts singles only.
+  function holdingsTotals(cards) {
+    let spent = 0, worth = 0, unpriced = 0, unopened = 0;
+    for (const h of state.holdings) {
+      const c = cards.find((x) => x.url === h.card_url), v = c ? getRep(c) : null;
+      spent += holdingCost(h);
+      if (v != null) worth += v; else unpriced++;
+    }
+    for (const sd of state.sealed || []) {
+      spent += sd.price_jpy || 0;
+      const pulls = sd.pulls || [];
+      if (!pulls.length) { worth += sd.price_jpy || 0; unopened++; continue; }
+      for (const p of pulls) { const pv = pullValue(p, cards).v; if (pv != null) worth += pv; else unpriced++; }
+    }
+    return { spent, worth, pnl: worth - spent, unpriced, unopened, n: state.holdings.length + (state.sealed || []).length };
+  }
+  function renderHoldingsAside(cards) {
+    const el = document.getElementById('page-aside');
+    if (!el) return;
+    const on = (location.hash || '').replace(/^#\/?/, '').split('/')[0] === 'holdings';
+    const t = on ? holdingsTotals(cards || (state.currentData && state.currentData.cards) || []) : null;
+    if (!t || !t.n) { el.hidden = true; el.innerHTML = ''; return; }
+    const pct = t.spent ? (t.pnl / t.spent) * 100 : null;
+    const notes = [t.unopened ? `${t.unopened} sealed product${t.unopened === 1 ? '' : 's'} without pulls counted at cost` : '', t.unpriced ? `${t.unpriced} item${t.unpriced === 1 ? '' : 's'} without a price left out of the value` : ''].filter(Boolean).join(' · ');
+    el.innerHTML = `<div class="pa-cell"><span class="lbl">Total spent</span><span class="v">${fmtYen(t.spent)}</span></div>
+      <div class="pa-cell"><span class="lbl">Worth now</span><span class="v">${fmtYen(t.worth)}</span></div>
+      <div class="pa-cell"><span class="lbl">+/−</span><span class="v ${t.pnl >= 0 ? 'pos' : 'neg'}">${t.pnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(t.pnl))}</span>${pct != null ? `<span class="pa-pct ${t.pnl >= 0 ? 'pos' : 'neg'}">${fmtPct(pct)}</span>` : ''}</div>
+      ${notes ? `<div class="pa-note">${escapeHtml(notes)}</div>` : ''}`;
+    el.hidden = false;
+  }
+
   function renderPortfolio(holdings, currentCards) {
+    renderHoldingsAside(currentCards);
     const sealedEl = document.getElementById('sealed-section');
     if (sealedEl) { sealedEl.innerHTML = sealedHtml(currentCards); trimImages(sealedEl); }
     if (!holdings.length) {
