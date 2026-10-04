@@ -1,0 +1,19 @@
+name: Add a picture to a sealed product
+description: Set or replace the photo of a box, set or pack on the Holdings page.
+title: "Picture: "
+labels: ["sealed-photo"]
+body:
+  - type: input
+    id: id
+    attributes:
+      label: Sealed product id
+      description: Filled in by the Add picture link on the site, e.g. s12.
+    validations:
+      required: true
+  - type: textarea
+    id: picture
+    attributes:
+      label: Picture
+      description: Drag a photo here (or paste an image link).
+    validations:
+      required: true

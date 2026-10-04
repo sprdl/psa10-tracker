@@ -1407,3 +1407,13 @@ body.lb-open { overflow: hidden; }
 .pa-pct { font-size: 12px; font-weight: 600; }
 .pa-note { grid-column: 1 / -1; font-size: 11px; color: var(--muted-2); }
 @media (max-width: 700px) { .page-head:has(.page-aside:not([hidden])) { flex-wrap: wrap; } .page-aside { width: 100%; grid-template-columns: repeat(3, 1fr); text-align: left; } .pa-cell { align-items: flex-start; } .pa-cell .v { font-size: 22px; } }
+
+/* sealed product pictures */
+.sl-photo { flex: none; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; background: var(--panel-2); display: block; }
+.sl-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+.sl-photo:hover img { transform: scale(1.05); }
+.sl-photo.broken { background: var(--panel-2); }
+a.sl-icon { width: 84px; height: 84px; flex-direction: column; gap: 2px; text-decoration: none; border: 1px dashed var(--line); }
+a.sl-icon span { font-size: 10px; color: var(--muted-2); }
+a.sl-icon:hover { border-color: var(--accent); }
+@media (max-width: 600px) { .sl-photo, a.sl-icon { width: 64px; height: 64px; } a.sl-icon { display: grid; } }

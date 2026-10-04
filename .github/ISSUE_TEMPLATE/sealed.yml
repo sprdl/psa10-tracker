@@ -48,6 +48,11 @@ body:
     attributes:
       label: Date bought
       description: YYYY-MM-DD. Leave empty for today.
+  - type: textarea
+    id: picture
+    attributes:
+      label: Picture (optional)
+      description: Drag a photo of the box here (or paste an image link). It's shown on the Holdings page.
   - type: input
     id: where
     attributes:

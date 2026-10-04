@@ -16,6 +16,9 @@ site's "Bought it" or "Remove" form, so nothing runs on your Mac:
 - Label `sealed`: a box / set / pack(s) bought at MSRP (store, Pokémon Center, lottery) → store["sealed"],
   id "s<issue#>". Sealed product is never bought on the second market, so there's no market price.
 - Label `pull`: a valuable card pulled from one of those → that product's "pulls", id "u<issue#>".
+- Label `sealed-photo`: sets (or replaces) the picture of an existing sealed product.
+  A picture (dragged into the form, or an image link) is downloaded and committed as
+  assets/sealed/<id>.<ext>, so the site never depends on the original link.
 - If the form can't be read (e.g. a price of "abc"), it comments what's wrong
   and leaves the issue open. Editing the issue re-runs this.
 
@@ -146,6 +149,86 @@ def build_holding(issue):
     return h, card is not None
 
 
+IMG_MAX = 8 * 1024 * 1024
+IMG_TYPES = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/heic": "heic"}
+PENDING = {}    # repo-relative path -> bytes, written and committed with holdings.json
+_IMG_CACHE = {}
+
+
+def image_url(text):
+    t = text or ""
+    for rx in (r"!\[[^\]]*\]\((https?://[^)\s]+)\)", r"<img[^>]+src=\"(https?://[^\"]+)\"", r"(https?://\S+)"):
+        m = re.search(rx, t)
+        if m:
+            return m.group(1)
+    return None
+
+
+def shrink(data, ext):
+    """Phone photos are several MB: keep at most 900 px on the long side as JPEG (needs Pillow, which
+    the workflow installs; without it the original is kept)."""
+    try:
+        import io
+        from PIL import Image, ImageOps
+        im = ImageOps.exif_transpose(Image.open(io.BytesIO(data)))
+        if max(im.size) <= 900 and len(data) <= 400_000:
+            return data, ext
+        im.thumbnail((900, 900))
+        out = io.BytesIO()
+        im.convert("RGB").save(out, "JPEG", quality=85, optimize=True)
+        return out.getvalue(), "jpg"
+    except Exception:  # noqa: BLE001  (no Pillow, or a format it can't read)
+        return data, ext
+
+
+def fetch_image(url):
+    """Download an image (GitHub upload or any public link). Returns (bytes, ext); raises FormError."""
+    if url in _IMG_CACHE:
+        return _IMG_CACHE[url]
+    last = None
+    for auth in (False, True):   # public links need no token; GitHub uploads sometimes do
+        hdr = {"User-Agent": "psa10-tracker", "Accept": "image/*"}
+        if auth:
+            if not os.environ.get("GH_TOKEN") or "github" not in url:
+                break
+            hdr["Authorization"] = f"Bearer {os.environ['GH_TOKEN']}"
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30) as r:
+                ctype = (r.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+                data = r.read(IMG_MAX + 1)
+            if len(data) > IMG_MAX:
+                raise FormError("The picture is over 8 MB; use a smaller one.")
+            ext = IMG_TYPES.get(ctype)
+            if not ext:
+                last = f"the link isn't an image ({ctype or 'unknown type'})"
+                continue
+            data, ext = shrink(data, ext)
+            _IMG_CACHE[url] = (data, ext)
+            return data, ext
+        except FormError:
+            raise
+        except Exception as e:  # noqa: BLE001
+            last = str(e)
+    raise FormError(f"Couldn't download the picture: {last}. Drag the photo into the form, or paste a direct image link.")
+
+
+def attach_image(item, text, dry):
+    url = image_url(text)
+    if not url:
+        return False
+    if dry:
+        item["image"] = f"assets/sealed/{item['id']}.jpg"
+        return True
+    data, ext = fetch_image(url)
+    path = f"assets/sealed/{item['id']}.{ext}"
+    for old in list(PENDING):
+        if old.startswith(f"assets/sealed/{item['id']}."):
+            del PENDING[old]
+    PENDING[path] = data
+    item["image"] = path
+    return True
+
+
 SEALED_KINDS = (("single pack", "pack"), ("pack", "pack"), ("box", "box"), ("set", "set"), ("deck", "set"))
 PULL_STATUS = (("sending", "grading"), ("psa10", "psa10"), ("came back psa 10", "psa10"), ("lower", "graded_other"), ("raw", "raw"))
 
@@ -159,7 +242,7 @@ def parse_qty(s):
     return int(t)
 
 
-def build_sealed(issue):
+def build_sealed(issue, dry=False):
     form = parse_form(issue.get("body"))
     name = field(form, "product").strip()
     if not name:
@@ -172,6 +255,7 @@ def build_sealed(issue):
     if set_code:
         item["set_code"] = set_code[:20]
     where, notes = field(form, "where"), field(form, "notes")
+    attach_image(item, field(form, "picture"), dry)
     if where:
         item["where"] = where[:80]
     if notes:
@@ -270,15 +354,29 @@ def finish(issue, msg, ok, dry):
         gh("PATCH", f"/issues/{n}", {"state": "closed", "state_reason": "completed"})
 
 
-def apply(issue, labels, store):
+def apply(issue, labels, store, dry=False):
     """Apply this issue's change to `store` (fresh from disk). Returns (comment, commit message)."""
     hs = store.setdefault("holdings", [])
     sealed = store.setdefault("sealed", [])
+    if "sealed-photo" in labels:
+        form = parse_form(issue.get("body"))
+        m = re.search(r"\bs\d+\b", field(form, "sealed product id", "id") or "")
+        if not m:
+            raise FormError("No sealed product id found (it looks like s12). Use the Add picture link on the site.")
+        item = next((x for x in sealed if x.get("id") == m.group(0)), None)
+        if not item:
+            raise FormError(f"There's no sealed product with id {m.group(0)}.")
+        if not attach_image(item, field(form, "picture"), dry):
+            raise FormError("No picture found: drag a photo into the Picture box, or paste an image link.")
+        return (f"Picture added to **{item['id']}** ({item['name']}). The site updates in about a minute.",
+                f"holdings: picture for sealed {item['id']} (#{issue['number']})")
     if "sealed" in labels:
-        item = build_sealed(issue)
+        item = build_sealed(issue, dry)
         old = next((x for x in sealed if x.get("id") == item["id"]), None)
         if old:
             item["pulls"] = old.get("pulls", [])   # an edited form keeps the pulls already logged
+            if "image" not in item and old.get("image"):
+                item["image"] = old["image"]
         store["sealed"] = [x for x in sealed if x.get("id") != item["id"]] + [item]
         kinds = {"box": "box", "set": "set", "pack": "pack", "other": "item"}
         return (f"{'Updated' if old else 'Logged'} sealed product **{item['id']}**: {item['qty']} × {item['name']} ({kinds[item['kind']]}), "
@@ -337,13 +435,13 @@ def main():
     event = json.loads(Path(args[0]).read_text(encoding="utf-8"))
     issue = event["issue"]
     labels = {l["name"] for l in issue.get("labels", [])}
-    if not labels & {"bought", "remove-purchase", "sealed", "pull"}:
+    if not labels & {"bought", "remove-purchase", "sealed", "pull", "sealed-photo"}:
         print("Not a purchase issue; nothing to do.")
         return
 
     try:
         store = load_holdings()
-        msg, commit_msg = apply(issue, labels, store)
+        msg, commit_msg = apply(issue, labels, store, dry)
     except FormError as e:
         finish(issue, f"Couldn't record this: {e}\n\nEdit the issue to fix it and it will be retried automatically.", False, dry)
         return  # not a failed run: the comment on the issue says what to fix
@@ -363,12 +461,17 @@ def main():
         git("reset", "-q", "--hard", "origin/main")
         store = load_holdings()
         try:
-            msg, commit_msg = apply(issue, labels, store)
+            msg, commit_msg = apply(issue, labels, store, dry)
         except FormError as e:  # e.g. a removal that another run already did
             finish(issue, f"Couldn't record this: {e}", False, dry)
             return
         save_holdings(store)
         git("add", "data/holdings.json")
+        for path, data in PENDING.items():   # pictures of sealed products
+            f = ROOT / path
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_bytes(data)
+            git("add", path)
         if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
             break  # already recorded (e.g. a re-run)
         git("commit", "-q", "-m", commit_msg)

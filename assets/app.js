@@ -2191,6 +2191,7 @@
     if (card) q.card = card.url;
     return `${REPO_URL}/issues/new?${new URLSearchParams(q)}`;
   }
+  function sealedPhotoUrl(sd) { return `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'sealed-photo.yml', title: 'Picture: ' + sd.name, id: sd.id })}`; }
   function removeIdUrl(id, name) { return `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'remove-purchase.yml', title: 'Remove: ' + name, id })}`; }
   function pullValue(p, cards) {
     const card = p.card_url ? cards.find((c) => c.url === p.card_url) : null;
@@ -2228,8 +2229,10 @@
       const setCards = code ? cards.filter((c) => (parseCardName(c.card_name_ja).code.split(/\s+/)[0] || '').toLowerCase() === code) : [];
       const chips = setCards.map((c) => `<a class="sl-chip" href="${escapeAttr(pullFormUrl(s, c))}" target="_blank" rel="noopener">${c.image_url ? `<img src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}${escapeHtml(parseCardName(c.card_name_ja).short)}</a>`).join('');
       return `<div class="sl-item">
-        <div class="sl-top"><span class="sl-icon">${BOX_ICON}</span>
-          <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${escapeHtml(s.name)}</div><div class="pf-meta">${meta} · <a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, s.name))}" target="_blank" rel="noopener">Remove</a></div></div>
+        <div class="sl-top">${s.image
+            ? `<a class="sl-photo" href="${escapeAttr(s.image)}" target="_blank" rel="noopener" title="Open the full picture"><img src="${escapeAttr(s.image)}" alt="${escapeAttr(s.name)}" loading="lazy" onerror="this.parentNode.classList.add('broken');this.remove();"></a>`
+            : `<a class="sl-icon" href="${escapeAttr(sealedPhotoUrl(s))}" target="_blank" rel="noopener" title="Add a picture">${BOX_ICON}<span>+ photo</span></a>`}
+          <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${escapeHtml(s.name)}</div><div class="pf-meta">${meta} · <a class="pf-remove" href="${escapeAttr(sealedPhotoUrl(s))}" target="_blank" rel="noopener">${s.image ? 'Change picture' : 'Add picture'}</a> · <a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, s.name))}" target="_blank" rel="noopener">Remove</a></div></div>
           <div class="pf-current"><div class="val">${pulls.length ? fmtYen(val) : '—'}</div><div class="pf-pnl ${pct == null || !pulls.length ? 'muted' : pct >= 100 ? 'pos' : ''}">${pulls.length ? `pulls worth ${pct != null ? Math.round(pct) + '% of cost' : ''}` : 'no pulls yet'}</div></div>
         </div>
         <div class="sl-pulls">${rows}</div>
