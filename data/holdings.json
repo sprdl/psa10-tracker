@@ -8,7 +8,16 @@
       "qty": 1,
       "price_jpy": 7200,
       "date": "2026-09-16",
-      "pulls": [],
+      "pulls": [
+        {
+          "id": "u52",
+          "card_url": "https://snkrdunk.com/apparels/896992",
+          "card_name_ja": "ゲンガーex SAR [M6a 131/103](拡張パック「30th CELEBRATION」)",
+          "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/c4e43e7c-599c-4a12-bda1-c14fd82e7a1f.webp?size=l",
+          "status": "grading",
+          "date": "2026-09-16"
+        }
+      ],
       "where": "Pokemon Center Online",
       "url": "https://snkrdunk.com/apparels/881421",
       "snkrdunk_name": "ポケモンカードゲームMEGA 拡張パック「30th CELEBRATION」ボックス",
