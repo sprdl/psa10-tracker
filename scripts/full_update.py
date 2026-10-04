@@ -252,6 +252,14 @@ def persist_images(raw, cards_meta, dry):
 
 def main():
     args = sys.argv[1:]
+    if "--followups" in args:   # re-print the follow-up blocks (e.g. when the publish output was cut)
+        import mercari, review_due, sealed_info
+        print_eval_due()
+        review_due.print_text_due(ROOT)
+        mercari.print_due(ROOT)
+        sealed_info.print_due(ROOT)
+        print_followups()
+        return
     files = [a for i, a in enumerate(args) if not a.startswith("--") and not (i and args[i - 1] == "--skip")]
     dry = "--dry-run" in args
     text = sys.stdin.read() if not files or files[0] == "-" else Path(files[0]).read_text(encoding="utf-8")
@@ -327,6 +335,7 @@ def main():
     mercari.print_due(ROOT)
     import sealed_info
     sealed_info.print_due(ROOT)
+    print_followups()
 
 
 def eval_due(root=ROOT, now=None):
@@ -342,6 +351,26 @@ def eval_due(root=ROOT, now=None):
         if ask and not a.get("tiers") and (not tag or (tag == "defer" and monday)):
             out.append((c["url"], ask, c.get("card_name_ja", "")))
     return out
+
+
+def print_followups():
+    """One last line naming every follow-up step still to do, so a truncated output can't hide one."""
+    import mercari, review_due, sealed_info, set_story
+    todo = []
+    for step, label, count in (
+        ("8b", "evaluate", lambda: min(3, len(eval_due()))),
+        ("8c", "stories", lambda: min(3, len(set_story.missing()))),
+        ("8f", "Mercari (pricecheck/MERCARI.md)", lambda: len(mercari.due(ROOT))),
+        ("8g", "refresh verdicts", lambda: min(review_due.TEXT_PER_RUN, len(review_due.compute(ROOT)[1]))),
+        ("8h", "sealed info", lambda: len(sealed_info.due(ROOT))),
+    ):
+        try:
+            n = count()
+        except Exception:  # noqa: BLE001
+            n = 0
+        if n:
+            todo.append(f"{step} {label}: {n}")
+    print("\nFOLLOW-UPS (FULL-CHECK step 8; required): " + (" · ".join(todo) if todo else "none") + "  [8d review_due.py and 8e event study are checked separately]")
 
 
 def print_story_due():

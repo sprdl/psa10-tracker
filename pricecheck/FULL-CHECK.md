@@ -142,7 +142,7 @@ Paste every line from steps 2, 3 and 4 (including the `PREM`, `SCP` and `SC` lin
 unusual worth recording, all optional) verbatim into a heredoc:
 
 ```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && python3 scripts/full_update.py - <<'EOF' 2>&1 | tail -60
+R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && python3 scripts/full_update.py - <<'EOF' 2>&1 | tail -120
 <the lines>
 EOF
 ```
@@ -224,6 +224,8 @@ EOF
 A newer analysis replaces the card's previous one; the site marks analyses older than a week. If
 `outliers.py` says nothing stands out, skip this step. Mention each card analysed in the chat message
 in one line (its headline).
+
+**Follow-ups.** `full_update.py`'s last line is `FOLLOW-UPS (…): …`, naming every step below that still has work (8b, 8c, 8f, 8g, 8h, with counts) or `none`. The run is not finished until each one listed is done. If the output was cut, `python3 scripts/full_update.py --followups` prints the blocks again.
 
 **8b. Evaluate cards that have no tiers yet** (full checks only, computer linked, after step 7 has published). **Required, not optional.** A card added in step 1b reaches the tracker without tiers or a verdict, and so does a watched card whose PSA10 market has just formed. Evaluate them in the same run, so the user never has to ask separately. `full_update.py` ends by printing an `EVALUATE NOW` block that lists exactly these cards; the run is not finished while that list has entries you haven't evaluated. "It's new" or "it has no tiers yet" is the reason this step exists, never a reason to skip it (a 2026-10-03 run skipped a new card this way).
 1. Find them with one `device_bash` call:
