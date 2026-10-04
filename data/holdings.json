@@ -23,6 +23,18 @@
       "pulls": [],
       "where": "Pokemon Center Online",
       "notes": "Arrives January 2027"
+    },
+    {
+      "id": "s49",
+      "kind": "set",
+      "name": "",
+      "url": "https://snkrdunk.com/apparels/881423",
+      "qty": 1,
+      "price_jpy": 6200,
+      "date": "2026-08-30",
+      "pulls": [],
+      "where": "Pokemon Center Online",
+      "notes": "Arrives November 2026"
     }
   ]
 }
