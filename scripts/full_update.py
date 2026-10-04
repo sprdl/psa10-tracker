@@ -325,6 +325,8 @@ def main():
     review_due.print_text_due(ROOT)
     import mercari
     mercari.print_due(ROOT)
+    import sealed_info
+    sealed_info.print_due(ROOT)
 
 
 def eval_due(root=ROOT, now=None):

@@ -16,13 +16,16 @@ body:
     validations:
       required: true
   - type: input
+    id: snkrdunk
+    attributes:
+      label: SNKRDUNK link
+      description: The product's SNKRDUNK page (search the box/set there and copy its address). Its name and picture come from there with the next price check; you never buy it there.
+      placeholder: https://snkrdunk.com/apparels/881421
+  - type: input
     id: product
     attributes:
-      label: Product name
-      description: e.g. 30th CELEBRATION 20パックBOX
-      placeholder: 30th CELEBRATION BOX
-    validations:
-      required: true
+      label: Product name (optional)
+      description: Only if there's no SNKRDUNK page, or you want your own name for it.
   - type: input
     id: set_code
     attributes:
@@ -48,11 +51,6 @@ body:
     attributes:
       label: Date bought
       description: YYYY-MM-DD. Leave empty for today.
-  - type: textarea
-    id: picture
-    attributes:
-      label: Picture (optional)
-      description: Drag a photo of the box here (or paste an image link). It's shown on the Holdings page.
   - type: input
     id: where
     attributes:

@@ -1,0 +1,19 @@
+name: Link a sealed product to SNKRDUNK
+description: Set the SNKRDUNK page a box, set or pack takes its name and picture from.
+title: "SNKRDUNK link: "
+labels: ["sealed-link"]
+body:
+  - type: input
+    id: id
+    attributes:
+      label: Sealed product id
+      description: Filled in by the link on the site, e.g. s12.
+    validations:
+      required: true
+  - type: input
+    id: snkrdunk
+    attributes:
+      label: SNKRDUNK link
+      placeholder: https://snkrdunk.com/apparels/881421
+    validations:
+      required: true

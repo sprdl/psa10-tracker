@@ -858,7 +858,7 @@
       el.innerHTML = `<div class="signals-head">Buy signals</div>` + signals.map((s) => {
         const isNew = isLatest && !seen.has(s.key);
         const pill = s.kind === 'limit' ? '<span class="sig-pill limit">My limit</span>' : s.kind === 'mercari' ? '<span class="sig-pill merc">Mercari</span>' : `<span class="vtag ${s.kind}">${escapeHtml(tagLabel(s.kind))}</span>`;
-        return `<button type="button" class="signal" data-idx="${s.i}">${pill}<span class="sig-name">${escapeHtml(s.name)}</span><span class="sig-text">${escapeHtml(s.text)}</span>${isNew ? '<span class="sig-new">NEW</span>' : ''}</button>`;
+        return `<button type="button" class="signal" data-idx="${s.i}">${pill}<span class="sig-name">${escapeHtml(sealedName(s))}</span><span class="sig-text">${escapeHtml(s.text)}</span>${isNew ? '<span class="sig-new">NEW</span>' : ''}</button>`;
       }).join('');
       el.querySelectorAll('.signal').forEach((b) => b.addEventListener('click', () => {
         const card = cards[Number(b.dataset.idx)];
@@ -2191,7 +2191,9 @@
     if (card) q.card = card.url;
     return `${REPO_URL}/issues/new?${new URLSearchParams(q)}`;
   }
-  function sealedPhotoUrl(sd) { return `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'sealed-photo.yml', title: 'Picture: ' + sd.name, id: sd.id })}`; }
+  function sealedLinkUrl(sd) { return `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'sealed-link.yml', title: 'SNKRDUNK link: ' + sealedName(sd), id: sd.id })}`; }
+  // The name typed into the form wins; otherwise the one the price check read from SNKRDUNK.
+  function sealedName(sd) { return sd.name || (sd.snkrdunk_name && sd.snkrdunk_name.replace(/^ポケモンカードゲーム\S*\s+/, '')) || (sd.url ? 'SNKRDUNK product ' + sd.url.split('/').pop() : 'Sealed product'); }
   function removeIdUrl(id, name) { return `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'remove-purchase.yml', title: 'Remove: ' + name, id })}`; }
   function pullValue(p, cards) {
     const card = p.card_url ? cards.find((c) => c.url === p.card_url) : null;
@@ -2230,9 +2232,11 @@
       const chips = setCards.map((c) => `<a class="sl-chip" href="${escapeAttr(pullFormUrl(s, c))}" target="_blank" rel="noopener">${c.image_url ? `<img src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}${escapeHtml(parseCardName(c.card_name_ja).short)}</a>`).join('');
       return `<div class="sl-item">
         <div class="sl-top">${s.image
-            ? `<a class="sl-photo" href="${escapeAttr(s.image)}" target="_blank" rel="noopener" title="Open the full picture"><img src="${escapeAttr(s.image)}" alt="${escapeAttr(s.name)}" loading="lazy" onerror="this.parentNode.classList.add('broken');this.remove();"></a>`
-            : `<a class="sl-icon" href="${escapeAttr(sealedPhotoUrl(s))}" target="_blank" rel="noopener" title="Add a picture">${BOX_ICON}<span>+ photo</span></a>`}
-          <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${escapeHtml(s.name)}</div><div class="pf-meta">${meta} · <a class="pf-remove" href="${escapeAttr(sealedPhotoUrl(s))}" target="_blank" rel="noopener">${s.image ? 'Change picture' : 'Add picture'}</a> · <a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, s.name))}" target="_blank" rel="noopener">Remove</a></div></div>
+            ? `<a class="sl-photo" href="${escapeAttr(s.url || s.image)}" target="_blank" rel="noopener" title="Open on SNKRDUNK"><img src="${escapeAttr(s.image)}" alt="${escapeAttr(sealedName(s))}" loading="lazy" onerror="this.parentNode.classList.add('broken');this.remove();"></a>`
+            : s.url
+              ? `<a class="sl-icon" href="${escapeAttr(s.url)}" target="_blank" rel="noopener" title="The picture comes from SNKRDUNK with the next price check">${BOX_ICON}<span>next check</span></a>`
+              : `<a class="sl-icon" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener" title="Link it to its SNKRDUNK page for the name and picture">${BOX_ICON}<span>+ SNKRDUNK</span></a>`}
+          <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${s.url ? `<a href="${escapeAttr(s.url)}" target="_blank" rel="noopener">${escapeHtml(sealedName(s))}</a>` : escapeHtml(sealedName(s))}</div><div class="pf-meta">${meta}${s.url && !s.snkrdunk_name ? ' · name and picture come from SNKRDUNK with the next price check' : ''} · <a class="pf-remove" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener">${s.url ? 'Change SNKRDUNK link' : 'Add SNKRDUNK link'}</a> · <a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, sealedName(s)))}" target="_blank" rel="noopener">Remove</a></div></div>
           <div class="pf-current"><div class="val">${pulls.length ? fmtYen(val) : '—'}</div><div class="pf-pnl ${pct == null || !pulls.length ? 'muted' : pct >= 100 ? 'pos' : ''}">${pulls.length ? `pulls worth ${pct != null ? Math.round(pct) + '% of cost' : ''}` : 'no pulls yet'}</div></div>
         </div>
         <div class="sl-pulls">${rows}</div>
@@ -4397,7 +4401,7 @@
       series: market ? [...ser, market] : ser, refs, fmtY,
       label: `Price race: ${ser.map((s) => s.name).join(' vs ')}${mode === 'peak' ? ', percent below peak' : ', indexed to 100'}` });
     const endTxt = (s) => { const v = s.vals[s.vals.length - 1]; return v == null ? '—' : mode === 'peak' ? fmtY(v) + ' vs peak' : fmtPct(v - 100); };
-    const legend = [...ser, ...(market ? [market] : [])].map((s) => `<span><i class="race-key${s.dash ? ' dash' : ''}" style="border-color:${s.color}"></i>${escapeHtml(s.name)} <b>${endTxt(s)}</b></span>`).join('');
+    const legend = [...ser, ...(market ? [market] : [])].map((s) => `<span><i class="race-key${s.dash ? ' dash' : ''}" style="border-color:${s.color}"></i>${escapeHtml(sealedName(s))} <b>${endTxt(s)}</b></span>`).join('');
     const sd = start.slice(5).split('-').map(Number).join('/');
     const note = mode === 'index'
       ? `Both lines start at 100 on ${sd} (the first check with both cards${range !== 'all' ? ' in this range' : ''}). Dashed lines are each card's Buy line on the same scale.`
@@ -4537,7 +4541,7 @@
       });
       const d = new Date(xs[i] + 9 * 36e5);
       tip.innerHTML = `<div class="ci-tip-d">${d.getUTCDate()} ${MON[d.getUTCMonth()]}</div>` + cfg.series.map((s) => (s.vals[i] == null ? '' :
-        `<div><span class="ci-key" style="border-top-color:${s.color}${s.dash ? ';border-top-style:dashed' : ''}"></span>${escapeHtml(s.name)} ${s.raw && s.raw[i] != null ? `<b>${fmtYen(s.raw[i])}</b> <span class="muted">${escapeHtml(fy(s.vals[i]))}</span>` : `<b>${escapeHtml(fy(s.vals[i]))}</b>`}</div>`)).join('');
+        `<div><span class="ci-key" style="border-top-color:${s.color}${s.dash ? ';border-top-style:dashed' : ''}"></span>${escapeHtml(sealedName(s))} ${s.raw && s.raw[i] != null ? `<b>${fmtYen(s.raw[i])}</b> <span class="muted">${escapeHtml(fy(s.vals[i]))}</span>` : `<b>${escapeHtml(fy(s.vals[i]))}</b>`}</div>`)).join('');
       tipPlace(box, tip, x, top, W);
     };
     wireHover(box, svg, xs.length, xs.map(X), show, () => { g.style.display = 'none'; tip.hidden = true; });

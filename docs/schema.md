@@ -185,13 +185,16 @@ site's **+ Add sealed product** / **+ Add pull** forms (labels `sealed` / `pull`
 
 ```json
 "sealed": [
-  {"id": "s51", "kind": "box", "name": "30th CELEBRATION 20パックBOX", "set_code": "M6a", "qty": 1,
+  {"id": "s51", "kind": "box", "url": "https://snkrdunk.com/apparels/881421", "name": "",
+   "snkrdunk_name": "ポケモンカードゲームMEGA 拡張パック「30th CELEBRATION」ボックス",
+   "image": "https://cdn.snkrdunk.com/upload_bg_removed/….webp?size=l", "set_code": "M6a", "qty": 1,
    "price_jpy": 11000, "date": "2026-10-03", "where": "Pokémon Center lottery",
    "pulls": [{"id": "u52", "card_url": "https://snkrdunk.com/apparels/896992", "card_name_ja": "…",
               "image_url": "…", "status": "raw|grading|psa10|graded_other", "value_jpy": 15000, "date": "2026-10-04"}]}
 ]
 ```
-`kind` is box / set / pack / other. A pull of a tracked card is valued from the snapshot (raw A-rank
+`kind` is box / set / pack / other. `snkrdunk_name` and `image` are read from the product's SNKRDUNK
+page by the next price check (`scripts/sealed_info.py`, FULL-CHECK step 8h); the Action never opens SNKRDUNK. A pull of a tracked card is valued from the snapshot (raw A-rank
 lowest ask, or the PSA10 price once `status` is psa10); `value_jpy` (optional) covers untracked cards.
 Removing uses the same Remove form with an `s…` (product and its pulls) or `u…` (one pull) id.
 

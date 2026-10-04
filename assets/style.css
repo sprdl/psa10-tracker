@@ -1417,3 +1417,6 @@ a.sl-icon { width: 84px; height: 84px; flex-direction: column; gap: 2px; text-de
 a.sl-icon span { font-size: 10px; color: var(--muted-2); }
 a.sl-icon:hover { border-color: var(--accent); }
 @media (max-width: 600px) { .sl-photo, a.sl-icon { width: 64px; height: 64px; } a.sl-icon { display: grid; } }
+.sl-photo img { object-fit: contain; padding: 4px; }
+.sl-name a { color: inherit; text-decoration: none; }
+.sl-name a:hover { color: var(--accent); }

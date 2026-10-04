@@ -286,6 +286,8 @@ def main():
         sys.path.insert(0, str(root / "scripts"))
         import mercari
         mercari.print_due(root)
+        import sealed_info
+        sealed_info.print_due(root)
     sys.exit(r.returncode)
 
 
