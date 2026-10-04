@@ -11,7 +11,11 @@ site's "Bought it" or "Remove" form, so nothing runs on your Mac:
   fee, notes), adds a holding with id "p<issue#>" (re-submitting an edited
   issue replaces that same holding), commits, pushes, redeploys the site, then
   comments and closes the issue.
-- Label `remove-purchase`: removes the holding with the given id, same steps.
+- Label `remove-purchase`: removes the holding with the given id, same steps. Ids starting with
+  "s" remove a sealed product (with its pulls), "u" one pull.
+- Label `sealed`: a box / set / pack(s) bought at MSRP (store, Pokémon Center, lottery) → store["sealed"],
+  id "s<issue#>". Sealed product is never bought on the second market, so there's no market price.
+- Label `pull`: a valuable card pulled from one of those → that product's "pulls", id "u<issue#>".
 - If the form can't be read (e.g. a price of "abc"), it comments what's wrong
   and leaves the issue open. Editing the issue re-runs this.
 
@@ -142,11 +146,78 @@ def build_holding(issue):
     return h, card is not None
 
 
+SEALED_KINDS = (("single pack", "pack"), ("pack", "pack"), ("box", "box"), ("set", "set"), ("deck", "set"))
+PULL_STATUS = (("sending", "grading"), ("psa10", "psa10"), ("came back psa 10", "psa10"), ("lower", "graded_other"), ("raw", "raw"))
+
+
+def parse_qty(s):
+    t = unicodedata.normalize("NFKC", s or "").strip()
+    if not t:
+        return 1
+    if not t.isdigit() or not 1 <= int(t) <= 999:
+        raise FormError(f"Quantity \"{s}\" should be a whole number like 1 or 10.")
+    return int(t)
+
+
+def build_sealed(issue):
+    form = parse_form(issue.get("body"))
+    name = field(form, "product").strip()
+    if not name:
+        raise FormError("Product name is empty.")
+    kind_txt = field(form, "type").lower()
+    kind = next((k for key, k in SEALED_KINDS if key in kind_txt), "other")
+    set_code = unicodedata.normalize("NFKC", field(form, "set code")).strip()
+    item = {"id": f"s{issue['number']}", "kind": kind, "name": name[:120], "qty": parse_qty(field(form, "quantity")),
+            "price_jpy": parse_yen(field(form, "price paid"), "Price paid"), "date": parse_date(field(form, "date")), "pulls": []}
+    if set_code:
+        item["set_code"] = set_code[:20]
+    where, notes = field(form, "where"), field(form, "notes")
+    if where:
+        item["where"] = where[:80]
+    if notes:
+        item["notes"] = notes[:300]
+    return item
+
+
+def build_pull(issue, sealed):
+    form = parse_form(issue.get("body"))
+    m = re.search(r"\bs\d+\b", field(form, "sealed product id", "from", "sealed") or "")
+    if not m:
+        raise FormError("No sealed product id found (it looks like s12). Use the + Add pull link under the product on the site.")
+    parent = next((x for x in sealed if x.get("id") == m.group(0)), None)
+    if not parent:
+        raise FormError(f"There's no sealed product with id {m.group(0)} (maybe it was removed).")
+    card_txt = field(form, "card")
+    u = URL_RE.search(card_txt or "")
+    if not card_txt.strip():
+        raise FormError("Card is empty: paste its SNKRDUNK link or type its name.")
+    pull = {"id": f"u{issue['number']}"}
+    if u:
+        url = f"https://snkrdunk.com/apparels/{u.group(1)}"
+        card = next((c for c in latest_cards() if c.get("url", "").rstrip("/") == url), None)
+        pull["card_url"] = url
+        pull["card_name_ja"] = (card or {}).get("card_name_ja") or re.sub(r"^\s*pull:?\s*", "", issue.get("title") or "", flags=re.I).strip() or url
+        if card and card.get("image_url"):
+            pull["image_url"] = card["image_url"]
+    else:
+        pull["card_name_ja"] = card_txt.strip()[:120]
+    st = field(form, "status").lower()
+    pull["status"] = next((k for key, k in PULL_STATUS if key in st), "raw")
+    est = parse_yen(field(form, "value"), "Value estimate", required=False)
+    if est is not None:
+        pull["value_jpy"] = est
+    pull["date"] = parse_date(field(form, "date"))
+    notes = field(form, "notes")
+    if notes:
+        pull["notes"] = notes[:300]
+    return parent, pull
+
+
 def removal_id(issue):
     form = parse_form(issue.get("body"))
-    m = re.search(r"\bp\d+\b", field(form, "purchase id", "id") or "")
+    m = re.search(r"\b[psu]\d+\b", field(form, "purchase id", "id") or "")
     if not m:
-        raise FormError("No purchase id found (it looks like p12). Use the Remove link next to the purchase on the site.")
+        raise FormError("No purchase id found (it looks like p12, s12 or u12). Use the Remove link next to it on the site.")
     return m.group(0)
 
 
@@ -202,8 +273,43 @@ def finish(issue, msg, ok, dry):
 def apply(issue, labels, store):
     """Apply this issue's change to `store` (fresh from disk). Returns (comment, commit message)."""
     hs = store.setdefault("holdings", [])
+    sealed = store.setdefault("sealed", [])
+    if "sealed" in labels:
+        item = build_sealed(issue)
+        old = next((x for x in sealed if x.get("id") == item["id"]), None)
+        if old:
+            item["pulls"] = old.get("pulls", [])   # an edited form keeps the pulls already logged
+        store["sealed"] = [x for x in sealed if x.get("id") != item["id"]] + [item]
+        kinds = {"box": "box", "set": "set", "pack": "pack", "other": "item"}
+        return (f"{'Updated' if old else 'Logged'} sealed product **{item['id']}**: {item['qty']} × {item['name']} ({kinds[item['kind']]}), "
+                f"¥{item['price_jpy']:,} on {item['date']}. Add the good pulls with **+ Add pull** under it on the Holdings page. The site updates in about a minute.",
+                f"holdings: {'update' if old else 'add'} sealed {item['name']} (#{issue['number']})")
+    if "pull" in labels:
+        parent, pull = build_pull(issue, sealed)
+        for x in sealed:   # an edited form replaces the same pull, wherever it was
+            x["pulls"] = [p for p in x.get("pulls", []) if p.get("id") != pull["id"]]
+        parent.setdefault("pulls", []).append(pull)
+        return (f"Logged pull **{pull['id']}**: {pull['card_name_ja']} from {parent['name']} ({parent['id']}). The site updates in about a minute."
+                + ("" if pull.get("card_url") or pull.get("value_jpy") else "\n\nTip: paste the card's SNKRDUNK link (or a value estimate) so the site can value it."),
+                f"holdings: pull {pull['card_name_ja']} from {parent['id']} (#{issue['number']})")
     if "remove-purchase" in labels:
         pid = removal_id(issue)
+        if pid.startswith("s"):
+            gone = [x for x in sealed if x.get("id") == pid]
+            if not gone:
+                raise FormError(f"There's no sealed product with id {pid} (maybe it was already removed).")
+            store["sealed"] = [x for x in sealed if x.get("id") != pid]
+            n = len(gone[0].get("pulls", []))
+            return (f"Removed sealed product **{pid}** ({gone[0]['name']}){f' and its {n} pull(s)' if n else ''}. The site updates in about a minute.",
+                    f"holdings: remove sealed {pid} {gone[0]['name']} (#{issue['number']})")
+        if pid.startswith("u"):
+            for x in sealed:
+                hit = [p for p in x.get("pulls", []) if p.get("id") == pid]
+                if hit:
+                    x["pulls"] = [p for p in x["pulls"] if p.get("id") != pid]
+                    return (f"Removed pull **{pid}** ({hit[0].get('card_name_ja')}) from {x['name']}. The site updates in about a minute.",
+                            f"holdings: remove pull {pid} (#{issue['number']})")
+            raise FormError(f"There's no pull with id {pid} (maybe it was already removed).")
         gone = [h for h in hs if h.get("id") == pid]
         if not gone:
             raise FormError(f"There's no purchase with id {pid} (maybe it was already removed).")
@@ -231,7 +337,7 @@ def main():
     event = json.loads(Path(args[0]).read_text(encoding="utf-8"))
     issue = event["issue"]
     labels = {l["name"] for l in issue.get("labels", [])}
-    if not labels & {"bought", "remove-purchase"}:
+    if not labels & {"bought", "remove-purchase", "sealed", "pull"}:
         print("Not a purchase issue; nothing to do.")
         return
 

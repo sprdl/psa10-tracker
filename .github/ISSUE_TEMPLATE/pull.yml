@@ -1,0 +1,44 @@
+name: Log a pull
+description: A valuable card you pulled from one of your sealed products.
+title: "Pull: "
+labels: ["pull"]
+body:
+  - type: input
+    id: sealed
+    attributes:
+      label: Sealed product id
+      description: Filled in by the + Add pull link on the site, e.g. s12.
+    validations:
+      required: true
+  - type: input
+    id: card
+    attributes:
+      label: Card
+      description: Its SNKRDUNK link (best, the site can then value it), or just its name.
+      placeholder: https://snkrdunk.com/apparels/123456
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status
+      options:
+        - Keeping it raw
+        - Sending it to PSA
+        - Came back PSA10
+        - Came back lower than 10
+      default: 0
+  - type: input
+    id: value
+    attributes:
+      label: Value estimate (¥, optional)
+      description: Only needed for a card the tracker doesn't follow; tracked cards are valued from SNKRDUNK.
+  - type: input
+    id: date
+    attributes:
+      label: Date pulled
+      description: YYYY-MM-DD. Leave empty for today.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)

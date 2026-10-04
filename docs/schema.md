@@ -180,6 +180,21 @@ never hand-write those numbers here.
 }
 ```
 
+Sealed product (boxes, sets, packs bought at MSRP) sits next to it under `"sealed"`, logged with the
+site's **+ Add sealed product** / **+ Add pull** forms (labels `sealed` / `pull`, same Action):
+
+```json
+"sealed": [
+  {"id": "s51", "kind": "box", "name": "30th CELEBRATION 20パックBOX", "set_code": "M6a", "qty": 1,
+   "price_jpy": 11000, "date": "2026-10-03", "where": "Pokémon Center lottery",
+   "pulls": [{"id": "u52", "card_url": "https://snkrdunk.com/apparels/896992", "card_name_ja": "…",
+              "image_url": "…", "status": "raw|grading|psa10|graded_other", "value_jpy": 15000, "date": "2026-10-04"}]}
+]
+```
+`kind` is box / set / pack / other. A pull of a tracked card is valued from the snapshot (raw A-rank
+lowest ask, or the PSA10 price once `status` is psa10); `value_jpy` (optional) covers untracked cards.
+Removing uses the same Remove form with an `s…` (product and its pulls) or `u…` (one pull) id.
+
 Normally purchases are logged from the site (✓ Bought it → GitHub issue → `scripts/log_purchase.py` in Actions; see README). For bulk entry, add holdings with `python3 scripts/add_holding.py` (same clipboard-or-file-argument
 pattern as `add_snapshot.py`) rather than hand-editing the file, so the commit
 message and validation stay consistent. The "Your holdings" section on the site is

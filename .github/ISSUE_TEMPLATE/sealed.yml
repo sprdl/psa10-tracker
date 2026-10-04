@@ -1,0 +1,59 @@
+name: Log a sealed purchase
+description: A box, set or packs you bought at MSRP (store, Pokémon Center, lottery). It shows under "Sealed" on the Holdings page.
+title: "Sealed: "
+labels: ["sealed"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Box (BOX)
+        - Set / deck / special set
+        - Single pack(s)
+        - Other
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: product
+    attributes:
+      label: Product name
+      description: e.g. 30th CELEBRATION 20パックBOX
+      placeholder: 30th CELEBRATION BOX
+    validations:
+      required: true
+  - type: input
+    id: set_code
+    attributes:
+      label: Set code (optional)
+      description: The code printed on its cards, e.g. M6a. The site then offers the tracked cards from that set as one-tap pulls.
+      placeholder: M6a
+  - type: input
+    id: qty
+    attributes:
+      label: Quantity
+      description: How many boxes / sets / packs. Leave empty for 1.
+      placeholder: "1"
+  - type: input
+    id: price
+    attributes:
+      label: Price paid (¥, total, MSRP)
+      description: What you paid in total for all of them, e.g. 11000.
+      placeholder: "11000"
+    validations:
+      required: true
+  - type: input
+    id: date
+    attributes:
+      label: Date bought
+      description: YYYY-MM-DD. Leave empty for today.
+  - type: input
+    id: where
+    attributes:
+      label: Where (optional)
+      description: e.g. Pokémon Center lottery, Yodobashi
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)

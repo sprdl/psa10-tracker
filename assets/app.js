@@ -195,6 +195,7 @@
     }
     // Holdings are optional and rare to change: a missing file just means nothing's been bought yet.
     state.holdings = (b.holdings && b.holdings.holdings) || [];
+    state.sealed = (b.holdings && b.holdings.sealed) || []; // boxes/sets/packs bought at MSRP, with their pulls
     state.calls = b.calls || null;
     state.customIndex = b.customIndex || null;
     state.events = b.events || null;
@@ -1893,7 +1894,7 @@
       case 'overview': return `${market} cards with a PSA10 market · ${cards.length - market} watching · checked ${when}${snap.check_mode === 'quick' ? ' (quick)' : ''}`;
       case 'collection': return `${market} cards with a PSA10 market. Limit hits and Buy zones come first.`;
       case 'watching': return `${cards.length - market} cards without a PSA10 market yet. They move to the overview once PSA10 listings appear.`;
-      case 'holdings': return 'Cards you bought, valued at today\'s price';
+      case 'holdings': return 'Cards and sealed product you bought, valued at today\'s prices';
       case 'planner': return 'Tick cards to see what a shortlist costs against your budget';
       case 'record': return 'How past calls and stated odds turned out';
       case 'market': return `pokeca-chart indices · checked ${when}`;
@@ -1920,7 +1921,7 @@
     const market = cards.filter(hasMarket).length;
     const tr = state.calls && state.calls.summary;
     const counts = {
-      collection: market || '', watching: (cards.length - market) || '', holdings: state.holdings.length || '',
+      collection: market || '', watching: (cards.length - market) || '', holdings: (state.holdings.length + (state.sealed || []).length) || '',
       record: tr && tr.calls_scored ? `${(tr.calls || {}).right || 0}–${(tr.calls || {}).wrong || 0}` : '',
       scout: scoutNewCount(),
       predict: predOpenCount(),
@@ -2175,7 +2176,76 @@
 
   // ---------- render: portfolio (cards you've actually bought) ----------
 
+  // ---------- sealed product (data/holdings.json "sealed", written by GitHub Actions) ----------
+  // Boxes, sets and packs bought at MSRP (never on the second market, so no market price for them),
+  // plus the cards worth keeping that came out of them. A pull of a tracked card is valued from
+  // SNKRDUNK: raw A-rank lowest ask, or the PSA10 price once it came back a 10; anything else uses
+  // the estimate typed into the form.
+  const SEALED_KIND = { box: 'Box', set: 'Set', pack: 'Pack', other: 'Other' };
+  const PULL_STATUS = { raw: ['Raw', ''], grading: ['At PSA', 'at-psa'], psa10: ['PSA10', 'psa10'], graded_other: ['Graded', ''] };
+  const BOX_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg>';
+  function sealedFormUrl() { return `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'sealed.yml', title: 'Sealed: ' })}`; }
+  function pullFormUrl(s, card) {
+    const q = { template: 'pull.yml', title: 'Pull: ' + (card ? parseCardName(card.card_name_ja).short : ''), sealed: s.id };
+    if (card) q.card = card.url;
+    return `${REPO_URL}/issues/new?${new URLSearchParams(q)}`;
+  }
+  function removeIdUrl(id, name) { return `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'remove-purchase.yml', title: 'Remove: ' + name, id })}`; }
+  function pullValue(p, cards) {
+    const card = p.card_url ? cards.find((c) => c.url === p.card_url) : null;
+    if (card && p.status === 'psa10' && getRep(card) != null) return { v: getRep(card), src: 'PSA10 price', card };
+    const raw = card && ((card.grades || {}).raw_a_grade || {}).lowest_price;
+    if (card && raw && p.status !== 'graded_other') return { v: raw, src: 'raw A-rank ask', card };
+    if (p.value_jpy) return { v: p.value_jpy, src: 'your estimate', card };
+    return { v: null, src: card ? 'no price yet' : 'not tracked, no estimate', card };
+  }
+  function sealedHtml(cards) {
+    const items = (state.sealed || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    const addBtn = `<a class="btn btn-primary" href="${escapeAttr(sealedFormUrl())}" target="_blank" rel="noopener">+ Add sealed product</a>`;
+    const head = `<div class="sl-head"><h2 class="section-title">Sealed</h2>${addBtn}</div>
+      <p class="sl-note">Boxes, sets and packs bought at MSRP, and the cards worth keeping that came out of them. Pulls of tracked cards are valued from SNKRDUNK (raw A-rank ask, or the PSA10 price once one comes back a 10).</p>`;
+    if (!items.length) return head + `<div class="pf-list"><div class="empty-state">No sealed products yet. Use <b>+ Add sealed product</b> for a box, set or packs; then add the good pulls under it.</div></div>`;
+    let spent = 0, worth = 0, nPulls = 0;
+    const blocks = items.map((s) => {
+      const pulls = (s.pulls || []).map((p) => Object.assign({ p }, pullValue(p, cards)));
+      const val = pulls.reduce((a, x) => a + (x.v || 0), 0);
+      spent += s.price_jpy || 0; worth += val; nPulls += pulls.length;
+      const pct = s.price_jpy ? (val / s.price_jpy) * 100 : null;
+      const meta = [SEALED_KIND[s.kind] || 'Sealed', s.set_code, `bought ${s.date}`, s.where, `${fmtYen(s.price_jpy)}${s.qty > 1 ? ` (${fmtYen(Math.round(s.price_jpy / s.qty))} each)` : ''}`].filter(Boolean).map(escapeHtml).join(' · ');
+      const rows = pulls.length ? pulls.map(({ p, v, src, card }) => {
+        const nm = parseCardName(p.card_name_ja || '').short || p.card_name_ja;
+        const img = (card && card.image_url) || p.image_url;
+        const [stTxt, stCls] = PULL_STATUS[p.status] || PULL_STATUS.raw;
+        return `<div class="sl-pull">
+          <span class="pf-thumb sl-pthumb">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+          <div class="sl-pinfo"><div class="sl-pname">${card ? `<a href="#/card/${escapeAttr(cardId(card))}">${escapeHtml(nm)}</a>` : escapeHtml(nm)} <span class="sl-st ${stCls}">${stTxt}</span></div>
+            <div class="pf-meta">${escapeHtml(parseCardName(p.card_name_ja || '').code || '')}${p.date ? ` · pulled ${escapeHtml(p.date)}` : ''}${p.notes ? ' · ' + escapeHtml(p.notes) : ''} · <a class="pf-remove" href="${escapeAttr(removeIdUrl(p.id, nm))}" target="_blank" rel="noopener">Remove</a></div></div>
+          <div class="pf-current"><div class="val">${v != null ? fmtYen(v) : '—'}</div><div class="pf-pnl muted">${escapeHtml(src)}</div></div>
+        </div>`;
+      }).join('') : `<div class="sl-empty">No pulls logged yet.</div>`;
+      const code = (s.set_code || '').toLowerCase();
+      const setCards = code ? cards.filter((c) => (parseCardName(c.card_name_ja).code.split(/\s+/)[0] || '').toLowerCase() === code) : [];
+      const chips = setCards.map((c) => `<a class="sl-chip" href="${escapeAttr(pullFormUrl(s, c))}" target="_blank" rel="noopener">${c.image_url ? `<img src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}${escapeHtml(parseCardName(c.card_name_ja).short)}</a>`).join('');
+      return `<div class="sl-item">
+        <div class="sl-top"><span class="sl-icon">${BOX_ICON}</span>
+          <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${escapeHtml(s.name)}</div><div class="pf-meta">${meta} · <a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, s.name))}" target="_blank" rel="noopener">Remove</a></div></div>
+          <div class="pf-current"><div class="val">${pulls.length ? fmtYen(val) : '—'}</div><div class="pf-pnl ${pct == null || !pulls.length ? 'muted' : pct >= 100 ? 'pos' : ''}">${pulls.length ? `pulls worth ${pct != null ? Math.round(pct) + '% of cost' : ''}` : 'no pulls yet'}</div></div>
+        </div>
+        <div class="sl-pulls">${rows}</div>
+        <div class="sl-add">${chips ? `<span class="sl-add-lbl">Pulled one of these?</span>${chips}` : ''}<a class="sl-chip sl-other" href="${escapeAttr(pullFormUrl(s, null))}" target="_blank" rel="noopener">+ ${chips ? 'Other card' : 'Add pull'}</a></div>
+      </div>`;
+    }).join('');
+    const sum = `<div class="pf-summary sl-summary">
+      <div class="pf-stat"><div class="lbl">Spent on sealed</div><div class="val">${fmtYen(spent)}</div></div>
+      <div class="pf-stat"><div class="lbl">Pulls worth now</div><div class="val">${fmtYen(worth)}</div></div>
+      <div class="pf-stat"><div class="lbl">Recovered</div><div class="val ${worth >= spent ? 'pos' : ''}">${spent ? Math.round((worth / spent) * 100) + '%' : '—'}</div><div class="kpi-d muted">${nPulls} pull${nPulls === 1 ? '' : 's'} logged</div></div>
+    </div>`;
+    return head + sum + `<div class="sl-list">${blocks}</div>`;
+  }
+
   function renderPortfolio(holdings, currentCards) {
+    const sealedEl = document.getElementById('sealed-section');
+    if (sealedEl) { sealedEl.innerHTML = sealedHtml(currentCards); trimImages(sealedEl); }
     if (!holdings.length) {
       els.portfolioSummary.innerHTML = '';
       els.portfolioList.innerHTML = `<div class="empty-state">No purchases yet. Use <b>✓ Bought it</b> on a card to log one; it shows up here with its profit and loss.</div>`;
@@ -4556,7 +4626,7 @@
       const cards = issues.filter((i) => has(i, 'add-card')).length;
       // Purchases are handled by GitHub Actions within a minute or so; one still open
       // after 5 minutes couldn't be read and has a comment saying what to fix.
-      const buys = issues.filter((i) => has(i, 'bought') || has(i, 'remove-purchase'));
+      const buys = issues.filter((i) => has(i, 'bought') || has(i, 'remove-purchase') || has(i, 'sealed') || has(i, 'pull'));
       const stuck = buys.filter((i) => Date.now() - new Date(i.updated_at).getTime() > 5 * 60e3);
       const parts = [];
       if (cards) parts.push(escapeHtml(`${cards} card request${cards === 1 ? '' : 's'} waiting for the next price check`));
