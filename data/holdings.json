@@ -67,6 +67,14 @@
           "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/pkmn-tcg-2026-0907-pk012-of.webp?size=l",
           "status": "raw",
           "date": "2026-09-29"
+        },
+        {
+          "id": "u54",
+          "card_url": "https://snkrdunk.com/apparels/886018",
+          "card_name_ja": "https://snkrdunk.com/apparels/886018",
+          "status": "raw",
+          "value_jpy": 2800,
+          "date": "2026-09-29"
         }
       ],
       "where": "Pokemon Center Ikebukuro",
