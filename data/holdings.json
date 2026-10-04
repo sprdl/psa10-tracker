@@ -59,7 +59,16 @@
       "qty": 10,
       "price_jpy": 3600,
       "date": "2026-09-29",
-      "pulls": [],
+      "pulls": [
+        {
+          "id": "u53",
+          "card_url": "https://snkrdunk.com/apparels/891195",
+          "card_name_ja": "ジラーチex SAR [M6a 132/103](拡張パック「30th CELEBRATION」)",
+          "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/pkmn-tcg-2026-0907-pk012-of.webp?size=l",
+          "status": "raw",
+          "date": "2026-09-29"
+        }
+      ],
       "where": "Pokemon Center Ikebukuro",
       "snkrdunk_name": "ポケモンカードゲームMEGA 拡張パック「30th CELEBRATION」パック",
       "image": "https://cdn.snkrdunk.com/upload_bg_removed/5aa1e23e-b91f-4163-b78f-9e3856c86ed2.webp?size=l"
