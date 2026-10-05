@@ -73,6 +73,18 @@
    "text": "What's happening: The lowest PSA10 ask went from ¥24,800 to ¥30,950 in a week, about 9% above the recent sales median of ¥28,400. Sales have climbed from ¥27.4k to ¥30k, with 3.4 sales a day against 2.0 a week ago. The book is thin: only 4 of the 20 cheapest asks sit within 15% of the low.\n\nWhy: Likely the same set-wide move as Pikachu VMAX CSR, which is up by a similar amount. I found no news explaining it. With so few asks near the low, a few purchases can lift the lowest ask quickly.\n\nFor you: The ask is above the ¥30,000 ceiling and well above your ¥24,000 limit. The Buy line is ¥25,000 and Definitely-buy ¥22,000, and the correction rule needs ¥22,000 before a Buy.\n\nWatch: Whether the thin book fills in below ¥30k, and whether sales hold at ¥28k+.",
    "signals": "7d price +24.8% (¥24,800→¥30,950) vs My-tier index +3.5% = +21.3 pts | lowest ask ¥30,950 is +9% vs recent sales median ¥28,400",
    "sources": []
+  },
+  "https://snkrdunk.com/apparels/724996": {
+   "written": "2026-10-06T07:18:03+09:00",
+   "headline": "Sales ran at 36 a day, 2.7x last week, with the ask holding at ¥59k",
+   "text": "What's happening: Mega Gengar ex SAR (M2a) is the busiest card on the tracker: about 36 PSA10 sales a day against 13 a week ago. Sales are ¥56-58k and the lowest ask is ¥59,000 with a full, tight book (20 of 20 listings within 15%).\n\nWhy: Likely a sell-off meeting buyers at the replacement-cost floor (raw A about ¥34k) rather than news; my searches for a Mega Dream ex reprint or Gengar announcement found nothing dated October 2026. Heavy volume with no price drop is the first sign the floor is holding.\n\nFor you: Today's ask is just above Buy (¥58k) and your ¥50k limit; the correction rule means only ≤¥52k counts as a Buy. The graded-supply wave expected Nov-Feb is still the main downside risk.\n\nWatch: Whether volume stays high at ¥56-58k (a floor) or sales step down toward ¥52k.",
+   "signals": "PSA10 sales/day 35.6 vs 13.3 a week ago (+167%)",
+   "sources": [
+    {
+     "title": "MEGAドリームex reprint lottery roundup (last updated Apr 2026)",
+     "url": "https://tinpanblog.com/?p=9168"
+    }
+   ]
   }
  }
 }
