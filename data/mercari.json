@@ -1,1 +1,52 @@
-{"about":"Mercari PSA10 listings for cards whose SNKRDUNK ask is within 5% of the limit, read in the user's browser during price checks (pricecheck/scripts/mercari_check.js → scripts/mercari.py). eff = price + あんしん鑑定 fee (¥1,700, free from ¥100,000).","cards":{"https://snkrdunk.com/apparels/455596":{"checked":"2026-10-03T18:18:43+09:00","items":[{"id":"m47690365393","url":"https://jp.mercari.com/item/m47690365393","price":50100,"auction":true,"ends":"2026-10-04T20:14:00+09:00","fee":1700,"anshin":true,"eff":51800,"grade":true,"num":null,"title":"ブラッキーex SAR PSA10"}],"seen":42,"matched":25,"cheapest":50100,"limit":65000,"ask":68000},"https://snkrdunk.com/apparels/722239":{"checked":"2026-10-03T15:03:58+09:00","items":[{"id":"m64784381983","url":"https://jp.mercari.com/item/m64784381983","price":9400,"auction":true,"ends":"2026-10-04T20:15:00+09:00","fee":1700,"anshin":true,"eff":11100,"grade":true,"num":true,"title":"メガ"}],"seen":39,"matched":26,"cheapest":9400,"limit":9500,"ask":10600},"https://snkrdunk.com/apparels/408333":{"checked":"2026-10-04T12:45:54+09:00","items":[{"id":"m29978805071","url":"https://jp.mercari.com/item/m29978805071","price":39999,"auction":false,"ends":null,"fee":1700,"anshin":true,"eff":41699,"grade":true,"num":null,"title":"［最安値］メガカイリューex SAR PSA10 メガドリームピカチュウゲンガー"}],"seen":38,"matched":18,"cheapest":39999,"limit":70000,"ask":73000}},"updated":"2026-10-04T12:45:54+09:00"}
+{
+  "about": "Mercari PSA10 listings for cards whose SNKRDUNK ask is within 5% of the limit, read in the user's browser during price checks (pricecheck/scripts/mercari_check.js → scripts/mercari.py). eff = price + あんしん鑑定 fee (¥1,700, free from ¥100,000).",
+  "cards": {
+    "https://snkrdunk.com/apparels/455596": {
+      "checked": "2026-10-03T18:18:43+09:00",
+      "items": [
+        {
+          "id": "m47690365393",
+          "url": "https://jp.mercari.com/item/m47690365393",
+          "price": 50100,
+          "auction": true,
+          "ends": "2026-10-04T20:14:00+09:00",
+          "fee": 1700,
+          "anshin": true,
+          "eff": 51800,
+          "grade": true,
+          "num": null,
+          "title": "ブラッキーex SAR PSA10"
+        }
+      ],
+      "seen": 42,
+      "matched": 25,
+      "cheapest": 50100,
+      "limit": 65000,
+      "ask": 68000
+    },
+    "https://snkrdunk.com/apparels/722239": {
+      "checked": "2026-10-03T15:03:58+09:00",
+      "items": [
+        {
+          "id": "m64784381983",
+          "url": "https://jp.mercari.com/item/m64784381983",
+          "price": 9400,
+          "auction": true,
+          "ends": "2026-10-04T20:15:00+09:00",
+          "fee": 1700,
+          "anshin": true,
+          "eff": 11100,
+          "grade": true,
+          "num": true,
+          "title": "メガ"
+        }
+      ],
+      "seen": 39,
+      "matched": 26,
+      "cheapest": 9400,
+      "limit": 9500,
+      "ask": 10600
+    }
+  },
+  "updated": "2026-10-04T12:45:54+09:00"
+}
