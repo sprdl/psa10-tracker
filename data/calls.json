@@ -10,11 +10,11 @@
    "right": 7,
    "wrong": 1,
    "neutral": 0,
-   "pending": 17
+   "pending": 18
   },
   "calls_scored": 8,
   "odds_resolved": 4,
-  "odds_open": 61,
+  "odds_open": 65,
   "brier": 0.229,
   "expected_yes": 2.1,
   "actual_yes": 4,
@@ -28,6 +28,25 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/455596",
+   "name": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
+   "tag": "watch",
+   "label": "Watch: the ask moved above the Buy line while the market is still correcting",
+   "latest_label": "Watch: the ask moved above the Buy line while the market is still correcting",
+   "reaffirmed": 0,
+   "made": "2026-10-06T07:17:12+09:00",
+   "price": 71800,
+   "window_end": "2026-11-05T07:17:12+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05
+  },
   {
    "url": "https://snkrdunk.com/apparels/100567",
    "name": "ルギアV SR:SA[s12 110/098](拡張パック「パラダイムトリガー」)",
@@ -223,8 +242,8 @@
    "name": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
    "tag": "watch",
    "label": "Watch: market still correcting",
-   "latest_label": "Watch: asks have jumped, sales haven't followed",
-   "reaffirmed": 1,
+   "latest_label": "Watch: ask eased to ¥61k, sales still in the ¥54-62k band",
+   "reaffirmed": 2,
    "made": "2026-09-26T19:34:04+09:00",
    "price": 57999,
    "window_end": "2026-10-26T19:34:04+09:00",
@@ -672,6 +691,34 @@
    "why": "29 days left",
    "now": 154000,
    "gap_pct": -16.9
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/105553",
+   "name": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
+   "text": "A PSA10 listing at ≤¥52,000 (Buy) within 30 days",
+   "p": 0.28,
+   "type": "touch_below",
+   "price": 52000,
+   "by": "2026-11-05",
+   "made": "2026-10-06T07:17:12+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 61100,
+   "gap_pct": -14.9
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/455596",
+   "name": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
+   "text": "A PSA10 listing at ≤¥68,500 within 30 days",
+   "p": 0.49,
+   "type": "touch_below",
+   "price": 68500,
+   "by": "2026-11-05",
+   "made": "2026-10-06T07:17:12+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 71800,
+   "gap_pct": -4.6
   },
   {
    "url": "https://snkrdunk.com/apparels/387059",
@@ -1260,6 +1307,34 @@
    "why": "89 days left",
    "now": 154000,
    "gap_pct": -25.3
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/105553",
+   "name": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
+   "text": "A PSA10 listing at ≤¥45,000 (Definitely buy) within 3 months",
+   "p": 0.24,
+   "type": "touch_below",
+   "price": 45000,
+   "by": "2027-01-04",
+   "made": "2026-10-06T07:17:12+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 61100,
+   "gap_pct": -26.4
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/455596",
+   "name": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
+   "text": "A PSA10 listing at ≤¥58,000 (Definitely buy) within 3 months",
+   "p": 0.28,
+   "type": "touch_below",
+   "price": 58000,
+   "by": "2027-01-04",
+   "made": "2026-10-06T07:17:12+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 71800,
+   "gap_pct": -19.2
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",

@@ -1129,30 +1129,28 @@
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2450,
         "verdict": {
-          "tag": "buy",
-          "label": "Buy: grail at pre-hype Q4-2025 levels",
-          "reasoning": "About 20 sales at ¥65,000–68,500 in the last 24h, with daily averages steady near ¥67k since 9/22. The price is back to its Oct–Dec 2025 range, below the Jan–Feb pre-announcement level. There's roughly a 30% chance of a further 10–15% slide to ¥57–60k by year-end because raw A-rank is still falling fast (¥63k→¥47k in a month), which drags the DIY replacement floor down. Reaching Definitely-buy (¥58k) within 3–6 months is about 25–30% likely.",
+          "tag": "watch",
+          "label": "Watch: the ask moved above the Buy line while the market is still correcting",
+          "reasoning": "The lowest ask rose to ¥71.8k, above the ¥68.5k Buy line, though the last 20 sales still cleared at ¥67.8-70.0k and the book is deep (the next listings run ¥72-80k). With the My-tier index still about 22% below a month ago and raw A at ¥46k, only a listing at or below ¥58k would count as a Buy; the model gives about 49% for a listing at ≤¥68.5k within 30 days and 28% for ≤¥58k within 90. A run of sales above ¥70k with raw A stabilising would mean the market has turned.",
           "predictions": [
             {
-              "text": "Slides to ¥57–60k by year-end",
-              "p": 0.3,
+              "text": "A PSA10 listing at ≤¥68,500 within 30 days",
+              "p": 0.49,
               "type": "touch_below",
-              "price": 60000,
-              "by": "2026-12-31",
-              "made": "2026-09-25T10:03:18+09:00"
+              "price": 68500,
+              "by": "2026-11-05"
             },
             {
-              "text": "Reaches Definitely-buy (¥58k) within 3–6 months",
-              "p": 0.275,
+              "text": "A PSA10 listing at ≤¥58,000 (Definitely buy) within 3 months",
+              "p": 0.28,
               "type": "touch_below",
               "price": 58000,
-              "by": "2027-03-25",
-              "made": "2026-09-25T10:03:18+09:00"
+              "by": "2027-01-04"
             }
           ],
-          "written": "2026-09-25T10:03:18+09:00"
+          "written": "2026-10-06T07:18:20+09:00"
         },
-        "verdict_price_ref": 67500
+        "verdict_price_ref": 71800
       },
       "psa10_population": 80321,
       "psa10_gem_rate_pct": 86.9,
@@ -2918,11 +2916,27 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch: asks have jumped, sales haven't followed",
-          "reasoning": "The lowest PSA10 ask is ¥65,000, up 18% from ¥55,000 at the last verdict and exactly at the ceiling, but recent sales still cluster at ¥54–56k (10/1) with a few at ¥58–63k. The 15 asks within 15% of the low (¥65–73.7k) suggest sellers are repricing above the market rather than a real bid. Raw A is ¥38,900 (up from ¥30,000), so the slab premium is about 67%. The My-tier index is still roughly down on the month, so under the correction rule only a listing at or below ¥45k counts as a Buy. A ¥52k listing would be the first sign of a real dip; a run of ¥60k+ sales would mean the jump is holding.",
-          "written": "2026-10-04T08:24:32+09:00"
+          "label": "Watch: ask eased to ¥61k, sales still in the ¥54-62k band",
+          "reasoning": "The lowest ask fell to ¥61.1k from ¥65k at the last verdict, but it is still above the ¥52k Buy line, and the last 20 sales ran ¥54-63k with several at ¥58-62k. Raw A is ¥38.9k and the population is 17,949 (83.8% gem), so self-grading costs about ¥61k, the same as the slab, so there is no cheaper route. With the My-tier index about 22% below a month ago, only ≤¥45k counts as a Buy; the model gives about 28% for ≤¥52k within 30 days and 24% for ≤¥45k within 90. Sales falling back to ¥54k would be the first sign of a real dip.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥52,000 (Buy) within 30 days",
+              "p": 0.28,
+              "type": "touch_below",
+              "price": 52000,
+              "by": "2026-11-05"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥45,000 (Definitely buy) within 3 months",
+              "p": 0.24,
+              "type": "touch_below",
+              "price": 45000,
+              "by": "2027-01-04"
+            }
+          ],
+          "written": "2026-10-06T07:18:20+09:00"
         },
-        "verdict_price_ref": 65000
+        "verdict_price_ref": 61100
       },
       "psa10_population": 17949,
       "psa10_gem_rate_pct": 83.8,
