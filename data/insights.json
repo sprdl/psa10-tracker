@@ -2,14 +2,14 @@
  "about": "Analyses written by the full price check for cards that stand out (scripts/outliers.py). Shown on the card page above the automatic findings. Edit with scripts/set_insight.py.",
  "insights": {
   "https://snkrdunk.com/apparels/138599": {
-   "written": "2026-10-05T09:03:35+09:00",
-   "headline": "Up 26% in a week while the market rose 3.5%, from ¥29.5k to ¥37.3k",
-   "text": "What's happening: The lowest PSA10 ask rose from ¥29,500 to ¥37,260 in seven days, and completed sales stepped up from ¥29.6k to ¥37.5k over the same stretch. Trading is up to 2.9 sales a day from 1.6, and 16 of the 20 cheapest asks are within 15% of the low.\n\nWhy: Likely a catch-up move or a bounce after a long slide, since the card is still half its ¥74k peak. Pikachu V CSR from the same set rose by about the same amount, so this looks like one bet on the set rather than a card-specific story. I found no news of a reprint or a new product for this set; the 30th-anniversary announcement I read names other reprints. Raw A is ¥20,000, so the slab is about 1.9x raw today (pokeca-chart's own premium reading is from 9/21 and is stale).\n\nFor you: The ask is above the ¥37,000 ceiling and far above your ¥29,000 limit. Chasing it makes little sense; the Buy line is ¥31,000 and the correction rule needs ¥28,000.\n\nWatch: Whether asks hold above ¥35k for another few checks. A move back toward ¥31–33k would reopen the Buy zone.",
-   "signals": "7d price +26.3% (¥29,500→¥37,260) vs My-tier index +3.5% = +22.8 pts | PSA10 sales/day 2.9 vs 1.6 a week ago (+88%)",
+   "written": "2026-10-06T07:18:01+09:00",
+   "headline": "Up 28% in a week, far more than the market, with the slab at only 1.14x raw",
+   "text": "What's happening: Pikachu VMAX CSR sales rose from ¥29.6k (9/28) to ¥37-38k now, and the lowest ask is ¥37,980. That is +28% in 7 days against +5.7% for the My-tier index. Trading doubled to about 3 sales a day. Raw A fell to ¥18k (from ¥20k).\n\nWhy: Not explained by news: I found no reprint or new product for this card. Part of it is a rebound from a thin, cheap start (the book had only a few cheap listings), and the raw price is still falling. The slab premium reading (1.14x vs a 2.31x norm) is from pokeca-chart's last point on 9/21, so it is stale.\n\nFor you: The ask is above Buy (¥31k) and just above the ¥37k ceiling, and your ¥29k limit is far away. Chasing this move is the pattern the correction rule is meant to stop.\n\nWatch: Whether sales hold ¥36k+ over the next checks or slip back toward ¥31k, and whether raw A keeps falling, which would lower the cost of self-grading.",
+   "signals": "7d price +28.3% (¥29,600→¥37,980) vs My-tier index +5.7% = +22.6 pts; PSA10 sales/day 2.9 vs 1.5; slab premium 1.14x vs 6-month norm 2.31x",
    "sources": [
     {
-     "title": "30th CELEBRATION announcement (KAI-YOU)",
-     "url": "https://kai-you.net/article/95566"
+     "title": "MEGAドリームex reprint lottery roundup (last updated Apr 2026)",
+     "url": "https://tinpanblog.com/?p=9168"
     }
    ]
   },
