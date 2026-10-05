@@ -1,6 +1,6 @@
 {
  "about": "Stories behind the tracked cards' artwork: illustrator, what the art shows, its connections, set context and trivia. Researched from the official card database, Bulbapedia, PokeBeach, Famitsu and card media (sources per card). Shown on each card's Story tab and the Stories page.",
- "updated": "2026-10-03T13:07:50+09:00",
+ "updated": "2026-10-05T15:09:44+09:00",
  "cards": {
   "https://snkrdunk.com/apparels/138599": {
    "illustrator": "Souichirou Gunjima",
@@ -683,6 +683,29 @@
    ],
    "confidence": "medium",
    "written": "2026-10-03T13:07:50+09:00"
+  },
+  "https://snkrdunk.com/apparels/730952": {
+   "illustrator": null,
+   "illustrator_ja": null,
+   "art": "A pop-art style full-art illustration of Mega Gengar ex. The Mega Attack Rare (MA) rarity is new with this set: the artwork covers the whole card and the attack name is part of the picture. Gengar is shown in the set's hideout theme.",
+   "story": "Mega Gengar is the set's best-known chase card; the Mega Evolution of Gengar was introduced in Pokémon X and Y.",
+   "set": "ハイクラスパック「MEGAドリームex」 (M2a), released 2025-11-28. It introduced the MA rarity (card numbers 223-232) and a Mega Gengar ex SAR (240/193).",
+   "trivia": [
+    "The SAR version of Mega Gengar ex (240/193) is credited to danciao by Famitsu; the credit for the MA print was not found."
+   ],
+   "english": "MEGA Dream ex",
+   "sources": [
+    {
+     "title": "Samurai Sword: M2a MEGA Dream ex complete guide",
+     "url": "https://samuraiswordtokyo.com/fr/blogs/news/m2a-mega-dream-ex-complete-guide"
+    },
+    {
+     "title": "Famitsu: MEGA Dream ex card report",
+     "url": "https://www.famitsu.com/article/202511/58930"
+    }
+   ],
+   "confidence": "low",
+   "written": "2026-10-05T15:09:44+09:00"
   }
  }
 }
