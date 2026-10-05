@@ -61,6 +61,13 @@
    "text": "What's happening: PSA10 sales ran at 7.0 a day this week against 2.0 a week ago, while the lowest ask moved only +2% to ¥76,500. Sales cluster at ¥75–76k, and 15 of the 20 cheapest asks are within 15% of the low.\n\nWhy: Likely buyers absorbing supply at a steady price rather than a price jump. I found no news of a reprint or a new Pikachu ex product that explains it; the only 30th-anniversary announcement I read (30th CELEBRATION, 9/16) lists reprints of other cards, not this one.\n\nFor you: The ask is about ¥6.5k above your ¥70,000 limit and above the ¥70,000 Buy line. While the My-tier index is still down more than 10% on the month, the correction rule means only a listing at or below ¥59,500 is a Buy.\n\nWatch: Whether sales keep running at 5+ a day. If they slow while asks stay at ¥76k, the buying has probably dried up.",
    "signals": "PSA10 sales/day 7.0 vs 2.0 a week ago (+242%)",
    "sources": []
+  },
+  "https://snkrdunk.com/apparels/96712": {
+   "written": "2026-10-05T09:03:37+09:00",
+   "headline": "Up 25% in a week while the market rose 3.5%, ask is 9% above recent sales",
+   "text": "What's happening: The lowest PSA10 ask went from ¥24,800 to ¥30,950 in a week, about 9% above the recent sales median of ¥28,400. Sales have climbed from ¥27.4k to ¥30k, with 3.4 sales a day against 2.0 a week ago. The book is thin: only 4 of the 20 cheapest asks sit within 15% of the low.\n\nWhy: Likely the same set-wide move as Pikachu VMAX CSR, which is up by a similar amount. I found no news explaining it. With so few asks near the low, a few purchases can lift the lowest ask quickly.\n\nFor you: The ask is above the ¥30,000 ceiling and well above your ¥24,000 limit. The Buy line is ¥25,000 and Definitely-buy ¥22,000, and the correction rule needs ¥22,000 before a Buy.\n\nWatch: Whether the thin book fills in below ¥30k, and whether sales hold at ¥28k+.",
+   "signals": "7d price +24.8% (¥24,800→¥30,950) vs My-tier index +3.5% = +21.3 pts | lowest ask ¥30,950 is +9% vs recent sales median ¥28,400",
+   "sources": []
   }
  }
 }
