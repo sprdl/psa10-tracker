@@ -5779,6 +5779,42 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 7200,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 22111,
+          "when": "December 2025",
+          "source": "pokeca-chart per-card chart, monthly median (Mar 2026 also ¥21k)"
+        },
+        "tiers": {
+          "definitely_buy": 5800,
+          "buy_upper": 6500,
+          "ceiling": 8200
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: a Buy-zone price is not here yet, and the market is still correcting",
+          "reasoning": "Full-art MA of your favourite Pokémon at ¥7.2k, but it is 68% below its Dec 2025 peak with 44k PSA10s in existence (91% gem rate) and the slab-to-raw ratio still shrinking (about 6.4x in Dec to 3.5x now); the sibling Charizard MA sits near 2.9x, which points to about ¥5.8k. Self-grading costs about ¥15.9k, so there is no DIY floor under the slab, and the My-tier index is down 24% in 30 days, so only Definitely-buy (≤¥5.8k) would be a Buy. Odds of a listing at ≤¥6.5k are about 42% within 30 days and ≤¥5.8k about 33% within 90 days.",
+          "predictions": [
+            {
+              "text": "A listing at ≤¥6,500 (Buy) appears within 30 days",
+              "p": 0.42,
+              "type": "touch_below",
+              "price": 6500,
+              "by": "2026-11-04"
+            },
+            {
+              "text": "A listing at ≤¥5,800 (Definitely-buy) appears within 90 days",
+              "p": 0.33,
+              "type": "touch_below",
+              "price": 5800,
+              "by": "2027-01-03"
+            }
+          ],
+          "written": "2026-10-05T15:09:42+09:00"
+        }
       }
     }
   ],

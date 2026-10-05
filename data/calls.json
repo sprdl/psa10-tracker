@@ -10,11 +10,11 @@
    "right": 7,
    "wrong": 1,
    "neutral": 0,
-   "pending": 14
+   "pending": 15
   },
   "calls_scored": 8,
   "odds_resolved": 4,
-  "odds_open": 53,
+  "odds_open": 55,
   "brier": 0.229,
   "expected_yes": 2.1,
   "actual_yes": 4,
@@ -28,6 +28,25 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/730952",
+   "name": "メガゲンガーex MA [M2a 230/193](ハイクラスパック「MEGAドリームex」)",
+   "tag": "watch",
+   "label": "Watch: a Buy-zone price is not here yet, and the market is still correcting",
+   "latest_label": "Watch: a Buy-zone price is not here yet, and the market is still correcting",
+   "reaffirmed": 0,
+   "made": "2026-10-05T15:08:39+09:00",
+   "price": 7100,
+   "window_end": "2026-11-04T15:08:39+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05
+  },
   {
    "url": "https://snkrdunk.com/apparels/224087",
    "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
@@ -561,6 +580,20 @@
    "gap_pct": -18.6
   },
   {
+   "url": "https://snkrdunk.com/apparels/730952",
+   "name": "メガゲンガーex MA [M2a 230/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A listing at ≤¥6,500 (Buy) appears within 30 days",
+   "p": 0.42,
+   "type": "touch_below",
+   "price": 6500,
+   "by": "2026-11-04",
+   "made": "2026-10-05T15:08:39+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 7100,
+   "gap_pct": -8.5
+  },
+  {
    "url": "https://snkrdunk.com/apparels/387059",
    "name": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
    "text": "Reaches Buy (≤¥38k) within 3 months",
@@ -1091,6 +1124,20 @@
    "why": "90 days left",
    "now": 30700,
    "gap_pct": -28.3
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/730952",
+   "name": "メガゲンガーex MA [M2a 230/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A listing at ≤¥5,800 (Definitely-buy) appears within 90 days",
+   "p": 0.33,
+   "type": "touch_below",
+   "price": 5800,
+   "by": "2027-01-03",
+   "made": "2026-10-05T15:08:39+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 7100,
+   "gap_pct": -18.3
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
