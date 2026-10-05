@@ -299,7 +299,13 @@
      "at": "2026-10-05T00:10:48+00:00"
     }
    },
-   "results": {}
+   "results": {
+    "2026-10-05-9": {
+     "outcome": 1,
+     "at": "2026-10-05T19:39:24+09:00",
+     "extreme": 60000
+    }
+   }
   }
  },
  "about": "You vs the model: weekly questions, answers and results. See scripts/predict.py."
