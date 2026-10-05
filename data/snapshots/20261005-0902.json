@@ -265,27 +265,27 @@
         "shipping_insurance_jpy": 2450,
         "verdict": {
           "tag": "watch",
-          "label": "Watch: rebounded to ¥33–35k, wait for a listing at ≤¥31k",
-          "reasoning": "Sales climbed from ¥29.5k (9/24–28) to ¥33–35k this week and the lowest ask is ¥36k, which is now about what self-grading costs (raw ¥20k → ~¥36.9k), so ¥37k is the ceiling. The old ¥25k Definitely-buy was a long shot (~12% in 90 days), so the tiers move to ¥28k / ¥31k, which the limit-odds model puts at about 19% and 31% within 90 days; the correction rule (My-tier −26.5% over 30 days) keeps today's price at Watch. Same set, character and bubble as Pikachu V CSR, so treat the two as one bet.",
+          "label": "Watch: bounced above the ¥37k ceiling, wait for ≤¥31k",
+          "reasoning": "The lowest PSA10 ask is ¥37,260, up 9.6% from ¥34,000 at the last verdict and above the ¥37,000 ceiling. Sales stepped up from ¥29.6k to ¥37.5k over the week, and 16 of 20 asks are within 15% of the low. Raw A is ¥20,000, so grading yourself costs about ¥36,300 expected at the 88% gem rate, about the slab price. The card is still half its ¥74k peak, but this week's rise looks like a set-wide bounce shared with Pikachu V CSR, and the PSA10 index is down 20.2% on the month. The model gives about 30% odds of a listing at ≤¥31k (Buy) within 30 days and 22% for ≤¥28k (Definitely buy) within 90 days.",
           "predictions": [
             {
-              "text": "A listing at ≤¥31,000 by year-end",
-              "p": 0.31,
+              "text": "A PSA10 listing at ≤¥31k (Buy) within 30 days",
+              "p": 0.3,
               "type": "touch_below",
               "price": 31000,
-              "by": "2026-12-31"
+              "by": "2026-11-04"
             },
             {
-              "text": "A listing at ≤¥28,000 by year-end",
-              "p": 0.19,
+              "text": "A PSA10 listing at ≤¥28k (Definitely buy) within 90 days",
+              "p": 0.22,
               "type": "touch_below",
               "price": 28000,
-              "by": "2026-12-31"
+              "by": "2027-01-03"
             }
           ],
-          "written": "2026-10-02T16:31:33+09:00"
+          "written": "2026-10-05T09:04:04+09:00"
         },
-        "verdict_price_ref": 34000
+        "verdict_price_ref": 37260
       }
     },
     {
@@ -542,27 +542,27 @@
         "shipping_insurance_jpy": 2450,
         "verdict": {
           "tag": "watch",
-          "label": "Watch: rebounding on a thin book, wait for ≤¥25k",
-          "reasoning": "Sales rose from ¥24.8k (9/28) to ¥27.5–30k, but only 3 of 20 asks sit within 15% of the ¥28.5k lowest ask, so the rebound rests on a thin book; self-grading costs about ¥32.8k (raw ¥13.8k, 79.9% gem), which caps the ceiling at ¥31k. The old ¥20k Definitely-buy had ~16% odds in 90 days; the new ¥22k / ¥25k lines sit at about 23% and 36% on the limit-odds model, and the correction rule keeps today's price at Watch. It moves with Pikachu VMAX CSR (same set and bubble), so don't count both as diversification.",
+          "label": "Watch: thin book, ask 9% above sales",
+          "reasoning": "The lowest PSA10 ask is ¥30,950, up 10.5% from ¥28,000 at the last verdict and about 9% above the recent sales median of ¥28,400 (sales ¥27.4k to ¥30k). The book is thin, with only 4 of 20 asks within 15% of the low, so it can move on a few purchases. Raw A is ¥12,000, so grading yourself costs about ¥30,000 expected at the 79.9% gem rate, close to the slab price. It rose with Pikachu VMAX CSR (same set), so the two are one correlated bet, and the PSA10 index is down 20.2% on the month. The model gives about 20% odds of a listing at ≤¥25k (Buy) within 30 days and 22% for ≤¥22k (Definitely buy) within 90 days.",
           "predictions": [
             {
-              "text": "A listing at ≤¥25,000 by year-end",
-              "p": 0.36,
+              "text": "A PSA10 listing at ≤¥25k (Buy) within 30 days",
+              "p": 0.2,
               "type": "touch_below",
               "price": 25000,
-              "by": "2026-12-31"
+              "by": "2026-11-04"
             },
             {
-              "text": "A listing at ≤¥22,000 by year-end",
-              "p": 0.23,
+              "text": "A PSA10 listing at ≤¥22k (Definitely buy) within 90 days",
+              "p": 0.22,
               "type": "touch_below",
               "price": 22000,
-              "by": "2026-12-31"
+              "by": "2027-01-03"
             }
           ],
-          "written": "2026-10-02T16:31:33+09:00"
+          "written": "2026-10-05T09:04:04+09:00"
         },
-        "verdict_price_ref": 28000
+        "verdict_price_ref": 30950
       }
     },
     {
@@ -2593,27 +2593,27 @@
         "shipping_insurance_jpy": 2450,
         "verdict": {
           "tag": "watch",
-          "label": "Watch: tiers kept; young card, graded supply still to come",
-          "reasoning": "Tiers kept: ¥25k is about 50% likely within 30 days on the limit-odds model and ¥22k about 33% within 90, both inside the reachability range, and ¥30k is still the self-grading cost (raw ¥15.8k, 94.7% gem). At 7 months old the card sits on the tail of the age curve (cards this age fell about 5% against the market over the next 3 months), and the summer PSA submissions return Nov–Feb, so the odds of the lower lines are a little better than the model alone says. The correction rule keeps Buy-zone prices at Watch until ¥22k or until the market steadies.",
+          "label": "Watch: ask is at the ¥30k ceiling, ¥6k above the Buy line",
+          "reasoning": "The lowest PSA10 ask is ¥30,990, up 20% from ¥25,900 at the last verdict and at the ¥30,000 ceiling, with sales between ¥27.5k and ¥31k and 14 of 20 asks within 15% of the low. Raw A is ¥15,800, so grading yourself costs about ¥29,300 expected at the 94.7% gem rate (¥15.8k + ¥12k fees), roughly the slab price. The PSA10 index is down 20.2% on the month, and graded supply from summer submissions is likely to land Nov–Feb, which is when young cards like this have dipped below replacement cost. The model gives about 20% odds of a listing at ≤¥25k (Buy) within 30 days; Definitely-buy at ≤¥22k is a longer shot.",
           "predictions": [
             {
-              "text": "A listing at ≤¥25,000 by year-end",
-              "p": 0.55,
+              "text": "A PSA10 listing at ≤¥25k (Buy) within 30 days",
+              "p": 0.2,
               "type": "touch_below",
               "price": 25000,
-              "by": "2026-12-31"
+              "by": "2026-11-04"
             },
             {
-              "text": "A listing at ≤¥22,000 by end of January",
-              "p": 0.4,
+              "text": "A PSA10 listing at ≤¥22k (Definitely buy) within 90 days",
+              "p": 0.22,
               "type": "touch_below",
               "price": 22000,
-              "by": "2027-01-31"
+              "by": "2027-01-03"
             }
           ],
-          "written": "2026-10-02T16:31:33+09:00"
+          "written": "2026-10-05T09:04:04+09:00"
         },
-        "verdict_price_ref": 25900
+        "verdict_price_ref": 30990
       }
     },
     {
