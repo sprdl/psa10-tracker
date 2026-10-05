@@ -2,11 +2,16 @@
  "about": "Analyses written by the full price check for cards that stand out (scripts/outliers.py). Shown on the card page above the automatic findings. Edit with scripts/set_insight.py.",
  "insights": {
   "https://snkrdunk.com/apparels/138599": {
-   "written": "2026-10-03T09:03:03+09:00",
-   "headline": "Pikachu VMAX CSR ask +22% in a week while the market was flat",
-   "text": "What's happening: The lowest PSA10 ask rose from ¥29,500 to ¥35,999 in 7 days, 14% above the recent sales median of ¥31,500, while the My-tier index barely moved (+0.3%).\nWhy: Likely sellers re-pricing upward after thin supply near ¥30,000; the sold prices rose too (median ¥31,500 vs ¥29,500 before). A search for a reprint of the set found no relevant news.\nFor you: ¥35,999 is far above your ¥29,000 limit and the ¥31,000 Buy line, so it stays Watch.\nWatch: Whether sales keep clearing above ¥31,000, or the ask falls back toward ¥30,000.",
-   "signals": "7d price +22.0% (¥29,500→¥35,999) vs My-tier index +0.3%; slab premium 1.14x vs 2.30x norm",
-   "sources": []
+   "written": "2026-10-05T09:03:35+09:00",
+   "headline": "Up 26% in a week while the market rose 3.5%, from ¥29.5k to ¥37.3k",
+   "text": "What's happening: The lowest PSA10 ask rose from ¥29,500 to ¥37,260 in seven days, and completed sales stepped up from ¥29.6k to ¥37.5k over the same stretch. Trading is up to 2.9 sales a day from 1.6, and 16 of the 20 cheapest asks are within 15% of the low.\n\nWhy: Likely a catch-up move or a bounce after a long slide, since the card is still half its ¥74k peak. Pikachu V CSR from the same set rose by about the same amount, so this looks like one bet on the set rather than a card-specific story. I found no news of a reprint or a new product for this set; the 30th-anniversary announcement I read names other reprints. Raw A is ¥20,000, so the slab is about 1.9x raw today (pokeca-chart's own premium reading is from 9/21 and is stale).\n\nFor you: The ask is above the ¥37,000 ceiling and far above your ¥29,000 limit. Chasing it makes little sense; the Buy line is ¥31,000 and the correction rule needs ¥28,000.\n\nWatch: Whether asks hold above ¥35k for another few checks. A move back toward ¥31–33k would reopen the Buy zone.",
+   "signals": "7d price +26.3% (¥29,500→¥37,260) vs My-tier index +3.5% = +22.8 pts | PSA10 sales/day 2.9 vs 1.6 a week ago (+88%)",
+   "sources": [
+    {
+     "title": "30th CELEBRATION announcement (KAI-YOU)",
+     "url": "https://kai-you.net/article/95566"
+    }
+   ]
   },
   "https://snkrdunk.com/apparels/387059": {
    "written": "2026-09-29T08:18:35+09:00",
