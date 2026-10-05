@@ -1,5 +1,5 @@
 {
- "as_of": "2026-10-05T09:02:43+09:00",
+ "as_of": "2026-10-05T15:08:39+09:00",
  "window_days": 30,
  "threshold": 0.05,
  "confirm_readings": 2,
@@ -57,14 +57,14 @@
    "made": "2026-10-03T12:31:56+09:00",
    "price": 10600,
    "window_end": "2026-11-02T12:31:56+09:00",
-   "days_in": 1,
-   "low": 10350,
-   "low_pct": -2.4,
-   "now": 10400,
-   "now_pct": -1.9,
+   "days_in": 2,
+   "low": 10200,
+   "low_pct": -3.8,
+   "now": 10200,
+   "now_pct": -3.8,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.055
   },
   {
    "url": "https://snkrdunk.com/apparels/103079",
@@ -79,8 +79,8 @@
    "days_in": 4,
    "low": 24000,
    "low_pct": 4.4,
-   "now": 25500,
-   "now_pct": 10.9,
+   "now": 25000,
+   "now_pct": 8.7,
    "status": "pending",
    "why": "",
    "threshold": 0.05
@@ -117,8 +117,8 @@
    "days_in": 4,
    "low": 10000,
    "low_pct": -4.8,
-   "now": 10999,
-   "now_pct": 4.8,
+   "now": 10500,
+   "now_pct": 0.0,
    "status": "pending",
    "why": "",
    "threshold": 0.05
@@ -136,8 +136,8 @@
    "days_in": 8,
    "low": 108000,
    "low_pct": -6.9,
-   "now": 109500,
-   "now_pct": -5.6,
+   "now": 109800,
+   "now_pct": -5.3,
    "status": "right",
    "why": "dropped to ¥109,800 on 2026-09-30 (held under −5% for 2 checks)",
    "threshold": 0.05
@@ -155,8 +155,8 @@
    "days_in": 8,
    "low": 55700,
    "low_pct": -8.7,
-   "now": 56000,
-   "now_pct": -8.2,
+   "now": 56999,
+   "now_pct": -6.6,
    "status": "right",
    "why": "dropped to ¥56,500 on 2026-09-28 (held under −5% for 2 checks)",
    "threshold": 0.05
@@ -193,8 +193,8 @@
    "days_in": 8,
    "low": 130000,
    "low_pct": -5.8,
-   "now": 147000,
-   "now_pct": 6.5,
+   "now": 154790,
+   "now_pct": 12.2,
    "status": "right",
    "why": "dropped to ¥130,000 on 2026-09-27 (held under −5% for 2 checks)",
    "threshold": 0.05
@@ -209,11 +209,11 @@
    "made": "2026-09-26T09:04:31+09:00",
    "price": 117900,
    "window_end": "2026-10-26T09:04:31+09:00",
-   "days_in": 8,
+   "days_in": 9,
    "low": 100000,
    "low_pct": -15.2,
-   "now": 102500,
-   "now_pct": -13.1,
+   "now": 108000,
+   "now_pct": -8.4,
    "status": "right",
    "why": "dropped to ¥108,000 on 2026-09-27 (held under −5% for 2 checks)",
    "threshold": 0.05
@@ -250,8 +250,8 @@
    "days_in": 9,
    "low": 24800,
    "low_pct": -10.1,
-   "now": 30990,
-   "now_pct": 12.3,
+   "now": 30700,
+   "now_pct": 11.2,
    "status": "right",
    "why": "dropped to ¥25,500 on 2026-09-26 (held under −5% for 2 checks)",
    "threshold": 0.05
@@ -266,7 +266,7 @@
    "made": "2026-09-25T10:03:18+09:00",
    "price": 29800,
    "window_end": "2026-10-25T10:03:18+09:00",
-   "days_in": 9,
+   "days_in": 10,
    "low": 29000,
    "low_pct": -2.7,
    "now": 37260,
@@ -285,7 +285,7 @@
    "made": "2026-09-25T10:03:18+09:00",
    "price": 24880,
    "window_end": "2026-10-25T10:03:18+09:00",
-   "days_in": 9,
+   "days_in": 10,
    "low": 24500,
    "low_pct": -1.5,
    "now": 30950,
@@ -304,7 +304,7 @@
    "made": "2026-09-19T09:03:00+09:00",
    "price": 40500,
    "window_end": "2026-10-19T09:03:00+09:00",
-   "days_in": 15,
+   "days_in": 16,
    "low": 41000,
    "low_pct": 1.2,
    "now": 48000,
@@ -383,8 +383,8 @@
    "days_in": 19,
    "low": 72000,
    "low_pct": -8.9,
-   "now": 76500,
-   "now_pct": -3.2,
+   "now": 77000,
+   "now_pct": -2.5,
    "status": "right",
    "why": "dropped to ¥73,500 on 2026-09-17 (held under −5% for 2 checks)",
    "threshold": 0.05
@@ -402,8 +402,8 @@
    "days_in": 19,
    "low": 64000,
    "low_pct": -5.2,
-   "now": 69000,
-   "now_pct": 2.2,
+   "now": 69500,
+   "now_pct": 3.0,
    "status": "pending",
    "why": "",
    "threshold": 0.05
@@ -473,8 +473,8 @@
    "made": "2026-09-26T16:01:20+09:00",
    "status": "open",
    "why": "21 days left",
-   "now": 147000,
-   "gap_pct": -12.9
+   "now": 154790,
+   "gap_pct": -17.3
   },
   {
    "url": "https://snkrdunk.com/apparels/722239",
@@ -487,8 +487,8 @@
    "made": "2026-10-03T12:31:56+09:00",
    "status": "open",
    "why": "28 days left",
-   "now": 10400,
-   "gap_pct": -8.7
+   "now": 10200,
+   "gap_pct": -6.9
   },
   {
    "url": "https://snkrdunk.com/apparels/224087",
@@ -515,8 +515,8 @@
    "made": "2026-10-04T08:23:55+09:00",
    "status": "open",
    "why": "29 days left",
-   "now": 102500,
-   "gap_pct": -4.4
+   "now": 108000,
+   "gap_pct": -9.3
   },
   {
    "url": "https://snkrdunk.com/apparels/96712",
@@ -557,8 +557,8 @@
    "made": "2026-10-05T09:02:43+09:00",
    "status": "open",
    "why": "30 days left",
-   "now": 30990,
-   "gap_pct": -19.3
+   "now": 30700,
+   "gap_pct": -18.6
   },
   {
    "url": "https://snkrdunk.com/apparels/387059",
@@ -613,8 +613,8 @@
    "made": "2026-09-25T10:03:18+09:00",
    "status": "open",
    "why": "81 days left",
-   "now": 76500,
-   "gap_pct": -8.5
+   "now": 77000,
+   "gap_pct": -9.1
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
@@ -627,8 +627,8 @@
    "made": "2026-09-25T15:15:03+09:00",
    "status": "yes",
    "why": "¥24,800 on 2026-09-29",
-   "now": 30990,
-   "gap_pct": -19.3
+   "now": 30700,
+   "gap_pct": -18.6
   },
   {
    "url": "https://snkrdunk.com/apparels/91178",
@@ -669,8 +669,8 @@
    "made": "2026-09-26T16:01:20+09:00",
    "status": "open",
    "why": "82 days left",
-   "now": 147000,
-   "gap_pct": -12.9
+   "now": 154790,
+   "gap_pct": -17.3
   },
   {
    "url": "https://snkrdunk.com/apparels/100567",
@@ -683,8 +683,8 @@
    "made": "2026-09-26T16:01:20+09:00",
    "status": "open",
    "why": "82 days left",
-   "now": 147000,
-   "gap_pct": -21.8
+   "now": 154790,
+   "gap_pct": -25.7
   },
   {
    "url": "https://snkrdunk.com/apparels/585221",
@@ -697,8 +697,8 @@
    "made": "2026-09-26T09:04:31+09:00",
    "status": "yes",
    "why": "¥108,000 on 2026-09-27",
-   "now": 102500,
-   "gap_pct": 5.4
+   "now": 108000,
+   "gap_pct": 0.0
   },
   {
    "url": "https://snkrdunk.com/apparels/585221",
@@ -711,8 +711,8 @@
    "made": "2026-09-26T09:04:31+09:00",
    "status": "open",
    "why": "82 days left",
-   "now": 102500,
-   "gap_pct": 26.8
+   "now": 108000,
+   "gap_pct": 20.4
   },
   {
    "url": "https://snkrdunk.com/apparels/724996",
@@ -725,8 +725,8 @@
    "made": "2026-09-27T08:58:59+09:00",
    "status": "yes",
    "why": "¥57,980 on 2026-09-28",
-   "now": 56000,
-   "gap_pct": 3.6
+   "now": 56999,
+   "gap_pct": 1.8
   },
   {
    "url": "https://snkrdunk.com/apparels/704401",
@@ -739,8 +739,8 @@
    "made": "2026-09-27T08:58:59+09:00",
    "status": "yes",
    "why": "¥108,000 on 2026-10-01",
-   "now": 109500,
-   "gap_pct": -1.4
+   "now": 109800,
+   "gap_pct": -1.6
   },
   {
    "url": "https://snkrdunk.com/apparels/128099",
@@ -753,8 +753,8 @@
    "made": "2026-09-30T16:45:15+09:00",
    "status": "open",
    "why": "85 days left",
-   "now": 10999,
-   "gap_pct": -18.2
+   "now": 10500,
+   "gap_pct": -14.3
   },
   {
    "url": "https://snkrdunk.com/apparels/128099",
@@ -767,8 +767,8 @@
    "made": "2026-09-30T16:45:15+09:00",
    "status": "open",
    "why": "85 days left",
-   "now": 10999,
-   "gap_pct": -31.8
+   "now": 10500,
+   "gap_pct": -28.6
   },
   {
    "url": "https://snkrdunk.com/apparels/103080",
@@ -809,8 +809,8 @@
    "made": "2026-09-30T16:45:15+09:00",
    "status": "open",
    "why": "85 days left",
-   "now": 25500,
-   "gap_pct": -17.6
+   "now": 25000,
+   "gap_pct": -16.0
   },
   {
    "url": "https://snkrdunk.com/apparels/103079",
@@ -823,8 +823,8 @@
    "made": "2026-09-30T16:45:15+09:00",
    "status": "open",
    "why": "85 days left",
-   "now": 25500,
-   "gap_pct": -29.4
+   "now": 25000,
+   "gap_pct": -28.0
   },
   {
    "url": "https://snkrdunk.com/apparels/387059",
@@ -921,8 +921,8 @@
    "made": "2026-09-25T10:03:18+09:00",
    "status": "open",
    "why": "87 days left",
-   "now": 69000,
-   "gap_pct": -13.0
+   "now": 69500,
+   "gap_pct": -13.7
   },
   {
    "url": "https://snkrdunk.com/apparels/128099",
@@ -935,8 +935,8 @@
    "made": "2026-10-02T16:31:33+09:00",
    "status": "open",
    "why": "87 days left",
-   "now": 10999,
-   "gap_pct": -13.6
+   "now": 10500,
+   "gap_pct": -9.5
   },
   {
    "url": "https://snkrdunk.com/apparels/128099",
@@ -949,8 +949,8 @@
    "made": "2026-10-02T16:31:33+09:00",
    "status": "open",
    "why": "87 days left",
-   "now": 10999,
-   "gap_pct": -27.3
+   "now": 10500,
+   "gap_pct": -23.8
   },
   {
    "url": "https://snkrdunk.com/apparels/103080",
@@ -991,8 +991,8 @@
    "made": "2026-10-02T16:31:33+09:00",
    "status": "open",
    "why": "87 days left",
-   "now": 30990,
-   "gap_pct": -19.3
+   "now": 30700,
+   "gap_pct": -18.6
   },
   {
    "url": "https://snkrdunk.com/apparels/722239",
@@ -1005,8 +1005,8 @@
    "made": "2026-10-03T12:31:56+09:00",
    "status": "open",
    "why": "87 days left",
-   "now": 10400,
-   "gap_pct": -18.3
+   "now": 10200,
+   "gap_pct": -16.7
   },
   {
    "url": "https://snkrdunk.com/apparels/103079",
@@ -1019,8 +1019,8 @@
    "made": "2026-10-02T16:31:33+09:00",
    "status": "open",
    "why": "87 days left",
-   "now": 25500,
-   "gap_pct": -11.8
+   "now": 25000,
+   "gap_pct": -10.0
   },
   {
    "url": "https://snkrdunk.com/apparels/103079",
@@ -1033,8 +1033,8 @@
    "made": "2026-10-02T16:31:33+09:00",
    "status": "open",
    "why": "87 days left",
-   "now": 25500,
-   "gap_pct": -23.5
+   "now": 25000,
+   "gap_pct": -22.0
   },
   {
    "url": "https://snkrdunk.com/apparels/224087",
@@ -1089,8 +1089,8 @@
    "made": "2026-10-05T09:02:43+09:00",
    "status": "open",
    "why": "90 days left",
-   "now": 30990,
-   "gap_pct": -29.0
+   "now": 30700,
+   "gap_pct": -28.3
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
@@ -1103,8 +1103,8 @@
    "made": "2026-10-02T16:31:33+09:00",
    "status": "open",
    "why": "118 days left",
-   "now": 30990,
-   "gap_pct": -29.0
+   "now": 30700,
+   "gap_pct": -28.3
   },
   {
    "url": "https://snkrdunk.com/apparels/224087",
@@ -1159,8 +1159,8 @@
    "made": "2026-09-25T10:03:18+09:00",
    "status": "open",
    "why": "171 days left",
-   "now": 76500,
-   "gap_pct": -22.2
+   "now": 77000,
+   "gap_pct": -22.7
   },
   {
    "url": "https://snkrdunk.com/apparels/455596",
@@ -1173,8 +1173,8 @@
    "made": "2026-09-25T10:03:18+09:00",
    "status": "open",
    "why": "171 days left",
-   "now": 69000,
-   "gap_pct": -15.9
+   "now": 69500,
+   "gap_pct": -16.5
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
@@ -1187,8 +1187,8 @@
    "made": "2026-09-25T15:15:03+09:00",
    "status": "open",
    "why": "171 days left",
-   "now": 30990,
-   "gap_pct": -29.0
+   "now": 30700,
+   "gap_pct": -28.3
   },
   {
    "url": "https://snkrdunk.com/apparels/91178",
@@ -1229,8 +1229,8 @@
    "made": "2026-09-26T09:04:31+09:00",
    "status": "open",
    "why": "172 days left",
-   "now": 102500,
-   "gap_pct": -4.4
+   "now": 108000,
+   "gap_pct": -9.3
   },
   {
    "url": "https://snkrdunk.com/apparels/724996",
@@ -1243,8 +1243,8 @@
    "made": "2026-09-27T08:58:59+09:00",
    "status": "open",
    "why": "173 days left",
-   "now": 56000,
-   "gap_pct": -7.1
+   "now": 56999,
+   "gap_pct": -8.8
   },
   {
    "url": "https://snkrdunk.com/apparels/704401",
@@ -1257,8 +1257,8 @@
    "made": "2026-09-27T08:58:59+09:00",
    "status": "open",
    "why": "173 days left",
-   "now": 109500,
-   "gap_pct": -13.2
+   "now": 109800,
+   "gap_pct": -13.5
   }
  ],
  "model_odds": [
