@@ -1,5 +1,16 @@
 {
-  "holdings": [],
+  "holdings": [
+    {
+      "id": "p63",
+      "card_url": "https://snkrdunk.com/apparels/455596",
+      "card_name_ja": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
+      "condition": "psa10",
+      "purchase_price_jpy": 68000,
+      "purchase_date": "2026-10-06",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/79302385-1b7d-4fb5-bd23-b78bd029a9df.webp?size=l",
+      "notes": "福福トレカ"
+    }
+  ],
   "sealed": [
     {
       "id": "s46",
