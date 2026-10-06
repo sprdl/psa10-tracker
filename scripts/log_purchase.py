@@ -129,12 +129,13 @@ def build_holding(issue):
         raise FormError("No SNKRDUNK product URL found (it should look like https://snkrdunk.com/apparels/123456).")
     url = f"https://snkrdunk.com/apparels/{m.group(1)}"
     card = next((c for c in latest_cards() if c.get("url", "").rstrip("/") == url), None)
-    title_name = re.sub(r"^\s*bought:?\s*", "", issue.get("title") or "", flags=re.I).strip()
+    title_name = re.sub(r"\s*\(raw[^)]*\)\s*$", "", re.sub(r"^\s*bought:?\s*", "", issue.get("title") or "", flags=re.I)).strip()
     h = {
         "id": f"p{issue['number']}",
         "card_url": url,
         "card_name_ja": (card or {}).get("card_name_ja") or title_name or url,
-        "condition": "raw_to_grade" if "raw" in field(form, "condition").lower() else "psa10",
+        # the dropdown can't always be prefilled, so the site also marks a raw purchase in the title
+        "condition": "raw_to_grade" if ("raw" in field(form, "condition").lower() or "(raw" in (issue.get("title") or "").lower()) else "psa10",
         "purchase_price_jpy": parse_yen(field(form, "price"), "Price paid"),
         "purchase_date": parse_date(field(form, "date")),
     }

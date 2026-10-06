@@ -672,11 +672,60 @@
     return (h.purchase_price_jpy || 0) + grading;
   }
   function holdingsFor(card) { return state.holdings.filter((h) => h.card_url === card.url); }
-  function boughtFormUrl(card) {
-    const q = new URLSearchParams({ template: 'bought.yml', title: 'Bought: ' + parseCardName(card.card_name_ja).short,
-      url: card.url, price: String(lowestAsk(card) || ''), date: todayJST() });
-    return `${REPO_URL}/issues/new?${q}`;
+  // GitHub re-applies prefilled form values over what you type, so the price, date and condition are
+  // asked here first (Log purchase dialog) and the form opens with exactly those, ready to submit.
+  function boughtFormUrl(card, v) {
+    const raw = v && v.condition === 'raw';
+    const q = { template: 'bought.yml', title: 'Bought: ' + parseCardName(card.card_name_ja).short + (raw ? ' (raw, to grade)' : ''), url: card.url };
+    if (v) {
+      q.price = String(v.price); q.date = v.date;
+      q.condition = raw ? "Raw, I'm sending it to PSA myself" : 'Graded PSA10 (bought as a slab)';
+      if (raw && v.fee) q.grading_fee = String(v.fee);
+      if (v.notes) q.notes = v.notes;
+    }
+    return `${REPO_URL}/issues/new?${new URLSearchParams(q)}`;
   }
+  function openBoughtDialog(card) {
+    let dlg = document.getElementById('bought-dlg');
+    if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'bought-dlg'; dlg.className = 'bd'; document.body.appendChild(dlg); }
+    const ask = lowestAsk(card);
+    dlg.innerHTML = `<form method="dialog" class="bd-form">
+      <div class="bd-head"><span class="pf-thumb bd-thumb">${card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="">` : ''}</span>
+        <div><div class="bd-title">Log a purchase</div><div class="bd-sub">${escapeHtml(parseCardName(card.card_name_ja).short)} · ${escapeHtml(parseCardName(card.card_name_ja).code)}</div></div></div>
+      <label class="bd-row"><span>Price paid (¥)</span><input name="price" type="number" inputmode="numeric" min="1" step="1" required value="${ask || ''}"></label>
+      <div class="bd-hint">${ask ? `Today's lowest SNKRDUNK ask is ${fmtYen(ask)}; change it to what you actually paid.` : ''}</div>
+      <label class="bd-row"><span>Date</span><input name="date" type="date" required value="${todayJST()}" max="${todayJST()}"></label>
+      <div class="bd-row"><span>Condition</span><div class="bd-seg">
+        <label><input type="radio" name="condition" value="slab" checked> PSA10 slab</label>
+        <label><input type="radio" name="condition" value="raw"> Raw, I'll grade it</label></div></div>
+      <label class="bd-row bd-fee" hidden><span>Grading fee (¥)</span><input name="fee" type="number" inputmode="numeric" min="0" step="1" placeholder="9980 (PSA Standard)"></label>
+      <label class="bd-row"><span>Notes</span><input name="notes" type="text" maxlength="200" placeholder="e.g. 福福トレカ 秋葉原店, in person"></label>
+      <div class="bd-hint">Next, GitHub opens with all of this filled in: just press <b>Create</b>. The purchase shows on the site about a minute later.</div>
+      <div class="bd-acts"><button type="button" class="btn" value="cancel">Cancel</button><button type="submit" class="btn btn-primary" value="ok">Continue to GitHub ↗</button></div>
+    </form>`;
+    const f = dlg.querySelector('form');
+    const feeRow = dlg.querySelector('.bd-fee');
+    f.querySelectorAll('input[name=condition]').forEach((r) => r.addEventListener('change', () => { feeRow.hidden = f.condition.value !== 'raw'; }));
+    dlg.querySelector('button[value=cancel]').addEventListener('click', () => dlg.close());
+    f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const price = Math.round(Number(f.price.value));
+      if (!(price > 0)) { f.price.focus(); return; }
+      const url = boughtFormUrl(card, { price, date: f.date.value || todayJST(), condition: f.condition.value, fee: Number(f.fee.value) || 0, notes: f.notes.value.trim() });
+      window.open(url, '_blank', 'noopener');
+      dlg.close();
+    });
+    dlg.showModal();
+    setTimeout(() => { f.price.focus(); f.price.select(); }, 30);
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-bought]');
+    if (!b) return;
+    const card = ((state.currentData && state.currentData.cards) || []).find((c) => cardId(c) === b.dataset.bought);
+    if (!card) return;   // falls through to the plain GitHub form link
+    e.preventDefault();
+    openBoughtDialog(card);
+  });
   function removeFormUrl(h) {
     const q = new URLSearchParams({ template: 'remove-purchase.yml',
       title: 'Remove purchase: ' + parseCardName(h.card_name_ja || '').short, id: h.id });
@@ -2781,7 +2830,7 @@
 
     const tabs = [['overview', 'Overview'], ['story', 'Story'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY'], ['upside', 'Upside']].filter(([k]) => k !== 'story' || storyOf(card));
     const actionsHtml = `<div class="cd-actions">
-          <a class="btn btn-primary" href="${escapeAttr(boughtFormUrl(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
+          <a class="btn btn-primary" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
           <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
           ${mode === 'page' ? removeBtnHtml(card) : ''}
         </div>`;
@@ -2877,7 +2926,7 @@
       <div class="dw-stats">${limTile}${moves}${peakTile}${holdTile}</div>
       <div class="dw-acts">
         <a class="btn btn-primary" href="#/card/${escapeAttr(id)}">Open card page →</a>
-        <a class="btn" href="${escapeAttr(boughtFormUrl(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
+        <a class="btn" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
         <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
       </div>
     </div>`;

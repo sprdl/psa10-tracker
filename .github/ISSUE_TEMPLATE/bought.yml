@@ -33,8 +33,6 @@ body:
         - Graded PSA10 (bought as a slab)
         - Raw, I'm sending it to PSA myself
       default: 0
-    validations:
-      required: true
   - type: input
     id: grading_fee
     attributes:
