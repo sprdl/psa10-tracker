@@ -2537,6 +2537,16 @@
     return l != null && a != null ? { pct: (a / l - 1) * 100, lim: l, ask: a } : null;
   }
   function limitGapCell(card, cls) {
+    // Once bought, the column shows how far the price has moved from what you paid instead.
+    const held = holdingsFor(card);
+    const now = getRep(card);
+    if (held.length && now != null) {
+      const paid = held.reduce((a, h) => a + (h.purchase_price_jpy || 0), 0) / held.length;
+      if (paid > 0) {
+        const pct = (now / paid - 1) * 100, diff = now - paid;
+        return `<span class="${cls} ${dirClass(pct)}" title="Now ${fmtYen(now)} vs bought at ${fmtYen(paid)} (${diff >= 0 ? '+' : '−'}${fmtYen(Math.abs(diff))})">${pct === 0 ? '±0' : fmtPct(pct)}</span>`;
+      }
+    }
     const g = limitGap(card);
     if (!g) return `<span class="${cls} muted" title="No limit set for this card">—</span>`;
     const hit = g.pct <= 0;
@@ -2569,7 +2579,7 @@
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg')}${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg wl-c30')}
-        <span class="wl-tag">${tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}${(mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
+        <span class="wl-tag">${owned ? '' : tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}${(mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
         <span class="wl-heat">${heatChip(card)}</span>
       </a>`;
     }).join('');
