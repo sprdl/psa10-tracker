@@ -56,7 +56,16 @@
       "qty": 1,
       "price_jpy": 6200,
       "date": "2026-08-30",
-      "pulls": [],
+      "pulls": [
+        {
+          "id": "u66",
+          "card_url": "https://snkrdunk.com/apparels/881431",
+          "card_name_ja": "ブラッキーex SAR仕様 [MF 044/040](構築デッキ「30th CELEBRATION プレミアムデッキセット エーフィ・ブラッキー」)",
+          "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/f078d5c7-085f-4e12-bfc0-144b3e61cb9d.webp?size=l",
+          "status": "raw",
+          "date": "2026-10-06"
+        }
+      ],
       "where": "Pokemon Center Online",
       "notes": "Arrives November 2026",
       "snkrdunk_name": "ポケモンカードゲームMEGA 構築デッキ「30th CELEBRATION プレミアムデッキセット エーフィ・ブラッキー」",
