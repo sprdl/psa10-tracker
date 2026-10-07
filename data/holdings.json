@@ -33,6 +33,50 @@
       "shipping_insurance_jpy": 2450,
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/7bf60833-bb2f-424b-932a-9d618d4a3e17.webp?size=l",
       "notes": "SNKRDUNK"
+    },
+    {
+      "id": "p73",
+      "card_url": "https://snkrdunk.com/apparels/704401",
+      "card_name_ja": "メガリザードンXex SAR [M2 110/080](拡張パック「インフェルノX」)",
+      "condition": "raw_to_grade",
+      "purchase_price_jpy": 75000,
+      "purchase_date": "2026-10-07",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/13eca26e-6c94-43d7-be39-b9e2e083192e.webp?size=l",
+      "grading_fee_jpy": 9980,
+      "shipping_insurance_jpy": 2450
+    },
+    {
+      "id": "p74",
+      "card_url": "https://snkrdunk.com/apparels/724996",
+      "card_name_ja": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+      "condition": "raw_to_grade",
+      "purchase_price_jpy": 36300,
+      "purchase_date": "2026-10-07",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/896d5015-d88c-4882-a045-7c567fa60d6f.webp?size=l",
+      "grading_fee_jpy": 9980,
+      "shipping_insurance_jpy": 2450
+    },
+    {
+      "id": "p75",
+      "card_url": "https://snkrdunk.com/apparels/138599",
+      "card_name_ja": "ピカチュウVMAX CSR[s8b 223/184](ハイクラスパック「VMAXクライマックス」)",
+      "condition": "raw_to_grade",
+      "purchase_price_jpy": 18000,
+      "purchase_date": "2026-10-07",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230913100335-0.webp?size=l",
+      "grading_fee_jpy": 9980,
+      "shipping_insurance_jpy": 2450
+    },
+    {
+      "id": "p76",
+      "card_url": "https://snkrdunk.com/apparels/96712",
+      "card_name_ja": "ピカチュウV CSR[S8b 222/184](ハイクラスパック「VMAXクライマックス」)",
+      "condition": "raw_to_grade",
+      "purchase_price_jpy": 14000,
+      "purchase_date": "2026-10-07",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/4b947d82-02ca-4a8e-9aec-7eea59159954.webp?size=l",
+      "grading_fee_jpy": 9980,
+      "shipping_insurance_jpy": 2450
     }
   ],
   "sealed": [
