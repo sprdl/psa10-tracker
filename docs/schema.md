@@ -175,13 +175,15 @@ multi-month trend without ever downloading years of history on every card expand
 ## Overview columns: Price and Limit
 
 **Price** is always the PSA10 price. **Limit** depends on the card: for a card you watch it shows your limit with the
-distance to the lowest ask underneath; for a card you own it compares its **PSA10 DIY cost** with what you paid,
-with "DIY ¥X" underneath. The DIY cost is the one in the DIY tab, (raw A-rank ask + PSA Standard grading &
-shipping ¥12,430) ÷ gem rate (`computeDiyEconomics`); what you paid is a slab's purchase price, or a raw card's
-purchase price + ¥13,000 grading (`GRADING_ALLIN` in `assets/app.js`). Without a raw ask or gem rate yet the PSA10
-price stands in. Hovering shows the sum. The collection badge, the Limit sort, the side panel's first tile and the
-card page's "DIY cost vs paid" use the same comparison; the other card-page numbers (worth now, after selling costs,
-break-even) are still based on the PSA10 price.
+distance to the lowest ask underneath. For a card you own it shows the PSA10 price against your cost basis
+(`boughtGap` in `assets/app.js`):
+- bought as a **PSA10**: the price you paid ("paid ¥X" underneath);
+- bought **raw**: the DIY cost computed with the raw price you paid instead of today's lowest raw listing,
+  (raw paid + the holding's grading & shipping, ¥12,430 by default) ÷ gem rate ("DIY ¥X" underneath). A holding's
+  own `gem_rate_pct` overrides the card's population gem rate; without any gem rate the fees are added undivided.
+Several copies average their bases. Hovering shows the sum. The collection badge, the Limit sort, the side panel's
+first tile and the card page's "PSA10 vs your DIY cost" use the same comparison; the other card-page numbers (worth
+now, after selling costs, break-even) are still based on the PSA10 price.
 
 ## Sold items: `"sold"` in `data/holdings.json`
 

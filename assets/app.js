@@ -821,7 +821,7 @@
     return `<div class="cd-stats pos-stats">
       <div class="cd-stat"><div class="lbl">You paid${own.n > 1 ? ` (avg of ${own.n})` : ''}</div><div class="val">${fmtYen(own.cost)}</div><div class="s muted">${dts}${own.hs.some((h) => h.condition === 'raw_to_grade') ? ' · incl. grading' : ''}</div></div>
       <div class="cd-stat"><div class="lbl">Worth now</div><div class="val">${fmtYen(ps.price)}</div><div class="s ${ps.gross >= 0 ? 'pos' : 'neg'}">${signedYen(ps.gross)}${ps.grossPct != null ? ' (' + fmtPct(ps.grossPct) + ')' : ''}</div></div>
-      ${(() => { const bg = boughtGap(card); return bg && bg.diy ? `<div class="cd-stat" title="${escapeAttr(boughtGapTitle(bg))}"><div class="lbl">PSA10 DIY cost vs paid</div><div class="val">${fmtYen(bg.now)}</div><div class="s ${bg.pct >= 0 ? 'pos' : 'neg'}">${fmtPct(bg.pct)} vs ${fmtYen(bg.paid)} paid</div></div>` : ''; })()}
+      ${(() => { const bg = boughtGap(card); return bg && bg.raw ? `<div class="cd-stat" title="${escapeAttr(boughtGapTitle(bg))}"><div class="lbl">PSA10 vs your DIY cost</div><div class="val">${fmtYen(bg.basis)}</div><div class="s ${bg.pct >= 0 ? 'pos' : 'neg'}">${fmtPct(bg.pct)} · PSA10 sells for ${fmtYen(bg.now)}</div></div>` : ''; })()}
       <div class="cd-stat"><div class="lbl">After selling costs</div><div class="val ${ps.net >= 0 ? 'pos' : 'neg'}">${signedYen(ps.net)}</div><div class="s muted">fee 9.5% + fixed fee + shipping${ps.netPct != null ? ' · ' + fmtPct(ps.netPct) : ''}</div></div>
       <div class="cd-stat"><div class="lbl">Break-even price</div><div class="val">${fmtYen(ps.be)}</div><div class="s muted">${ps.price >= ps.be ? fmtYen(ps.price - ps.be) + ' above' : fmtYen(ps.be - ps.price) + ' to go'}${ps.days != null ? ` · held ${ps.days} day${ps.days === 1 ? '' : 's'}` : ''}</div></div>
     </div>`;
@@ -3108,31 +3108,41 @@
     const l = getLimit(card), a = lowestAsk(card);
     return l != null && a != null ? { pct: (a / l - 1) * 100, lim: l, ask: a } : null;
   }
-  // The Overview's Limit column for a card you own: its PSA10 DIY price now vs what you paid per copy. The DIY price is
-  // what a PSA10 costs to make yourself today, (raw A-rank ask + PSA Standard grading + shipping) ÷ gem rate, the same
-  // figure as the DIY tab (computeDiyEconomics). What you paid: a slab at its purchase price, a raw card (bought to
-  // grade) at its purchase price + GRADING_ALLIN. Without a raw ask or gem rate the PSA10 price stands in.
-  // null for a card you don't own.
-  const GRADING_ALLIN = 13000;
+  // The Overview's Limit column for a card you own: the PSA10 price now against your cost basis.
+  //  - bought as a PSA10: the price you paid;
+  //  - bought raw (to grade): the DIY cost with the price you paid instead of today's lowest raw listing,
+  //    (your raw price + grading & shipping) ÷ gem rate, i.e. what getting a PSA10 out of your copy is expected to cost.
+  // Several copies average their bases. Without a gem rate a raw copy counts price + grading, undivided.
+  // null for a card you don't own. `paid` is the average purchase price alone.
   function boughtGap(card) {
-    const held = holdingsFor(card), rep = getRep(card);
-    if (!held.length || rep == null) return null;
-    const d = computeDiyEconomics(card, rep), now = d ? d.diyExpected : rep;
-    const raw = held.some((h) => h.condition === 'raw_to_grade');
-    const paid = held.reduce((a, h) => a + (h.purchase_price_jpy || 0) + (h.condition === 'raw_to_grade' ? GRADING_ALLIN : 0), 0) / held.length;
-    return paid > 0 ? { pct: (now / paid - 1) * 100, diff: now - paid, paid, now, raw, diy: !!d, d, psa: rep } : null;
+    const held = holdingsFor(card), now = getRep(card);
+    if (!held.length || now == null) return null;
+    let sum = 0, paid = 0, anyRaw = false, allDiy = true, parts = null;
+    for (const h of held) {
+      const price = h.purchase_price_jpy || 0;
+      paid += price;
+      if (h.condition !== 'raw_to_grade') { sum += price; continue; }
+      anyRaw = true;
+      const fee = (h.grading_fee_jpy != null ? h.grading_fee_jpy : PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
+      const gem = h.gem_rate_pct != null ? h.gem_rate_pct : card.psa10_gem_rate_pct;
+      if (gem) { sum += (price + fee) / (gem / 100); parts = { raw: price, fee, gem }; }
+      else { sum += price + fee; allDiy = false; parts = { raw: price, fee, gem: null }; }
+    }
+    const basis = sum / held.length;
+    return basis > 0 ? { pct: (now / basis - 1) * 100, diff: now - basis, now, basis, paid: paid / held.length, raw: anyRaw, diy: anyRaw && allDiy, parts } : null;
   }
-  // Hover text for boughtGap: the DIY sum spelled out, and what it is compared with.
+  // Hover text for boughtGap: the sum spelled out.
   function boughtGapTitle(bg) {
-    const paid = `${fmtYen(bg.paid)} paid${bg.raw ? ` (raw price + ¥${GRADING_ALLIN.toLocaleString()} grading)` : ''}`;
-    const how = bg.diy ? `PSA10 DIY cost ${fmtYen(bg.now)} = (raw ${fmtYen(bg.d.rawPrice)} + grading ${fmtYen(bg.d.gradingFee + bg.d.shipping)}) ÷ ${Math.round(bg.d.gemRate * 1000) / 10}% gem rate; a PSA10 sells for ${fmtYen(bg.psa)}`
-      : `no DIY cost yet (needs a raw ask and a gem rate), so the PSA10 price ${fmtYen(bg.now)} is used`;
-    return `${how}. vs ${paid} (${bg.diff >= 0 ? '+' : '−'}${fmtYen(Math.abs(bg.diff))})`;
+    const gap = `${bg.diff >= 0 ? '+' : '−'}${fmtYen(Math.abs(bg.diff))}`;
+    if (!bg.raw) return `PSA10 now ${fmtYen(bg.now)} vs ${fmtYen(bg.basis)} paid (${gap})`;
+    const pt = bg.parts;
+    const how = bg.diy ? `(raw ${fmtYen(pt.raw)} paid + grading ${fmtYen(pt.fee)}) ÷ ${Math.round(pt.gem * 10) / 10}% gem rate` : `raw ${fmtYen(pt.raw)} paid + grading ${fmtYen(pt.fee)} (no gem rate yet, so not divided)`;
+    return `PSA10 now ${fmtYen(bg.now)} vs your DIY cost ${fmtYen(bg.basis)} = ${how} (${gap})`;
   }
   function limitGapCell(card, cls) {
     // Once bought, the column shows how far the price has moved from what you paid instead.
     const bg = boughtGap(card);
-    if (bg) return `<span class="${cls} ${dirClass(bg.pct)}" title="${escapeAttr(boughtGapTitle(bg))}">${bg.pct === 0 ? '±0' : fmtPct(bg.pct)}<small class="chg-sub">${bg.diy ? 'DIY ' + fmtYenShort(bg.now) : 'paid ' + fmtYenShort(bg.paid)}</small></span>`;
+    if (bg) return `<span class="${cls} ${dirClass(bg.pct)}" title="${escapeAttr(boughtGapTitle(bg))}">${bg.pct === 0 ? '±0' : fmtPct(bg.pct)}<small class="chg-sub">${bg.raw ? 'DIY ' + fmtYenShort(bg.basis) : 'paid ' + fmtYenShort(bg.basis)}</small></span>`;
     const g = limitGap(card);
     if (!g) return `<span class="${cls} muted" title="No limit set for this card">—</span>`;
     const hit = g.pct <= 0;
@@ -3499,7 +3509,7 @@
       </div>`;
     const ps = own ? positionStats(card) : null;
     const bgp = own ? boughtGap(card) : null;
-    const posTile = ps && bgp ? `<div class="dw-st" title="${escapeAttr(boughtGapTitle(bgp))}"><div class="k">${bgp.diy ? 'DIY cost vs paid' : 'Vs. bought'}</div><div class="v ${bgp.pct >= 0 ? 'pos' : 'neg'}">${fmtPct(bgp.pct)}</div><div class="s">${bgp.diy ? `PSA10 DIY ${fmtYen(bgp.now)}` : `PSA10 ${fmtYen(bgp.now)}`} · paid ${fmtYen(bgp.paid)}</div></div>` : '';
+    const posTile = ps && bgp ? `<div class="dw-st" title="${escapeAttr(boughtGapTitle(bgp))}"><div class="k">${bgp.raw ? 'PSA10 vs your DIY cost' : 'Vs. bought'}</div><div class="v ${bgp.pct >= 0 ? 'pos' : 'neg'}">${fmtPct(bgp.pct)}</div><div class="s">PSA10 ${fmtYen(bgp.now)} · ${bgp.raw ? 'DIY' : 'paid'} ${fmtYen(bgp.basis)}</div></div>` : '';
     const netTile = ps ? `<div class="dw-st"><div class="k">After costs</div><div class="v ${ps.net >= 0 ? 'pos' : 'neg'}">${signedYen(ps.net)}</div><div class="s">break-even ${fmtYen(ps.be)}</div></div>` : '';
     const last = priceChangeLast(card), d7 = priceChangeAgo(card, 7), d30 = priceChangeAgo(card, 30);
     const pc = (c) => (c ? `<span class="${dirClass(c.pct)}">${c.pct === 0 ? '±0' : fmtPct(c.pct)}</span>` : '—');
