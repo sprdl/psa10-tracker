@@ -2207,7 +2207,7 @@
     const when = state.currentData ? fmtDateJST(state.currentData.collected_at_jst) : '';
     switch (view) {
       case 'overview': return `${market} cards with a PSA10 market · ${cards.length - market} watching · checked ${when}${snap.check_mode === 'quick' ? ' (quick)' : ''}`;
-      case 'collection': return `${market} cards with a PSA10 market. Limit hits and Buy zones come first.`;
+      case 'collection': return `${market} cards with a PSA10 market. Limit hits and Buy zones come first; cards you own sort by their sell signal.`;
       case 'watching': return `${cards.length - market} cards without a PSA10 market yet. They move to the overview once PSA10 listings appear.`;
       case 'holdings': return 'Cards and sealed product you bought, valued at today\'s prices';
       case 'planner': return 'Tick cards to see what a shortlist costs against your budget';
@@ -2369,19 +2369,23 @@
     default: { label: 'Signals first', dir: 1 },
     name: { label: 'Card name', dir: 1, v: (c) => parseCardName(c.card_name_ja).short },
     price: { label: 'Price', dir: -1, v: (c) => getRep(c) },
-    zone: { label: 'Closest to Buy', dir: 1, v: (c) => { const t = c.analysis && c.analysis.tiers; const p = getRep(c); return t && p != null ? p / t.buy_upper : null; } },
-    limit: { label: 'Distance to my limit', dir: 1, v: (c) => (limitGap(c) || {}).pct ?? null },
+    zone: { label: 'Closest to Buy', dir: 1, v: (c) => { if (holdingsFor(c).length) return null; const t = c.analysis && c.analysis.tiers; const p = getRep(c); return t && p != null ? p / t.buy_upper : null; } },
+    limit: { label: 'Distance to my limit (vs bought for owned)', dir: 1, v: (c) => (boughtGap(c) || limitGap(c) || {}).pct ?? null },
     chgLast: { label: 'Change since last check', dir: 1, v: (c) => (priceChangeLast(c) || {}).pct ?? null },
     chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeAgo(c, 7) || {}).pct ?? null },
     chg30: { label: '30-day change', dir: 1, v: (c) => (priceChangeAgo(c, 30) || {}).pct ?? null },
-    verdict: { label: 'Verdict', dir: 1, v: (c) => (limitHit(c) || sellHit(c) ? -1 : VERDICT_RANK[displayTagFor(c)] ?? 5) },
+    verdict: { label: 'Verdict', dir: 1, v: (c) => { const st = sellState(c); if (st) return st.tag === 'sell' || st.tag === 'take_profit' ? -1 : st.tag === 'reassess' ? 2.5 : 5; return limitHit(c) ? -1 : VERDICT_RANK[displayTagFor(c)] ?? 5; } },
     heat: { label: 'Trading activity', dir: -1, v: (c) => { const h = heatOf(c); return h && h.psa ? h.psa.rate : null; } },
   };
   let sortState = store.get('psa10.sort', { key: 'default', dir: 1 });
   if (!SORTS[sortState.key]) sortState = { key: 'default', dir: 1 };
 
   function sortCardsBy(cards, defs, st) {
-    const rank = (c) => (limitHit(c) ? 0 : 3) + ({ definitely_buy: 0, buy: 1 }[displayTagFor(c)] ?? 2);
+    const rank = (c) => {
+      const st = sellState(c);   // owned cards sort by their sell signal, buy cards by their buy zone
+      if (st) return ['sell', 'take_profit', 'reassess'].includes(st.tag) ? 0 : 5;
+      return (limitHit(c) ? 0 : 3) + ({ definitely_buy: 0, buy: 1 }[displayTagFor(c)] ?? 2);
+    };
     const base = cards.map((card, i) => ({ card, i }));
     const sd = defs[st.key] || defs.default;
     if (!sd.v) return base.sort((a, b) => rank(a.card) - rank(b.card) || a.i - b.i).map((x) => x.card);
@@ -2808,17 +2812,17 @@
     const l = getLimit(card), a = lowestAsk(card);
     return l != null && a != null ? { pct: (a / l - 1) * 100, lim: l, ask: a } : null;
   }
+  // Price now vs what you paid (average purchase price of your copies), null for a card you don't own.
+  function boughtGap(card) {
+    const held = holdingsFor(card), now = getRep(card);
+    if (!held.length || now == null) return null;
+    const paid = held.reduce((a, h) => a + (h.purchase_price_jpy || 0), 0) / held.length;
+    return paid > 0 ? { pct: (now / paid - 1) * 100, diff: now - paid, paid, now } : null;
+  }
   function limitGapCell(card, cls) {
     // Once bought, the column shows how far the price has moved from what you paid instead.
-    const held = holdingsFor(card);
-    const now = getRep(card);
-    if (held.length && now != null) {
-      const paid = held.reduce((a, h) => a + (h.purchase_price_jpy || 0), 0) / held.length;
-      if (paid > 0) {
-        const pct = (now / paid - 1) * 100, diff = now - paid;
-        return `<span class="${cls} ${dirClass(pct)}" title="Now ${fmtYen(now)} vs bought at ${fmtYen(paid)} (${diff >= 0 ? '+' : '−'}${fmtYen(Math.abs(diff))})">${pct === 0 ? '±0' : fmtPct(pct)}</span>`;
-      }
-    }
+    const bg = boughtGap(card);
+    if (bg) return `<span class="${cls} ${dirClass(bg.pct)}" title="Now ${fmtYen(bg.now)} vs bought at ${fmtYen(bg.paid)} (${bg.diff >= 0 ? '+' : '−'}${fmtYen(Math.abs(bg.diff))})">${bg.pct === 0 ? '±0' : fmtPct(bg.pct)}</span>`;
     const g = limitGap(card);
     if (!g) return `<span class="${cls} muted" title="No limit set for this card">—</span>`;
     const hit = g.pct <= 0;
@@ -2910,19 +2914,21 @@
       const { short, code } = parseCardName(card.card_name_ja);
       const lim = getLimit(card);
       const owned = holdingsFor(card).length;
+      const bg = boughtGap(card);
       const pop = card.psa10_population != null ? card.psa10_population.toLocaleString() : '—';
       const pk = state.cmpPick.indexOf(card.url);
       const pickHtml = state.cmpMode ? `<span class="tile-pick${pk >= 0 ? ' on' : ''}" style="${pk >= 0 ? `background:${CMP_COLORS[pk]};border-color:${CMP_COLORS[pk]}` : ''}" aria-hidden="true">${pk >= 0 ? 'AB'[pk] : ''}</span>` : '';
-      return `<a class="tile${limitHit(card) ? ' hit' : ''}${state.cmpMode ? ' picking' : ''}${pk >= 0 ? ' picked' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}"${state.cmpMode ? ` aria-pressed="${pk >= 0}" style="--pc:${pk >= 0 ? CMP_COLORS[pk] : 'transparent'}"` : ''}>
+      return `<a class="tile${limitHit(card) || sellHit(card) ? ' hit' : ''}${state.cmpMode ? ' picking' : ''}${pk >= 0 ? ' picked' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}"${state.cmpMode ? ` aria-pressed="${pk >= 0}" style="--pc:${pk >= 0 ? CMP_COLORS[pk] : 'transparent'}"` : ''}>
         <span class="tile-slab">${slabHtml(card, 'lg')}${pickHtml}
-          <span class="tile-chips">${heatChip(card)}${tagChip(card)}</span>
-          ${lim != null ? `<span class="tile-limit">Limit ${fmtYen(lim)}</span>` : ''}
+          <span class="tile-chips">${heatChip(card)}${owned ? sellChip(card) : tagChip(card)}</span>
+          ${owned ? (bg ? `<span class="tile-pl ${bg.pct >= 0 ? 'pos' : 'neg'}" title="Now ${fmtYen(bg.now)} vs bought at ${fmtYen(bg.paid)}">${bg.pct === 0 ? '±0%' : fmtPct(bg.pct)} vs paid</span>` : '')
+            : lim != null ? `<span class="tile-limit">Limit ${fmtYen(lim)}</span>` : ''}
           ${owned ? '<span class="tile-owned">Owned</span>' : ''}
         </span>
         <span class="tile-name jp">${escapeHtml(short)}</span>
         <span class="tile-price"><b class="display">${fmtYen(getRep(card))}</b><span class="tile-chg"><small>7d</small>${changeCell(card, 7, 'tc')}<small>30d</small>${changeCell(card, 30, 'tc')}</span></span>
         ${zoneBarHtml(card, 'thin')}
-        <span class="tile-meta">${escapeHtml(code)} · Pop ${pop}</span>
+        <span class="tile-meta">${escapeHtml(code)} · ${bg ? `Paid ${fmtYen(bg.paid)}` : `Pop ${pop}`}</span>
       </a>`;
     }).join('') + (state.cmpMode ? '' : `<a class="tile tile-add" href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span class="display">+</span>Add a card to track${reqEl && !reqEl.hidden ? `<small>${escapeHtml(reqEl.textContent)}</small>` : ''}</a>${removedListHtml()}`);
     if (state.cmpMode) {
@@ -4589,7 +4595,7 @@
           <a class="h2h-name jp" href="#/card/${escapeAttr(cardId(c))}">${escapeHtml(short)}</a>
           <span class="h2h-meta">${escapeHtml([code, pack].filter(Boolean).join(' · '))}</span>
           <span class="h2h-price display">${fmtYen(getRep(c))}</span>
-          <span class="h2h-v">${tagChip(c)}<small>${escapeHtml(writtenVerdictText(c))}</small></span>
+          <span class="h2h-v">${holdingsFor(c).length ? sellChip(c) : tagChip(c)}<small>${escapeHtml(holdingsFor(c).length ? `you own it, paid ${fmtYen((boughtGap(c) || {}).paid)}` : writtenVerdictText(c))}</small></span>
         </div>
       </div>`;
     };
@@ -4624,14 +4630,14 @@
   // Tale of the tape. better: 'low' | 'high' = which value is closer to a good buy; null = context only.
   function tapeHtml(a, b) {
     const name = (c) => parseCardName(c.card_name_ja).short;
-    const buyGap = (c) => { const t = c.analysis && c.analysis.tiers, p = getRep(c); return t && p != null ? (p / t.buy_upper - 1) * 100 : null; };
+    const buyGap = (c) => { if (holdingsFor(c).length) return null; const t = c.analysis && c.analysis.tiers, p = getRep(c); return t && p != null ? (p / t.buy_upper - 1) * 100 : null; };
     const offPeak = (c) => { const pk = c.analysis && c.analysis.peak; return pk && pk.price ? (getRep(c) / pk.price - 1) * 100 : null; };
-    const limOdds = (c) => { const l = getLimit(c); if (l == null) return null; const o = touchOdds(c, l); return o ? (o.reached ? 100 : o.p30 * 100) : null; };
+    const limOdds = (c) => { const l = holdingsFor(c).length ? null : getLimit(c); if (l == null) return null; const o = touchOdds(c, l); return o ? (o.reached ? 100 : o.p30 * 100) : null; };
     const chg = (d) => (c) => { const x = priceChangeAgo(c, d); return x ? x.pct : null; };
     const vsMkt = (c) => { const x = priceChangeAgo(c, 7); if (!x) return null; const mv = marketMove(x.from, refTime()); return mv ? x.pct - mv.pct : null; };
     const heat = (c) => { const h = heatOf(c); return h && h.psa ? h.psa.rate : null; };
     const within = (c) => (c.grades.psa10 || {}).count_within_15pct ?? null;
-    const diy = (c) => { const d = computeDiyEconomics(c, getRep(c)); return d ? d.delta : null; };
+    const diy = (c) => { const o = ownedOf(c); if (o && !o.toGrade) return null; const d = computeDiyEconomics(c, getRep(c)); return d ? d.delta : null; };
     const mv7 = (() => { const x = priceChangeAgo(a, 7) || priceChangeAgo(b, 7); return x ? marketMove(x.from, refTime()) : null; })();
     const pk = (c) => { const p = c.analysis && c.analysis.peak; return p && p.price ? fmtYenShort(p.price) + (p.when ? ' ' + p.when.replace(/\s*20\d\d$/, '') : '') : '—'; };
     const pts = (x) => (x == null ? '—' : `${x >= 0 ? '+' : '−'}${Math.abs(x).toFixed(1)} pts`);
@@ -4640,9 +4646,10 @@
     const groups = [
       { title: 'Value', leadLabel: 'Closer to buying', rows: [
         ['Above its Buy line', 'lower is closer to Buy', buyGap, fmtPct, 'low'],
-        ['Above my limit', `limit ${fmtYen(getLimit(a))} · ${fmtYen(getLimit(b))}`, (c) => (limitGap(c) || {}).pct ?? null, fmtPct, 'low'],
+        ['Above my limit', `limit ${holdingsFor(a).length ? 'n/a (owned)' : fmtYen(getLimit(a))} · ${holdingsFor(b).length ? 'n/a (owned)' : fmtYen(getLimit(b))}`, (c) => (holdingsFor(c).length ? null : (limitGap(c) || {}).pct) ?? null, fmtPct, 'low'],
         ['Chance to reach my limit', 'within 30 days · limit-odds model', limOdds, pctR, 'high'],
         ['Below its peak', `context · peak ${pk(a)} / ${pk(b)}`, offPeak, (x) => (x == null ? '—' : fmtPct(x, 0)), null],
+        ...(holdingsFor(a).length || holdingsFor(b).length ? [['Vs. what you paid', 'cards you own only', (c) => (boughtGap(c) || {}).pct ?? null, (x) => (x == null ? '—' : fmtPct(x)), null]] : []),
       ] },
       { title: 'Momentum', leadLabel: 'Holding up better', rows: [
         ['7-day change', 'context', chg(7), fmtPct, null],
@@ -4973,19 +4980,24 @@
 
     const ROW_KEYS = { 'Current PSA10': 'price', 'Order-book depth': 'depth', 'Favorite count': 'favorites', 'Population / gem rate': 'population', 'Off peak (where known)': 'offpeak' };
     let body = rowsData.map(([label, vals]) => `<tr><td>${ROW_KEYS[label] ? sortableLabel(ROW_KEYS[label], label) : label}</td>${vals.map((v) => `<td>${v}</td>`).join('')}</tr>`).join('');
-    body += `<tr><td>${sortableLabel('limit', 'vs. my limit')}</td>${cards.map((c) => { const g = limitGap(c); return `<td class="${g ? (g.pct <= 0 ? 'lim-hit' : 'lim-gap') : ''}">${g ? fmtPct(g.pct) + ' <span class="muted">(' + fmtYen(g.lim) + ')</span>' : '—'}</td>`; }).join('')}</tr>`;
+    body += `<tr><td>${sortableLabel('limit', 'vs. my limit (vs. paid if owned)')}</td>${cards.map((c) => { const bg = boughtGap(c); if (bg) return `<td class="${dirClass(bg.pct)}">${fmtPct(bg.pct)} <span class="muted">(paid ${fmtYen(bg.paid)})</span></td>`; const g = limitGap(c); return `<td class="${g ? (g.pct <= 0 ? 'lim-hit' : 'lim-gap') : ''}">${g ? fmtPct(g.pct) + ' <span class="muted">(' + fmtYen(g.lim) + ')</span>' : '—'}</td>`; }).join('')}</tr>`;
     body += `<tr><td>${sortableLabel('chg7', '7-day change')}</td>${cards.map((c) => { const x = priceChangeAgo(c, 7); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? fmtPct(x.pct) : '—'}</td>`; }).join('')}</tr>`;
     body += `<tr><td>${sortableLabel('chg30', '30-day change')}</td>${cards.map((c) => { const x = priceChangeAgo(c, 30); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? fmtPct(x.pct) : '—'}</td>`; }).join('')}</tr>`;
     body += `<tr><td>${sortableLabel('heat', 'PSA10 sales / day')}</td>${cards.map((c) => { const h = heatOf(c); return `<td>${h && h.psa ? rateTxt(h.psa) + ' ' + heatChip(c) : '—'}</td>`; }).join('')}</tr>`;
 
     body += `<tr class="divider"><td colspan="${cards.length + 1}">PSA10 price tiers</td></tr>`;
-    const tierRow = (label, fn) => `<tr><td>${label}</td>${cards.map((c) => { const t = c.analysis && c.analysis.tiers; return `<td>${t ? fn(t) : 'Not yet established'}</td>`; }).join('')}</tr>`;
+    const tierRow = (label, fn) => `<tr><td>${label}</td>${cards.map((c) => { const t = c.analysis && c.analysis.tiers; return `<td>${holdingsFor(c).length ? '<span class="muted">you own it</span>' : t ? fn(t) : 'Not yet established'}</td>`; }).join('')}</tr>`;
     body += tierRow('Definitely-buy', (t) => '≤' + fmtYen(t.definitely_buy));
     body += tierRow('Buy', (t) => fmtYen(t.definitely_buy) + '–' + fmtYen(t.buy_upper));
     body += tierRow('Watch closely', (t) => fmtYen(t.buy_upper) + '–' + fmtYen(t.ceiling));
     body += tierRow("Don't-buy ceiling", (t) => fmtYen(t.ceiling));
 
+    if (cards.some((c) => holdingsFor(c).length)) {
+      body += `<tr class="divider"><td colspan="${cards.length + 1}">Sell tiers (cards you own)</td></tr>`;
+      body += `<tr><td>Reassess / take profit / sell</td>${cards.map((c) => { const t = sellTiersOf(c); return `<td>${!holdingsFor(c).length ? '—' : t ? `${typeof t.reassess_below === 'number' ? '<' + fmtYen(t.reassess_below) + ' · ' : ''}≥${fmtYen(t.take_profit_from)} · ≥${fmtYen(t.sell_from)}` : 'Not yet written'}</td>`; }).join('')}</tr>`;
+    }
     body += `<tr><td>${sortableLabel('verdict', 'Verdict')}</td>${cards.map((c) => {
+      if (holdingsFor(c).length) return `<td>${sellChip(c)}</td>`;
       const tag = displayTagFor(c);
       if (tag) {
         return `<td><span class="pill ${tag}">${escapeHtml(tagLabel(tag))}</span></td>`;
