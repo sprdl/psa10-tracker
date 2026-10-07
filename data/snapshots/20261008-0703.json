@@ -277,7 +277,33 @@
           ],
           "written": "2026-10-05T09:04:04+09:00"
         },
-        "verdict_price_ref": 37260
+        "verdict_price_ref": 37260,
+        "sell_tiers": {
+          "take_profit_from": 43000,
+          "sell_from": 54000
+        },
+        "sell_verdict": {
+          "tag": "hold",
+          "label": "Hold — ¥4.5k under Take profit, only just past break-even",
+          "reasoning": "Sales are around ¥38k (ask ¥38.5k), so once your raw copy grades a 10 it nets about +¥2.7k after SNKRDUNK costs (break-even ¥35.1k). Take profit is the pre-hype level (~¥27k, Q4 2025) +60% and Sell is 2× it, well under the ¥74k May peak; the market is bouncing hard (My-tier +18% in 10 days) but still −10% over 30 days, and the card's hype exposure is low, so there's no reason to hurry. These lines only apply if the card comes back a PSA10.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≥¥43k (Take profit) within 90 days",
+              "p": 0.5,
+              "type": "touch_above",
+              "price": 43000,
+              "by": "2027-01-06"
+            },
+            {
+              "text": "A PSA10 listing at ≥¥54k (Sell) within 90 days",
+              "p": 0.3,
+              "type": "touch_above",
+              "price": 54000,
+              "by": "2027-01-06"
+            }
+          ],
+          "written": "2026-10-08T07:32:31+09:00"
+        }
       },
       "psa10_population": 10846,
       "psa10_gem_rate_pct": 88,
@@ -557,7 +583,26 @@
           ],
           "written": "2026-10-07T20:19:18+09:00"
         },
-        "verdict_price_ref": 44000
+        "verdict_price_ref": 44000,
+        "sell_tiers": {
+          "take_profit_from": 38000,
+          "sell_from": 46000
+        },
+        "sell_verdict": {
+          "tag": "hold",
+          "label": "Hold — sales ¥31k, the ¥37k ask isn't confirmed yet",
+          "reasoning": "The lowest ask jumped to ¥37k today with only 5 listings within 15%, while sales are still around ¥29–31k, so as a PSA10 it nets roughly break-even today (break-even ¥30.6k). Take profit sits at the Feb 2026 pre-announcement level plus a little (~¥38k, about 1.6× the ~¥23k Q4 2025 range) and Sell at 2× pre-hype (¥46k), far below the ¥81k May peak. Wait for sales, not asks, to reach the line; it only applies if your raw copy grades a 10.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≥¥46k (Sell) within 90 days",
+              "p": 0.35,
+              "type": "touch_above",
+              "price": 46000,
+              "by": "2027-01-06"
+            }
+          ],
+          "written": "2026-10-08T07:32:31+09:00"
+        }
       },
       "psa10_population": 8140,
       "psa10_gem_rate_pct": 79.9,
@@ -862,7 +907,33 @@
           ],
           "written": "2026-10-06T07:18:20+09:00"
         },
-        "verdict_price_ref": 71800
+        "verdict_price_ref": 71800,
+        "sell_tiers": {
+          "take_profit_from": 94000,
+          "sell_from": 110000
+        },
+        "sell_verdict": {
+          "tag": "hold",
+          "label": "Hold — up ~¥2.6k after costs, Take profit at ¥94k",
+          "reasoning": "Sales are ~¥79.5k (ask ¥80k) against the ¥68k you paid, about +¥2.6k after SNKRDUNK costs (break-even ¥76.6k). Take profit is 85% of the ¥111k April peak and Sell is that peak (2× the ~¥70k Q4 2025 level would be ¥140k, above anything it has traded at). Its hype exposure is high (one of the most traded cards), so if the My-tier index turns down again near ¥94k, take profit rather than wait for ¥110k.",
+          "predictions": [
+            {
+              "text": "A listing at ≥¥94k (Take profit) within 90 days",
+              "p": 0.4,
+              "type": "touch_above",
+              "price": 94000,
+              "by": "2027-01-06"
+            },
+            {
+              "text": "A listing at ≥¥110k (Sell) within 90 days",
+              "p": 0.25,
+              "type": "touch_above",
+              "price": 110000,
+              "by": "2027-01-06"
+            }
+          ],
+          "written": "2026-10-08T07:32:31+09:00"
+        }
       },
       "psa10_population": 80321,
       "psa10_gem_rate_pct": 86.9,
@@ -1756,9 +1827,9 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 38000,
-          "buy_upper": 43000,
-          "ceiling": 49000
+          "definitely_buy": 47000,
+          "buy_upper": 55000,
+          "ceiling": 63000
         },
         "peak": {
           "price": 82580,
@@ -1768,28 +1839,29 @@
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2450,
         "verdict": {
-          "tag": "dont_buy",
-          "label": "Don't buy: ask ¥60k, 22% over the ceiling",
-          "reasoning": "The lowest PSA10 ask is ¥59,999, up 21% from ¥49,500 and well above the ¥49k ceiling. Completed sales climbed from ¥49k on 10/3 to ¥55–59k in the last two hours, so the market is paying up, not just the asks. Raw A is ¥36,999 and the slab premium is 2.21x on pokeca-chart against a 6-month norm of 1.82x, so the slab is no longer cheap against raw. The My-tier index is up 6.9% on the day, and this card is the strongest in it at +31.7% against the 9/26 base. Under the correction rule a Buy needs ≤¥38k. The model gives about 6% for a listing at ≤¥43k (Buy) within 30 days and 10% for ≤¥38k within 90 days; the ≤¥42k prediction from earlier stays on the Track record until its deadline.",
+          "tag": "watch",
+          "label": "Watch — asks jumped to ¥59.8k today; Buy from ¥55k",
+          "reasoning": "Listings stepped up from ~¥50k to ¥59.8k with the market rally (15 of 20 within 15%), while sales were still ¥49–52k a day ago; the slab is now near its DIY cost (~¥58k: raw ¥37k). Tiers rise with the market: Buy ≤¥55k is about 35–40% likely within 30 days, Definitely-buy ≤¥47k about 25% within 90 days. The My-tier index is still −10% over 30 days (correction rule), so only ¥47k counts as a buy today.",
           "predictions": [
             {
-              "text": "A PSA10 listing at ≤¥43k (Buy) within 30 days",
-              "p": 0.06,
+              "text": "A listing at ≤¥55k (Buy) within 30 days",
+              "p": 0.37,
               "type": "touch_below",
-              "price": 43000,
-              "by": "2026-11-06"
+              "price": 55000,
+              "by": "2026-11-07"
             },
             {
-              "text": "A PSA10 listing at ≤¥38k (Definitely buy) within 90 days",
-              "p": 0.1,
+              "text": "A listing at ≤¥47k (Definitely buy) within 90 days",
+              "p": 0.24,
               "type": "touch_below",
-              "price": 38000,
-              "by": "2027-01-05"
+              "price": 47000,
+              "by": "2027-01-06"
             }
           ],
-          "written": "2026-10-07T20:19:18+09:00"
+          "written": "2026-10-08T07:32:31+09:00"
         },
-        "verdict_price_ref": 59999
+        "representative_price": 59800,
+        "price_source": "ask_depth"
       },
       "psa10_population": 15191,
       "psa10_gem_rate_pct": 84.6,
@@ -2046,9 +2118,9 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 45000,
-          "buy_upper": 52000,
-          "ceiling": 65000
+          "definitely_buy": 56000,
+          "buy_upper": 66000,
+          "ceiling": 76000
         },
         "peak": {
           "price": 112680,
@@ -2056,28 +2128,29 @@
           "source": "pokeca-chart per-card PSA10 chart (monthly), Sept 26; peak lined up with the 30th-anniversary run-up"
         },
         "verdict": {
-          "tag": "dont_buy",
-          "label": "Don't buy: ask ¥75k, 15% over the ¥65k ceiling",
-          "reasoning": "The lowest PSA10 ask is ¥75,000, up 23% from ¥61,100 and well above the ¥65k ceiling. Completed sales stepped up from ¥60–62k yesterday to ¥70–75k in the last 12 hours, so buyers are paying up, not just sellers asking more. Raw A is ¥37,500, which puts replacement cost near ¥57k, so the slab now carries a clear premium over self-grading. The My-tier index is still down about 10% on the month, so under the correction rule only ≤¥45k would count as a Buy. The model gives about 8% for a listing at ≤¥52k (Buy) within 30 days and 13% for ≤¥45k within 90 days.",
+          "tag": "watch",
+          "label": "Watch — sales climbing to ¥70k, Buy from ¥66k",
+          "reasoning": "Sales rose from ~¥60k to ~¥70k this week and the lowest ask is ¥75k, in step with the market bounce. Buy ≤¥66k is about 35% likely within 30 days and Definitely-buy ≤¥56k about 25% within 90 days. High hype exposure and a correction rule that's still on (My-tier −10% over 30 days) argue for waiting for a pullback rather than chasing.",
           "predictions": [
             {
-              "text": "A PSA10 listing at ≤¥52k (Buy) within 30 days",
-              "p": 0.08,
+              "text": "A listing at ≤¥66k (Buy) within 30 days",
+              "p": 0.34,
               "type": "touch_below",
-              "price": 52000,
+              "price": 66000,
               "by": "2026-11-07"
             },
             {
-              "text": "A PSA10 listing at ≤¥45k (Definitely buy) within 90 days",
-              "p": 0.13,
+              "text": "A listing at ≤¥56k (Definitely buy) within 90 days",
+              "p": 0.25,
               "type": "touch_below",
-              "price": 45000,
+              "price": 56000,
               "by": "2027-01-06"
             }
           ],
-          "written": "2026-10-08T07:04:11+09:00"
+          "written": "2026-10-08T07:32:31+09:00"
         },
-        "verdict_price_ref": 75000
+        "representative_price": 70000,
+        "price_source": "sales_confirmed"
       },
       "psa10_population": 17949,
       "psa10_gem_rate_pct": 83.8,
@@ -2641,7 +2714,33 @@
           ],
           "written": "2026-10-08T07:04:11+09:00"
         },
-        "verdict_price_ref": 139999
+        "verdict_price_ref": 139999,
+        "sell_tiers": {
+          "take_profit_from": 170000,
+          "sell_from": 200000
+        },
+        "sell_verdict": {
+          "tag": "hold",
+          "label": "Hold — already ~¥38k over cost if it grades a 10",
+          "reasoning": "PSA10 sales are ~¥135–140k, up 25% this week; a 10 from your raw copy (cost ¥87.4k with grading) would net about +¥38k today (break-even ¥98k). Pre-hype for this young card is the Nov 2025–Jan 2026 plateau (~¥110k), so Take profit is ~1.55× that (~83% of the ¥205k May peak) and Sell is near the peak. Population is large (51k) and it trades very actively, so a market turn would hit it hard: the gain only exists once the card comes back a 10.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≥¥170k (Take profit) within 90 days",
+              "p": 0.35,
+              "type": "touch_above",
+              "price": 170000,
+              "by": "2027-01-06"
+            },
+            {
+              "text": "A PSA10 listing at ≥¥200k (Sell) within 90 days",
+              "p": 0.2,
+              "type": "touch_above",
+              "price": 200000,
+              "by": "2027-01-06"
+            }
+          ],
+          "written": "2026-10-08T07:32:31+09:00"
+        }
       },
       "psa10_population": 51341,
       "psa10_gem_rate_pct": 86.8,
@@ -2937,7 +3036,26 @@
           ],
           "written": "2026-10-07T20:19:18+09:00"
         },
-        "verdict_price_ref": 69000
+        "verdict_price_ref": 69000,
+        "sell_tiers": {
+          "take_profit_from": 100000,
+          "sell_from": 125000
+        },
+        "sell_verdict": {
+          "tag": "hold",
+          "label": "Hold — +¥13k over cost if it grades a 10",
+          "reasoning": "PSA10 sales are ~¥70k; a 10 from your raw copy (¥48.7k with grading) would net about +¥13k today (break-even ¥55.3k). It launched in Nov 2025 at ~¥81–86k, so Take profit is that launch level +15% (¥100k) and Sell is ~90% of the ¥140k April peak; both need the rally to carry on for months. Very actively traded, so it would fall fast in a market turn.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≥¥100k (Take profit) within 90 days",
+              "p": 0.25,
+              "type": "touch_above",
+              "price": 100000,
+              "by": "2027-01-06"
+            }
+          ],
+          "written": "2026-10-08T07:32:31+09:00"
+        }
       },
       "psa10_population": 37021,
       "psa10_gem_rate_pct": 88.8,
@@ -3190,9 +3308,9 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 19500,
-          "buy_upper": 22500,
-          "ceiling": 27500
+          "definitely_buy": 21000,
+          "buy_upper": 24500,
+          "ceiling": 28500
         },
         "peak": {
           "price": 42687,
@@ -3201,27 +3319,28 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch: rebounded to ¥25k, wait for ≤¥22.5k",
-          "reasoning": "Sales rose from ¥21.8k (9/30) to ¥24.5–25.6k and 18 of 20 asks sit within 15% of the ¥25.4k lowest ask, so the book is deep; the population is now on file (39,174 at 86.6%), putting self-grading at about ¥27.6k, which sets the ceiling. The old ¥18k / ¥21k lines had about 17% and 30% odds in 90 days; the new ¥19.5k / ¥22.5k lines sit at about 23% and 38%, still around its Oct 2025–Feb 2026 level of ¥19–21k. The correction rule keeps today's price at Watch.",
+          "label": "Watch — sales ¥25.5–26.3k, Buy from ¥24.5k",
+          "reasoning": "Sales held ¥25–26k through the bounce while asks rose to ¥27.5k on thin depth (6 of 20 within 15%). Buy ≤¥24.5k is about 35–40% likely within 30 days, Definitely-buy ≤¥21k about 28% within 90 days; very high hype exposure (it carries a 12-month gain and trades a lot) means it would drop hard if the rally fades.",
           "predictions": [
             {
-              "text": "A listing at ≤¥22,500 by year-end",
-              "p": 0.38,
+              "text": "A listing at ≤¥24.5k (Buy) within 30 days",
+              "p": 0.36,
               "type": "touch_below",
-              "price": 22500,
-              "by": "2026-12-31"
+              "price": 24500,
+              "by": "2026-11-07"
             },
             {
-              "text": "A listing at ≤¥19,500 by year-end",
-              "p": 0.23,
+              "text": "A listing at ≤¥21k (Definitely buy) within 90 days",
+              "p": 0.28,
               "type": "touch_below",
-              "price": 19500,
-              "by": "2026-12-31"
+              "price": 21000,
+              "by": "2027-01-06"
             }
           ],
-          "written": "2026-10-02T16:31:33+09:00"
+          "written": "2026-10-08T07:32:31+09:00"
         },
-        "verdict_price_ref": 25000
+        "representative_price": 26000,
+        "price_source": "sales_confirmed"
       },
       "psa10_population": 39174,
       "psa10_gem_rate_pct": 86.6,
@@ -3480,9 +3599,9 @@
       },
       "analysis": {
         "tiers": {
-          "definitely_buy": 19500,
-          "buy_upper": 22500,
-          "ceiling": 27000
+          "definitely_buy": 20000,
+          "buy_upper": 24000,
+          "ceiling": 28500
         },
         "peak": {
           "price": 47831,
@@ -3490,35 +3609,29 @@
           "source": "pokeca-chart per-card chart, read 2026-09-30"
         },
         "verdict": {
-          "tag": "dont_buy",
-          "label": "Don't buy: ask ¥27.5k is above the ¥27k ceiling",
-          "reasoning": "The ask is ¥27.5k with sales at ¥27-28k, just above the ¥27k ceiling (self-grading costs about ¥26.9k), and the My-tier index is down 24% over 30 days. Tiers stay; wait for ≤¥22.5k (about 25% within 30 days, 37% within 90) or ≤¥19.5k (about 26% within 90 days).",
+          "tag": "watch",
+          "label": "Watch — ¥27k, Buy from ¥24k",
+          "reasoning": "Sales and the lowest ask both sit around ¥27k after the bounce. Buy ≤¥24k is about 38% likely within 30 days and Definitely-buy ≤¥20k about 29% within 90 days. It has the highest hype exposure of your cards (still +22% vs the market over 12 months), so in a renewed fall it should drop faster than most.",
           "predictions": [
             {
-              "text": "A listing at ≤¥22,500 within 30 days",
-              "p": 0.25,
+              "text": "A listing at ≤¥24k (Buy) within 30 days",
+              "p": 0.38,
               "type": "touch_below",
-              "price": 22500,
-              "by": "2026-11-04"
+              "price": 24000,
+              "by": "2026-11-07"
             },
             {
-              "text": "A listing at ≤¥22,500 by year-end",
-              "p": 0.37,
+              "text": "A listing at ≤¥20k (Definitely buy) within 90 days",
+              "p": 0.29,
               "type": "touch_below",
-              "price": 22500,
-              "by": "2026-12-31"
-            },
-            {
-              "text": "A listing at ≤¥19,500 by year-end",
-              "p": 0.26,
-              "type": "touch_below",
-              "price": 19500,
-              "by": "2026-12-31"
+              "price": 20000,
+              "by": "2027-01-06"
             }
           ],
-          "written": "2026-10-05T15:10:05+09:00"
+          "written": "2026-10-08T07:32:31+09:00"
         },
-        "verdict_price_ref": 27499
+        "representative_price": 27000,
+        "price_source": "sales_confirmed"
       },
       "psa10_population": 34343,
       "psa10_gem_rate_pct": 89,
@@ -3817,7 +3930,26 @@
           ],
           "written": "2026-10-08T07:04:11+09:00"
         },
-        "verdict_price_ref": 12000
+        "verdict_price_ref": 12000,
+        "sell_tiers": {
+          "take_profit_from": 22000,
+          "sell_from": 32000
+        },
+        "sell_verdict": {
+          "tag": "hold",
+          "label": "Hold — ¥1.1k under break-even",
+          "reasoning": "At ~¥12k it nets about −¥1.1k against the ¥10.8k you paid (break-even ¥13.3k). Take profit is the March 2026 pre-announcement level (~¥22k) and Sell ~85% of the ¥38.7k April peak; with 67k PSA10s graded these need a new hype wave, so treat them as upside targets, not near-term ones.",
+          "predictions": [
+            {
+              "text": "A listing at ≥¥22k (Take profit) within 90 days",
+              "p": 0.2,
+              "type": "touch_above",
+              "price": 22000,
+              "by": "2027-01-06"
+            }
+          ],
+          "written": "2026-10-08T07:32:31+09:00"
+        }
       },
       "psa10_population": 66963,
       "psa10_gem_rate_pct": 91.2,
@@ -4119,7 +4251,26 @@
           ],
           "written": "2026-10-05T15:09:42+09:00"
         },
-        "verdict_price_ref": 7200
+        "verdict_price_ref": 7200,
+        "sell_tiers": {
+          "take_profit_from": 12000,
+          "sell_from": 18000
+        },
+        "sell_verdict": {
+          "tag": "hold",
+          "label": "Hold — ¥1.5k under break-even",
+          "reasoning": "At ~¥7k it nets about −¥1.5k against the ¥6.68k you paid (break-even ¥8.7k). Take profit (¥12k) is about half its launch and March levels (~¥21–22k) and Sell (¥18k) is ~85% of the ¥22k peak; with 44k PSA10s graded, reaching either needs a broad rally in MEGA Dream ex cards.",
+          "predictions": [
+            {
+              "text": "A listing at ≥¥12k (Take profit) within 90 days",
+              "p": 0.2,
+              "type": "touch_above",
+              "price": 12000,
+              "by": "2027-01-06"
+            }
+          ],
+          "written": "2026-10-08T07:32:31+09:00"
+        }
       },
       "psa10_population": 44068,
       "psa10_gem_rate_pct": 91.1,
