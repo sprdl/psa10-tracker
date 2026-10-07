@@ -107,7 +107,7 @@ def build(root: Path = ROOT) -> Path:
                         cur["latest_label"] = label
                     if cur["price"] is None and ask is not None:  # no ask when the tag appeared
                         cur["price"], cur["made"] = ask, d
-            for p in v.get("predictions") or []:
+            for p in (v.get("predictions") or []) + (((c.get("analysis") or {}).get("sell_verdict") or {}).get("predictions") or []):
                 if not isinstance(p, dict) or p.get("type") not in PRED_TYPES:
                     continue
                 key = (url, p.get("text"), p.get("price"), p.get("by"))
