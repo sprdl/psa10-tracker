@@ -1480,3 +1480,30 @@ a.sl-icon:hover { border-color: var(--accent); }
 .grade-panel { background: var(--panel-2); border: 1px solid #2c2c32; border-radius: var(--radius); padding: 10px 12px; margin-top: 8px; font-size: 13px; }
 .gp-head { display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; }
 .gp-copy { margin-top: 6px; }
+
+/* ---------- portfolio value over time ---------- */
+.pfh { margin-bottom: 22px; }
+.pfh-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.pfh-head .section-title { margin: 0; }
+.pfh-ctl { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg { display: inline-flex; border: 1px solid var(--line-3); border-radius: 6px; overflow: hidden; }
+.seg button { background: transparent; color: var(--muted); border: 0; padding: 5px 10px; font: 600 12px var(--sans); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line-3); }
+.seg button.on { background: var(--panel-2); color: var(--accent); }
+.pfh-read { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 4px; font-size: 13px; color: var(--soft); }
+.pfh-read b { color: var(--text); font-variant-numeric: tabular-nums; }
+.pfh-read .pos b, .pfh-read .neg b { color: inherit; }
+.pfh-key { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.pfh-key.w { background: var(--accent); height: 3px; } .pfh-key.s { background: var(--muted-2); } .pfh-key.b { width: 8px; height: 8px; border-radius: 1px; background: var(--text); transform: rotate(45deg); }
+.pfh-wrap { position: relative; }
+.pfh-wrap svg { display: block; max-width: 100%; touch-action: pan-y; }
+.pfh-worth { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.pfh-spent { fill: none; stroke: var(--muted-2); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.pfh-buy path { fill: var(--text); stroke: var(--panel); stroke-width: 2; paint-order: stroke; }
+.pfh-sub { fill: var(--muted); font-size: 11px; }
+.pfh-res { fill: none; stroke-width: 2; } .pfh-res.good { stroke: var(--green); } .pfh-res.bad { stroke: var(--neg); }
+.pfh-resfill.good { fill: var(--green); opacity: 0.14; } .pfh-resfill.bad { fill: var(--neg); opacity: 0.14; }
+.pfh-cross { stroke: var(--muted); stroke-width: 1; }
+.pfh-tip { position: absolute; top: 6px; background: var(--panel-2); border: 1px solid var(--line-3); border-radius: 6px; padding: 6px 10px; font-size: 12px; display: flex; flex-direction: column; gap: 2px; pointer-events: none; font-variant-numeric: tabular-nums; z-index: 3; }
+.pfh-table { margin-top: 8px; font-size: 12px; } .pfh-table summary { cursor: pointer; color: var(--soft); }
+.pfh-table table { width: 100%; border-collapse: collapse; margin-top: 6px; } .pfh-table th, .pfh-table td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--line); } .pfh-table th:first-child, .pfh-table td:first-child { text-align: left; }

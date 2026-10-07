@@ -172,6 +172,14 @@ time. To keep the worst-case page load bounded as the archive grows over months 
 of writing, in `assets/app.js`) snapshot files for this — plenty of runway for a
 multi-month trend without ever downloading years of history on every card expand.
 
+## `data/portfolio_history.json` — daily prices of bought items that aren't tracked cards
+
+`{"points": [{"d": "2026-10-07", "p": {"<snkrdunk id>": 7600}}]}`, one entry per day, appended by
+`scripts/holdings_prices.py` during the full check (same readings as `holdings_prices.json`; a later run the
+same day replaces that day; at most 800 days). The Holdings page's "Value over time" chart back-fills singles and
+pulls of tracked cards from `history.json` and uses this file for sealed products and untracked cards from their
+first reading on (before that they are valued at cost). The chart's last point equals the header's "Worth now".
+
 ## `data/sell_targets.json` — your sell targets
 
 `{"targets": {"<card url>": {"price": 90000, "set": "<iso time>", "issue": 123}}}`, written by

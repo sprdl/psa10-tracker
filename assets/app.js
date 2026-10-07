@@ -25,6 +25,7 @@
     hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
     events: null, // data/events.json — release calendar for the event rule (scripts/events.py)
+    portHist: [], // data/portfolio_history.json — daily readings of untracked cards / sealed items
     heldPrices: {}, // data/holdings_prices.json — latest SNKRDUNK price per bought untracked card / unopened sealed item
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
     selectedUrl: null, // card shown in the overview's detail drawer (desktop)
@@ -158,7 +159,7 @@
   }
 
   const OPTIONAL_DATA = {
-    holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', sellTargets: 'data/sell_targets.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
+    holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', portHist: 'data/portfolio_history.json', sellTargets: 'data/sell_targets.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
     valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
@@ -200,6 +201,7 @@
     state.holdings = (b.holdings && b.holdings.holdings) || [];
     state.sealed = (b.holdings && b.holdings.sealed) || []; // boxes/sets/packs bought at MSRP, with their pulls
     state.heldPrices = (b.heldPrices && b.heldPrices.prices) || {};
+    state.portHist = (b.portHist && b.portHist.points) || [];
     state.calls = b.calls || null;
     state.customIndex = b.customIndex || null;
     state.events = b.events || null;
@@ -2680,8 +2682,149 @@
     el.hidden = false;
   }
 
+  // ---------- portfolio value over time (Holdings page) ----------
+  // Singles and pulls of tracked cards are valued at each snapshot from data/history.json (PSA10 price, or the
+  // raw A-rank ask for raw pulls); sealed products and untracked cards from data/portfolio_history.json (daily
+  // readings, only from the day they were first read; before that: at cost). Same rules as the totals above the
+  // list: an item with no price at all is left out of "worth" but still counts as spent.
+  const PFH_KEY = 'psa10.pfh';
+  const PFH_CATS = { total: 'Total', singles: 'Singles', sealed: 'Sealed', pulls: 'Pulls' };
+  function portfolioSeries() {
+    const snaps = ((state.hist && state.hist.snapshots) || []).map((e) => ({ t: Date.parse(e.d), p: e.p || {}, r: e.r || {} })).sort((a, b) => a.t - b.t);
+    const dayT = (d) => Date.parse((d || '').slice(0, 10) + 'T12:00:00+09:00');
+    const cards = (state.currentData && state.currentData.cards) || [];
+    const tracked = new Set(cards.map((c) => c.url));
+    const phist = (state.portHist || []).map((x) => ({ t: dayT(x.d), p: x.p || {} })).sort((a, b) => a.t - b.t);
+    const lastAt = (arr, T, pick) => { let v = null; for (const x of arr) { if (x.t > T) break; const y = pick(x); if (y != null) v = y; } return v; };
+    const psaAt = (url, T) => lastAt(snaps, T, (x) => (x.p[url] ? x.p[url][0] : null));
+    const rawAt = (url, T) => lastAt(snaps, T, (x) => (x.r[url] && x.r[url][1]) || null);
+    const heldAt = (url, T) => { const id = (url || '').replace(/\/$/, '').split('/').pop(); return lastAt(phist, T, (x) => x.p[id]); };
+    const now = snaps.length ? snaps[snaps.length - 1].t : Date.now();
+    // purchases
+    const buys = [];
+    for (const h of state.holdings) buys.push({ t: dayT(h.purchase_date), cost: holdingCost(h), cat: 'singles', name: parseCardName(h.card_name_ja || '').short, id: h.id });
+    for (const sd of state.sealed || []) buys.push({ t: dayT(sd.date), cost: sd.price_jpy || 0, cat: (sd.pulls || []).length ? 'pulls' : 'sealed', name: sealedName(sd), id: sd.id });
+    if (!buys.length || !snaps.length) return null;
+    const t0 = Math.min(...buys.map((b) => b.t));
+    const times = snaps.map((x) => x.t).filter((t) => t >= t0);
+    if (!times.length || times[0] > t0 + 86400000) times.unshift(t0);
+    const tEnd = Math.max(now, ...buys.map((b) => b.t));   // purchases newer than the last snapshot still count today
+    if (tEnd > times[times.length - 1]) times.push(tEnd);
+    // what each item is worth at T, or null when it is left out for good (no price now)
+    const items = [];
+    for (const h of state.holdings) {
+      const t = dayT(h.purchase_date), url = h.card_url, cost = holdingCost(h), trk = tracked.has(url);
+      const nowV = trk ? getRep(cards.find((c) => c.url === url)) : (h.condition !== 'psa10' ? heldPrice(url) : null);
+      items.push({ cat: 'singles', t, cost, at: nowV == null ? () => 0 : (T) => (trk ? psaAt(url, T) : heldAt(url, T)) ?? cost });
+    }
+    for (const sd of state.sealed || []) {
+      const t = dayT(sd.date), pulls = sd.pulls || [];
+      if (!pulls.length) {
+        const q = sd.qty || 1, cost = sd.price_jpy || 0, nowU = sealedValue(sd);
+        items.push({ cat: 'sealed', t, cost, at: (T) => { const u = nowU == null ? null : heldAt(sd.url, T); return u != null ? u * q : cost; } });
+        continue;
+      }
+      const opened = Math.min(...pulls.map((p) => dayT(p.date || sd.date)));
+      items.push({ cat: 'pulls', t, cost: sd.price_jpy || 0, at: (T) => {
+        if (T < opened) return sd.price_jpy || 0;   // not opened yet: no price history, so at cost
+        return pulls.reduce((a, p) => {
+          if (dayT(p.date || sd.date) > T) return a;
+          const url = p.card_url, trk = url && tracked.has(url), nowV = pullValue(p, cards).v;
+          if (nowV == null) return a;               // never priced: left out, like the totals
+          let v = null;
+          if (trk) v = p.status === 'psa10' ? psaAt(url, T) : p.status === 'graded_other' ? null : rawAt(url, T);
+          else if (url && p.status !== 'psa10' && p.status !== 'graded_other') v = heldAt(url, T);
+          return a + (v != null ? v : nowV);
+        }, 0);
+      } });
+    }
+    const pts = times.map((T) => {
+      const o = { t: T, spent: { total: 0, singles: 0, sealed: 0, pulls: 0 }, worth: { total: 0, singles: 0, sealed: 0, pulls: 0 } };
+      for (const it of items) {
+        if (it.t > T) continue;
+        const v = it.at(T);
+        o.spent[it.cat] += it.cost; o.spent.total += it.cost; o.worth[it.cat] += v; o.worth.total += v;
+      }
+      return o;
+    });
+    return { pts, buys: buys.sort((a, b) => a.t - b.t), now };
+  }
+  function drawPortfolioChart() {
+    const box = document.getElementById('pf-history');
+    if (!box) return;
+    const ser = portfolioSeries();
+    if (!ser || !state.holdings.length && !(state.sealed || []).length) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    const st = Object.assign({ range: 'all', cat: 'total' }, store.get(PFH_KEY, {}));
+    if (!PFH_CATS[st.cat]) st.cat = 'total';
+    const setSt = (k, v) => { st[k] = v; store.set(PFH_KEY, st); drawPortfolioChart(); };
+    const cutoff = st.range === 'all' ? 0 : ser.now - (st.range === '30' ? 30 : 90) * 86400000;
+    let pts = ser.pts.filter((p) => p.t >= cutoff);
+    if (pts.length < 2) pts = ser.pts.slice(-2);
+    const cat = st.cat, W = Math.max(300, Math.round(box.clientWidth || 640));
+    const row = (p) => ({ t: p.t, w: p.worth[cat], s: p.spent[cat], r: p.worth[cat] - p.spent[cat] });
+    const rows = pts.map(row), last = rows[rows.length - 1];
+    const buys = ser.buys.filter((b) => (cat === 'total' || b.cat === cat) && b.t >= pts[0].t && b.t <= pts[pts.length - 1].t + 86400000);
+    const H = W < 520 ? 190 : 230, H2 = 84, m = { l: 62, r: 14, t: 10, b: 26 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b, ih2 = H2 - 16;
+    const t0 = rows[0].t, t1 = rows[rows.length - 1].t;
+    const X = (t) => m.l + ((t - t0) * iw) / (t1 - t0 || 1);
+    const hi0 = Math.max(...rows.map((r) => Math.max(r.w, r.s)), 1);
+    const mag = Math.pow(10, Math.floor(Math.log10(hi0 / 4))), step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= hi0 / 4) || 10 * mag;
+    const hi = Math.ceil(hi0 / step) * step;
+    const Y = (v) => m.t + ih * (1 - v / hi);
+    const yTicks = []; for (let v = 0; v <= hi + 1e-9; v += step) yTicks.push(v);
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fmtD = (t) => { const d = new Date(t + 9 * 3600000); return `${MON[d.getUTCMonth()]} ${d.getUTCDate()}`; };
+    const nx = Math.max(2, Math.min(6, Math.floor(iw / 90))), xTicks = Array.from({ length: nx }, (_, i) => t0 + ((t1 - t0) * i) / (nx - 1));
+    const lineP = (k) => rows.map((r, i) => `${i ? 'L' : 'M'}${X(r.t).toFixed(1)},${Y(r[k]).toFixed(1)}`).join(' ');
+    const stepP = rows.map((r, i) => `${i ? `L${X(r.t).toFixed(1)},${Y(rows[i - 1].s).toFixed(1)}L` : 'M'}${X(r.t).toFixed(1)},${Y(r.s).toFixed(1)}`).join(' ');
+    const rhi = Math.max(0, ...rows.map((r) => r.r)), rlo = Math.min(0, ...rows.map((r) => r.r)), rspan = (rhi - rlo) || 1;
+    const Yr = (v) => 8 + ih2 * (1 - (v - rlo) / rspan);
+    const sgn = (v) => (v === 0 ? '¥0' : `${v > 0 ? '+' : '−'}${fmtYenShort(Math.abs(v))}`);
+    const resP = rows.map((r, i) => `${i ? 'L' : 'M'}${X(r.t).toFixed(1)},${Yr(r.r).toFixed(1)}`).join(' ');
+    const resArea = `${resP} L${X(t1).toFixed(1)},${Yr(0).toFixed(1)} L${X(t0).toFixed(1)},${Yr(0).toFixed(1)} Z`;
+    const good = last.r >= 0;
+    const rangeBtns = [['30', '30 days'], ['90', '90 days'], ['all', 'All']].map(([k, l]) => `<button type="button" class="${st.range === k ? 'on' : ''}" data-pf-range="${k}">${l}</button>`).join('');
+    const catBtns = Object.entries(PFH_CATS).map(([k, l]) => `<button type="button" class="${cat === k ? 'on' : ''}" data-pf-cat="${k}">${l}</button>`).join('');
+    const tableRows = rows.slice().reverse().slice(0, 40).map((r) => `<tr><td>${fmtD(r.t)}</td><td>${fmtYen(r.s)}</td><td>${fmtYen(r.w)}</td><td class="${r.r >= 0 ? 'pos' : 'neg'}">${signedYen(r.r)}</td></tr>`).join('');
+    box.innerHTML = `<div class="pfh-head"><h2 class="section-title">Value over time</h2>
+        <div class="pfh-ctl"><span class="seg" role="group" aria-label="Portfolio part">${catBtns}</span><span class="seg" role="group" aria-label="Range">${rangeBtns}</span></div></div>
+      <div class="pfh-read" id="pfh-read"><span><i class="pfh-key w"></i>Worth <b>${fmtYen(last.w)}</b></span><span><i class="pfh-key s"></i>Spent <b>${fmtYen(last.s)}</b></span><span class="${good ? 'pos' : 'neg'}">${good ? '▲' : '▼'} Result <b>${signedYen(last.r)}</b></span><span class="muted">${fmtD(last.t)}</span></div>
+      <div class="pfh-wrap"><svg width="${W}" height="${H + H2}" viewBox="0 0 ${W} ${H + H2}" role="img" aria-label="Portfolio worth and money spent over time">
+        ${yTicks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${fmtYenShort(v)}</text>`).join('')}
+        ${xTicks.map((t) => `<text x="${X(t).toFixed(1)}" y="${m.t + ih + 17}" class="ci-xtick">${fmtD(t)}</text>`).join('')}
+        <path d="${stepP}" class="pfh-spent"/><path d="${lineP('w')}" class="pfh-worth"/>
+        ${buys.map((b) => `<g class="pfh-buy"><title>${escapeHtml(`${fmtD(b.t)}: bought ${b.name} for ${fmtYen(b.cost)}`)}</title><path d="M${X(Math.max(b.t, t0)).toFixed(1)},${m.t + ih - 2}l5,-7l-5,-7l-5,7z"/></g>`).join('')}
+        <g transform="translate(0,${H})"><text x="${m.l}" y="6" class="pfh-sub">Result (worth minus spent)</text>
+          <line x1="${m.l}" x2="${m.l + iw}" y1="${Yr(0).toFixed(1)}" y2="${Yr(0).toFixed(1)}" class="ci-axis"/>
+          <path d="${resArea}" class="pfh-resfill ${good ? 'good' : 'bad'}"/><path d="${resP}" class="pfh-res ${good ? 'good' : 'bad'}"/>
+          ${[rhi, 0, rlo].filter((v, i, a) => a.indexOf(v) === i).filter((v, i, a) => !i || Math.abs(Yr(v) - Yr(a[i - 1])) >= 14 || v === 0 && i === 0).map((v) => `<text x="${m.l - 8}" y="${(Yr(v) + 4).toFixed(1)}" class="ci-ytick">${sgn(v)}</text>`).join('')}</g>
+        <line class="pfh-cross" id="pfh-cross" x1="0" x2="0" y1="${m.t}" y2="${H + H2 - 8}" hidden/>
+        <rect x="${m.l}" y="0" width="${iw}" height="${H + H2}" fill="transparent" id="pfh-hit"/></svg>
+        <div class="pfh-tip" id="pfh-tip" hidden></div></div>
+      <div class="ci-legend"><span><i class="pfh-key w"></i>Worth now (lowest ask)</span><span><i class="pfh-key s"></i>Spent in total</span><span><i class="pfh-key b"></i>Purchase</span><span class="muted">Sealed and untracked items are valued at cost until their first price reading${state.portHist.length ? ` (${state.portHist[0].d})` : ''}.</span></div>
+      <details class="pfh-table"><summary>Show as a table</summary><div class="table-scroll"><table><thead><tr><th>Date</th><th>Spent</th><th>Worth</th><th>Result</th></tr></thead><tbody>${tableRows}</tbody></table></div></details>`;
+    box.querySelectorAll('[data-pf-range]').forEach((b) => b.addEventListener('click', () => setSt('range', b.dataset.pfRange)));
+    box.querySelectorAll('[data-pf-cat]').forEach((b) => b.addEventListener('click', () => setSt('cat', b.dataset.pfCat)));
+    const hit = box.querySelector('#pfh-hit'), cross = box.querySelector('#pfh-cross'), tip = box.querySelector('#pfh-tip');
+    const show = (clientX) => {
+      const r = hit.getBoundingClientRect(), t = t0 + ((clientX - r.left) / r.width) * (t1 - t0);
+      const q = rows.reduce((best, x) => (Math.abs(x.t - t) < Math.abs(best.t - t) ? x : best), rows[0]);
+      cross.setAttribute('x1', X(q.t)); cross.setAttribute('x2', X(q.t)); cross.hidden = false;
+      tip.innerHTML = `<b>${fmtD(q.t)}</b><span>Worth ${fmtYen(q.w)}</span><span>Spent ${fmtYen(q.s)}</span><span class="${q.r >= 0 ? 'pos' : 'neg'}">Result ${signedYen(q.r)}</span>`;
+      tip.hidden = false;
+      const wrap = tip.parentNode.getBoundingClientRect(), x = X(q.t) * (wrap.width / W);
+      tip.style.left = Math.min(Math.max(8, x + 10), wrap.width - tip.offsetWidth - 4) + 'px';
+    };
+    hit.addEventListener('pointermove', (e) => show(e.clientX));
+    hit.addEventListener('pointerleave', () => { cross.hidden = true; tip.hidden = true; });
+    if (window.ResizeObserver && !box._ro) { let lw = box.clientWidth; box._ro = new ResizeObserver(() => { const w = box.clientWidth; if (w && Math.abs(w - lw) > 2) { lw = w; drawPortfolioChart(); } }); box._ro.observe(box); }
+  }
+
   function renderPortfolio(holdings, currentCards) {
     renderHoldingsAside(currentCards);
+    drawPortfolioChart();
     const sealedEl = document.getElementById('sealed-section');
     if (sealedEl) { sealedEl.innerHTML = sealedHtml(currentCards); trimImages(sealedEl); }
     if (!holdings.length) {

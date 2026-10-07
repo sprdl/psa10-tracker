@@ -102,15 +102,32 @@ def save(found, root=ROOT, push=True, dry=False):
         return
     out = {"updated": datetime.now(JST).replace(microsecond=0).isoformat(), "prices": prices}
     path.write_text(json.dumps(out, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    hist = log_history(prices, root)
     print(f"holdings prices: {sum(1 for v in prices.values() if v['price'] is not None)}/{len(prices)} priced")
     if not push:
         return
-    for cmd in (["git", "add", str(path)], ["git", "commit", "-q", "-m", "holdings: SNKRDUNK prices for bought cards and sealed items"], ["git", "push", "-q"]):
+    for cmd in (["git", "add", str(path), str(hist)], ["git", "commit", "-q", "-m", "holdings: SNKRDUNK prices for bought cards and sealed items"], ["git", "push", "-q"]):
         r = subprocess.run(cmd, cwd=root, text=True, capture_output=True)
         if r.returncode != 0 and "nothing to commit" not in (r.stdout + r.stderr):
             print(f"holdings prices: {' '.join(cmd)} failed: {(r.stderr or r.stdout).strip()}")
             return
     print("holdings prices: pushed.")
+
+
+def log_history(prices, root=ROOT, now=None):
+    """Append today's readings to data/portfolio_history.json (one entry per day; a later run the same day replaces it).
+    The site's portfolio-value chart back-fills singles and tracked pulls from history.json; this file is what
+    gives sealed products and untracked cards a price history from the first day they were read."""
+    path = root / "data" / "portfolio_history.json"
+    data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    now = now or datetime.now(JST)
+    pts = [x for x in data.get("points", []) if x.get("d") != now.strftime("%Y-%m-%d")]
+    pts.append({"d": now.strftime("%Y-%m-%d"), "p": {sid: v["price"] for sid, v in prices.items() if v.get("price") is not None}})
+    data["about"] = ("Daily price readings of bought items that aren't tracked cards (sealed products: lowest ask per unit; "
+                     "untracked cards: raw A-rank ask), keyed by SNKRDUNK id. Written by scripts/holdings_prices.py from the full check.")
+    data["points"] = sorted(pts, key=lambda x: x["d"])[-800:]
+    path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    return path
 
 
 def main():
