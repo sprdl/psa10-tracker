@@ -62,6 +62,17 @@
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230913100335-0.webp?size=l",
       "grading_fee_jpy": 9980,
       "shipping_insurance_jpy": 2450
+    },
+    {
+      "id": "p76",
+      "card_url": "https://snkrdunk.com/apparels/96712",
+      "card_name_ja": "ピカチュウV CSR[S8b 222/184](ハイクラスパック「VMAXクライマックス」)",
+      "condition": "raw_to_grade",
+      "purchase_price_jpy": 14000,
+      "purchase_date": "2026-10-07",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/4b947d82-02ca-4a8e-9aec-7eea59159954.webp?size=l",
+      "grading_fee_jpy": 9980,
+      "shipping_insurance_jpy": 2450
     }
   ],
   "sealed": [
