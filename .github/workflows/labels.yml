@@ -1,0 +1,32 @@
+name: Issue labels
+
+# GitHub drops an issue form's label when that label doesn't exist in the repo, and the form's
+# workflow then never runs. This creates every label the forms use and processes any open issue
+# that arrived unlabeled (scripts/issue_labels.py). Runs when a form or this file changes, or by hand.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/workflows/labels.yml'
+      - 'scripts/issue_labels.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: issue-labels
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create missing labels, process unlabeled issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/issue_labels.py --sync

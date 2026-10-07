@@ -1,7 +1,8 @@
 name: Set limit
 
 # Runs when you submit the site's "Save to all devices" limit or sell-target form (a GitHub issue).
-# Only issues opened by the repo owner are processed.
+# Only issues opened by the repo owner are processed. Also matches the form's title, because GitHub
+# drops a form's label when the label doesn't exist in the repo (scripts/issue_labels.py).
 on:
   issues:
     types: [opened, edited]
@@ -23,7 +24,9 @@ jobs:
       github.event.issue.state == 'open' &&
       github.event.issue.user.login == github.repository_owner &&
       (contains(github.event.issue.labels.*.name, 'set-limit') ||
-       contains(github.event.issue.labels.*.name, 'set-sell-target'))
+       contains(github.event.issue.labels.*.name, 'set-sell-target') ||
+       startsWith(github.event.issue.title, 'Limit:') ||
+       startsWith(github.event.issue.title, 'Sell target:'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

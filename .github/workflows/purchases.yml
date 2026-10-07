@@ -28,7 +28,12 @@ jobs:
        contains(github.event.issue.labels.*.name, 'sealed-link') ||
        contains(github.event.issue.labels.*.name, 'grading-info') ||
        contains(github.event.issue.labels.*.name, 'sold') ||
-       contains(github.event.issue.labels.*.name, 'remove-purchase'))
+       contains(github.event.issue.labels.*.name, 'remove-purchase') ||
+       startsWith(github.event.issue.title, 'Bought:') || startsWith(github.event.issue.title, 'Sealed:') ||
+       startsWith(github.event.issue.title, 'Pull:') || startsWith(github.event.issue.title, 'SNKRDUNK link:') ||
+       startsWith(github.event.issue.title, 'Grading:') || startsWith(github.event.issue.title, 'Sold:') ||
+       startsWith(github.event.issue.title, 'Remove:') || startsWith(github.event.issue.title, 'Remove purchase') ||
+       startsWith(github.event.issue.title, 'Undo sale:'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

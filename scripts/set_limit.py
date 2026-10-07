@@ -25,6 +25,7 @@ from pathlib import Path
 
 from log_purchase import (JST, ROOT, URL_RE, FormError, field, finish, gh, git,
                           latest_cards, parse_form, parse_yen)
+from issue_labels import labels_of
 
 LIMITS = ROOT / "data" / "limits.json"
 TARGETS = ROOT / "data" / "sell_targets.json"
@@ -54,7 +55,7 @@ def main():
     if not args:
         sys.exit(__doc__)
     issue = json.loads(Path(args[0]).read_text(encoding="utf-8"))["issue"]
-    labels = {l["name"] for l in issue.get("labels", [])}
+    labels = labels_of(issue)  # infers the label from the title if GitHub dropped it
     if not labels & {"set-limit", "set-sell-target"}:
         print("Not a limit or sell-target issue; nothing to do.")
         return

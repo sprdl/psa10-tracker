@@ -513,7 +513,8 @@ def main():
         sys.exit(__doc__)
     event = json.loads(Path(args[0]).read_text(encoding="utf-8"))
     issue = event["issue"]
-    labels = {l["name"] for l in issue.get("labels", [])}
+    from issue_labels import labels_of
+    labels = labels_of(issue)  # infers the label from the title if GitHub dropped it
     if not labels & {"bought", "remove-purchase", "sealed", "pull", "sealed-link", "grading-info", "sold"}:
         print("Not a purchase issue; nothing to do.")
         return
