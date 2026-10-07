@@ -14,9 +14,11 @@
       "id": "p68",
       "card_url": "https://snkrdunk.com/apparels/730952",
       "card_name_ja": "メガゲンガーex MA [M2a 230/193](ハイクラスパック「MEGAドリームex」)",
-      "condition": "psa10",
+      "condition": "raw_to_grade",
       "purchase_price_jpy": 6680,
       "purchase_date": "2026-10-07",
+      "grading_fee_jpy": 9980,
+      "shipping_insurance_jpy": 2450,
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/88955e51-aed8-4ece-814d-067af77f658e.webp?size=l",
       "notes": "SNKRDUNK"
     },
@@ -24,9 +26,11 @@
       "id": "p69",
       "card_url": "https://snkrdunk.com/apparels/722239",
       "card_name_ja": "メガリザードンXex MA [M2a 223/193](ハイクラスパック「MEGAドリームex」)",
-      "condition": "psa10",
+      "condition": "raw_to_grade",
       "purchase_price_jpy": 10800,
       "purchase_date": "2026-10-07",
+      "grading_fee_jpy": 9980,
+      "shipping_insurance_jpy": 2450,
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/7bf60833-bb2f-424b-932a-9d618d4a3e17.webp?size=l",
       "notes": "SNKRDUNK"
     }

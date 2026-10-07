@@ -172,6 +172,14 @@ time. To keep the worst-case page load bounded as the archive grows over months 
 of writing, in `assets/app.js`) snapshot files for this — plenty of runway for a
 multi-month trend without ever downloading years of history on every card expand.
 
+## Raw cards: the comparison price is the PSA10 DIY cost
+
+A card held only as raw copies (`condition: raw_to_grade`) is not a PSA10 yet, so the Overview, the collection
+badge and the side panel compare it as such: its "price now" is the PSA10 DIY cost, (raw A-rank ask + grading
+fee + shipping) ÷ gem rate (`computeDiyEconomics`), set against what you paid including grading. The PSA10 market
+price stays visible next to it ("DIY · PSA10 ¥10.5k"). Without a raw ask or gem rate yet, or when a slab is
+among the copies, the PSA10 price is used as before (`rawDiy` in `assets/app.js`).
+
 ## Sold items: `"sold"` in `data/holdings.json`
 
 The site's **Sold it** links (single cards, the owned card page, unopened sealed products) open the `sold.yml`

@@ -240,6 +240,7 @@ img.card-img {
 .wl-name b { font-size: 21px; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wl-name small, .wname small { font-size: 12px; color: var(--muted-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wl-price { font-size: 24px; }
+.wl-price .wl-sub { display: block; font: 600 10px var(--sans); letter-spacing: 0; color: var(--muted-2); text-align: right; margin-top: 1px; white-space: nowrap; }
 .wl-off { font-size: 13px; color: var(--neg); font-variant-numeric: tabular-nums; }
 .wl-chg { font-size: 13px; font-variant-numeric: tabular-nums; }
 .wl-tag { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 0; }
