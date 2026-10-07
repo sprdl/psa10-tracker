@@ -1515,3 +1515,5 @@ a.sl-icon:hover { border-color: var(--accent); }
 .sold-years { margin: 10px 0 14px; } .sold-years table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .sold-years th, .sold-years td { padding: 7px 12px; text-align: right; border-bottom: 1px solid var(--line); } .sold-years th:first-child, .sold-years td:first-child { text-align: left; }
 .sold-years th { font: 14px var(--display); letter-spacing: 0.06em; color: var(--muted); font-weight: 400; }
+
+.wl-chg .chg-sub { display: block; font: 600 10px var(--sans); letter-spacing: 0; color: var(--muted-2); margin-top: 1px; white-space: nowrap; }

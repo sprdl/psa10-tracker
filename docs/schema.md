@@ -172,13 +172,13 @@ time. To keep the worst-case page load bounded as the archive grows over months 
 of writing, in `assets/app.js`) snapshot files for this — plenty of runway for a
 multi-month trend without ever downloading years of history on every card expand.
 
-## Raw cards: the comparison price is the PSA10 DIY cost
+## Overview columns: Price and Limit
 
-A card held only as raw copies (`condition: raw_to_grade`) is not a PSA10 yet, so the Overview, the collection
-badge and the side panel compare it as such: its "price now" is the PSA10 DIY cost, (raw A-rank ask + grading
-fee + shipping) ÷ gem rate (`computeDiyEconomics`), set against what you paid including grading. The PSA10 market
-price stays visible next to it ("DIY · PSA10 ¥10.5k"). Without a raw ask or gem rate yet, or when a slab is
-among the copies, the PSA10 price is used as before (`rawDiy` in `assets/app.js`).
+**Price** is always the PSA10 price. **Limit** depends on the card: for a card you watch it shows your limit with the
+distance to the lowest ask underneath; for a card you own it shows the PSA10 price against what you paid (a slab at
+its purchase price, a raw card bought to grade at its purchase price + ¥13,000 grading, `GRADING_ALLIN` in
+`assets/app.js`) with "paid ¥X" underneath. The collection badge and the Limit sort use the same comparison. Card
+pages and the Holdings page still use the grading fees recorded on each holding (¥12,430 by default).
 
 ## Sold items: `"sold"` in `data/holdings.json`
 
