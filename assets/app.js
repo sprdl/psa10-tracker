@@ -2606,10 +2606,10 @@
     if (!items.length) return head + `<div class="pf-list"><div class="empty-state">No sealed products yet. Use <b>+ Add sealed product</b> for a box, set or packs; then add the good pulls under it.</div></div>`;
     let spent = 0, worth = 0, nPulls = 0;
     const blocks = items.map((s) => {
-      const pulls = (s.pulls || []).map((p) => Object.assign({ p }, pullValue(p, cards)));
+      const pulls = (s.pulls || []).map((p) => { const pv = pullValue(p, cards); return Object.assign({ p }, pv, { v: basisV(pv.v) }); });
       const val = pulls.reduce((a, x) => a + (x.v || 0), 0);
-      spent += s.price_jpy || 0; worth += pulls.length ? val : (sealedValue(s) || 0); nPulls += pulls.length;
-      const mkt = sealedValue(s);
+      const mkt = basisV(sealedValue(s));
+      spent += s.price_jpy || 0; worth += pulls.length ? val : (mkt || 0); nPulls += pulls.length;
       const pct = s.price_jpy ? (val / s.price_jpy) * 100 : null;
       const mpnl = mkt != null ? mkt - (s.price_jpy || 0) : null;
       const meta = [SEALED_KIND[s.kind] || 'Sealed', s.set_code, `bought ${s.date}`, s.where, `${fmtYen(s.price_jpy)}${s.qty > 1 ? ` (${fmtYen(Math.round(s.price_jpy / s.qty))} each)` : ''}`].filter(Boolean).map(escapeHtml).join(' · ');
@@ -2642,7 +2642,7 @@
     }).join('');
     const sum = `<div class="pf-summary sl-summary">
       <div class="pf-stat"><div class="lbl">Spent on sealed</div><div class="val">${fmtYen(spent)}</div></div>
-      <div class="pf-stat"><div class="lbl">Worth now</div><div class="val">${fmtYen(worth)}</div></div>
+      <div class="pf-stat"><div class="lbl">${basisWord()}</div><div class="val">${fmtYen(worth)}</div></div>
       <div class="pf-stat"><div class="lbl">Recovered</div><div class="val ${worth >= spent ? 'pos' : ''}">${spent ? Math.round((worth / spent) * 100) + '%' : '—'}</div><div class="kpi-d muted">${nPulls} pull${nPulls === 1 ? '' : 's'} logged</div></div>
     </div>`;
     return head + sum + `<div class="sl-list">${blocks}</div>`;
@@ -2657,13 +2657,13 @@
     for (const h of state.holdings) {
       const c = cards.find((x) => x.url === h.card_url), v = c ? getRep(c) : (h.condition !== 'psa10' ? heldPrice(h.card_url) : null);
       spent += holdingCost(h);
-      if (v != null) worth += v; else unpriced++;
+      if (v != null) worth += basisV(v); else unpriced++;
     }
     for (const sd of state.sealed || []) {
       spent += sd.price_jpy || 0;
       const pulls = sd.pulls || [];
-      if (!pulls.length) { const u = sealedValue(sd); worth += u != null ? u : sd.price_jpy || 0; if (u == null) unopened++; continue; }
-      for (const p of pulls) { const pv = pullValue(p, cards).v; if (pv != null) worth += pv; else unpriced++; }
+      if (!pulls.length) { const u = sealedValue(sd); worth += u != null ? basisV(u) : sd.price_jpy || 0; if (u == null) unopened++; continue; }
+      for (const p of pulls) { const pv = pullValue(p, cards).v; if (pv != null) worth += basisV(pv); else unpriced++; }
     }
     return { spent, worth, pnl: worth - spent, unpriced, unopened, n: state.holdings.length + (state.sealed || []).length };
   }
@@ -2676,7 +2676,7 @@
     const pct = t.spent ? (t.pnl / t.spent) * 100 : null;
     const notes = [t.unopened ? `${t.unopened} sealed product${t.unopened === 1 ? '' : 's'} without a price counted at cost` : '', t.unpriced ? `${t.unpriced} item${t.unpriced === 1 ? '' : 's'} without a price left out of the value` : ''].filter(Boolean).join(' · ');
     el.innerHTML = `<div class="pa-cell"><span class="lbl">Total spent</span><span class="v">${fmtYen(t.spent)}</span></div>
-      <div class="pa-cell"><span class="lbl">Worth now</span><span class="v">${fmtYen(t.worth)}</span></div>
+      <div class="pa-cell"><span class="lbl">${basisWord()}</span><span class="v">${fmtYen(t.worth)}</span></div>
       <div class="pa-cell"><span class="lbl">+/−</span><span class="v ${t.pnl >= 0 ? 'pos' : 'neg'}">${t.pnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(t.pnl))}</span>${pct != null ? `<span class="pa-pct ${t.pnl >= 0 ? 'pos' : 'neg'}">${fmtPct(pct)}</span>` : ''}</div>
       ${notes ? `<div class="pa-note">${escapeHtml(notes)}</div>` : ''}`;
     el.hidden = false;
@@ -2687,6 +2687,14 @@
   // raw A-rank ask for raw pulls); sealed products and untracked cards from data/portfolio_history.json (daily
   // readings, only from the day they were first read; before that: at cost). Same rules as the totals above the
   // list: an item with no price at all is left out of "worth" but still counts as spent.
+  // Holdings values: at the lowest ask, or after SNKRDUNK's selling costs (sellNet: 9.5% fee, fixed fee, shipping per sale).
+  state.holdBasis = store.get('psa10.basis', 'ask') === 'net' ? 'net' : 'ask';
+  const basisV = (v) => (v == null ? v : state.holdBasis === 'net' ? (v > 0 ? Math.max(0, Math.round(sellNet(v))) : 0) : v);
+  const basisWord = () => (state.holdBasis === 'net' ? 'Worth after selling costs' : 'Worth now');
+  function basisBarHtml() {
+    return `<div class="basis-bar"><span class="lbl">Show values</span><span class="seg" role="group" aria-label="Value basis"><button type="button" class="${state.holdBasis === 'ask' ? 'on' : ''}" data-basis="ask">Lowest ask</button><button type="button" class="${state.holdBasis === 'net' ? 'on' : ''}" data-basis="net">After selling costs</button></span>
+      <span class="muted">${state.holdBasis === 'net' ? 'Each item as one sale: 9.5% SNKRDUNK fee, ¥200 fixed fee (¥300 from ¥30,000) and ¥1,000 shipping come off.' : 'The cheapest current listing, before any selling costs.'}</span></div>`;
+  }
   const PFH_KEY = 'psa10.pfh';
   const PFH_CATS = { total: 'Total', singles: 'Singles', sealed: 'Sealed', pulls: 'Pulls' };
   function portfolioSeries() {
@@ -2715,13 +2723,13 @@
     for (const h of state.holdings) {
       const t = dayT(h.purchase_date), url = h.card_url, cost = holdingCost(h), trk = tracked.has(url);
       const nowV = trk ? getRep(cards.find((c) => c.url === url)) : (h.condition !== 'psa10' ? heldPrice(url) : null);
-      items.push({ cat: 'singles', t, cost, at: nowV == null ? () => 0 : (T) => (trk ? psaAt(url, T) : heldAt(url, T)) ?? cost });
+      items.push({ cat: 'singles', t, cost, at: nowV == null ? () => 0 : (T) => { const v = trk ? psaAt(url, T) : heldAt(url, T); return v != null ? basisV(v) : cost; } });
     }
     for (const sd of state.sealed || []) {
       const t = dayT(sd.date), pulls = sd.pulls || [];
       if (!pulls.length) {
         const q = sd.qty || 1, cost = sd.price_jpy || 0, nowU = sealedValue(sd);
-        items.push({ cat: 'sealed', t, cost, at: (T) => { const u = nowU == null ? null : heldAt(sd.url, T); return u != null ? u * q : cost; } });
+        items.push({ cat: 'sealed', t, cost, at: (T) => { const u = nowU == null ? null : heldAt(sd.url, T); return u != null ? basisV(u * q) : cost; } });
         continue;
       }
       const opened = Math.min(...pulls.map((p) => dayT(p.date || sd.date)));
@@ -2734,7 +2742,7 @@
           let v = null;
           if (trk) v = p.status === 'psa10' ? psaAt(url, T) : p.status === 'graded_other' ? null : rawAt(url, T);
           else if (url && p.status !== 'psa10' && p.status !== 'graded_other') v = heldAt(url, T);
-          return a + (v != null ? v : nowV);
+          return a + basisV(v != null ? v : nowV);
         }, 0);
       } });
     }
@@ -2790,7 +2798,7 @@
     const tableRows = rows.slice().reverse().slice(0, 40).map((r) => `<tr><td>${fmtD(r.t)}</td><td>${fmtYen(r.s)}</td><td>${fmtYen(r.w)}</td><td class="${r.r >= 0 ? 'pos' : 'neg'}">${signedYen(r.r)}</td></tr>`).join('');
     box.innerHTML = `<div class="pfh-head"><h2 class="section-title">Value over time</h2>
         <div class="pfh-ctl"><span class="seg" role="group" aria-label="Portfolio part">${catBtns}</span><span class="seg" role="group" aria-label="Range">${rangeBtns}</span></div></div>
-      <div class="pfh-read" id="pfh-read"><span><i class="pfh-key w"></i>Worth <b>${fmtYen(last.w)}</b></span><span><i class="pfh-key s"></i>Spent <b>${fmtYen(last.s)}</b></span><span class="${good ? 'pos' : 'neg'}">${good ? '▲' : '▼'} Result <b>${signedYen(last.r)}</b></span><span class="muted">${fmtD(last.t)}</span></div>
+      <div class="pfh-read" id="pfh-read"><span><i class="pfh-key w"></i>${state.holdBasis === 'net' ? 'Net worth' : 'Worth'} <b>${fmtYen(last.w)}</b></span><span><i class="pfh-key s"></i>Spent <b>${fmtYen(last.s)}</b></span><span class="${good ? 'pos' : 'neg'}">${good ? '▲' : '▼'} Result <b>${signedYen(last.r)}</b></span><span class="muted">${fmtD(last.t)}</span></div>
       <div class="pfh-wrap"><svg width="${W}" height="${H + H2}" viewBox="0 0 ${W} ${H + H2}" role="img" aria-label="Portfolio worth and money spent over time">
         ${yTicks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${fmtYenShort(v)}</text>`).join('')}
         ${xTicks.map((t) => `<text x="${X(t).toFixed(1)}" y="${m.t + ih + 17}" class="ci-xtick">${fmtD(t)}</text>`).join('')}
@@ -2803,7 +2811,7 @@
         <line class="pfh-cross" id="pfh-cross" x1="0" x2="0" y1="${m.t}" y2="${H + H2 - 8}" hidden/>
         <rect x="${m.l}" y="0" width="${iw}" height="${H + H2}" fill="transparent" id="pfh-hit"/></svg>
         <div class="pfh-tip" id="pfh-tip" hidden></div></div>
-      <div class="ci-legend"><span><i class="pfh-key w"></i>Worth now (lowest ask)</span><span><i class="pfh-key s"></i>Spent in total</span><span><i class="pfh-key b"></i>Purchase</span><span class="muted">Sealed and untracked items are valued at cost until their first price reading${state.portHist.length ? ` (${state.portHist[0].d})` : ''}.</span></div>
+      <div class="ci-legend"><span><i class="pfh-key w"></i>${state.holdBasis === 'net' ? 'Worth after selling costs' : 'Worth now (lowest ask)'}</span><span><i class="pfh-key s"></i>Spent in total</span><span><i class="pfh-key b"></i>Purchase</span><span class="muted">Sealed and untracked items are valued at cost until their first price reading${state.portHist.length ? ` (${state.portHist[0].d})` : ''}.</span></div>
       <details class="pfh-table"><summary>Show as a table</summary><div class="table-scroll"><table><thead><tr><th>Date</th><th>Spent</th><th>Worth</th><th>Result</th></tr></thead><tbody>${tableRows}</tbody></table></div></details>`;
     box.querySelectorAll('[data-pf-range]').forEach((b) => b.addEventListener('click', () => setSt('range', b.dataset.pfRange)));
     box.querySelectorAll('[data-pf-cat]').forEach((b) => b.addEventListener('click', () => setSt('cat', b.dataset.pfCat)));
@@ -2824,6 +2832,11 @@
 
   function renderPortfolio(holdings, currentCards) {
     renderHoldingsAside(currentCards);
+    const bb = document.getElementById('basis-bar');
+    if (bb) {
+      bb.innerHTML = state.holdings.length || (state.sealed || []).length ? basisBarHtml() : '';
+      bb.querySelectorAll('[data-basis]').forEach((b) => b.addEventListener('click', () => { state.holdBasis = b.dataset.basis; store.set('psa10.basis', state.holdBasis); render(); }));
+    }
     drawPortfolioChart();
     const sealedEl = document.getElementById('sealed-section');
     if (sealedEl) { sealedEl.innerHTML = sealedHtml(currentCards); trimImages(sealedEl); }
@@ -2838,7 +2851,7 @@
 
     const rows = holdings.map((h) => {
       const match = currentCards.find((c) => c.url === h.card_url);
-      const currentPrice = match ? getRep(match) : (h.condition !== 'psa10' ? heldPrice(h.card_url) : null);
+      const currentPrice = basisV(match ? getRep(match) : (h.condition !== 'psa10' ? heldPrice(h.card_url) : null));
       const cost = holdingCost(h);
       const pnl = currentPrice != null ? currentPrice - cost : null;
       const pnlPct = currentPrice != null && cost ? (pnl / cost) * 100 : null;

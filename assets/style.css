@@ -1507,3 +1507,6 @@ a.sl-icon:hover { border-color: var(--accent); }
 .pfh-tip { position: absolute; top: 6px; background: var(--panel-2); border: 1px solid var(--line-3); border-radius: 6px; padding: 6px 10px; font-size: 12px; display: flex; flex-direction: column; gap: 2px; pointer-events: none; font-variant-numeric: tabular-nums; z-index: 3; }
 .pfh-table { margin-top: 8px; font-size: 12px; } .pfh-table summary { cursor: pointer; color: var(--soft); }
 .pfh-table table { width: 100%; border-collapse: collapse; margin-top: 6px; } .pfh-table th, .pfh-table td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--line); } .pfh-table th:first-child, .pfh-table td:first-child { text-align: left; }
+
+.basis-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px; font-size: 12.5px; }
+.basis-bar .lbl { font: 15px var(--display); letter-spacing: 0.08em; color: var(--muted); }

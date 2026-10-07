@@ -172,6 +172,13 @@ time. To keep the worst-case page load bounded as the archive grows over months 
 of writing, in `assets/app.js`) snapshot files for this — plenty of runway for a
 multi-month trend without ever downloading years of history on every card expand.
 
+## Holdings values: lowest ask or after selling costs
+
+A switch at the top of the Holdings page (saved in this browser) shows every value either at the lowest ask or
+after SNKRDUNK's selling costs: 9.5% fee, ¥200 fixed fee (¥300 from ¥30,000) and ¥1,000 shipping, each single, pull
+and unopened sealed item counted as one sale (`sellNet` in `assets/app.js`). It changes the header totals, the
+singles list, the sealed section and the value-over-time chart together; spent amounts never change.
+
 ## `data/portfolio_history.json` — daily prices of bought items that aren't tracked cards
 
 `{"points": [{"d": "2026-10-07", "p": {"<snkrdunk id>": 7600}}]}`, one entry per day, appended by
