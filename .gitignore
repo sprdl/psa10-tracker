@@ -7,3 +7,4 @@ data/incoming/
 # Python bytecode
 __pycache__/
 .git-credentials
+.psa10-git-credentials

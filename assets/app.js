@@ -81,9 +81,10 @@
 
   // ---------- formatting helpers ----------
 
+  const YEN_FMT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }); // reused: toLocaleString builds a formatter per call
   function fmtYen(n) {
     if (n === null || n === undefined || isNaN(n)) return '—';
-    return '¥' + Math.round(n).toLocaleString('en-US');
+    return '¥' + YEN_FMT.format(Math.round(n));
   }
 
   function fmtYenShort(n) {
@@ -163,14 +164,14 @@
   };
   const CACHE_KEY = 'psa10.cache.v1';
 
-  async function loadFreshBundle() {
+  async function loadFreshBundle(cached) {
     const optional = (path) => fetchJSON(path).catch(() => null);
     const manifestP = fetchJSON('data/manifest.json');
     // Most loads have no new snapshot: fetch the two the cached manifest names in parallel with the
     // manifest, and only fetch again if the manifest says there's a newer one.
     const early = {};
     try {
-      const cs = ((store.get(CACHE_KEY, null) || {}).manifest || {}).snapshots || [];
+      const cs = ((cached || {}).manifest || {}).snapshots || [];
       cs.slice(-2).forEach((x) => { early[x.file] = fetchJSON('data/snapshots/' + x.file); early[x.file].catch(() => null); });
     } catch (e) { /* no cache */ }
     const snapFile = (f) => early[f] || fetchJSON('data/snapshots/' + f);
@@ -242,10 +243,12 @@
 
   async function init() {
     window.addEventListener('hashchange', onHashChange);
-    const freshP = loadFreshBundle();
+    // The cache is read and parsed once; its raw text doubles as the "did anything change" check below.
+    let cachedRaw = null, cached = null;
+    try { cachedRaw = localStorage.getItem(CACHE_KEY); cached = cachedRaw ? JSON.parse(cachedRaw) : null; } catch (e) { cachedRaw = cached = null; }
+    const freshP = loadFreshBundle(cached);
 
     let shown = null;
-    const cached = store.get(CACHE_KEY, null);
     if (cached && cached.manifest && cached.cur) {
       try { showBundle(cached, false); shown = cached; document.body.classList.add('is-updating'); } catch (e) { shown = null; }
     }
@@ -262,12 +265,19 @@
       return;
     }
     document.body.classList.remove('is-updating');
-    const changed = !shown || JSON.stringify(shown) !== JSON.stringify(fresh);
+    const freshRaw = JSON.stringify(fresh);
+    const changed = !shown || freshRaw !== cachedRaw;
     // Keep the snapshot the viewer picked while the refresh was running.
     const userPicked = shown && state.currentIndex !== (shown.manifest.snapshots || []).length - 1;
     if (changed && !userPicked) showBundle(fresh, true);
-    else { state.manifest = fresh.manifest; reconcileLimits(); }
-    if (changed) store.set(CACHE_KEY, fresh);
+    else {
+      state.manifest = fresh.manifest; reconcileLimits();
+      // Same data as the cached copy already on screen: only re-render if expired local removals change what's hidden.
+      const pending = () => JSON.stringify([store.get(RM_KEY, {}), store.get(RS_KEY, {})]);
+      const before = pending(); reconcileRemovals();
+      if (pending() !== before) refreshRemoved();
+    }
+    if (changed) { try { localStorage.setItem(CACHE_KEY, freshRaw); } catch (e) { /* not persisted */ } }
   }
 
   async function loadIndex(idx) {
