@@ -366,12 +366,51 @@ def eval_due(root=ROOT, now=None):
     return out
 
 
+SELL_REVIEW_DAYS = 30
+
+
+def sell_due(root=ROOT, now=None):
+    """Owned cards (data/holdings.json) that need sell tiers: a PSA10 price on the tracker and no
+    sell_tiers yet, or a sell_verdict written more than SELL_REVIEW_DAYS ago."""
+    hp = root / "data" / "holdings.json"
+    owned = {h.get("card_url") for h in (json.loads(hp.read_text(encoding="utf-8")).get("holdings", []) if hp.exists() else [])}
+    _, snap = planmod.latest_snapshot(root)
+    now = now or datetime.now(JST)
+    out = []
+    for c in (snap or {}).get("cards", []):
+        if c["url"] not in owned:
+            continue
+        a = c.get("analysis") or {}
+        ask = ((c.get("grades") or {}).get("psa10") or {}).get("lowest_price")
+        if not ask:
+            continue
+        w = (a.get("sell_verdict") or {}).get("written")
+        if not a.get("sell_tiers"):
+            out.append((c["url"], ask, c.get("card_name_ja", ""), "no sell tiers yet"))
+        elif w and (now - datetime.fromisoformat(w)).days > SELL_REVIEW_DAYS:
+            out.append((c["url"], ask, c.get("card_name_ja", ""), f"sell tiers {(now - datetime.fromisoformat(w)).days} days old"))
+    return out
+
+
+def print_sell_due():
+    due = sell_due()
+    if not due:
+        print("\nSELL TIERS NOW: none (every owned card has current sell tiers).")
+        return
+    print("\nSELL TIERS NOW (FULL-CHECK step 8b) — owned cards that need sell tiers (Hold / Take profit / Sell):")
+    for i, (url, ask, name, why) in enumerate(due):
+        print(f"  {'' if i < 3 else '(next run) '}{url}  PSA10 ask ¥{ask:,}  {name}  [{why}]")
+    print("  Run the pokemon-tcg-card-evaluation skill's sell part for each (at most 3 per run): sell_tiers + sell_verdict only,")
+    print("  applied with apply_analysis.py; the buy tiers stay as they are.")
+
+
 def print_followups():
     """One last line naming every follow-up step still to do, so a truncated output can't hide one."""
     import mercari, review_due, sealed_info, set_story
     todo = []
     for step, label, count in (
         ("8b", "evaluate", lambda: min(3, len(eval_due()))),
+        ("8b", "sell tiers", lambda: min(3, len(sell_due()))),
         ("8c", "stories", lambda: min(3, len(set_story.missing()))),
         ("8f", "Mercari (pricecheck/MERCARI.md)", lambda: len(mercari.due(ROOT))),
         ("8g", "refresh verdicts", lambda: min(review_due.TEXT_PER_RUN, len(review_due.compute(ROOT)[1]))),
@@ -400,6 +439,7 @@ def print_story_due():
 
 def print_eval_due():
     print_story_due()
+    print_sell_due()
     due = eval_due()
     if not due:
         print("\nEVALUATE NOW: none (every card with a PSA10 market has tiers).")

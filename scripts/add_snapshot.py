@@ -45,7 +45,8 @@ JST = timezone(timedelta(hours=9))
 # until a human/Claude revises them (tier boundaries, the reference peak, the
 # DIY-grading economics inputs, and the verdict call itself — see note below on
 # why `verdict` moved here from SNAPSHOT_SPECIFIC_KEYS).
-CARRY_FORWARD_KEYS = ("tiers", "peak", "grading_fee_jpy", "shipping_insurance_jpy", "raw_tiers", "verdict")
+CARRY_FORWARD_KEYS = ("tiers", "peak", "grading_fee_jpy", "shipping_insurance_jpy", "raw_tiers", "verdict",
+                      "sell_tiers", "sell_verdict")   # sell tiers for owned cards (2026-10-07)
 
 # analysis.* keys that describe *this specific snapshot's* observed price action and
 # must NOT be silently reused from an older run — they need a fresh look each time.
