@@ -32,11 +32,11 @@ files during the price check"). If it is declined, carry on; afterwards clear le
 ## 1. Setup (one `device_bash` call)
 
 ```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && git pull --ff-only --quiet; python3 pricecheck/plan.py; for f in snkrdunk_full altema_batch pokeca_both pokeca_premium pokeca_scout; do echo "=== $f"; grep -v '^//' pricecheck/scripts/$f.js; done; echo "=== mytier"; python3 scripts/add_custom_index.py --print-js
+R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && git pull --ff-only --quiet; python3 pricecheck/plan.py; for f in snkrdunk_full snkrdunk_held altema_batch pokeca_both pokeca_premium pokeca_scout; do echo "=== $f"; grep -v '^//' pricecheck/scripts/$f.js; done; echo "=== mytier"; python3 scripts/add_custom_index.py --print-js
 ```
 
 `plan.py` prints the JST date and weekday (Mondays add steps 6 and 6b), the odds model's build date
-(`REBUILD DUE` adds step 5b), a summary, and two lines to paste into the scripts: `PLAN = [...]`
+(`REBUILD DUE` adds step 5b), a summary, and lines to paste into the scripts: `PLAN = [...]`
 (which cards get the product page only, or the product page plus both listings pages, and which need
 their photo URL) and `ALTEMA = [...]` (the altema pages due today, including the "weekly until
 graded" ones that only count if the card shows PSA10 activity). The rules behind them are in
@@ -78,6 +78,16 @@ await (async()=>{for(let i=0;i<75&&!window.__pj.done;i++)await (window.__wsleep|
 
 Keep the lines exactly as returned (one per card; the script's header comment documents the codes).
 On Mondays you can do step 6/6b's web searches while it runs.
+
+## 2b. Bought cards and unopened sealed items
+
+Skip if `HELD = []`. `HELD` lists what the Holdings page needs a price for but the tracked cards don't
+cover: bought raw cards and raw/at-PSA pulls that aren't tracked (raw A-rank lowest ask), and sealed
+products with no pull logged (lowest ask). A sealed product with a pull is opened and no longer
+listed; its stored price is deleted by the publish step. Full checks only, never the quick check.
+Same tab, run the `snkrdunk_held` script verbatim with its `const HELD = [...]` line replaced by the
+`HELD` line from step 1, and collect its `H` / `HE` lines with the polling call of step 2 but
+`window.__hq` instead of `window.__pj` (about 5 s per item). Keep the lines exactly as returned.
 
 ## 3. altema, the due pages in one run
 
@@ -138,7 +148,7 @@ If nothing new was announced, change nothing. In the chat message, mention any c
 
 ## 7. Publish (one `device_bash` call)
 
-Paste every line from steps 2, 3 and 4 (including the `PREM`, `SCP` and `SC` lines; plus `TIER`, `VOL` and a `NOTE <text>` line for anything
+Paste every line from steps 2, 2b, 3 and 4 (including the `PREM`, `SCP` and `SC` lines; plus `TIER`, `VOL` and a `NOTE <text>` line for anything
 unusual worth recording, all optional) verbatim into a heredoc:
 
 ```

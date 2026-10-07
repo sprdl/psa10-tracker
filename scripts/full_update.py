@@ -9,6 +9,7 @@ Publish a FULL price check from the compact lines the in-page scripts return.
     MYTIER {…}                       My-tier extractor result (optional)
     PREM …                           pokeca_premium.js lines (optional; saved to data/premium.json)
     SCP … / SC {…} / SC! …           pokeca_scout.js lines (optional; saved to data/scout.json)
+    H … / HE …                       snkrdunk_held.js lines (bought cards, unopened sealed items → data/holdings_prices.json)
     TIER {…}                         psa_tier_status (Mondays, optional)
     VOL psa10 {"volume_trend": …, "volume_note": …}   volume override (optional)
     NOTE free text                   run notes (optional)
@@ -44,6 +45,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "pricecheck"))
 import quick_update  # noqa: E402  (decode_compact: the product-page part of each line)
 import premium  # noqa: E402
+import holdings_prices  # noqa: E402
 import scout  # noqa: E402
 import plan as planmod  # noqa: E402
 
@@ -112,6 +114,7 @@ def parse(text, cards_meta, plan):
     raw = {"cards": {}, "index": {}}
     mytier = None
     prem_lines = []
+    held_lines = []
     scout_lines = []
     alt_lines = {}
     card_lines = {}
@@ -130,6 +133,8 @@ def parse(text, cards_meta, plan):
             raw["index"]["psa10" if k == "psa10" else "raw"] = json.loads(js)
         elif head in ("SCP", "SC", "SC!"):
             scout_lines.append(s)
+        elif head in ("H", "HE"):
+            held_lines.append(s)
         elif head == "PREM":
             prem_lines.append(s)
         elif head == "MYTIER":
@@ -192,6 +197,7 @@ def parse(text, cards_meta, plan):
         if sid not in raw["cards"]:
             notes.append(f"{sid}: no SNKRDUNK line in this run")
     raw["_premium"] = premium.decode(prem_lines)
+    raw["_held"] = holdings_prices.decode(held_lines)
     raw["_scout"] = scout.decode(scout_lines) if scout_lines else None
     return raw, mytier, notes
 
@@ -202,6 +208,7 @@ STEP_NAMES = {
     "altema": "altema pages due today (step 3, ALT lines)",
     "premium": "slab premiums (step 4.3, PREM lines)",
     "scout": "Scout (step 4.4, SCP/SC lines)",
+    "held": "bought cards and sealed items (step 2b, H lines)",
 }
 
 
@@ -216,6 +223,8 @@ def missing_steps(text, plan):
         miss.append("altema")
     if plan.get("premium") and "PREM" not in heads:
         miss.append("premium")
+    if plan.get("held") and not ({"H", "HE"} & heads):
+        miss.append("held")
     if plan.get("scout") and not ({"SCP", "SC", "SC!"} & heads):
         miss.append("scout")
     return miss
@@ -292,6 +301,7 @@ def main():
         notes.append(f"{sid}: no altema page on file ({name[:24]}) — find it (FULL-CHECK step 1c)")
     prem = raw.pop("_premium", {})
     sc = raw.pop("_scout", None)
+    held = raw.pop("_held", {})
     if not raw["cards"]:
         die("no SNKRDUNK card lines in the input")
     raw_path = incoming / "full-raw.json"
@@ -324,6 +334,9 @@ def main():
     if prem:
         print()
         premium.save(prem, ROOT, push="--no-push" not in args)
+    if plan.get("held") or held:   # also prunes items that were opened since the last run
+        print()
+        holdings_prices.save(held, ROOT, push="--no-push" not in args)
     if sc:
         print()
         scout.update(*sc, root=ROOT, push="--no-push" not in args)

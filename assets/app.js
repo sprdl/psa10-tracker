@@ -24,6 +24,7 @@
     hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
     events: null, // data/events.json — release calendar for the event rule (scripts/events.py)
+    heldPrices: {}, // data/holdings_prices.json — latest SNKRDUNK price per bought untracked card / unopened sealed item
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
     selectedUrl: null, // card shown in the overview's detail drawer (desktop)
     cardTab: 'overview', // last-used tab of the card detail
@@ -155,7 +156,7 @@
   }
 
   const OPTIONAL_DATA = {
-    holdings: 'data/holdings.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
+    holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
     valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
@@ -196,6 +197,7 @@
     // Holdings are optional and rare to change: a missing file just means nothing's been bought yet.
     state.holdings = (b.holdings && b.holdings.holdings) || [];
     state.sealed = (b.holdings && b.holdings.sealed) || []; // boxes/sets/packs bought at MSRP, with their pulls
+    state.heldPrices = (b.heldPrices && b.heldPrices.prices) || {};
     state.calls = b.calls || null;
     state.customIndex = b.customIndex || null;
     state.events = b.events || null;
@@ -671,6 +673,9 @@
       : 0;
     return (h.purchase_price_jpy || 0) + grading;
   }
+  // Latest price read for something bought but not tracked (full check): raw A-rank ask of a card, or the
+  // lowest ask of one sealed product. null when there's no reading or nothing is for sale.
+  function heldPrice(url) { const e = state.heldPrices[(url || '').replace(/\/$/, '').split('/').pop()]; return e && e.price != null ? e.price : null; }
   function holdingsFor(card) { return state.holdings.filter((h) => h.card_url === card.url); }
   // GitHub re-applies prefilled form values over what you type, so the price, date and condition are
   // asked here first (Log purchase dialog) and the form opens with exactly those, ready to submit.
@@ -2249,21 +2254,27 @@
     if (card && p.status === 'psa10' && getRep(card) != null) return { v: getRep(card), src: 'PSA10 price', card };
     const raw = card && ((card.grades || {}).raw_a_grade || {}).lowest_price;
     if (card && raw && p.status !== 'graded_other') return { v: raw, src: 'raw A-rank ask', card };
+    const held = !card && p.status !== 'psa10' && p.status !== 'graded_other' ? heldPrice(p.card_url) : null;
+    if (held) return { v: held, src: 'raw A-rank ask', card };
     if (p.value_jpy) return { v: p.value_jpy, src: 'your estimate', card };
     return { v: null, src: card ? 'no price yet' : 'not tracked, no estimate', card };
   }
+  // An unopened product (no pull logged) at its lowest ask on SNKRDUNK × quantity; null until a price check read one.
+  function sealedValue(sd) { const u = sd.url && !(sd.pulls || []).length ? heldPrice(sd.url) : null; return u != null ? u * (sd.qty || 1) : null; }
   function sealedHtml(cards) {
     const items = (state.sealed || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
     const addBtn = `<a class="btn btn-primary" href="${escapeAttr(sealedFormUrl())}" target="_blank" rel="noopener">+ Add sealed product</a>`;
     const head = `<div class="sl-head"><h2 class="section-title">Sealed</h2>${addBtn}</div>
-      <p class="sl-note">Boxes, sets and packs bought at MSRP, and the cards worth keeping that came out of them. Pulls of tracked cards are valued from SNKRDUNK (raw A-rank ask, or the PSA10 price once one comes back a 10).</p>`;
+      <p class="sl-note">Boxes, sets and packs bought at MSRP, and the cards worth keeping that came out of them. Sealed products are valued at their lowest SNKRDUNK ask until you log a pull; then the product counts as opened and only its pulls are valued (raw A-rank ask, or the PSA10 price once one comes back a 10).</p>`;
     if (!items.length) return head + `<div class="pf-list"><div class="empty-state">No sealed products yet. Use <b>+ Add sealed product</b> for a box, set or packs; then add the good pulls under it.</div></div>`;
     let spent = 0, worth = 0, nPulls = 0;
     const blocks = items.map((s) => {
       const pulls = (s.pulls || []).map((p) => Object.assign({ p }, pullValue(p, cards)));
       const val = pulls.reduce((a, x) => a + (x.v || 0), 0);
-      spent += s.price_jpy || 0; worth += val; nPulls += pulls.length;
+      spent += s.price_jpy || 0; worth += pulls.length ? val : (sealedValue(s) || 0); nPulls += pulls.length;
+      const mkt = sealedValue(s);
       const pct = s.price_jpy ? (val / s.price_jpy) * 100 : null;
+      const mpnl = mkt != null ? mkt - (s.price_jpy || 0) : null;
       const meta = [SEALED_KIND[s.kind] || 'Sealed', s.set_code, `bought ${s.date}`, s.where, `${fmtYen(s.price_jpy)}${s.qty > 1 ? ` (${fmtYen(Math.round(s.price_jpy / s.qty))} each)` : ''}`].filter(Boolean).map(escapeHtml).join(' · ');
       const rows = pulls.length ? pulls.map(({ p, v, src, card }) => {
         const nm = parseCardName(p.card_name_ja || '').short || p.card_name_ja;
@@ -2286,7 +2297,7 @@
               ? `<a class="sl-icon" href="${escapeAttr(s.url)}" target="_blank" rel="noopener" title="The picture comes from SNKRDUNK with the next price check">${BOX_ICON}<span>next check</span></a>`
               : `<a class="sl-icon" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener" title="Link it to its SNKRDUNK page for the name and picture">${BOX_ICON}<span>+ SNKRDUNK</span></a>`}
           <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${s.url ? `<a href="${escapeAttr(s.url)}" target="_blank" rel="noopener">${escapeHtml(sealedName(s))}</a>` : escapeHtml(sealedName(s))}</div><div class="pf-meta">${meta}${s.url && !s.snkrdunk_name ? ' · name and picture come from SNKRDUNK with the next price check' : ''} · <a class="pf-remove" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener">${s.url ? 'Change SNKRDUNK link' : 'Add SNKRDUNK link'}</a> · <a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, sealedName(s)))}" target="_blank" rel="noopener">Remove</a></div></div>
-          <div class="pf-current"><div class="val">${pulls.length ? fmtYen(val) : '—'}</div><div class="pf-pnl ${pct == null || !pulls.length ? 'muted' : pct >= 100 ? 'pos' : ''}">${pulls.length ? `pulls worth ${pct != null ? Math.round(pct) + '% of cost' : ''}` : 'no pulls yet'}</div></div>
+          <div class="pf-current"><div class="val">${pulls.length ? fmtYen(val) : mkt != null ? fmtYen(mkt) : '—'}</div><div class="pf-pnl ${pulls.length ? (pct == null ? 'muted' : pct >= 100 ? 'pos' : '') : mpnl == null ? 'muted' : mpnl >= 0 ? 'pos' : 'neg'}">${pulls.length ? `pulls worth ${pct != null ? Math.round(pct) + '% of cost' : ''}` : mpnl != null ? `${mpnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(mpnl))} · lowest ask${s.qty > 1 ? ' × ' + s.qty : ''}` : 'no pulls yet'}</div></div>
         </div>
         <div class="sl-pulls">${rows}</div>
         <div class="sl-add">${chips ? `<span class="sl-add-lbl">Pulled one of these?</span>${chips}` : ''}<a class="sl-chip sl-other" href="${escapeAttr(pullFormUrl(s, null))}" target="_blank" rel="noopener">+ ${chips ? 'Other card' : 'Add pull'}</a></div>
@@ -2294,7 +2305,7 @@
     }).join('');
     const sum = `<div class="pf-summary sl-summary">
       <div class="pf-stat"><div class="lbl">Spent on sealed</div><div class="val">${fmtYen(spent)}</div></div>
-      <div class="pf-stat"><div class="lbl">Pulls worth now</div><div class="val">${fmtYen(worth)}</div></div>
+      <div class="pf-stat"><div class="lbl">Worth now</div><div class="val">${fmtYen(worth)}</div></div>
       <div class="pf-stat"><div class="lbl">Recovered</div><div class="val ${worth >= spent ? 'pos' : ''}">${spent ? Math.round((worth / spent) * 100) + '%' : '—'}</div><div class="kpi-d muted">${nPulls} pull${nPulls === 1 ? '' : 's'} logged</div></div>
     </div>`;
     return head + sum + `<div class="sl-list">${blocks}</div>`;
@@ -2307,14 +2318,14 @@
   function holdingsTotals(cards) {
     let spent = 0, worth = 0, unpriced = 0, unopened = 0;
     for (const h of state.holdings) {
-      const c = cards.find((x) => x.url === h.card_url), v = c ? getRep(c) : null;
+      const c = cards.find((x) => x.url === h.card_url), v = c ? getRep(c) : (h.condition !== 'psa10' ? heldPrice(h.card_url) : null);
       spent += holdingCost(h);
       if (v != null) worth += v; else unpriced++;
     }
     for (const sd of state.sealed || []) {
       spent += sd.price_jpy || 0;
       const pulls = sd.pulls || [];
-      if (!pulls.length) { worth += sd.price_jpy || 0; unopened++; continue; }
+      if (!pulls.length) { const u = sealedValue(sd); worth += u != null ? u : sd.price_jpy || 0; if (u == null) unopened++; continue; }
       for (const p of pulls) { const pv = pullValue(p, cards).v; if (pv != null) worth += pv; else unpriced++; }
     }
     return { spent, worth, pnl: worth - spent, unpriced, unopened, n: state.holdings.length + (state.sealed || []).length };
@@ -2326,7 +2337,7 @@
     const t = on ? holdingsTotals(cards || (state.currentData && state.currentData.cards) || []) : null;
     if (!t || !t.n) { el.hidden = true; el.innerHTML = ''; return; }
     const pct = t.spent ? (t.pnl / t.spent) * 100 : null;
-    const notes = [t.unopened ? `${t.unopened} sealed product${t.unopened === 1 ? '' : 's'} without pulls counted at cost` : '', t.unpriced ? `${t.unpriced} item${t.unpriced === 1 ? '' : 's'} without a price left out of the value` : ''].filter(Boolean).join(' · ');
+    const notes = [t.unopened ? `${t.unopened} sealed product${t.unopened === 1 ? '' : 's'} without a price counted at cost` : '', t.unpriced ? `${t.unpriced} item${t.unpriced === 1 ? '' : 's'} without a price left out of the value` : ''].filter(Boolean).join(' · ');
     el.innerHTML = `<div class="pa-cell"><span class="lbl">Total spent</span><span class="v">${fmtYen(t.spent)}</span></div>
       <div class="pa-cell"><span class="lbl">Worth now</span><span class="v">${fmtYen(t.worth)}</span></div>
       <div class="pa-cell"><span class="lbl">+/−</span><span class="v ${t.pnl >= 0 ? 'pos' : 'neg'}">${t.pnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(t.pnl))}</span>${pct != null ? `<span class="pa-pct ${t.pnl >= 0 ? 'pos' : 'neg'}">${fmtPct(pct)}</span>` : ''}</div>
@@ -2349,7 +2360,7 @@
 
     const rows = holdings.map((h) => {
       const match = currentCards.find((c) => c.url === h.card_url);
-      const currentPrice = match ? getRep(match) : null;
+      const currentPrice = match ? getRep(match) : (h.condition !== 'psa10' ? heldPrice(h.card_url) : null);
       const cost = holdingCost(h);
       const pnl = currentPrice != null ? currentPrice - cost : null;
       const pnlPct = currentPrice != null && cost ? (pnl / cost) * 100 : null;

@@ -23,6 +23,7 @@ Rules (unchanged from the old step 2/3 of the full check):
 """
 import json
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -129,8 +130,15 @@ def build_plan(root=ROOT, now=None):
             scout["read"] = {k: v.get("read", "") for k, v in (sd.get("pool") or {}).items() if v.get("read")}
         except Exception:
             pass
+    held = []
+    try:   # bought cards and unopened sealed items that aren't tracked cards (scripts/holdings_prices.py)
+        sys.path.insert(0, str(root / "scripts"))
+        import holdings_prices
+        held = [[k, v] for k, v in holdings_prices.needed(root, {c["snkrdunk_id"] for c in load_cards(root)}).items()]
+    except Exception as e:  # never break a price check over this
+        print(f"(holdings prices skipped: {e})")
     return {
-        "now": now, "monday": monday, "scout": scout, "latest": snap_path.name if snap_path else None,
+        "held": held, "now": now, "monday": monday, "scout": scout, "latest": snap_path.name if snap_path else None,
         "plan": plan, "altema": altema, "altema_skipped": skipped, "altema_missing": amiss, "premium": prem,
         "odds_model_built": odds_built, "odds_rebuild_due": odds_age is None or odds_age > 30,
     }
@@ -148,6 +156,7 @@ def main():
     print("PLAN = " + json.dumps(p["plan"]))
     print("ALTEMA = " + json.dumps(p["altema"]))
     print("PREM = " + json.dumps(p["premium"]))
+    print("HELD = " + json.dumps(p["held"]))
     print("SCOUT = " + json.dumps(p["scout"], separators=(",", ":")))
     if p["altema_missing"]:
         print("ALTEMA MISSING (step 1c) = " + json.dumps(p["altema_missing"], ensure_ascii=False))

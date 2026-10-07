@@ -196,6 +196,13 @@ site's **+ Add sealed product** / **+ Add pull** forms (labels `sealed` / `pull`
 `kind` is box / set / pack / other. `snkrdunk_name` and `image` are read from the product's SNKRDUNK
 page by the next price check (`scripts/sealed_info.py`, FULL-CHECK step 8h); the Action never opens SNKRDUNK. A pull of a tracked card is valued from the snapshot (raw A-rank
 lowest ask, or the PSA10 price once `status` is psa10); `value_jpy` (optional) covers untracked cards.
+Prices of what isn't tracked come from `data/holdings_prices.json` (written by the full check, never by
+hand; `scripts/holdings_prices.py`): `{"updated": …, "prices": {"<snkrdunk id>": {"kind": "card|sealed",
+"price": 7600, "date": "2026-10-07"}}}`, only the latest reading per id. `card` = raw A-rank lowest ask of a
+bought raw card or a raw/at-PSA pull that isn't a tracked card; `sealed` = lowest ask of a product with no
+pull logged (× `qty` on the site). Logging a pull opens the product, so its price is removed by the next
+full check. Quick checks never read these.
+
 Removing uses the same Remove form with an `s…` (product and its pulls) or `u…` (one pull) id.
 
 Normally purchases are logged from the site (✓ Bought it → GitHub issue → `scripts/log_purchase.py` in Actions; see README). For bulk entry, add holdings with `python3 scripts/add_holding.py` (same clipboard-or-file-argument
