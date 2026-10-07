@@ -25,6 +25,7 @@
     hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
     events: null, // data/events.json — release calendar for the event rule (scripts/events.py)
+    sold: [], // data/holdings.json "sold" — what was sold, for what, and the profit
     portHist: [], // data/portfolio_history.json — daily readings of untracked cards / sealed items
     heldPrices: {}, // data/holdings_prices.json — latest SNKRDUNK price per bought untracked card / unopened sealed item
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
@@ -199,6 +200,7 @@
     }
     // Holdings are optional and rare to change: a missing file just means nothing's been bought yet.
     state.holdings = (b.holdings && b.holdings.holdings) || [];
+    state.sold = (b.holdings && b.holdings.sold) || []; // sales recorded with the Sold form (data/holdings.json "sold")
     state.sealed = (b.holdings && b.holdings.sealed) || []; // boxes/sets/packs bought at MSRP, with their pulls
     state.heldPrices = (b.heldPrices && b.heldPrices.prices) || {};
     state.portHist = (b.portHist && b.portHist.points) || [];
@@ -2633,7 +2635,7 @@
             : s.url
               ? `<a class="sl-icon" href="${escapeAttr(s.url)}" target="_blank" rel="noopener" title="The picture comes from SNKRDUNK with the next price check">${BOX_ICON}<span>next check</span></a>`
               : `<a class="sl-icon" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener" title="Link it to its SNKRDUNK page for the name and picture">${BOX_ICON}<span>+ SNKRDUNK</span></a>`}
-          <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${s.url ? `<a href="${escapeAttr(s.url)}" target="_blank" rel="noopener">${escapeHtml(sealedName(s))}</a>` : escapeHtml(sealedName(s))}</div><div class="pf-meta">${meta}${s.url && !s.snkrdunk_name ? ' · name and picture come from SNKRDUNK with the next price check' : ''} · <a class="pf-remove" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener">${s.url ? 'Change SNKRDUNK link' : 'Add SNKRDUNK link'}</a> · <a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, sealedName(s)))}" target="_blank" rel="noopener">Remove</a></div></div>
+          <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${s.url ? `<a href="${escapeAttr(s.url)}" target="_blank" rel="noopener">${escapeHtml(sealedName(s))}</a>` : escapeHtml(sealedName(s))}</div><div class="pf-meta">${meta}${s.url && !s.snkrdunk_name ? ' · name and picture come from SNKRDUNK with the next price check' : ''} · <a class="pf-remove" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener">${s.url ? 'Change SNKRDUNK link' : 'Add SNKRDUNK link'}</a> · ${pulls.length ? '' : `<a class="pf-remove" href="${escapeAttr(soldFormUrl(s.id, sealedName(s), mkt != null ? (state.holdBasis === 'net' ? sealedValue(s) : mkt) : null))}" target="_blank" rel="noopener">Sold it</a> · `}<a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, sealedName(s)))}" target="_blank" rel="noopener">Remove</a></div></div>
           <div class="pf-current"><div class="val">${pulls.length ? fmtYen(val) : mkt != null ? fmtYen(mkt) : '—'}</div><div class="pf-pnl ${pulls.length ? (pct == null ? 'muted' : pct >= 100 ? 'pos' : '') : mpnl == null ? 'muted' : mpnl >= 0 ? 'pos' : 'neg'}">${pulls.length ? `pulls worth ${pct != null ? Math.round(pct) + '% of cost' : ''}` : mpnl != null ? `${mpnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(mpnl))} · lowest ask${s.qty > 1 ? ' × ' + s.qty : ''}` : 'no pulls yet'}</div></div>
         </div>
         <div class="sl-pulls">${rows}</div>
@@ -2672,14 +2674,67 @@
     if (!el) return;
     const on = (location.hash || '').replace(/^#\/?/, '').split('/')[0] === 'holdings';
     const t = on ? holdingsTotals(cards || (state.currentData && state.currentData.cards) || []) : null;
-    if (!t || !t.n) { el.hidden = true; el.innerHTML = ''; return; }
+    if (!t || (!t.n && !(state.sold || []).length)) { el.hidden = true; el.innerHTML = ''; return; }
     const pct = t.spent ? (t.pnl / t.spent) * 100 : null;
     const notes = [t.unopened ? `${t.unopened} sealed product${t.unopened === 1 ? '' : 's'} without a price counted at cost` : '', t.unpriced ? `${t.unpriced} item${t.unpriced === 1 ? '' : 's'} without a price left out of the value` : ''].filter(Boolean).join(' · ');
     el.innerHTML = `<div class="pa-cell"><span class="lbl">Total spent</span><span class="v">${fmtYen(t.spent)}</span></div>
       <div class="pa-cell"><span class="lbl">${basisWord()}</span><span class="v">${fmtYen(t.worth)}</span></div>
       <div class="pa-cell"><span class="lbl">+/−</span><span class="v ${t.pnl >= 0 ? 'pos' : 'neg'}">${t.pnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(t.pnl))}</span>${pct != null ? `<span class="pa-pct ${t.pnl >= 0 ? 'pos' : 'neg'}">${fmtPct(pct)}</span>` : ''}</div>
+      ${(state.sold || []).length ? `<div class="pa-cell"><span class="lbl">Realized</span><span class="v ${soldTotals().profit >= 0 ? 'pos' : 'neg'}">${signedYen(soldTotals().profit)}</span></div>` : ''}
       ${notes ? `<div class="pa-note">${escapeHtml(notes)}</div>` : ''}`;
     el.hidden = false;
+  }
+
+  // ---------- sold items (data/holdings.json "sold", written by the Sold form's GitHub Action) ----------
+  // A sale moves an item out of Holdings (scripts/log_purchase.py): the record keeps what it cost, what it sold for
+  // and the fees (typed in, or estimated with the same cost model as sellNet). Profit = sold for - fees - cost.
+  function soldFormUrl(id, name, price) {
+    const q = { template: 'sold.yml', title: 'Sold: ' + name, id };
+    if (price) q.price = String(Math.round(price));
+    return `${REPO_URL}/issues/new?${new URLSearchParams(q)}`;
+  }
+  function undoSoldUrl(r) { return `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'remove-purchase.yml', title: 'Undo sale: ' + (r.kind === 'single' ? parseCardName(r.name || '').short : r.name), id: r.id })}`; }
+  const soldProfit = (r) => r.sold_price_jpy - (r.fees_jpy || 0) - (r.cost_jpy || 0);
+  const soldDays = (r) => (r.bought && r.sold_date ? Math.max(0, Math.round((Date.parse(r.sold_date) - Date.parse(r.bought)) / 86400000)) : null);
+  // "Sold it" for an owned card: opens the form for your latest copy (a second copy is marked sold the same way afterwards).
+  function soldBtnHtml(card, own) {
+    const h = own.hs[own.hs.length - 1];
+    return `<a class="btn" href="${escapeAttr(soldFormUrl(h.id, parseCardName(card.card_name_ja).short, getRep(card)))}" target="_blank" rel="noopener" title="Record the sale of ${own.n > 1 ? 'your latest copy' : 'this card'}">✓ Sold it</a>`;
+  }
+  function soldTotals() {
+    const t = { n: 0, revenue: 0, fees: 0, cost: 0, profit: 0, cash: 0, years: {} };
+    for (const r of state.sold || []) {
+      const y = (r.sold_date || '').slice(0, 4) || '—', pf = soldProfit(r);
+      const o = t.years[y] || (t.years[y] = { n: 0, revenue: 0, fees: 0, cost: 0, profit: 0 });
+      for (const x of [t, o]) { x.n++; x.revenue += r.sold_price_jpy; x.fees += r.fees_jpy || 0; x.cost += r.cost_jpy || 0; x.profit += pf; }
+      t.cash += r.sold_price_jpy - (r.fees_jpy || 0);
+    }
+    return t;
+  }
+  function soldHtml(cards) {
+    const list = (state.sold || []).slice().sort((a, b) => String(b.sold_date).localeCompare(String(a.sold_date)));
+    if (!list.length) return '';
+    const t = soldTotals();
+    const rows = list.map((r) => {
+      const card = r.card_url ? cards.find((c) => c.url === r.card_url) : null;
+      const nm = r.kind === 'single' ? (parseCardName((card && card.card_name_ja) || r.name || '').short || r.name) : `${r.qty > 1 ? r.qty + ' × ' : ''}${r.name}`;
+      const img = (card && card.image_url) || r.image_url || r.image;
+      const pf = soldProfit(r), pct = r.cost_jpy ? (pf / r.cost_jpy) * 100 : null, d = soldDays(r);
+      return `<div class="pf-row sold-row"><span class="pf-thumb">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+        <div class="pf-info"><div class="pf-name">${card ? `<a href="#/card/${escapeAttr(cardId(card))}">${escapeHtml(nm)}</a>` : escapeHtml(nm)}</div>
+          <div class="pf-meta">Bought ${escapeHtml(r.bought || '—')} for ${fmtYen(r.cost_jpy)} · sold ${escapeHtml(r.sold_date)} for ${fmtYen(r.sold_price_jpy)} · fees &amp; shipping ${fmtYen(r.fees_jpy)}${r.fees_estimated ? ' (estimated)' : ''}${d != null ? ` · held ${d} day${d === 1 ? '' : 's'}` : ''}${r.notes ? ' · ' + escapeHtml(r.notes) : ''} · <a class="pf-remove" href="${escapeAttr(undoSoldUrl(r))}" target="_blank" rel="noopener">Undo sale</a></div></div>
+        <div class="pf-current"><div class="val ${pf >= 0 ? 'pos' : 'neg'}">${signedYen(pf)}</div><div class="pf-pnl muted">${pct != null ? fmtPct(pct) + ' on cost' : ''}</div></div></div>`;
+    }).join('');
+    const years = Object.keys(t.years).sort().reverse();
+    const yrRows = years.map((y) => { const o = t.years[y]; return `<tr><td>${escapeHtml(y)}</td><td>${o.n}</td><td>${fmtYen(o.revenue)}</td><td>${fmtYen(o.fees)}</td><td>${fmtYen(o.cost)}</td><td class="${o.profit >= 0 ? 'pos' : 'neg'}">${signedYen(o.profit)}</td></tr>`; }).join('');
+    return `<div class="sl-head"><h2 class="section-title">Sold</h2></div>
+      <div class="pf-summary sl-summary">
+        <div class="pf-stat"><div class="lbl">Realized profit</div><div class="val ${t.profit >= 0 ? 'pos' : 'neg'}">${signedYen(t.profit)}</div><div class="kpi-d muted">${t.n} sale${t.n === 1 ? '' : 's'}</div></div>
+        <div class="pf-stat"><div class="lbl">Sold for</div><div class="val">${fmtYen(t.revenue)}</div><div class="kpi-d muted">fees &amp; shipping ${fmtYen(t.fees)}</div></div>
+        <div class="pf-stat"><div class="lbl">Their cost</div><div class="val">${fmtYen(t.cost)}</div></div>
+      </div>
+      <div class="table-scroll sold-years"><table><thead><tr><th>Year</th><th>Sales</th><th>Sold for</th><th>Fees &amp; shipping</th><th>Cost</th><th>Profit</th></tr></thead><tbody>${yrRows}</tbody></table></div>
+      <div class="pf-list">${rows}</div>`;
   }
 
   // ---------- portfolio value over time (Holdings page) ----------
@@ -2712,6 +2767,7 @@
     const buys = [];
     for (const h of state.holdings) buys.push({ t: dayT(h.purchase_date), cost: holdingCost(h), cat: 'singles', name: parseCardName(h.card_name_ja || '').short, id: h.id });
     for (const sd of state.sealed || []) buys.push({ t: dayT(sd.date), cost: sd.price_jpy || 0, cat: (sd.pulls || []).length ? 'pulls' : 'sealed', name: sealedName(sd), id: sd.id });
+    for (const r of state.sold || []) buys.push({ t: dayT(r.bought), cost: r.cost_jpy || 0, cat: r.kind === 'single' ? 'singles' : 'sealed', name: (r.kind === 'single' ? parseCardName(r.name || '').short : r.name) + ' (sold)', id: r.id });
     if (!buys.length || !snaps.length) return null;
     const t0 = Math.min(...buys.map((b) => b.t));
     const times = snaps.map((x) => x.t).filter((t) => t >= t0);
@@ -2746,6 +2802,15 @@
         }, 0);
       } });
     }
+    // sold items stay in the history until their sale; from then on they count as the cash received
+    for (const r of state.sold || []) {
+      const t = dayT(r.bought), ts = dayT(r.sold_date), cost = r.cost_jpy || 0, cash = r.sold_price_jpy - (r.fees_jpy || 0), url = r.card_url || r.url, q = r.qty || 1;
+      items.push({ cat: r.kind === 'single' ? 'singles' : 'sealed', t, cost, at: (T) => {
+        if (T >= ts) return cash;
+        const v = r.kind === 'single' ? (tracked.has(url) ? psaAt(url, T) : heldAt(url, T)) : (heldAt(url, T) != null ? heldAt(url, T) * q : null);
+        return v != null ? basisV(v) : cost;
+      } });
+    }
     const pts = times.map((T) => {
       const o = { t: T, spent: { total: 0, singles: 0, sealed: 0, pulls: 0 }, worth: { total: 0, singles: 0, sealed: 0, pulls: 0 } };
       for (const it of items) {
@@ -2761,7 +2826,7 @@
     const box = document.getElementById('pf-history');
     if (!box) return;
     const ser = portfolioSeries();
-    if (!ser || !state.holdings.length && !(state.sealed || []).length) { box.hidden = true; box.innerHTML = ''; return; }
+    if (!ser || !state.holdings.length && !(state.sealed || []).length && !(state.sold || []).length) { box.hidden = true; box.innerHTML = ''; return; }
     box.hidden = false;
     const st = Object.assign({ range: 'all', cat: 'total' }, store.get(PFH_KEY, {}));
     if (!PFH_CATS[st.cat]) st.cat = 'total';
@@ -2798,7 +2863,7 @@
     const tableRows = rows.slice().reverse().slice(0, 40).map((r) => `<tr><td>${fmtD(r.t)}</td><td>${fmtYen(r.s)}</td><td>${fmtYen(r.w)}</td><td class="${r.r >= 0 ? 'pos' : 'neg'}">${signedYen(r.r)}</td></tr>`).join('');
     box.innerHTML = `<div class="pfh-head"><h2 class="section-title">Value over time</h2>
         <div class="pfh-ctl"><span class="seg" role="group" aria-label="Portfolio part">${catBtns}</span><span class="seg" role="group" aria-label="Range">${rangeBtns}</span></div></div>
-      <div class="pfh-read" id="pfh-read"><span><i class="pfh-key w"></i>${state.holdBasis === 'net' ? 'Net worth' : 'Worth'} <b>${fmtYen(last.w)}</b></span><span><i class="pfh-key s"></i>Spent <b>${fmtYen(last.s)}</b></span><span class="${good ? 'pos' : 'neg'}">${good ? '▲' : '▼'} Result <b>${signedYen(last.r)}</b></span><span class="muted">${fmtD(last.t)}</span></div>
+      <div class="pfh-read" id="pfh-read"><span><i class="pfh-key w"></i>${state.holdBasis === 'net' ? 'Net worth' : 'Worth'} <b>${fmtYen(last.w)}</b></span><span><i class="pfh-key s"></i>Spent <b>${fmtYen(last.s)}</b></span><span class="${good ? 'pos' : 'neg'}">${good ? '▲' : '▼'} Result <b>${signedYen(last.r)}</b></span><span class="muted">${fmtD(last.t)}</span>${(state.sold || []).length ? `<span class="muted">worth includes ${fmtYen(soldTotals().cash)} received from sales</span>` : ''}</div>
       <div class="pfh-wrap"><svg width="${W}" height="${H + H2}" viewBox="0 0 ${W} ${H + H2}" role="img" aria-label="Portfolio worth and money spent over time">
         ${yTicks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${fmtYenShort(v)}</text>`).join('')}
         ${xTicks.map((t) => `<text x="${X(t).toFixed(1)}" y="${m.t + ih + 17}" class="ci-xtick">${fmtD(t)}</text>`).join('')}
@@ -2840,6 +2905,8 @@
     drawPortfolioChart();
     const sealedEl = document.getElementById('sealed-section');
     if (sealedEl) { sealedEl.innerHTML = sealedHtml(currentCards); trimImages(sealedEl); }
+    const soldEl = document.getElementById('sold-section');
+    if (soldEl) { soldEl.innerHTML = soldHtml(currentCards); trimImages(soldEl); }
     if (!holdings.length) {
       els.portfolioSummary.innerHTML = '';
       els.portfolioList.innerHTML = `<div class="empty-state">No purchases yet. Use <b>✓ Bought it</b> on a card to log one; it shows up here with its profit and loss.</div>`;
@@ -2890,7 +2957,7 @@
           <span class="pf-thumb">${thumbHtml}</span>
           <div class="pf-info">
             <div class="pf-name">${nameHtml}</div>
-            <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
+            <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(soldFormUrl(h.id, parseCardName(h.card_name_ja || '').short, match ? getRep(match) : null))}" target="_blank" rel="noopener">Sold it</a> · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
             ${h.condition === 'raw_to_grade' && h.id && match ? gradeLineHtml(match, { kind: 'holding', id: h.id, item: h, sunk: true }) : ''}
           </div>
           <div class="pf-current">
@@ -3352,6 +3419,7 @@
       .filter(([k]) => (k !== 'story' || storyOf(card)) && (k !== 'diy' || !own || own.toGrade)); // DIY (buy slab vs grade it yourself) is a buying question
     const actionsHtml = `<div class="cd-actions">
           <a class="btn${own ? '' : ' btn-primary'}" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">${own ? '+ Bought another' : '✓ Bought it'}</a>
+          ${own ? soldBtnHtml(card, own) : ''}
           <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
           ${mode === 'page' ? removeBtnHtml(card) : ''}
         </div>`;
@@ -3450,6 +3518,7 @@
       <div class="dw-acts">
         <a class="btn btn-primary" href="#/card/${escapeAttr(id)}">Open card page →</a>
         <a class="btn" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">${own ? '+ Bought another' : '✓ Bought it'}</a>
+        ${own ? soldBtnHtml(card, own) : ''}
         <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
       </div>
     </div>`;

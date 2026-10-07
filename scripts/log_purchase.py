@@ -16,6 +16,9 @@ site's "Bought it" or "Remove" form, so nothing runs on your Mac:
 - Label `sealed`: a box / set / pack(s) bought at MSRP (store, Pokémon Center, lottery) → store["sealed"],
   id "s<issue#>". Sealed product is never bought on the second market, so there's no market price.
 - Label `pull`: a valuable card pulled from one of those → that product's "pulls", id "u<issue#>".
+- Label `sold`: a single ("p…") or a sealed product ("s…", with no pulls; optionally only some of its quantity) was
+  sold: it leaves "holdings"/"sealed" and a record "x<issue#>" goes into store["sold"] with what it cost, what it
+  sold for, the fees (typed, or estimated with the site's cost model) and the dates. Removing an "x…" id undoes the sale.
 - Label `grading-info`: sets when a raw card (a pull "u…" or a raw purchase "p…") was sent to PSA, the PSA
   service tier and the owner's own chance of a PSA10; a pull's status can be changed too. Blank fields remove the value.
 - Label `sealed-link`: sets (or replaces) the SNKRDUNK link of an existing sealed product.
@@ -269,11 +272,100 @@ def apply_grading_info(issue, store):
             f"holdings: grading info for {gid} (#{issue['number']})")
 
 
+SELL_FEE, SELL_SHIP = 0.095, 1000   # same cost model as sellNet() in assets/app.js
+
+
+def estimate_fees(price):
+    return round(price * SELL_FEE + (300 if price >= 30000 else 200) + SELL_SHIP)
+
+
+def apply_sold(issue, store):
+    form = parse_form(issue.get("body"))
+    m = re.search(r"\b[ps]\d+\b", field(form, "item id", "id") or "")
+    if not m:
+        raise FormError("No item id found (it looks like p63 or s46). Use the Sold it link next to the item on the site.")
+    iid = m.group(0)
+    price = parse_yen(field(form, "sold for", "price"), "Sold for")
+    sold_date = parse_date(field(form, "date sold", "date"))
+    fees_in = parse_yen(field(form, "fees"), "Fees", required=False)
+    notes = field(form, "notes")
+    sold = store.setdefault("sold", [])
+    rec = {"id": f"x{issue['number']}", "sold_price_jpy": price, "sold_date": sold_date}
+    if iid.startswith("p"):
+        hs = store.setdefault("holdings", [])
+        h = next((x for x in hs if x.get("id") == iid), None)
+        if not h:
+            raise FormError(f"There's no card with id {iid} (maybe it was already sold or removed).")
+        cost = h.get("purchase_price_jpy", 0) + (h.get("grading_fee_jpy", 0) + h.get("shipping_insurance_jpy", 0) if h.get("condition") == "raw_to_grade" else 0)
+        rec.update({"kind": "single", "item_id": iid, "name": h.get("card_name_ja", iid), "card_url": h.get("card_url"), "image_url": h.get("image_url"),
+                    "condition": h.get("condition"), "cost_jpy": cost, "bought": h.get("purchase_date"), "orig": h})
+        store["holdings"] = [x for x in hs if x.get("id") != iid]
+        label = rec["name"]
+    else:
+        items = store.setdefault("sealed", [])
+        sd = next((x for x in items if x.get("id") == iid), None)
+        if not sd:
+            raise FormError(f"There's no sealed product with id {iid} (maybe it was already sold or removed).")
+        if sd.get("pulls"):
+            raise FormError(f"{iid} has pulls logged, so it counts as opened. Only unopened sealed products can be recorded as sold.")
+        n = sd.get("qty", 1) or 1
+        q_txt = field(form, "quantity").strip()
+        q = n
+        if q_txt:
+            try:
+                q = int(float(q_txt))
+            except ValueError:
+                raise FormError(f"Quantity \"{q_txt}\" isn't a whole number.")
+            if not 1 <= q <= n:
+                raise FormError(f"Quantity must be between 1 and {n} (what you hold).")
+        cost = round(sd.get("price_jpy", 0) * q / n)
+        name = sd.get("name") or sd.get("snkrdunk_name") or sd.get("id")
+        orig = {k: v for k, v in sd.items() if k != "pulls"}
+        rec.update({"kind": "sealed", "item_id": iid, "name": name, "url": sd.get("url"), "image": sd.get("image"), "qty": q,
+                    "cost_jpy": cost, "bought": sd.get("date"), "orig": {**orig, "qty": q, "price_jpy": cost}})
+        if q == n:
+            store["sealed"] = [x for x in items if x.get("id") != iid]
+        else:
+            sd["qty"] = n - q
+            sd["price_jpy"] = sd.get("price_jpy", 0) - cost
+        label = f"{q} × {name}" if q > 1 else name
+    rec["fees_jpy"] = fees_in if fees_in is not None else estimate_fees(price)
+    rec["fees_estimated"] = fees_in is None
+    if notes:
+        rec["notes"] = notes[:300]
+    sold.append(rec)
+    profit = price - rec["fees_jpy"] - rec["cost_jpy"]
+    return (f"Recorded the sale of **{label}**: ¥{price:,} on {sold_date}, fees & shipping ¥{rec['fees_jpy']:,}{' (estimated)' if rec['fees_estimated'] else ''}, "
+            f"cost ¥{rec['cost_jpy']:,}, profit **{'+' if profit >= 0 else '−'}¥{abs(profit):,}**. It moved from Holdings to Sold; the site updates in about a minute.",
+            f"holdings: sold {label} (#{issue['number']})")
+
+
+def undo_sold(xid, store):
+    sold = store.setdefault("sold", [])
+    rec = next((x for x in sold if x.get("id") == xid), None)
+    if not rec:
+        raise FormError(f"There's no sale with id {xid} (maybe it was already undone).")
+    orig = rec.get("orig") or {}
+    if rec.get("kind") == "single":
+        store.setdefault("holdings", []).append(orig)
+    else:
+        items = store.setdefault("sealed", [])
+        cur = next((x for x in items if x.get("id") == orig.get("id")), None)
+        if cur:
+            cur["qty"] = (cur.get("qty", 1) or 1) + (orig.get("qty", 1) or 1)
+            cur["price_jpy"] = cur.get("price_jpy", 0) + orig.get("price_jpy", 0)
+        else:
+            items.append({**orig, "pulls": []})
+    store["sold"] = [x for x in sold if x.get("id") != xid]
+    return (f"Undid the sale **{xid}** ({rec.get('name')}): it is back in your holdings. The site updates in about a minute.",
+            f"holdings: undo sale {xid} (#{{n}})")
+
+
 def removal_id(issue):
     form = parse_form(issue.get("body"))
-    m = re.search(r"\b[psu]\d+\b", field(form, "purchase id", "id") or "")
+    m = re.search(r"\b[psux]\d+\b", field(form, "purchase id", "id") or "")
     if not m:
-        raise FormError("No purchase id found (it looks like p12, s12 or u12). Use the Remove link next to it on the site.")
+        raise FormError("No purchase id found (it looks like p12, s12, u12 or x12). Use the Remove link next to it on the site.")
     return m.group(0)
 
 
@@ -332,6 +424,8 @@ def apply(issue, labels, store, dry=False):
     sealed = store.setdefault("sealed", [])
     if "grading-info" in labels:
         return apply_grading_info(issue, store)
+    if "sold" in labels:
+        return apply_sold(issue, store)
     if "sealed-link" in labels:
         form = parse_form(issue.get("body"))
         m = re.search(r"\bs\d+\b", field(form, "sealed product id", "id") or "")
@@ -374,6 +468,9 @@ def apply(issue, labels, store, dry=False):
                 f"holdings: pull {pull['card_name_ja']} from {parent['id']} (#{issue['number']})")
     if "remove-purchase" in labels:
         pid = removal_id(issue)
+        if pid.startswith("x"):
+            msg, commit = undo_sold(pid, store)
+            return msg, commit.replace("{n}", str(issue["number"]))
         if pid.startswith("s"):
             gone = [x for x in sealed if x.get("id") == pid]
             if not gone:
@@ -417,7 +514,7 @@ def main():
     event = json.loads(Path(args[0]).read_text(encoding="utf-8"))
     issue = event["issue"]
     labels = {l["name"] for l in issue.get("labels", [])}
-    if not labels & {"bought", "remove-purchase", "sealed", "pull", "sealed-link", "grading-info"}:
+    if not labels & {"bought", "remove-purchase", "sealed", "pull", "sealed-link", "grading-info", "sold"}:
         print("Not a purchase issue; nothing to do.")
         return
 

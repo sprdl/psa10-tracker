@@ -1,0 +1,39 @@
+name: I sold it
+description: Record the sale of a card or sealed product you own (filled in by the site).
+title: "Sold: "
+labels: ["sold"]
+body:
+  - type: input
+    id: id
+    attributes:
+      label: Item id
+      description: Filled in by the site, e.g. p63 (a single card) or s46 (a sealed product).
+    validations:
+      required: true
+  - type: input
+    id: price
+    attributes:
+      label: Sold for (¥)
+      description: What the buyer paid, before fees, e.g. 90000.
+    validations:
+      required: true
+  - type: input
+    id: date
+    attributes:
+      label: Date sold
+      description: YYYY-MM-DD. Leave empty for today.
+  - type: input
+    id: quantity
+    attributes:
+      label: Quantity sold (sealed products only)
+      description: How many of a pack lot you sold. Leave empty for all of it.
+  - type: input
+    id: fees
+    attributes:
+      label: Fees and shipping you paid (¥, optional)
+      description: The real total of platform fee, fixed fee and shipping. Leave empty to use the tracker's estimate (9.5% + fixed fee + ¥1,000).
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (optional)
+      description: Buyer, platform, anything you want to remember.

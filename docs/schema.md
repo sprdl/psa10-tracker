@@ -172,6 +172,19 @@ time. To keep the worst-case page load bounded as the archive grows over months 
 of writing, in `assets/app.js`) snapshot files for this — plenty of runway for a
 multi-month trend without ever downloading years of history on every card expand.
 
+## Sold items: `"sold"` in `data/holdings.json`
+
+The site's **Sold it** links (single cards, the owned card page, unopened sealed products) open the `sold.yml`
+form; `scripts/log_purchase.py` (label `sold`) moves the item out of `holdings` / `sealed` and adds a record:
+`{"id": "x123", "kind": "single|sealed", "name", "card_url"|"url", "qty" (sealed), "cost_jpy", "bought",
+"sold_price_jpy", "sold_date", "fees_jpy", "fees_estimated", "notes", "orig": <the original entry>}`. Fees default
+to the cost model (9.5% + ¥200/¥300 + ¥1,000 shipping) unless you typed the real amount. A sealed lot can be sold in
+part (the rest keeps its quantity and its share of the cost). A product with pulls is opened and can't be sold as
+sealed. Profit = sold for − fees − cost. **Undo sale** (remove-purchase form with the `x…` id) puts the original
+back. The Holdings page lists sales with a yearly summary; the value-over-time chart keeps sold items in its
+history and, from the sale date on, counts the money received (so its result is total profit, unrealized plus
+realized, while the header's +/− only covers what you still own).
+
 ## Holdings values: lowest ask or after selling costs
 
 A switch at the top of the Holdings page (saved in this browser) shows every value either at the lowest ask or
