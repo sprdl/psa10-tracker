@@ -663,29 +663,63 @@
     const raw = peak && peak > paid * 1.05 ? peak * 0.95 : paid * 1.25;
     return raw > 0 ? Math.max(LIMIT_STEP, Math.round(raw / LIMIT_STEP) * LIMIT_STEP) : null;
   }
-  // null for a card you don't own; else { tag: 'sell'|'peak'|'rich'|'hold', reasons: [...], target }
+  // ---------- owned cards: position, sell tiers, sell verdict ----------
+  // Sell tiers are written by the evaluation skill like the buy tiers (analysis.sell_tiers:
+  // reassess_below (optional) ≤ take_profit_from ≤ sell_from; analysis.sell_verdict: {tag, reasoning, written}).
+  // Everything else here is arithmetic on what you paid and the live price.
+  function ownedOf(card) {
+    const hs = holdingsFor(card);
+    if (!hs.length) return null;
+    const dates = hs.map((h) => h.purchase_date).filter(Boolean).sort();
+    return { hs, n: hs.length, cost: hs.reduce((a, h) => a + holdingCost(h), 0) / hs.length, since: dates[0] || null, last: dates[dates.length - 1] || null,
+      toGrade: hs.some((h) => h.condition === 'raw_to_grade') };
+  }
+  // The lowest sale price whose proceeds after SNKRDUNK's fee, fixed fee and shipping (sellNet) cover the cost.
+  function breakEven(cost) {
+    const p2 = (cost + SELL_SHIP + 200) / (1 - SELL_FEE);
+    const p = p2 < 30000 ? p2 : Math.max(30000, (cost + SELL_SHIP + 300) / (1 - SELL_FEE));
+    return Math.ceil(p / 100) * 100;
+  }
+  function sellTiersOf(card) {
+    const t = card.analysis && card.analysis.sell_tiers;
+    return t && typeof t.take_profit_from === 'number' && typeof t.sell_from === 'number' ? t : null;
+  }
+  function liveSellTag(t, price) {
+    if (!t || price == null) return null;
+    if (price >= t.sell_from) return 'sell';
+    if (price >= t.take_profit_from) return 'take_profit';
+    if (typeof t.reassess_below === 'number' && price < t.reassess_below) return 'reassess';
+    return 'hold';
+  }
+  // null for a card you don't own; else { tag, reasons: [...], target, tierTag }
+  const SELL_RANK = { sell: 5, take_profit: 4, reassess: 3, peak: 2, rich: 1, hold: 0 };
   const sellCache = new WeakMap();
   function sellState(card) {
     if (!holdingsFor(card).length) return null;
     const key = `${getTarget(card)}|${state.holdings.length}`;
     const hit = sellCache.get(card);
     if (hit && hit.key === key) return hit.v;
-    const price = getRep(card), ask = lowestAsk(card), target = getTarget(card);
+    const price = getRep(card), ask = lowestAsk(card), target = getTarget(card), tiers = sellTiersOf(card);
     const peak = card.analysis && card.analysis.peak && card.analysis.peak.price;
     const reasons = [];
     let tag = 'hold';
-    if (target != null && price != null && price >= target) { tag = 'sell'; reasons.push(`Price ${fmtYen(price)} reached your sell target ${fmtYen(target)}`); }
-    if (peak && price != null && price >= peak * SELL_NEAR_PEAK) { if (tag === 'hold') tag = 'peak'; reasons.push(`Within ${Math.round((1 - SELL_NEAR_PEAK) * 100)}% of the peak ${fmtYen(peak)}`); }
+    const up = (t) => { if (SELL_RANK[t] > SELL_RANK[tag]) tag = t; };
+    const tierTag = liveSellTag(tiers, price);
+    if (tierTag === 'sell') { up('sell'); reasons.push(`Price ${fmtYen(price)} is in the Sell zone (from ${fmtYen(tiers.sell_from)})`); }
+    else if (tierTag === 'take_profit') { up('take_profit'); reasons.push(`Price ${fmtYen(price)} is in the Take-profit zone (from ${fmtYen(tiers.take_profit_from)})`); }
+    else if (tierTag === 'reassess') { up('reassess'); reasons.push(`Price ${fmtYen(price)} fell below ${fmtYen(tiers.reassess_below)}, where the evaluation says to rethink holding`); }
+    if (target != null && price != null && price >= target) { up('sell'); reasons.push(`Price ${fmtYen(price)} reached your sell target ${fmtYen(target)}`); }
+    if (peak && price != null && price >= peak * SELL_NEAR_PEAK) { up('peak'); reasons.push(`Within ${Math.round((1 - SELL_NEAR_PEAK) * 100)}% of the peak ${fmtYen(peak)}`); }
     const ref = salesMedianOf(((card.grades || {}).psa10 || {}).recent_completed_sales);
     if (ask != null && ref && (ask / ref - 1) * 100 >= INSIGHT.askVsSales) {
-      if (tag === 'hold') tag = 'rich';
+      up('rich');
       reasons.push(`Lowest ask ${fmtYen(ask)} is ${Math.round((ask / ref - 1) * 100)}% above recent sales (${fmtYen(ref)})`);
     }
-    const v = { tag, reasons, target };
+    const v = { tag, reasons, target, tierTag };
     sellCache.set(card, { key, v });
     return v;
   }
-  const SELL_LABELS = { sell: 'Sell', peak: 'Near peak', rich: 'Rich ask', hold: 'Hold' };
+  const SELL_LABELS = { sell: 'Sell', take_profit: 'Take profit', reassess: 'Reassess', peak: 'Near peak', rich: 'Rich ask', hold: 'Hold' };
   function sellChip(card) {
     const st = sellState(card);
     if (!st) return '';
@@ -734,6 +768,91 @@
     row.querySelector('[data-act="save"]').addEventListener('click', (e) => { e.stopPropagation(); save(); });
     row.querySelector('[data-act="cancel"]').addEventListener('click', (e) => { e.stopPropagation(); render(); });
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') render(); });
+  }
+
+  // The owned counterpart of the buy gauge: your cost, break-even, sell target and peak against the price,
+  // coloured by the written sell tiers when there are any.
+  function sellScale(card, own) {
+    const a = card.analysis || {}, t = sellTiersOf(card), peak = a.peak && a.peak.price;
+    return roundToThousand(Math.max(peak || 0, t ? t.sell_from * 1.12 : 0, getTarget(card) || 0, getRep(card) || 0, own.cost) * 1.08) || 1000;
+  }
+  function sellSegments(card, scale) {
+    const t = sellTiersOf(card), w = (x) => Math.min(100, Math.max(0, (x / scale) * 100));
+    if (!t) return '<i class="z-sh" style="flex-grow:1"></i>';
+    const r = typeof t.reassess_below === 'number' ? t.reassess_below : 0;
+    return `${r ? `<i class="z-sr" style="width:${w(r)}%"></i>` : ''}<i class="z-sh" style="width:${w(t.take_profit_from - r)}%"></i><i class="z-st" style="width:${w(t.sell_from - t.take_profit_from)}%"></i><i class="z-ss"></i>`;
+  }
+  function sellGaugeHtml(card) {
+    const own = ownedOf(card), a = card.analysis || {}, t = sellTiersOf(card), peak = a.peak && a.peak.price, price = getRep(card), target = getTarget(card);
+    if (!own || price == null) return '';
+    const scale = sellScale(card, own), pct = (v) => Math.min(100, Math.max(0, (v / scale) * 100)).toFixed(1);
+    const edge = (x) => (x > 86 ? ' edge-r' : x < 10 ? ' edge-l' : '');
+    const be = breakEven(own.cost);
+    const mk = (cls, v, title) => `<div class="marker ${cls}" style="left:${pct(v)}%" title="${escapeAttr(title)}"><div class="stem"></div></div>`;
+    return `<div class="gauge-wrap sell-gauge">
+      <div class="gauge-track" data-scale="${scale}"><span class="sg-bar">${sellSegments(card, scale)}</span>
+        ${mk('cost', own.cost, 'You paid ' + fmtYen(own.cost))}${mk('be', be, 'Break-even after selling costs ' + fmtYen(be))}
+        ${target != null ? mk('target', target, 'Your sell target ' + fmtYen(target)) : ''}
+        <div class="marker${edge(pct(price))}" style="left:${pct(price)}%"><div class="tag">${fmtYenShort(price)}</div><div class="stem"></div></div>
+        ${peak ? `<div class="marker peak${edge(pct(peak))}" style="left:${pct(peak)}%"><div class="tag">Peak ${fmtYenShort(peak)}</div><div class="stem"></div></div>` : ''}
+      </div>
+      <div class="gauge-legend sg-legend">${t ? `${typeof t.reassess_below === 'number' ? `<span><i class="z-sr"></i>Reassess &lt;${fmtYenShort(t.reassess_below)}</span>` : ''}<span><i class="z-sh"></i>Hold</span><span><i class="z-st"></i>Take profit ≥${fmtYenShort(t.take_profit_from)}</span><span><i class="z-ss"></i>Sell ≥${fmtYenShort(t.sell_from)}</span>` : ''}
+        <span><i class="sg-dot cost"></i>Paid ${fmtYenShort(own.cost)}</span><span><i class="sg-dot be"></i>Break-even ${fmtYenShort(be)}</span>${target != null ? `<span><i class="sg-dot target"></i>Target ${fmtYenShort(target)}</span>` : ''}</div>
+    </div>`;
+  }
+  // What you hold, what it's worth now, and what selling would leave after costs.
+  function positionStats(card) {
+    const own = ownedOf(card), price = getRep(card);
+    if (!own || price == null) return null;
+    const gross = price - own.cost, net = sellNet(price) - own.cost, be = breakEven(own.cost);
+    const days = own.since ? Math.max(0, Math.floor((Date.now() - Date.parse(own.since + 'T00:00:00+09:00')) / 86400000)) : null;
+    return { own, price, gross, grossPct: own.cost ? (gross / own.cost) * 100 : null, net, netPct: own.cost ? (net / own.cost) * 100 : null, be, days };
+  }
+  const signedYen = (v) => `${v >= 0 ? '+' : '−'}${fmtYen(Math.abs(v))}`;
+  function positionHtml(card) {
+    const ps = positionStats(card);
+    if (!ps) return '';
+    const { own } = ps;
+    const dts = own.hs.map((h) => `${escapeHtml(h.purchase_date || '—')} ${fmtYen(h.purchase_price_jpy)}`).join(' · ');
+    return `<div class="cd-stats pos-stats">
+      <div class="cd-stat"><div class="lbl">You paid${own.n > 1 ? ` (avg of ${own.n})` : ''}</div><div class="val">${fmtYen(own.cost)}</div><div class="s muted">${dts}${own.hs.some((h) => h.condition === 'raw_to_grade') ? ' · incl. grading' : ''}</div></div>
+      <div class="cd-stat"><div class="lbl">Worth now</div><div class="val">${fmtYen(ps.price)}</div><div class="s ${ps.gross >= 0 ? 'pos' : 'neg'}">${signedYen(ps.gross)}${ps.grossPct != null ? ' (' + fmtPct(ps.grossPct) + ')' : ''}</div></div>
+      <div class="cd-stat"><div class="lbl">After selling costs</div><div class="val ${ps.net >= 0 ? 'pos' : 'neg'}">${signedYen(ps.net)}</div><div class="s muted">fee 9.5% + fixed fee + shipping${ps.netPct != null ? ' · ' + fmtPct(ps.netPct) : ''}</div></div>
+      <div class="cd-stat"><div class="lbl">Break-even price</div><div class="val">${fmtYen(ps.be)}</div><div class="s muted">${ps.price >= ps.be ? fmtYen(ps.price - ps.be) + ' above' : fmtYen(ps.be - ps.price) + ' to go'}${ps.days != null ? ` · held ${ps.days} day${ps.days === 1 ? '' : 's'}` : ''}</div></div>
+    </div>`;
+  }
+  // The live sell verdict (computed from today's price vs the written sell tiers), the written sell analysis
+  // (folded) and the old buy-side analysis (folded, from before you owned it). Returns { html, dv }.
+  function ownedVerdict(card) {
+    const st = sellState(card), ps = positionStats(card), t = sellTiersOf(card), a = card.analysis || {}, sv = a.sell_verdict;
+    if (!st || !ps) return { html: '', dv: null };
+    const price = ps.price, lines = [];
+    const heads = { sell: `Sell: ${fmtYen(price)} is in the Sell zone or at your target`, take_profit: `Take profit: ${fmtYen(price)} is in the Take-profit zone`,
+      reassess: `Reassess: ${fmtYen(price)} is below ${t ? fmtYen(t.reassess_below) : ''}`, peak: `Hold, near the peak: ${fmtYen(price)} is within 5% of ${fmtYen(a.peak && a.peak.price)}`,
+      rich: 'Hold, but the ask looks rich against recent sales', hold: t ? `Hold: ${fmtYen(t.take_profit_from - price)} to the Take-profit zone` : 'Hold' };
+    const head = st.tag === 'hold' && st.target != null && !t ? `Hold: ${fmtYen(st.target - price)} to your sell target` : heads[st.tag];
+    lines.push(`You paid ${fmtYen(ps.own.cost)}; it is worth ${fmtYen(price)} now (${signedYen(ps.gross)}), ${signedYen(ps.net)} after selling costs.`);
+    if (t) lines.push(`Sell tiers: ${typeof t.reassess_below === 'number' ? `reassess below ${fmtYen(t.reassess_below)}, ` : ''}take profit from ${fmtYen(t.take_profit_from)}, sell from ${fmtYen(t.sell_from)}.`);
+    if (st.target != null) lines.push(price >= st.target ? `Your sell target ${fmtYen(st.target)} is reached.` : `Your sell target is ${fmtYen(st.target)}, ${fmtYen(st.target - price)} away.`);
+    st.reasons.filter((r) => !/sell target|Sell zone|Take-profit zone|fell below/.test(r)).forEach((r) => lines.push(r + '.'));
+    let writtenHtml = '';
+    if (sv && sv.reasoning) {
+      const wd = sv.written ? mercDay(sv.written) : '';
+      writtenHtml = `<details class="verdict-written"><summary>Written sell analysis${wd ? ' · ' + escapeHtml(wd) : ''}${sv.label ? ': ' + escapeHtml(sv.label) : ''}</summary><p>${escapeHtml(sv.reasoning)}</p><div class="verdict-written-note">Written by the evaluation; its numbers are from that day.</div></details>`;
+    } else if (!t) {
+      writtenHtml = `<div class="tier-pending needs-review">No sell tiers written for this card yet. Run its evaluation with the sell-side block (see docs/schema.md: <code>sell_tiers</code> and <code>sell_verdict</code>); until then only your own target, the peak and the sales check above can signal a sell.</div>`;
+    }
+    const v = a.verdict;
+    const buyHtml = v && v.reasoning ? `<details class="verdict-written"><summary>Buy-side analysis (written before you owned it)${v.written ? ' · ' + escapeHtml(mercDay(v.written)) : ''}</summary><p>${escapeHtml(v.reasoning)}</p></details>` : '';
+    const html = `<div class="verdict"><h3 class="verdict-head">${escapeHtml(head)}</h3><p>${lines.map(escapeHtml).join(' ')}</p>${writtenHtml}${buyHtml}</div>`;
+    return { html, dv: { headline: head, line: lines[0], held: false, tag: st.tag } };
+  }
+  // Zones column in the overview and collection: the same sell zones as a thin bar.
+  function sellBarHtml(card, cls) {
+    const own = ownedOf(card), price = getRep(card);
+    if (!own || price == null) return '<span class="zb-none">—</span>';
+    const scale = sellScale(card, own), pct = (v) => Math.min(100, Math.max(0, (v / scale) * 100)).toFixed(1) + '%', target = getTarget(card);
+    return `<span class="zb ${cls || ''}" title="Your cost, selling target and the sell zones"><span class="zb-track">${sellSegments(card, scale)}</span><span class="zb-cost" style="left:${pct(own.cost)}"></span><span class="zb-now" style="left:${pct(price)}"></span>${target != null ? `<span class="zb-lim" style="left:${pct(target)}"></span>` : ''}</span>`;
   }
 
   // ---------- odds of a listing reaching a price ----------
@@ -790,7 +909,8 @@
   // A limit is "hit" when a PSA10 listing you could buy right now is at or below it —
   // so this compares the lowest ask, not the representative (sales) price.
   function lowestAsk(card) { const p = card.grades && card.grades.psa10; return p ? p.lowest_price : null; }
-  function limitHit(card) { const l = getLimit(card), a = lowestAsk(card); return l != null && a != null && a <= l; }
+  // A limit is a buy signal: it no longer counts once you own the card (the sell target takes over).
+  function limitHit(card) { const l = getLimit(card), a = lowestAsk(card); return l != null && a != null && a <= l && !holdingsFor(card).length; }
 
   // ---------- purchases (data/holdings.json, written by GitHub Actions) ----------
   // "Bought it" / "Remove" open a pre-filled GitHub issue form; .github/workflows/purchases.yml
@@ -1406,7 +1526,8 @@
     const h = heatOf(card);
     const rate = h && h.psa ? h.psa.rate : null;
     const depth = depthInfo(card.grades.psa10);
-    const lim = getLimit(card);
+    const own = holdingsFor(card).length > 0;   // owners read these as a seller: no limit lines, sell wording
+    const lim = own ? null : getLimit(card);
     const sp = salesSplit(card, 7);
     const medRecent = sp.recent.length >= 3 ? median(sp.recent) : null;
     const medBefore = sp.before.length >= 3 ? median(sp.before) : null;
@@ -1432,9 +1553,11 @@
       let meaning;
       if (up) meaning = confirm === false || thin
         ? 'This looks more like a thin market that hasn\'t repriced than real strength: asks can lag a falling market and then catch down in steps. Worth watching whether sales follow the market down.'
+        : own ? 'Real relative strength: buyers are paying up for this card while the tier falls. It may keep outperforming, or lag and catch down later if the correction continues; a good moment to check your sell tiers.'
         : 'Real relative strength: buyers are paying up for this card while the tier falls. It may keep outperforming, or lag and catch down later if the correction continues. Either way a dip to your price is less likely soon than for the weaker cards.';
       else meaning = confirm === false
         ? 'The asks are falling but sales haven\'t followed yet: it may be a few sellers undercutting rather than a real drop. Watch the next checks.'
+        : own ? 'It is falling for its own reasons, faster than the market: often new supply (graded copies coming back, a reprint) or fading interest. Weak cards tend to keep sliding for a while, so check whether the reasons you bought it still hold.'
         : 'It is falling for its own reasons, faster than the market: often new supply (graded copies coming back, a reprint) or fading interest. Weak cards tend to keep sliding for a while, which can bring your price into reach.';
       lines.push(meaning);
       if (lim != null && ask > lim) { const o = touchOdds(card, lim); if (o && !o.reached) lines.push(`Your limit ${fmtYen(lim)} is ${Math.round((1 - lim / ask) * 100)}% below today's ask; the odds model puts a listing there at ${fmtOdds(o.p30)} within 30 days (it uses the card's own swings, not this week's trend).`); }
@@ -1448,8 +1571,10 @@
       if (Math.abs(d) >= INSIGHT.askVsSales) out.push({ key: 'sales', score: Math.abs(d) / INSIGHT.askVsSales * 0.9, tone: d > 0 ? 'down' : 'up',
         title: d > 0 ? `Asking ${Math.round(d)}% above recent sales` : `Listed ${Math.round(-d)}% below recent sales`,
         lines: [d > 0
-          ? `The cheapest listing is ${fmtYen(ask)}, but recent sales are around ${fmtYen(ref)}. Sellers are asking more than buyers have been paying; either asks come down, or a sale at the higher price would confirm a move up.`
-          : `The cheapest listing is ${fmtYen(ask)}, below recent sales around ${fmtYen(ref)}. Either a bargain that won't last, or an early sign that sale prices are about to drop too.`] });
+          ? (own ? `The cheapest listing is ${fmtYen(ask)}, but recent sales are around ${fmtYen(ref)}. A sale would most likely land near the sales level, so value your copy there rather than at the ask.`
+            : `The cheapest listing is ${fmtYen(ask)}, but recent sales are around ${fmtYen(ref)}. Sellers are asking more than buyers have been paying; either asks come down, or a sale at the higher price would confirm a move up.`)
+          : (own ? `The cheapest listing is ${fmtYen(ask)}, below recent sales around ${fmtYen(ref)}. Either someone is selling quickly, or an early sign that sale prices are about to drop too.`
+            : `The cheapest listing is ${fmtYen(ask)}, below recent sales around ${fmtYen(ref)}. Either a bargain that won't last, or an early sign that sale prices are about to drop too.`)] });
     }
 
     // 3) a big jump since the previous check
@@ -1477,6 +1602,7 @@
         title: up ? `Slab premium stretched: ${Math.round(pk.dev)}% above its norm` : `Slab premium compressed: ${Math.round(-pk.dev)}% below its norm`,
         lines: [`A PSA10 costs ${fmtX(pk.prem)} a raw copy on pokeca-chart (${escapeHtml(pk.asof)}), against ${fmtX(pk.norm)} over the previous six months.${sk.asks || sk.sales ? ` On SNKRDUNK today: ${[sk.asks ? fmtX(sk.asks) + ' on lowest asks' : '', sk.sales ? fmtX(sk.sales) + ' on recent sales' : ''].filter(Boolean).join(', ')}.` : ''}`,
           up ? 'In the 2022–26 test, premiums this far above the norm tended to close within a month, mostly by raw prices catching up, while the PSA10 lagged the market by about 3 points. A small effect: context, not a reason to change the tiers.'
+             : own ? "The slab is cheap relative to a raw copy by this card's own standard. In the 2022–26 test, the PSA10 then did about 2 points better than the market over the next month, with raw lagging. Small, and a reason not to rush a sale."
              : "The slab is cheap relative to a raw copy by this card's own standard. In the 2022–26 test, the PSA10 then did about 2 points better than the market over the next month, with raw lagging. Small, but it makes buying raw to grade yourself even less attractive here."] });
     }
     return out.sort((a, b) => b.score - a.score);
@@ -1490,6 +1616,7 @@
     }).join('');
   }
   function writtenInsight(card) {
+    if (holdingsFor(card).length) return ''; // written for a buyer (limit, Buy line); not shown once you own the card
     const e = state.insights && state.insights.insights && state.insights.insights[card.url];
     if (!e || !e.text) return '';
     const age = Math.floor(daysBetween(e.written, refTime()));
@@ -1527,7 +1654,10 @@
       if (pk) parts.push(`${pk.dev >= 0 ? '+' : '−'}${Math.abs(pk.dev).toFixed(0)}% vs its 6-month norm on pokeca-chart${pk.age > 21 ? ` (as of ${pk.asof})` : Math.abs(pk.dev) < PREM_FLAG ? ', in its usual range' : ''}`);
       out.push(['Slab premium', parts.length ? parts.join(' · ') : 'no raw price to compare']);
     }
-    if (!fired.has('limit')) {
+    if (holdingsFor(card).length) {
+      const t = getTarget(card), pr = getRep(card);
+      out.push(['Your sell target', t == null ? 'none set' : pr >= t ? `reached (${fmtYen(t)})` : `${fmtYen(t)}, ${fmtYen(t - pr)} above today's price`]);
+    } else if (!fired.has('limit')) {
       const lim = getLimit(card);
       out.push(['Your limit', lim == null ? 'none set' : ask <= lim ? `lowest ask is at or below your ${fmtYen(lim)} limit` : `${fmtYen(lim)}, ${Math.round((ask / lim - 1) * 100)}% below today's ask`]);
     }
@@ -1890,7 +2020,7 @@
       ${list.map((x, i) => `<details class="ins ins-${x.tone}"${i === 0 && !w ? ' open' : ''}><summary>${escapeHtml(x.title)}</summary>${x.lines.map((l) => `<p>${l}</p>`).join('')}</details>`).join('')}${quietBlock}</div>`;
   }
   const INS_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5l1.6 4.2 4.4.3-3.4 2.8 1.1 4.3L8 10.7l-3.7 2.4 1.1-4.3L2 6l4.4-.3z"/></svg>';
-  function hasInsight(card) { return insightsFor(card).some((x) => x.score >= 1.5) || !!(state.insights && state.insights.insights && state.insights.insights[card.url]); }
+  function hasInsight(card) { return insightsFor(card).some((x) => x.score >= 1.5) || (!holdingsFor(card).length && !!(state.insights && state.insights.insights && state.insights.insights[card.url])); }
 
   // ---------- render: banners (human-authored + auto-detected) ----------
 
@@ -2542,6 +2672,7 @@
   // ---------- render: overview list + detail drawer ----------
 
   function zoneBarHtml(card, cls) {
+    if (holdingsFor(card).length) return sellBarHtml(card, cls);
     const a = card.analysis || {};
     const t = a.tiers, peak = a.peak && a.peak.price;
     if (!t) return `<span class="zb-none">no tiers yet</span>`;
@@ -2868,6 +2999,7 @@
       }
     }
 
+    const own = ownedOf(card); // owned cards get the sell view; everything buy-side is left out
     const limit = getLimit(card);
     const ask = lowestAsk(card);
     const owned = holdingsFor(card);
@@ -2883,7 +3015,8 @@
 
     let gaugeHtml = '';
     const edge = (pct) => (pct > 86 ? ' edge-r' : pct < 10 ? ' edge-l' : '');
-    if (analysis && analysis.tiers && peak && peak.price) {
+    if (own) gaugeHtml = sellGaugeHtml(card);
+    else if (analysis && analysis.tiers && peak && peak.price) {
       const g = computeGauge(analysis.tiers, peak.price, repPrice);
       const t = analysis.tiers;
       if (g) {
@@ -2958,7 +3091,9 @@
       verdictHtml = `<div class="tier-pending">Tiers not yet established for this card, showing raw stats only.</div>`;
     }
 
-    if (mode === 'drawer') return drawerHtml(card, { shortName, code, pack, repPrice, deltaHtml, ownedHtml, gaugeHtml, dv, displayTag, peak });
+    const ov = own ? ownedVerdict(card) : null;
+    if (ov) { verdictHtml = ov.html; dv = ov.dv; }
+    if (mode === 'drawer') return drawerHtml(card, { shortName, code, pack, repPrice, deltaHtml, ownedHtml, gaugeHtml, dv, displayTag, peak, own });
 
     const rep = getRep(card);
     const diy = computeDiyEconomics(card, rep);
@@ -2979,13 +3114,14 @@
           : !(card.grades && card.grades.raw_a_grade && card.grades.raw_a_grade.lowest_price) ? 'No raw A-rank listing right now, so the DIY cost can\'t be worked out.'
           : 'No PSA10 gem rate yet (the card\'s population hasn\'t been looked up), so the DIY cost can\'t be worked out.'}</div>`;
 
-    const tabs = [['overview', 'Overview'], ['story', 'Story'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY'], ['upside', 'Upside']].filter(([k]) => k !== 'story' || storyOf(card));
+    const tabs = [['overview', 'Overview'], ['story', 'Story'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY'], ['upside', 'Upside']]
+      .filter(([k]) => (k !== 'story' || storyOf(card)) && (k !== 'diy' || !own || own.toGrade)); // DIY (buy slab vs grade it yourself) is a buying question
     const actionsHtml = `<div class="cd-actions">
-          <a class="btn btn-primary" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
+          <a class="btn${own ? '' : ' btn-primary'}" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">${own ? '+ Bought another' : '✓ Bought it'}</a>
           <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
           ${mode === 'page' ? removeBtnHtml(card) : ''}
         </div>`;
-    const cur = state.cardTab === 'story' && !storyOf(card) ? 'overview' : state.cardTab || 'overview';
+    const cur = tabs.some(([k]) => k === state.cardTab) ? state.cardTab : 'overview';
     const imgSize = mode === 'page' ? 'xl' : 'md';
 
     return `
@@ -2998,7 +3134,7 @@
             <span class="cd-plabel">${analysis && analysis.representative_price != null ? 'representative PSA10' : 'lowest PSA10 ask'}${flagHtml}</span>
             <span class="cd-off">${offPeakHtml}</span>
             <span class="cd-delta">${deltaHtml}</span>
-            <span class="cd-tags">${tagChip(card)}${ownedHtml}</span>
+            <span class="cd-tags">${own ? sellChip(card) : tagChip(card)}${ownedHtml}</span>
             ${mode === 'page' ? actionsHtml : ''}
           </div>
         </div>
@@ -3007,11 +3143,7 @@
         </div>
         <div class="cd-panel" data-panel="overview"${cur === 'overview' ? '' : ' hidden'}>
           ${gaugeHtml}
-          ${tierReviewHtml(card)}
-          ${tierCheckHtml(card)}
-          ${limitRowHtml}
-          ${sellRowHtml(card)}
-          ${mercariRowHtml(card)}
+          ${own ? positionHtml(card) + sellRowHtml(card) : tierReviewHtml(card) + tierCheckHtml(card) + limitRowHtml + mercariRowHtml(card)}
           ${insightsHtml(card)}
           ${vsMarketHtml(card)}
           ${hypeHtml(card)}
@@ -3021,8 +3153,8 @@
         </div>
         ${storyOf(card) ? `<div class="cd-panel" data-panel="story"${cur === 'story' ? '' : ' hidden'}>${storyHtml(card)}</div>` : ''}
         <div class="cd-panel" data-panel="history"${cur === 'history' ? '' : ' hidden'}><div class="history-block"><div class="loading-inline">Loading full history…</div></div></div>
-        <div class="cd-panel" data-panel="listings"${cur === 'listings' ? '' : ' hidden'}>${buildGradeDetail('PSA10', psa10, getLimit(card))}${raw ? buildGradeDetail('Raw A-rank', raw) : ''}</div>
-        <div class="cd-panel" data-panel="diy"${cur === 'diy' ? '' : ' hidden'}>${diyHtml}${premiumHtml(card)}</div>
+        <div class="cd-panel" data-panel="listings"${cur === 'listings' ? '' : ' hidden'}>${buildGradeDetail('PSA10', psa10, own ? null : getLimit(card))}${raw ? buildGradeDetail('Raw A-rank', raw) : ''}</div>
+        ${tabs.some(([k]) => k === 'diy') ? `<div class="cd-panel" data-panel="diy"${cur === 'diy' ? '' : ' hidden'}>${diyHtml}${premiumHtml(card)}</div>` : ''}
         <div class="cd-panel" data-panel="upside"${cur === 'upside' ? '' : ' hidden'}>${upsideHtml(card)}</div>
         ${mode === 'page' ? '' : actionsHtml}
       </div>`;
@@ -3031,12 +3163,12 @@
 
   // Overview side panel: only what's needed to decide "act or wait"; the card page has the rest.
   function drawerHtml(card, o) {
-    const id = cardId(card), lim = getLimit(card), ask = lowestAsk(card);
-    const tone = o.displayTag === 'definitely_buy' || o.displayTag === 'buy' ? 'buyzone' : o.displayTag === 'dont_buy' ? 'dontbuy' : '';
+    const id = cardId(card), lim = getLimit(card), ask = lowestAsk(card), own = o.own;
+    const tone = own ? (o.dv && ['sell', 'take_profit'].includes(o.dv.tag) ? 'buyzone' : o.dv && o.dv.tag === 'reassess' ? 'dontbuy' : '') : o.displayTag === 'definitely_buy' || o.displayTag === 'buy' ? 'buyzone' : o.displayTag === 'dont_buy' ? 'dontbuy' : '';
     const verdict = o.dv
       ? `<div class="dw-verdict ${o.dv.held ? 'buyzone' : tone}">${o.dv.headline && !o.dv.held ? `<b>${escapeHtml(o.dv.headline)}.</b> ` : ''}${escapeHtml(o.dv.line)}</div>`
       : `<div class="dw-verdict muted">No written verdict yet${o.displayTag ? ': the zone comes from the live price vs. the tiers' : ''}.</div>`;
-    const due = tierReview(card);
+    const due = own ? null : tierReview(card);
     const odds = lim != null ? touchOdds(card, lim) : null;
     const limTile = `<div class="dw-st dw-lim limit-row">
         <div class="k">My limit</div>
@@ -3047,6 +3179,9 @@
           ? '<button type="button" class="limit-btn dw-mini" data-act="edit" title="Change your limit">Edit</button><button type="button" class="limit-btn dw-mini" data-act="clear" title="Remove your limit">Clear</button>'
           : '<button type="button" class="limit-btn dw-mini" data-act="edit">+ Set my limit</button>'}</div>
       </div>`;
+    const ps = own ? positionStats(card) : null;
+    const posTile = ps ? `<div class="dw-st"><div class="k">Vs. bought</div><div class="v ${ps.gross >= 0 ? 'pos' : 'neg'}">${ps.grossPct != null ? fmtPct(ps.grossPct) : '—'}</div><div class="s">${signedYen(ps.gross)} · paid ${fmtYen(ps.own.cost)}</div></div>` : '';
+    const netTile = ps ? `<div class="dw-st"><div class="k">After costs</div><div class="v ${ps.net >= 0 ? 'pos' : 'neg'}">${signedYen(ps.net)}</div><div class="s">break-even ${fmtYen(ps.be)}</div></div>` : '';
     const last = priceChangeLast(card), d7 = priceChangeAgo(card, 7), d30 = priceChangeAgo(card, 30);
     const pc = (c) => (c ? `<span class="${dirClass(c.pct)}">${c.pct === 0 ? '±0' : fmtPct(c.pct)}</span>` : '—');
     const main = d7 || last;
@@ -3056,7 +3191,7 @@
     const ud = ask ? upsideDist(card, 24, false) : null;
     const hold = ud ? profitOdds(ud.v, ask).p : null;
     const holdTile = `<div class="dw-st"><div class="k">Hold value</div><div class="v">${hold != null ? Math.round(hold * 100) + '%' : '—'}</div><div class="s">chance of a profit after fees in 24 months</div></div>`;
-    const w = state.insights && state.insights.insights && state.insights.insights[card.url];
+    const w = own ? null : state.insights && state.insights.insights && state.insights.insights[card.url];
     const ins = w && w.headline
       ? `<a class="dw-ins" href="#/card/${escapeAttr(id)}">${INS_ICON}<span><b>${escapeHtml(w.headline)}</b> <i>Read the analysis →</i></span></a>`
       : hasInsight(card) ? `<a class="dw-ins" href="#/card/${escapeAttr(id)}">${INS_ICON}<span>Something stands out in the numbers. <i>See the card page →</i></span></a>` : '';
@@ -3068,18 +3203,18 @@
           <span class="cd-meta">${escapeHtml([o.code, o.pack].filter(Boolean).join(' · '))}</span>
           <span class="cd-price display">${fmtYen(o.repPrice)}</span>
           <span class="dw-delta">${o.deltaHtml}</span>
-          <span class="cd-tags">${tagChip(card)}${heatChip(card)}${o.ownedHtml}</span>
+          <span class="cd-tags">${own ? sellChip(card) : tagChip(card)}${heatChip(card)}${o.ownedHtml}</span>
         </div>
       </div>
       ${verdict}
       ${due && due.due ? `<div class="dw-due">Tiers due for a review: ${escapeHtml(due.reasons.join(', '))}</div>` : ''}
       ${o.gaugeHtml}
       ${ins}
-      <div class="dw-stats">${limTile}${moves}${peakTile}${holdTile}</div>
+      <div class="dw-stats">${own ? posTile + netTile + moves + peakTile : limTile + moves + peakTile + holdTile}</div>
       ${sellRowHtml(card)}
       <div class="dw-acts">
         <a class="btn btn-primary" href="#/card/${escapeAttr(id)}">Open card page →</a>
-        <a class="btn" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
+        <a class="btn" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">${own ? '+ Bought another' : '✓ Bought it'}</a>
         <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
       </div>
     </div>`;
@@ -3242,21 +3377,23 @@
   }
   const dq = (v, p) => v[Math.min(v.length - 1, Math.max(0, Math.round(p * (v.length - 1))))];
   const pAbove = (v, x) => v.filter((r) => r >= x).length / v.length;
-  function profitOdds(v, buy) {     // share of outcomes where selling nets at least the purchase price
+  function profitOdds(v, buy, cost) {     // share of outcomes where selling nets at least the purchase price (cost, default = buy)
+    if (cost == null) cost = buy;
     let lo = -3, hi = 3;            // find the break-even log return
-    for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (sellNet(buy * Math.exp(m)) >= buy) hi = m; else lo = m; }
+    for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (sellNet(buy * Math.exp(m)) >= cost) hi = m; else lo = m; }
     return { p: pAbove(v, hi), need: Math.expm1(hi) };
   }
 
-  function upsideCol(card, buy, label) {
+  function upsideCol(card, buy, label, cost) {
+    if (cost == null) cost = buy;   // an owned card starts from today's price but is measured against what was paid
     const peak = card.analysis && card.analysis.peak && card.analysis.peak.price;
     const rows = [12, 24].map((h) => {
       const d = upsideDist(card, h, false), dh = upsideDist(card, h, true);
       if (!d) return '';
       const sell = (p) => buy * Math.exp(dq(d.v, p));
-      const pr = profitOdds(d.v, buy), prh = profitOdds(dh.v, buy);
+      const pr = profitOdds(d.v, buy, cost), prh = profitOdds(dh.v, buy, cost);
       const pk = peak && peak > buy ? pAbove(d.v, Math.log(peak / buy)) : null;
-      const cell = (p, cls) => { const s = sell(p), net = sellNet(s) - buy; return `<div class="up-cell ${cls}"><b>${fmtYen(s)}</b><span class="${net >= 0 ? 'pos' : 'neg'}">${net >= 0 ? '+' : '−'}${fmtYen(Math.abs(net))} after fees</span></div>`; };
+      const cell = (p, cls) => { const s = sell(p), net = sellNet(s) - cost; return `<div class="up-cell ${cls}"><b>${fmtYen(s)}</b><span class="${net >= 0 ? 'pos' : 'neg'}">${net >= 0 ? '+' : '−'}${fmtYen(Math.abs(net))} after fees</span></div>`; };
       return `<div class="up-h"><div class="up-hl">In ${h} months</div>
         <div class="up-range">${cell(0.1, 'lo')}${cell(0.5, 'mid')}${cell(0.9, 'hi')}</div>
         <div class="up-lbls"><span>Weak (1 in 10 worse)</span><span>Typical</span><span>Strong (1 in 10 better)</span></div>
@@ -3266,7 +3403,7 @@
   }
 
   function upsideHtml(card) {
-    const vm = state.valueModel, ask = lowestAsk(card), lim = getLimit(card);
+    const vm = state.valueModel, ask = lowestAsk(card), lim = getLimit(card), own = ownedOf(card);
     if (!vm) return '<div class="tier-pending">No value model yet.</div>';
     if (!ask) return '<div class="tier-pending">No PSA10 price yet, so there is nothing to start from.</div>';
     const age = cardAgeMonths(card), d12 = upsideDist(card, 12, false);
@@ -3274,9 +3411,9 @@
       ? `<p class="cd-note warn">This card is ${age} month${age === 1 ? '' : 's'} old. Cards this young have kept falling against the market (on average ${Math.round(-Math.expm1(d12.drift) * 100)}% over the next 12 months), so the middle of the range is lower than for an older card.</p>` : '';
     const sw = d12 ? (d12.k > 1.04 ? 'has swung more than most modern cards lately, so its range is a little wider (only a little: in the backtest, a card’s past swings barely predicted its later ones)' : d12.k < 0.96 ? 'has swung less than most modern cards lately, so its range is a little narrower (only a little: in the backtest, calm cards later moved almost as much as the rest)' : 'swings about as much as most modern cards') : '';
     return `<div class="up-wrap">
-      <div class="up-cols">${upsideCol(card, ask, "Bought today")}${lim != null && lim < ask ? upsideCol(card, lim, 'Bought at my limit') : ''}</div>
+      <div class="up-cols">${own ? upsideCol(card, ask, 'Your copy, from today\'s ask', own.cost) : upsideCol(card, ask, "Bought today") + (lim != null && lim < ask ? upsideCol(card, lim, 'Bought at my limit') : '')}</div>
       ${ageNote}
-      ${lim != null && lim < ask ? `<p class="cd-note">The chance of a profit is about the same in both columns: if a listing does drop to your limit, history gives no sign that the price then recovers faster or slower, so the limit buys the same chances for less money, if it fills (${(() => { const o = touchOdds(card, lim); return o && !o.reached ? `${fmtOdds(o.p90)} within 90 days` : 'already reachable'; })()}).</p>` : ''}
+      ${!own && lim != null && lim < ask ? `<p class="cd-note">The chance of a profit is about the same in both columns: if a listing does drop to your limit, history gives no sign that the price then recovers faster or slower, so the limit buys the same chances for less money, if it fills (${(() => { const o = touchOdds(card, lim); return o && !o.reached ? `${fmtOdds(o.p90)} within 90 days` : 'already reachable'; })()}).</p>` : ''}
       <p class="cd-note">How it's worked out: every 12- and 24-month stretch of 125 modern PSA10s on pokeca-chart, ${escapeHtml((vm.source || '').replace(/^.*cards, /, ''))}. The market part comes from how the whole tier moved, shifted so the typical outcome is no change (no market growth assumed), because 2022–26 holds one big rally and one crash and its average says little about the next years. So “Typical” is roughly today's price, and the loss shown there is the cost of selling; the italic figure shows the odds if the market repeats 2022–26. The card part is how far single cards strayed from the market; this card ${sw}. Selling costs SNKRDUNK's Regular-rank fee (9.5%), the ¥300 transfer fee and about ¥1,000 shipping. Not modelled: events for this Pokémon, reprints and the coming wave of graded copies. The 2022–26 data has only one full boom and bust, so treat these as rough ranges, not forecasts.</p>
     </div>`;
   }
@@ -3985,6 +4122,7 @@
   function wireLimitControls(article, card) {
     wireSellRow(article, card);
     const row = article.querySelector('.limit-row');
+    if (!row) return; // owned view: no limit row
     const stop = (e) => e.stopPropagation();
     row.addEventListener('click', stop);
 

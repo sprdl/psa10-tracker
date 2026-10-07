@@ -162,6 +162,8 @@ a.kpi:hover { border-color: var(--line-3); color: var(--text); }
 .limit-chip { background: var(--accent); color: var(--on-accent); }
 .vtag.sell-sell { background: var(--accent); color: var(--on-accent); }
 .vtag.sell-peak, .vtag.sell-rich { color: var(--accent); border-color: var(--accent); }
+.vtag.sell-take_profit { background: var(--green); color: #06170d; }
+.vtag.sell-reassess { color: var(--neg); border-color: var(--neg); }
 .vtag.sell-hold { color: var(--muted); border-color: var(--line-3); }
 .tile-chips .vtag.sell-hold { background: var(--bg); }
 .sell-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid #2c2c32; border-radius: var(--radius); padding: 10px 12px; font-size: 13px; margin-top: 8px; }
@@ -1446,3 +1448,22 @@ a.sl-icon:hover { border-color: var(--accent); }
 .bd-seg input { accent-color: var(--accent); }
 .bd-hint { font-size: 11.5px; color: var(--muted-2); line-height: 1.5; margin-top: -4px; }
 .bd-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+
+/* ---------- owned cards: sell zones, gauge markers ---------- */
+.z-sr { background: var(--red); }
+.z-sh { background: var(--line-3); }
+.z-st { background: var(--amber); }
+.z-ss { background: var(--green-strong); flex-grow: 1; }
+.sell-gauge .sg-bar { position: absolute; inset: 0; display: flex; border-radius: 5px; overflow: hidden; }
+.sell-gauge .sg-bar i { display: block; height: 100%; }
+.marker.cost .stem, .marker.be .stem, .marker.target .stem { height: 14px; width: 3px; }
+.marker.cost, .marker.be, .marker.target { top: -2px; }
+.marker.cost .stem { background: var(--muted); }
+.marker.be .stem { background: #7aa7ff; }
+.marker.target .stem { background: var(--accent); }
+.sg-legend { flex-wrap: wrap; }
+.sg-dot { display: inline-block !important; width: 8px !important; height: 8px !important; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+.sg-dot.cost { background: var(--muted); } .sg-dot.be { background: #7aa7ff; } .sg-dot.target { background: var(--accent); }
+.zb-cost { position: absolute; top: 4px; bottom: 4px; width: 2px; margin-left: -1px; background: var(--muted); border-radius: 1px; }
+.pos-stats .s { font-size: 12px; margin-top: 2px; }
+.pos-stats .s.pos { color: var(--green); } .pos-stats .s.neg { color: var(--neg); }

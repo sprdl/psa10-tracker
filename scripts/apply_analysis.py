@@ -42,6 +42,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 VALID_TAGS = {"definitely_buy", "buy", "watch", "dont_buy", "defer"}
+VALID_SELL_TAGS = {"hold", "take_profit", "sell", "reassess"}
 VALID_SOURCES = {"sales_confirmed", "ask_depth", "unconfirmed"}
 TAG_LABELS = {"definitely_buy": "Definitely buy", "buy": "Buy", "watch": "Watch",
               "dont_buy": "Don't buy", "defer": "Defer"}
@@ -127,7 +128,7 @@ def parse_input(raw: str):
 
 
 def looks_like_analysis(obj) -> bool:
-    return isinstance(obj, dict) and any(k in obj for k in ("tiers", "verdict", "representative_price", "peak"))
+    return isinstance(obj, dict) and any(k in obj for k in ("tiers", "verdict", "representative_price", "peak", "sell_tiers", "sell_verdict"))
 
 
 def to_entries(data, card_arg: Optional[str]) -> List[Tuple[str, dict]]:
@@ -141,7 +142,7 @@ def to_entries(data, card_arg: Optional[str]) -> List[Tuple[str, dict]]:
     entries = [(k, v) for k, v in data.items() if not k.startswith("_")]
     bad = [k for k, v in entries if not looks_like_analysis(v)]
     if bad:
-        die("These entries don't look like analysis blocks (no tiers/verdict/peak): " + ", ".join(bad))
+        die("These entries don't look like analysis blocks (no tiers/verdict/peak/sell_tiers): " + ", ".join(bad))
     if not entries:
         die("No card entries found in the input.")
     return entries
@@ -160,6 +161,23 @@ def validate(key: str, a: dict) -> List[str]:
         if not (t["definitely_buy"] <= t["buy_upper"] <= t["ceiling"]):
             die(f"{key}: tiers must satisfy definitely_buy ≤ buy_upper ≤ ceiling "
                 f"(got {t['definitely_buy']} / {t['buy_upper']} / {t['ceiling']}).")
+    st = a.get("sell_tiers")
+    if st is not None:
+        for k in ("take_profit_from", "sell_from"):
+            if not isinstance(st.get(k), (int, float)):
+                die(f"{key}: sell_tiers.{k} is missing or not a number.")
+        r = st.get("reassess_below")
+        if r is not None and not isinstance(r, (int, float)):
+            die(f"{key}: sell_tiers.reassess_below must be a number (or left out).")
+        if not ((r if r is not None else 0) <= st["take_profit_from"] <= st["sell_from"]):
+            die(f"{key}: sell tiers must satisfy reassess_below ≤ take_profit_from ≤ sell_from "
+                f"(got {r} / {st['take_profit_from']} / {st['sell_from']}).")
+    sv = a.get("sell_verdict")
+    if sv is not None:
+        if sv.get("tag") not in VALID_SELL_TAGS:
+            die(f"{key}: sell_verdict.tag '{sv.get('tag')}' isn't one of {sorted(VALID_SELL_TAGS)}.")
+        if not sv.get("reasoning"):
+            warn.append("sell_verdict has no reasoning text")
     v = a.get("verdict")
     if v is not None:
         if v.get("tag") not in VALID_TAGS:
@@ -295,6 +313,8 @@ def main():
             lowest = (card.get("grades", {}).get("psa10") or {}).get("lowest_price")
             if lowest is not None and merged.get("representative_price") is None:
                 merged["verdict_price_ref"] = lowest
+        if isinstance(new.get("sell_verdict"), dict) and not new["sell_verdict"].get("written"):
+            merged["sell_verdict"] = {**merged["sell_verdict"], "written": datetime.now(timezone(timedelta(hours=9))).replace(microsecond=0).isoformat()}
         # the date the verdict text was written: the site shows it on the folded "Written analysis"
         if isinstance(new.get("verdict"), dict) and not new["verdict"].get("written"):
             merged["verdict"] = {**merged["verdict"], "written": datetime.now(timezone(timedelta(hours=9))).replace(microsecond=0).isoformat()}
@@ -314,6 +334,10 @@ def main():
         if new_tag and z and new_tag not in ("defer", z):
             print(f"    note: written verdict ({TAG_LABELS[new_tag]}) differs from the price zone "
                   f"({TAG_LABELS[z]}) — the site will show the zone and flag the difference")
+        sti = merged.get("sell_tiers")
+        if sti:
+            print(f"    sell tiers reassess<{fmt_yen(sti.get('reassess_below'))} / take profit ≥{fmt_yen(sti['take_profit_from'])} / sell ≥{fmt_yen(sti['sell_from'])}"
+                  f"   sell verdict {(merged.get('sell_verdict') or {}).get('tag', '—')}")
         for w in warns:
             print(f"    warning: {w}")
         card["analysis"] = merged

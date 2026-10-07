@@ -102,6 +102,18 @@ gauge positions, tier zone math — all computed client-side from these inputs, 
           "reasoning": "The break to a lower price is now confirmed by a full sales window..."
         },
 
+        "sell_tiers": {                    // optional, only used for cards you own (data/holdings.json);
+          "reassess_below": 62000,         // optional: below this, rethink holding (the "Reassess" zone)
+          "take_profit_from": 85000,       // from here on: start taking profit
+          "sell_from": 105000              // from here on: sell. reassess_below <= take_profit_from <= sell_from.
+          // below take_profit_from (and above reassess_below) is "Hold"
+        },
+        "sell_verdict": {                  // optional, the written reasoning behind the sell tiers
+          "tag": "hold",                   // "hold" | "take_profit" | "sell" | "reassess"
+          "label": "Hold for the peak",
+          "reasoning": "..."               // `written` (date) is added by apply_analysis.py
+        },
+
         "grading_fee_jpy": 9980,           // PSA Japan Standard; optional, the DIY tab uses 9980 when omitted
         "shipping_insurance_jpy": 2450,    // optional, defaults to 2450 (PSA insurance & shipping ¥1,900 + handling ¥550); a legacy 2000 is read as 2450
 
@@ -115,6 +127,16 @@ gauge positions, tier zone math — all computed client-side from these inputs, 
   ]
 }
 ```
+
+### Owned cards: the sell view
+
+A card that appears in `data/holdings.json` gets a different card page and side panel: its buy tiers, tier
+check, limit and Mercari rows are left out (the written buy analysis stays, folded), and the gauge shows what
+you paid, the break-even price after SNKRDUNK's selling costs, your sell target and the peak, coloured by
+`sell_tiers`. Its verdict chip is Sell / Take profit / Reassess / Near peak / Rich ask / Hold: the tiers, your
+sell target, the peak and the ask-vs-sales check all feed it. Without `sell_tiers` the card still shows its
+position, break-even and target, plus a note that the sell tiers aren't written yet. `apply_analysis.py`
+accepts `sell_tiers` / `sell_verdict` alone (an owned card needs no new buy tiers to get them).
 
 ## What the app computes for you (never hand-write these)
 
