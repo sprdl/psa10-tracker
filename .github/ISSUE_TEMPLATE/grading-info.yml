@@ -1,0 +1,43 @@
+name: Update grading info
+description: When a raw card was sent to PSA, with which service, and your own chance of a PSA10 (filled in by the site).
+title: "Grading: "
+labels: ["grading-info"]
+body:
+  - type: input
+    id: id
+    attributes:
+      label: Card id
+      description: Filled in by the site, e.g. u52 (a pull) or p63 (a card you bought raw).
+    validations:
+      required: true
+  - type: input
+    id: sent
+    attributes:
+      label: Date sent to PSA
+      description: YYYY-MM-DD. Leave empty if it hasn't been sent (this removes a saved date).
+  - type: dropdown
+    id: service
+    attributes:
+      label: PSA service
+      options:
+        - Not set
+        - Standard
+        - Priority
+        - Express
+      default: 0
+  - type: input
+    id: chance
+    attributes:
+      label: Your chance of a PSA10 (%, optional)
+      description: Overrides the card's population gem rate for this copy, e.g. 60 if it looks clean. Leave empty to use the gem rate.
+  - type: dropdown
+    id: status
+    attributes:
+      label: Status (pulls only)
+      options:
+        - Keep as is
+        - Keeping it raw
+        - Sending it to PSA
+        - Came back PSA10
+        - Came back lower than 10
+      default: 0

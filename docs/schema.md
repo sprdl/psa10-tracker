@@ -226,6 +226,14 @@ site's **+ Add sealed product** / **+ Add pull** forms (labels `sealed` / `pull`
 `kind` is box / set / pack / other. `snkrdunk_name` and `image` are read from the product's SNKRDUNK
 page by the next price check (`scripts/sealed_info.py`, FULL-CHECK step 8h); the Action never opens SNKRDUNK. A pull of a tracked card is valued from the snapshot (raw A-rank
 lowest ask, or the PSA10 price once `status` is psa10); `value_jpy` (optional) covers untracked cards.
+Raw copies (a pull with status `raw` / `grading`, or a holding with `condition: raw_to_grade`) can also carry
+`"sent": "2026-10-01"` (date sent to PSA), `"tier": "standard|priority|express"` and `"gem_rate_pct": 60` (your own
+chance of a PSA10 for this copy, overriding the card's population gem rate). They are set with the site's
+**Grading info** link (issue form `grading-info.yml`, label `grading-info`, handled by `scripts/log_purchase.py`;
+blank fields remove the value). The site uses them for the "Grade it?" verdict, the expected result and the
+return date (sent + 100 / 80 / 25 business days for Standard / Priority / Express). A non-10 is valued at the
+raw A-rank price and everything is net of selling costs; see `gradeCalc` in `assets/app.js`.
+
 Prices of what isn't tracked come from `data/holdings_prices.json` (written by the full check, never by
 hand; `scripts/holdings_prices.py`): `{"updated": …, "prices": {"<snkrdunk id>": {"kind": "card|sealed",
 "price": 7600, "date": "2026-10-07"}}}`, only the latest reading per id. `card` = raw A-rank lowest ask of a

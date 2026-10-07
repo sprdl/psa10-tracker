@@ -1469,3 +1469,14 @@ a.sl-icon:hover { border-color: var(--accent); }
 .zb-cost { position: absolute; top: 4px; bottom: 4px; width: 2px; margin-left: -1px; background: var(--muted); border-radius: 1px; }
 .pos-stats .s { font-size: 12px; margin-top: 2px; }
 .pos-stats .s.pos { color: var(--green); } .pos-stats .s.neg { color: var(--neg); }
+
+/* ---------- should I grade this? ---------- */
+.vtag.gr-grade { background: var(--green); color: #06170d; }
+.vtag.gr-close { color: var(--amber); border-color: var(--amber); }
+.vtag.gr-dont { color: var(--neg); border-color: var(--neg); }
+.grade-line { font-size: 12.5px; line-height: 1.5; margin-top: 6px; color: var(--soft); }
+.grade-line .vtag { font-size: 13px; padding: 3px 7px 1px; margin-right: 4px; vertical-align: 1px; }
+.grade-line b { color: var(--text); }
+.grade-panel { background: var(--panel-2); border: 1px solid #2c2c32; border-radius: var(--radius); padding: 10px 12px; margin-top: 8px; font-size: 13px; }
+.gp-head { display: flex; gap: 10px; align-items: baseline; margin-bottom: 4px; }
+.gp-copy { margin-top: 6px; }

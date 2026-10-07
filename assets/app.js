@@ -2495,6 +2495,77 @@
 
   // ---------- render: portfolio (cards you've actually bought) ----------
 
+  // ---------- should I grade this? (raw cards: pulls kept raw or sent to PSA, and singles bought raw) ----------
+  // For a raw copy: sell it raw now, or pay to grade it and sell the result. A PSA10 sells at the card's PSA10
+  // price; anything else is valued at the raw A-rank price (conservative: the tracker has no PSA9 prices).
+  // Every value is net of SNKRDUNK's selling costs (sellNet). The chance of a 10 is the card's population gem
+  // rate unless you gave your own for this copy. Verdict: Grade it when your chance is 10+ points above the
+  // break-even chance, Don't grade 10+ below, else Close call. Once a copy is sent (or was bought to grade) the
+  // fee is spent: it only shows the expected result and the return date.
+  const GRADE_TIERS = { standard: { label: 'Standard', fee: 9980, days: 100 }, priority: { label: 'Priority', fee: 11980, days: 80 }, express: { label: 'Express', fee: 29980, days: 25 } };
+  const GRADE_MARGIN = 0.10;
+  function addBusinessDays(iso, n) {
+    const d = new Date(iso + 'T12:00:00Z');
+    for (let left = n; left > 0;) { d.setUTCDate(d.getUTCDate() + 1); const w = d.getUTCDay(); if (w !== 0 && w !== 6) left--; }
+    return d.toISOString().slice(0, 10);
+  }
+  // Raw copies of a card: { kind, id, item, sunk }.
+  function gradeCopies(card) {
+    const out = [];
+    for (const h of state.holdings) if (h.card_url === card.url && h.condition === 'raw_to_grade') out.push({ kind: 'holding', id: h.id, item: h, sunk: true });
+    for (const sd of state.sealed || []) for (const p of sd.pulls || []) {
+      if (p.card_url === card.url && (p.status === 'raw' || p.status === 'grading')) out.push({ kind: 'pull', id: p.id, item: p, sunk: p.status === 'grading' });
+    }
+    return out;
+  }
+  function gradeCalc(card, c) {
+    const it = c.item, tierKey = GRADE_TIERS[it.tier] ? it.tier : 'standard', tier = GRADE_TIERS[tierKey];
+    const raw = ((card.grades || {}).raw_a_grade || {}).lowest_price, psa = getRep(card);
+    const own = it.gem_rate_pct != null, gem = own ? it.gem_rate_pct : card.psa10_gem_rate_pct;
+    const ret = it.sent ? { date: addBusinessDays(it.sent, tier.days), days: tier.days, assumed: !GRADE_TIERS[it.tier] } : null;
+    if (!raw || !psa || gem == null || !gem) return { missing: !psa ? 'no PSA10 price yet' : !raw ? 'no raw A-rank listing to compare with' : 'no gem rate yet (give your own chance of a 10 in the grading info)', ret, tierKey };
+    const fee = tier.fee + PSA_STD.ship + PSA_STD.handling;
+    const n10 = sellNet(psa), nraw = sellNet(raw), p = gem / 100;
+    const ev = p * n10 + (1 - p) * nraw;
+    const spread = n10 - nraw;
+    const pBE = spread > 0 ? fee / spread : null;
+    const gain = ev - fee - nraw;
+    let verdict = null;
+    if (!c.sunk) verdict = pBE == null || p <= pBE - GRADE_MARGIN ? 'dont' : p >= pBE + GRADE_MARGIN ? 'grade' : 'close';
+    return { p, gem, own, fee, n10, nraw, ev, gain, pBE, verdict, ret, raw, psa, tierKey, capWarn: tierKey === 'standard' && psa > PSA_STD.cap };
+  }
+  const GRADE_LABELS = { grade: 'Grade it', close: 'Close call', dont: "Don't grade" };
+  function gradingFormUrl(c, name) {
+    const it = c.item;
+    const q = { template: 'grading-info.yml', title: 'Grading: ' + name, id: c.id };
+    if (it.sent) q.sent = it.sent;
+    if (it.tier && GRADE_TIERS[it.tier]) q.service = GRADE_TIERS[it.tier].label;
+    if (it.gem_rate_pct != null) q.chance = String(it.gem_rate_pct);
+    return `${REPO_URL}/issues/new?${new URLSearchParams(q)}`;
+  }
+  function gradeLineHtml(card, c) {
+    if (!card) return '';
+    const g = gradeCalc(card, c), name = parseCardName(card.card_name_ja).short;
+    const link = `<a class="pf-remove" href="${escapeAttr(gradingFormUrl(c, name))}" target="_blank" rel="noopener">${c.item.sent || c.item.gem_rate_pct != null || c.item.tier ? 'Edit grading info' : 'Grading info'}</a>`;
+    const retTxt = g.ret ? `Sent ${escapeHtml(c.item.sent)} · ${GRADE_TIERS[g.tierKey].label}${g.ret.assumed ? ' (assumed)' : ''} · back around <b>${escapeHtml(g.ret.date)}</b> (${g.ret.days} business days)` : '';
+    if (g.missing) return `<div class="grade-line muted">Grading: ${escapeHtml(g.missing)}.${retTxt ? ' ' + retTxt + '.' : ''} ${link}</div>`;
+    const chance = `${Math.round(g.gem)}% chance of a 10${g.own ? ' (your estimate)' : ' (population gem rate)'}`;
+    const net = `<span title="After SNKRDUNK selling costs. A PSA10 sells at ${fmtYen(g.psa)}, anything else is valued at the raw price ${fmtYen(g.raw)}.">`;
+    if (c.sunk) {
+      return `<div class="grade-line">${net}Expected ${fmtYen(g.ev)} once graded</span> (${chance}; a 10 nets ${fmtYen(g.n10)}, otherwise about ${fmtYen(g.nraw)}). ${retTxt ? retTxt + '. ' : 'Add the date it was sent to see the return date. '}${link}</div>`;
+    }
+    const need = g.pBE == null ? 'A PSA10 would not even beat the raw copy.' : `It pays off at a ${Math.ceil(g.pBE * 100)}%+ chance of a 10.`;
+    return `<div class="grade-line"><span class="vtag gr-${g.verdict}">${GRADE_LABELS[g.verdict]}</span> ${net}Graded: ${fmtYen(g.ev - g.fee)} expected vs ${fmtYen(g.nraw)} selling it raw (${g.gain >= 0 ? '+' : '−'}${fmtYen(Math.abs(g.gain))})</span> with ${chance} and ${fmtYen(g.fee)} grading costs. ${need}${g.capWarn ? ` A PSA10 here is above PSA Standard's ¥${PSA_STD.cap.toLocaleString()} declared-value limit, so it needs a higher tier.` : ''} ${link}</div>`;
+  }
+  // The card page: one block per raw copy of this card.
+  function gradePanelHtml(card) {
+    const copies = gradeCopies(card);
+    if (!copies.length) return '';
+    return `<div class="grade-panel"><div class="gp-head"><span class="limit-lbl">Grade it?</span><span class="muted">${copies.length} raw cop${copies.length === 1 ? 'y' : 'ies'} of this card</span></div>
+      ${copies.map((c) => `<div class="gp-copy"><b>${c.kind === 'pull' ? 'Pull' : 'Bought raw'} ${escapeHtml(c.id)}</b>${gradeLineHtml(card, c)}</div>`).join('')}
+      <p class="cd-note">Values are net of selling costs; a non-10 is valued at the raw A-rank price. Grading takes months (PSA Standard about 100 business days), so the PSA10 price may have moved by the time it is back.</p></div>`;
+  }
+
   // ---------- sealed product (data/holdings.json "sealed", written by GitHub Actions) ----------
   // Boxes, sets and packs bought at MSRP (never on the second market, so no market price for them),
   // plus the cards worth keeping that came out of them. A pull of a tracked card is valued from
@@ -2547,7 +2618,7 @@
         return `<div class="sl-pull">
           <span class="pf-thumb sl-pthumb">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
           <div class="sl-pinfo"><div class="sl-pname">${card ? `<a href="#/card/${escapeAttr(cardId(card))}">${escapeHtml(nm)}</a>` : escapeHtml(nm)} <span class="sl-st ${stCls}">${stTxt}</span></div>
-            <div class="pf-meta">${escapeHtml(parseCardName(p.card_name_ja || '').code || '')}${p.date ? ` · pulled ${escapeHtml(p.date)}` : ''}${p.notes ? ' · ' + escapeHtml(p.notes) : ''} · <a class="pf-remove" href="${escapeAttr(removeIdUrl(p.id, nm))}" target="_blank" rel="noopener">Remove</a></div></div>
+            <div class="pf-meta">${escapeHtml(parseCardName(p.card_name_ja || '').code || '')}${p.date ? ` · pulled ${escapeHtml(p.date)}` : ''}${p.notes ? ' · ' + escapeHtml(p.notes) : ''} · <a class="pf-remove" href="${escapeAttr(removeIdUrl(p.id, nm))}" target="_blank" rel="noopener">Remove</a></div>${card && (p.status === 'raw' || p.status === 'grading') ? gradeLineHtml(card, { kind: 'pull', id: p.id, item: p, sunk: p.status === 'grading' }) : ''}</div>
           <div class="pf-current"><div class="val">${v != null ? fmtYen(v) : '—'}</div><div class="pf-pnl muted">${escapeHtml(src)}</div></div>
         </div>`;
       }).join('') : `<div class="sl-empty">No pulls logged yet.</div>`;
@@ -2664,6 +2735,7 @@
           <div class="pf-info">
             <div class="pf-name">${nameHtml}</div>
             <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
+            ${h.condition === 'raw_to_grade' && h.id && match ? gradeLineHtml(match, { kind: 'holding', id: h.id, item: h, sunk: true }) : ''}
           </div>
           <div class="pf-current">
             <div class="val">${currentPrice != null ? fmtYen(currentPrice) : '—'}</div>
@@ -3150,6 +3222,7 @@
         <div class="cd-panel" data-panel="overview"${cur === 'overview' ? '' : ' hidden'}>
           ${gaugeHtml}
           ${own ? positionHtml(card) + sellRowHtml(card) : tierReviewHtml(card) + tierCheckHtml(card) + limitRowHtml + mercariRowHtml(card)}
+          ${gradePanelHtml(card)}
           ${insightsHtml(card)}
           ${vsMarketHtml(card)}
           ${hypeHtml(card)}

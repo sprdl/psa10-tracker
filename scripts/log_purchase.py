@@ -16,6 +16,8 @@ site's "Bought it" or "Remove" form, so nothing runs on your Mac:
 - Label `sealed`: a box / set / pack(s) bought at MSRP (store, Pokémon Center, lottery) → store["sealed"],
   id "s<issue#>". Sealed product is never bought on the second market, so there's no market price.
 - Label `pull`: a valuable card pulled from one of those → that product's "pulls", id "u<issue#>".
+- Label `grading-info`: sets when a raw card (a pull "u…" or a raw purchase "p…") was sent to PSA, the PSA
+  service tier and the owner's own chance of a PSA10; a pull's status can be changed too. Blank fields remove the value.
 - Label `sealed-link`: sets (or replaces) the SNKRDUNK link of an existing sealed product.
   A sealed product's name and picture come from its SNKRDUNK page, like a single's. This Action never
   opens SNKRDUNK (no automated access): the next price check reads the page in the user's browser
@@ -224,6 +226,49 @@ def build_pull(issue, sealed):
     return parent, pull
 
 
+GRADE_TIERS = (("standard", "standard"), ("priority", "priority"), ("express", "express"))
+
+
+def optional_date(s):
+    return parse_date(s) if (s or "").strip() else None
+
+
+def apply_grading_info(issue, store):
+    form = parse_form(issue.get("body"))
+    m = re.search(r"\b[pu]\d+\b", field(form, "card id", "id") or "")
+    if not m:
+        raise FormError("No card id found (it looks like u52 or p63). Use the Grading info link next to the card on the site.")
+    gid = m.group(0)
+    item = next((h for h in store.get("holdings", []) if h.get("id") == gid), None)
+    if gid.startswith("u"):
+        item = next((p for x in store.get("sealed", []) for p in x.get("pulls", []) if p.get("id") == gid), None)
+    if not item:
+        raise FormError(f"There's no card with id {gid} (maybe it was removed).")
+    sent = optional_date(field(form, "date sent", "sent"))
+    tier = next((k for key, k in GRADE_TIERS if key in field(form, "psa service", "service").lower()), None)
+    chance_txt = field(form, "your chance", "chance").replace("%", "").strip()
+    chance = None
+    if chance_txt:
+        try:
+            chance = float(chance_txt.replace(",", "."))
+        except ValueError:
+            raise FormError(f"Chance of a PSA10 \"{chance_txt}\" isn't a number between 1 and 100.")
+        if not 1 <= chance <= 100:
+            raise FormError("Chance of a PSA10 must be between 1 and 100 (%).")
+    for key, val in (("sent", sent), ("tier", tier), ("gem_rate_pct", int(chance) if chance is not None and chance.is_integer() else chance)):
+        if val is None:
+            item.pop(key, None)
+        else:
+            item[key] = val
+    st = field(form, "status").lower()
+    if gid.startswith("u") and st and "keep as is" not in st:
+        item["status"] = next((k for key, k in PULL_STATUS if key in st), item.get("status", "raw"))
+    bits = [x for x in (f"sent {sent}" if sent else "", f"{tier} service" if tier else "", f"your PSA10 chance {item['gem_rate_pct']}%" if chance is not None else "") if x]
+    name = item.get("card_name_ja", gid)
+    return (f"Saved grading info for **{gid}** ({name}): {', '.join(bits) if bits else 'nothing set (cleared)'}. The site updates in about a minute.",
+            f"holdings: grading info for {gid} (#{issue['number']})")
+
+
 def removal_id(issue):
     form = parse_form(issue.get("body"))
     m = re.search(r"\b[psu]\d+\b", field(form, "purchase id", "id") or "")
@@ -285,6 +330,8 @@ def apply(issue, labels, store, dry=False):
     """Apply this issue's change to `store` (fresh from disk). Returns (comment, commit message)."""
     hs = store.setdefault("holdings", [])
     sealed = store.setdefault("sealed", [])
+    if "grading-info" in labels:
+        return apply_grading_info(issue, store)
     if "sealed-link" in labels:
         form = parse_form(issue.get("body"))
         m = re.search(r"\bs\d+\b", field(form, "sealed product id", "id") or "")
@@ -370,7 +417,7 @@ def main():
     event = json.loads(Path(args[0]).read_text(encoding="utf-8"))
     issue = event["issue"]
     labels = {l["name"] for l in issue.get("labels", [])}
-    if not labels & {"bought", "remove-purchase", "sealed", "pull", "sealed-link"}:
+    if not labels & {"bought", "remove-purchase", "sealed", "pull", "sealed-link", "grading-info"}:
         print("Not a purchase issue; nothing to do.")
         return
 

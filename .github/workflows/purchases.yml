@@ -26,6 +26,7 @@ jobs:
        contains(github.event.issue.labels.*.name, 'sealed') ||
        contains(github.event.issue.labels.*.name, 'pull') ||
        contains(github.event.issue.labels.*.name, 'sealed-link') ||
+       contains(github.event.issue.labels.*.name, 'grading-info') ||
        contains(github.event.issue.labels.*.name, 'remove-purchase'))
     runs-on: ubuntu-latest
     steps:
