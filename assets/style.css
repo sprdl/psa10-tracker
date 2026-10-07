@@ -1374,7 +1374,10 @@ body.lb-open { overflow: hidden; }
 .hype-v b { color: var(--text); }
 .hype-means { margin: 8px 0 4px; color: var(--soft, var(--text)); }
 .hype-foot { margin: 0; font-size: 11px; color: var(--muted); }
-.hype-chip { font: 11px var(--display); letter-spacing: 0.06em; color: #fff; background: var(--red); padding: 2px 5px 0; border-radius: 3px; margin-left: 4px; }
+.hype-chip { font: 11px var(--display); letter-spacing: 0.06em; color: #fff; background: var(--red); padding: 2px 5px 0; border-radius: 3px; margin-left: 4px; white-space: nowrap; flex-shrink: 0; }
+.wl-nline .hype-chip { margin-left: 0; }
+.wl-nline:has(.hype-chip) { flex-wrap: wrap; row-gap: 3px; }
+.wl-nline:has(.hype-chip) b { min-width: 6.5em; }
 @media (max-width: 600px) { .hype-row { grid-template-columns: 1fr; gap: 2px; } .hype-mini { display: none; } }
 
 /* sealed product on the Holdings page */
