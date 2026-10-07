@@ -51,14 +51,16 @@ await (async () => {
   const peak = last14.reduce((m, d) => (d.volume > m.volume ? d : m), last14[0]);
   let trend = 'flat';
   if (aPrior && peak.volume > aPrior * 2) trend = 'spiking';
-  else if (aPrior && a14 > aPrior * 1.15) trend = 'rising';
-  else if (aPrior && a14 < aPrior * 0.85) trend = 'falling';
+  // rising/falling when the last 7 days are 15%+ off the prior 30 days, or the last 14 days 10%+
+  // (2026-10-08: the 14-day-only ±15% rule called +29% over 7 days "flat")
+  else if (aPrior && (a7 >= aPrior * 1.15 || a14 >= aPrior * 1.10)) trend = 'rising';
+  else if (aPrior && (a7 <= aPrior * 0.87 || a14 <= aPrior * 0.91)) trend = 'falling';
   out.volume_stats = {
     last_date: data[data.length - 1].date,
     avg_last7: a7, avg_last14: a14, avg_prior30: aPrior,
     peak_last14: { date: peak.date, volume: peak.volume, value: peak.value },
       };
-  out.volume_trend_suggested = trend; // rule: spiking if a day >2x prior-30 avg, else rising/falling if 14d avg is ±15% vs prior 30d
+  out.volume_trend_suggested = trend; // rule: spiking if a day >2x prior-30 avg, else rising/falling if the 7d avg is ±15% or the 14d avg ±10% vs prior 30d
   return out;
   };
   const psa10 = await read(document);

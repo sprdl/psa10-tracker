@@ -52,6 +52,7 @@ def load_cards(root=ROOT):
 
 
 SCOUT_READS = 20  # scout card pages read per full check (about 2.5 s each)
+SCOUT_EVERY_H = 40  # Scout runs when data/scout.json is older than this (about every other day)
 
 
 def pokeca_slug(name):
@@ -126,8 +127,14 @@ def build_plan(root=ROOT, now=None):
     if sp.exists():
         try:
             sd = json.loads(sp.read_text(encoding="utf-8"))
-            scout["skip"] = sorted(tracked_slugs | set(sd.get("dismissed") or []))
-            scout["read"] = {k: v.get("read", "") for k, v in (sd.get("pool") or {}).items() if v.get("read")}
+            upd = sd.get("updated")
+            # every other day is enough for discovery (2026-10-08); when it's not due the plan has no scout
+            # step, full_update.py doesn't require SC lines, and the SCOUT line prints null
+            if upd and (now - datetime.fromisoformat(upd)).total_seconds() < SCOUT_EVERY_H * 3600:
+                scout = None
+            if scout is not None:
+                scout["skip"] = sorted(tracked_slugs | set(sd.get("dismissed") or []))
+                scout["read"] = {k: v.get("read", "") for k, v in (sd.get("pool") or {}).items() if v.get("read")}
         except Exception:
             pass
     held = []

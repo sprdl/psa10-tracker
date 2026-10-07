@@ -290,6 +290,8 @@ def main():
         sealed_info.print_due(root)
         todo = [f"{lbl}: {n}" for lbl, n in (("Mercari (pricecheck/MERCARI.md)", len(mercari.due(root))),
                                              ("sealed info (FULL-CHECK step 8h)", len(sealed_info.due(root)))) if n]
+        import freshness
+        freshness.print_stale(root)
         print("\nFOLLOW-UPS (required before the chat message): " + (" · ".join(todo) if todo else "none"))
     sys.exit(r.returncode)
 

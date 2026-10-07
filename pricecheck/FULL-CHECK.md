@@ -109,7 +109,9 @@ and collect its `ALT …` lines with the same polling call as in step 2.
    its 6-month norm; `full_update.py` saves them to `data/premium.json`. A `PREM <id> !…` line (the
    card has no pokeca-chart page) is expected for a few cards; pass it along like the others.
 
-4. Back on `https://pokeca-chart.com/gr/all-card/?sort=newest` (navigate there again if step 3 left
+4. Scout runs about every other day: when step 1 printed `SCOUT = null`, skip this; otherwise it's
+   required (don't `--skip scout` to save time; `scripts/freshness.py` flags a stale Scout page).
+   Back on `https://pokeca-chart.com/gr/all-card/?sort=newest` (navigate there again if step 3 left
    the tab elsewhere), run the `pokeca_scout` script verbatim with its `const SCOUT = {...}` line
    replaced by the `SCOUT` line from step 1, and collect its lines with the same polling call (about
    1 minute: the list, then up to 20 card pages). One `SCP …` line lists today's candidates, then one
@@ -117,7 +119,8 @@ and collect its `ALT …` lines with the same polling call as in step 2.
    which feeds the site's Scout page (cards you don't track yet that fit your criteria and look cheap).
 
 Each `IDX` line carries `volume_trend_suggested` (spiking if any day in the last 14 exceeds 2x the
-prior-30-day average; rising/falling if the 14-day average is ±15% vs the prior 30 days; else flat),
+prior-30-day average; rising/falling if the 7-day average is ±15% or the 14-day average ±10% vs the prior
+30 days; else flat; changed 2026-10-08 after the old 14-day-only rule called +29% over 7 days "flat"),
 which is used as-is. Only if you have a genuinely better read or a notable day worth describing, add
 a line `VOL psa10 {"volume_trend": "...", "volume_note": "..."}` (or `VOL raw …`).
 
@@ -235,6 +238,8 @@ A newer analysis replaces the card's previous one; the site marks analyses older
 `outliers.py` says nothing stands out, skip this step. Mention each card analysed in the chat message
 in one line (its headline).
 
+**Freshness.** Just before the follow-ups, `full_update.py` (and `quick_update.py`) print `STALE DATA` for any source the site shows that is older than its cadence (`python3 scripts/freshness.py` prints the whole table: source, last update, cadence, which check refreshes it). Refresh what the full check can in this run; name the rest in the chat message.
+
 **Follow-ups.** `full_update.py`'s last line is `FOLLOW-UPS (…): …`, naming every step below that still has work (8b, 8c, 8f, 8g, 8h, with counts) or `none`. The run is not finished until each one listed is done. If the output was cut, `python3 scripts/full_update.py --followups` prints the blocks again.
 
 **8b. Evaluate cards that have no tiers yet** (full checks only, computer linked, after step 7 has published). **Required, not optional.** A card added in step 1b reaches the tracker without tiers or a verdict, and so does a watched card whose PSA10 market has just formed. Evaluate them in the same run, so the user never has to ask separately. `full_update.py` ends by printing an `EVALUATE NOW` block that lists exactly these cards; the run is not finished while that list has entries you haven't evaluated. "It's new" or "it has no tiers yet" is the reason this step exists, never a reason to skip it (a 2026-10-03 run skipped a new card this way).
@@ -248,9 +253,9 @@ in one line (its headline).
 4. Evaluate at most 3 cards per run. Name any others in the chat message; the next full check continues with them.
 5. If an evaluation can't finish (a site is unreachable, or `apply_analysis.py` refuses the JSON), nothing is applied for that card. Say which card and why.
 
-**8b (owned cards). Sell tiers.** `full_update.py` also prints a `SELL TIERS NOW` block: cards in `data/holdings.json` with no `sell_tiers`, or with a `sell_verdict` older than 30 days. For each (at most 3 per run, together with the buy evaluations above), run the `pokemon-tcg-card-evaluation` skill's sell part (its step 7, Part A-sell / `sell_tiers` + `sell_verdict`) with this run's data and apply only those two keys with `apply_analysis.py`; the buy tiers stay. Chat line: "Sell tiers for <name>: take profit ≥¥X, sell ≥¥Y (<tag>)".
+**8b (owned cards). Sell tiers.** `full_update.py` also prints a `SELL TIERS NOW` block: cards in `data/holdings.json` with no `sell_tiers`, a `sell_verdict` older than 30 days, or a My-tier index move of 10%+ since it was written. For each (at most 3 per run, together with the buy evaluations above), run the `pokemon-tcg-card-evaluation` skill's sell part (its step 7, Part A-sell / `sell_tiers` + `sell_verdict`) with this run's data and apply only those two keys with `apply_analysis.py`; the buy tiers stay. Chat line: "Sell tiers for <name>: take profit ≥¥X, sell ≥¥Y (<tag>)".
 
-**8d. Re-evaluate cards whose tiers are due** (full checks only, computer linked, after 8b; skip it on a run where 8b already evaluated 3 cards). One `device_bash` call: `cd "$R" && python3 scripts/review_due.py`. It lists at most 2 cards, most due first, with the reasons. A card is due when its tiers are over 30 days old, the market has moved 10%+ since they were set, its Definitely-buy is a long shot (under 10% in 90 days on the limit-odds model), or it is under 9 months old and its tiers are 2+ weeks old. The site shows the same "Review due" line. Re-run the `pokemon-tcg-card-evaluation` skill end to end for each listed card (including its step 8, `apply_analysis.py`), reusing this run's data as in 8b. A re-evaluation that keeps the tiers still counts as a review and resets the clock. Mention each in the chat message in one line ("Re-evaluated <name>: <verdict>, tiers ¥X / ¥Y / ¥Z (due: <reason>)"). The next full check continues with any cards still due.
+**8d. Re-evaluate cards whose tiers are due** (full checks only, computer linked, after 8b; skip it on a run where 8b already evaluated 3 cards). `full_update.py` prints a `REVIEW DUE NOW` block (`python3 scripts/review_due.py` prints it again). It lists watched cards only (owned cards get sell tiers instead), at most 2 per run, or 4 when a market move made several due at once, most due first, with the reasons. A card is due when its tiers are over 30 days old, the My-tier index has moved 10%+ since they were set, its Definitely-buy is a long shot (under 10% in 90 days on the limit-odds model), or it is under 9 months old and its tiers are 2+ weeks old. The site shows the same "Review due" line. Re-run the `pokemon-tcg-card-evaluation` skill end to end for each listed card (including its step 8, `apply_analysis.py`), reusing this run's data as in 8b. A re-evaluation that keeps the tiers still counts as a review and resets the clock. Mention each in the chat message in one line ("Re-evaluated <name>: <verdict>, tiers ¥X / ¥Y / ¥Z (due: <reason>)"). The next full check continues with any cards still due.
 
 **8e. After a release: measure the event rule** (full checks only, computer linked). When a major release in `data/events.json` is 4–10 days in the past and this is the first full check since then that hasn't reported it, run `cd "$R" && python3 scripts/event_study.py` in one `device_bash` call. It compares how far the lowest ask dropped in the 4 days after a check inside the rule window (3 days before → release day) with the same measure on other days, using our own snapshots; pokeca-chart's older history is too coarse for this (30-day averages). Put one line in the chat message: "<release>: median dip after the rule window X% (≥5% dip in Y% of cards) vs Z% on other days; N releases measured so far." Don't change the rule from this alone; once 4–5 releases are in, suggest keeping, loosening or dropping it.
 

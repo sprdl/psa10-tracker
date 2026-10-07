@@ -264,6 +264,7 @@ def main():
     if "--followups" in args:   # re-print the follow-up blocks (e.g. when the publish output was cut)
         import mercari, review_due, sealed_info
         print_eval_due()
+        review_due.print_review_due(ROOT)
         review_due.print_text_due(ROOT)
         mercari.print_due(ROOT)
         sealed_info.print_due(ROOT)
@@ -343,6 +344,7 @@ def main():
     persist_images(raw, cards_meta, dry)
     print_eval_due()
     import review_due
+    review_due.print_review_due(ROOT)
     review_due.print_text_due(ROOT)
     import mercari
     mercari.print_due(ROOT)
@@ -371,11 +373,15 @@ SELL_REVIEW_DAYS = 30
 
 def sell_due(root=ROOT, now=None):
     """Owned cards (data/holdings.json) that need sell tiers: a PSA10 price on the tracker and no
-    sell_tiers yet, or a sell_verdict written more than SELL_REVIEW_DAYS ago."""
+    sell_tiers yet, a sell_verdict written more than SELL_REVIEW_DAYS ago, or the My-tier index moved 10%+
+    since it was written."""
     hp = root / "data" / "holdings.json"
     owned = {h.get("card_url") for h in (json.loads(hp.read_text(encoding="utf-8")).get("holdings", []) if hp.exists() else [])}
     _, snap = planmod.latest_snapshot(root)
     now = now or datetime.now(JST)
+    import review_due
+    cp = root / "data" / "custom_index.json"
+    ci = sorted((p["d"], p["level"]) for p in json.loads(cp.read_text(encoding="utf-8")).get("series", []) if p.get("level")) if cp.exists() else []
     out = []
     for c in (snap or {}).get("cards", []):
         if c["url"] not in owned:
@@ -389,6 +395,10 @@ def sell_due(root=ROOT, now=None):
             out.append((c["url"], ask, c.get("card_name_ja", ""), "no sell tiers yet"))
         elif w and (now - datetime.fromisoformat(w)).days > SELL_REVIEW_DAYS:
             out.append((c["url"], ask, c.get("card_name_ja", ""), f"sell tiers {(now - datetime.fromisoformat(w)).days} days old"))
+        elif w:
+            a0, a1 = review_due.mytier_at(ci, w), review_due.mytier_at(ci, now.isoformat())
+            if a0 and a1 and abs(a1 / a0 - 1) >= review_due.MAX_MOVE / 100:
+                out.append((c["url"], ask, c.get("card_name_ja", ""), f"My-tier index {(a1 / a0 - 1) * 100:+.0f}% since the sell tiers"))
     return out
 
 
@@ -411,6 +421,7 @@ def print_followups():
     for step, label, count in (
         ("8b", "evaluate", lambda: min(3, len(eval_due()))),
         ("8b", "sell tiers", lambda: min(3, len(sell_due()))),
+        ("8d", "review buy tiers", lambda: min(review_due.per_run(review_due.compute(ROOT)[0]), len(review_due.compute(ROOT)[0]))),
         ("8c", "stories", lambda: min(3, len(set_story.missing()))),
         ("8f", "Mercari (pricecheck/MERCARI.md)", lambda: len(mercari.due(ROOT))),
         ("8g", "refresh verdicts", lambda: min(review_due.TEXT_PER_RUN, len(review_due.compute(ROOT)[1]))),
@@ -422,7 +433,12 @@ def print_followups():
             n = 0
         if n:
             todo.append(f"{step} {label}: {n}")
-    print("\nFOLLOW-UPS (FULL-CHECK step 8; required): " + (" · ".join(todo) if todo else "none") + "  [8d review_due.py and 8e event study are checked separately]")
+    try:
+        import freshness
+        freshness.print_stale(ROOT)
+    except Exception as e:  # noqa: BLE001
+        print(f"\nFRESHNESS: skipped ({e})")
+    print("\nFOLLOW-UPS (FULL-CHECK step 8; required): " + (" · ".join(todo) if todo else "none") + "  [8e event study is checked separately]")
 
 
 def print_story_due():

@@ -1179,6 +1179,26 @@
 
   // ---------- render: market strip ----------
 
+  // Volume trend of a pokeca-chart index, recomputed from its note's averages so the label always matches
+  // the numbers shown: rising/falling when the last 7 days are 15%+ off the prior 30, or the last 14 days
+  // 10%+ (same rule as pricecheck/scripts/pokeca_both.js since 2026-10-08); a stored "spiking" is kept.
+  function volTrendOf(idx) {
+    const m = String((idx && idx.volume_note) || '').match(/7d avg ([\d.]+), 14d avg ([\d.]+) vs prior-30d avg ([\d.]+)/);
+    if (!m) return { t: (idx && idx.volume_trend) || null, d7: null };
+    const [a7, a14, ap] = m.slice(1).map(Number);
+    let t = 'flat';
+    if (idx.volume_trend === 'spiking') t = 'spiking';
+    else if (a7 >= ap * 1.15 || a14 >= ap * 1.10) t = 'rising';
+    else if (a7 <= ap * 0.87 || a14 <= ap * 0.91) t = 'falling';
+    return { t, d7: ap ? (a7 / ap - 1) * 100 : null };
+  }
+  function volTrendHtml(idx) {
+    const v = volTrendOf(idx);
+    if (!v.t) return '—';
+    const cls = v.t === 'rising' || v.t === 'spiking' ? 'up' : v.t === 'falling' ? 'down' : '';
+    return `<span class="${cls}">${capitalize(v.t)}</span>`;
+  }
+
   function renderMarketStrip(data) {
     const idx = data.pokeca_chart_index;
     if (!idx) { els.marketStrip.innerHTML = ''; return; }
@@ -1208,9 +1228,9 @@
         <div class="d ${dirClass(raw.day_change_pct)}">${fmtPct(raw.day_change_pct)} day${asOfHtml(raw.as_of)}</div>
       </div>
       <div class="cell">
-        <div class="k">Both indices' volume</div>
-        <div class="v" style="font-size:1rem; text-transform:capitalize;">${psa10.volume_trend || '—'}</div>
-        <div class="d">vs raw: ${raw.volume_trend || '—'}</div>
+        <div class="k">PSA10 trading volume</div>
+        <div class="v">${volTrendHtml(psa10, true)}</div>
+        <div class="d">${(() => { const a = volTrendOf(psa10), r = volTrendOf(raw); return [a.d7 != null ? `7-day ${fmtPct(a.d7)} vs prior 30` : '', r.t ? `raw A-rank ${r.t}${r.d7 != null ? ' (' + fmtPct(r.d7) + ')' : ''}` : ''].filter(Boolean).join(' · '); })()}</div>
       </div>
       ${fourthCell}
     `;
