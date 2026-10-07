@@ -3159,6 +3159,12 @@
     const how = bg.diy ? `(raw ${fmtYen(pt.raw)} paid + grading ${fmtYen(pt.fee)}) ÷ ${Math.round(pt.gem * 10) / 10}% gem rate` : `raw ${fmtYen(pt.raw)} paid + grading ${fmtYen(pt.fee)} (no gem rate yet, so not divided)`;
     return `PSA10 now ${fmtYen(bg.now)} vs your DIY cost ${fmtYen(bg.basis)} = ${how} (${gap})`;
   }
+  // Owned rows: the current raw A-rank ask under the PSA10 price (what an ungraded copy costs today).
+  function rawAskSub(card) {
+    const r = ((card.grades || {}).raw_a_grade || {}).lowest_price;
+    const tip = r != null ? `Lowest raw A-rank ask on SNKRDUNK: ${fmtYen(r)}` : 'No raw A-rank listing right now';
+    return `<small class="wl-sub" title="${escapeAttr(tip)}">raw A ${r != null ? fmtYenShort(r) : '—'}</small>`;
+  }
   function limitGapCell(card, cls) {
     // Once bought, the column shows how far the price has moved from what you paid instead.
     const bg = boughtGap(card);
@@ -3192,7 +3198,7 @@
       return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) || sellHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
         ${slabHtml(card, 'xs')}
         <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
-        <span class="wl-price display">${fmtYen(getRep(card))}</span>
+        <span class="wl-price display">${fmtYen(getRep(card))}${owned ? rawAskSub(card) : ''}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg')}${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg wl-c30')}
         <span class="wl-tag">${owned ? sellChip(card) : tagChip(card)}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${!owned && (mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}${!owned && (tierReview(card) || {}).due ? '<span class="due-chip" title="Buy tiers are due for a review">Review</span>' : ''}</span>
