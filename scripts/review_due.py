@@ -118,6 +118,9 @@ def compute(root=ROOT):
         ref = a.get("representative_price") or a.get("verdict_price_ref")
         if not v.get("reasoning") or v.get("tag") == "defer" or not ask or not ref or c["url"] in review_urls or c["url"] in owned:
             continue
+        w = v.get("written")
+        if w and (now - ts(w)).total_seconds() < 24 * 3600:
+            continue   # written today: its reference may be a sales price below the ask, not real drift
         drift = (ask / ref - 1) * 100
         if abs(drift) >= TEXT_DRIFT:
             text.append((abs(drift), c["url"], c.get("card_name_ja", ""), ask, ref, drift))
