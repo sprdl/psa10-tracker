@@ -150,6 +150,14 @@ time. To keep the worst-case page load bounded as the archive grows over months 
 of writing, in `assets/app.js`) snapshot files for this — plenty of runway for a
 multi-month trend without ever downloading years of history on every card expand.
 
+## `data/sell_targets.json` — your sell targets
+
+`{"targets": {"<card url>": {"price": 90000, "set": "<iso time>", "issue": 123}}}`, written by
+`scripts/set_limit.py` (label `set-sell-target`, same Action and form flow as limits). Only used for cards
+in `holdings.json`: an owned card's Verdict column shows **Sell** when the price reaches its target,
+**Near peak** within 5% of the recorded peak, **Rich ask** when the lowest ask is 8%+ above recent sales,
+otherwise **Hold**.
+
 ## `data/holdings.json` — cards you've actually bought
 
 Separate from the snapshot archive, this file is the portfolio layer: what you

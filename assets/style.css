@@ -160,6 +160,13 @@ a.kpi:hover { border-color: var(--line-3); color: var(--text); }
 }
 .owned-chip { background: var(--panel-2); color: var(--green); border: 1px solid rgba(69, 212, 131, 0.4); }
 .limit-chip { background: var(--accent); color: var(--on-accent); }
+.vtag.sell-sell { background: var(--accent); color: var(--on-accent); }
+.vtag.sell-peak, .vtag.sell-rich { color: var(--accent); border-color: var(--accent); }
+.vtag.sell-hold { color: var(--muted); border-color: var(--line-3); }
+.tile-chips .vtag.sell-hold { background: var(--bg); }
+.sell-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid #2c2c32; border-radius: var(--radius); padding: 10px 12px; font-size: 13px; margin-top: 8px; }
+.sell-row strong { font: 22px var(--display); letter-spacing: 0.04em; color: var(--accent); font-weight: 400; line-height: 1; }
+.sell-row .sell-state { margin-left: auto; }
 
 /* ---------- slab (PSA case) ---------- */
 .slab { display: flex; flex-direction: column; gap: 3px; background: var(--slab); border-radius: 4px; padding: 3px; flex-shrink: 0; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45); }

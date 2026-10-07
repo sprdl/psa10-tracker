@@ -1,0 +1,21 @@
+name: Set my sell target
+description: Save a personal sell target for a card you own so every device sees it (filled in by the site).
+title: "Sell target: "
+labels: ["set-sell-target"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: SNKRDUNK URL
+      description: Filled in by the site.
+      placeholder: https://snkrdunk.com/apparels/455596
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: Sell target (¥)
+      description: The price at which you'd want to sell, e.g. 90000. Use 0 to remove the target.
+      placeholder: "90000"
+    validations:
+      required: true

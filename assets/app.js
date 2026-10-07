@@ -20,6 +20,7 @@
     calls: null, // data/calls.json — track record of past calls (scripts/build_calls.py)
     oddsModel: null, // data/odds_model.json — odds of a listing reaching a price
     valueModel: null, // data/value_model.json — upside ranges and the age curve (scripts/value_model_builder.js)
+    syncedTargets: {}, // data/sell_targets.json — sell targets saved for every device
     syncedLimits: {}, // data/limits.json — limits saved for every device
     hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
@@ -157,7 +158,7 @@
   }
 
   const OPTIONAL_DATA = {
-    holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
+    holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', sellTargets: 'data/sell_targets.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
     valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
@@ -205,6 +206,7 @@
     state.hist = b.hist || null;
     historyIndexPromise = Promise.resolve(state.hist);
     state.syncedLimits = (b.limits && b.limits.limits) || {};
+    state.syncedTargets = (b.sellTargets && b.sellTargets.targets) || {};
     state.oddsModel = b.oddsModel || null;
     state.valueModel = b.valueModel || null;
     state.stories = b.stories || null; // data/stories.json — the art stories (researched, with sources)
@@ -214,7 +216,7 @@
     state.mercari = b.mercari || null; // data/mercari.json — Mercari PSA10 listings for cards near the limit (scripts/mercari.py)
     state.premium = b.premium || null; // data/premium.json — pokeca-chart slab premium per card (scripts/premium.py)
     state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
-    if (fresh) reconcileLimits(); // only against fresh data, never a cached copy
+    if (fresh) { reconcileLimits(); reconcileTargets(); } // only against fresh data, never a cached copy
 
     els.snapshotSelects.forEach((sel) => {
       sel.innerHTML = '';
@@ -271,7 +273,7 @@
     const userPicked = shown && state.currentIndex !== (shown.manifest.snapshots || []).length - 1;
     if (changed && !userPicked) showBundle(fresh, true);
     else {
-      state.manifest = fresh.manifest; reconcileLimits();
+      state.manifest = fresh.manifest; reconcileLimits(); reconcileTargets();
       // Same data as the cached copy already on screen: only re-render if expired local removals change what's hidden.
       const pending = () => JSON.stringify([store.get(RM_KEY, {}), store.get(RS_KEY, {})]);
       const before = pending(); reconcileRemovals();
@@ -614,6 +616,124 @@
       title: `Limit: ${parseCardName(card.card_name_ja).short} ${v ? '¥' + v.toLocaleString('en-US') : '(remove)'}`,
       url: card.url, limit: String(v || 0) });
     return `${REPO_URL}/issues/new?${q}`;
+  }
+
+  // ---------- sell targets and sell signals (cards you own) ----------
+  // A sell target is saved like a limit: this browser first, then "Save to all devices" opens the GitHub
+  // form (.github/ISSUE_TEMPLATE/set-sell-target.yml → scripts/set_limit.py → data/sell_targets.json).
+  // An owned card's Verdict column shows Sell / Near peak / Rich ask / Hold instead of the buy verdict.
+  let targets = store.get('psa10.sell', {});
+  function syncedTarget(url) {
+    const e = state.syncedTargets && state.syncedTargets[url];
+    return e && typeof e.price === 'number' ? e.price : null;
+  }
+  function reconcileTargets() {
+    let changed = false;
+    Object.keys(targets).forEach((url) => {
+      const local = targets[url], synced = syncedTarget(url);
+      if ((local === 0 && synced == null) || (local > 0 && local === synced)) { delete targets[url]; changed = true; }
+    });
+    if (changed) store.set('psa10.sell', targets);
+  }
+  function getTarget(card) {
+    if (Object.prototype.hasOwnProperty.call(targets, card.url)) return targets[card.url] > 0 ? targets[card.url] : null;
+    return syncedTarget(card.url);
+  }
+  function targetSync(card) {
+    if (Object.prototype.hasOwnProperty.call(targets, card.url)) return 'local';
+    return syncedTarget(card.url) != null ? 'synced' : null;
+  }
+  function setTarget(card, v) {
+    targets[card.url] = v == null ? 0 : Math.max(LIMIT_STEP, Math.round(v / LIMIT_STEP) * LIMIT_STEP);
+    store.set('psa10.sell', targets);
+    reconcileTargets();
+  }
+  function targetFormUrl(card) {
+    const v = getTarget(card);
+    const q = new URLSearchParams({ template: 'set-sell-target.yml',
+      title: `Sell target: ${parseCardName(card.card_name_ja).short} ${v ? '¥' + v.toLocaleString('en-US') : '(remove)'}`,
+      url: card.url, target: String(v || 0) });
+    return `${REPO_URL}/issues/new?${q}`;
+  }
+  const SELL_NEAR_PEAK = 0.95; // price at or above 95% of the card's recorded peak
+  // A target to start from: just under the peak when that's above what you paid, else +25% on the purchase.
+  function suggestedTarget(card) {
+    const paid = holdingsFor(card).reduce((a, h) => a + (h.purchase_price_jpy || 0), 0) / (holdingsFor(card).length || 1);
+    const peak = card.analysis && card.analysis.peak && card.analysis.peak.price;
+    const raw = peak && peak > paid * 1.05 ? peak * 0.95 : paid * 1.25;
+    return raw > 0 ? Math.max(LIMIT_STEP, Math.round(raw / LIMIT_STEP) * LIMIT_STEP) : null;
+  }
+  // null for a card you don't own; else { tag: 'sell'|'peak'|'rich'|'hold', reasons: [...], target }
+  const sellCache = new WeakMap();
+  function sellState(card) {
+    if (!holdingsFor(card).length) return null;
+    const key = `${getTarget(card)}|${state.holdings.length}`;
+    const hit = sellCache.get(card);
+    if (hit && hit.key === key) return hit.v;
+    const price = getRep(card), ask = lowestAsk(card), target = getTarget(card);
+    const peak = card.analysis && card.analysis.peak && card.analysis.peak.price;
+    const reasons = [];
+    let tag = 'hold';
+    if (target != null && price != null && price >= target) { tag = 'sell'; reasons.push(`Price ${fmtYen(price)} reached your sell target ${fmtYen(target)}`); }
+    if (peak && price != null && price >= peak * SELL_NEAR_PEAK) { if (tag === 'hold') tag = 'peak'; reasons.push(`Within ${Math.round((1 - SELL_NEAR_PEAK) * 100)}% of the peak ${fmtYen(peak)}`); }
+    const ref = salesMedianOf(((card.grades || {}).psa10 || {}).recent_completed_sales);
+    if (ask != null && ref && (ask / ref - 1) * 100 >= INSIGHT.askVsSales) {
+      if (tag === 'hold') tag = 'rich';
+      reasons.push(`Lowest ask ${fmtYen(ask)} is ${Math.round((ask / ref - 1) * 100)}% above recent sales (${fmtYen(ref)})`);
+    }
+    const v = { tag, reasons, target };
+    sellCache.set(card, { key, v });
+    return v;
+  }
+  const SELL_LABELS = { sell: 'Sell', peak: 'Near peak', rich: 'Rich ask', hold: 'Hold' };
+  function sellChip(card) {
+    const st = sellState(card);
+    if (!st) return '';
+    const tip = st.reasons.length ? st.reasons.join('. ') + '.' : st.target != null ? `Below your sell target ${fmtYen(st.target)}.` : 'No sell target set; no sell signal yet.';
+    return `<span class="vtag sell-${st.tag}" title="${escapeAttr(tip)}">${SELL_LABELS[st.tag]}</span>`;
+  }
+  function sellHit(card) { const st = sellState(card); return !!st && st.tag === 'sell'; }
+  function targetSyncHtml(card) {
+    const st = targetSync(card);
+    if (st === 'synced') return '<span class="limit-sync ok">✓ Saved on all devices</span>';
+    if (st !== 'local') return '';
+    const clearing = getTarget(card) == null;
+    return `<span class="limit-sync">${clearing ? 'Removed on this device only' : 'Only on this device'} · <a href="${escapeAttr(targetFormUrl(card))}" target="_blank" rel="noopener">${clearing ? 'Remove everywhere' : 'Save to all devices'} ↗</a><span class="limit-sync-hint">opens a GitHub form; submit it and every device updates in about a minute</span></span>`;
+  }
+  function sellRowHtml(card) {
+    const st = sellState(card);
+    if (!st) return '';
+    const t = st.target, price = getRep(card), sug = suggestedTarget(card);
+    return `<div class="sell-row"><span class="limit-lbl">Sell target</span>${t != null
+      ? ` <strong>${fmtYen(t)}</strong>${price != null ? ` <span class="limit-gap">${price >= t ? '<b class="pos">reached</b>' : fmtYen(t - price) + ' to go'}</span>` : ''}
+         <span class="limit-actions"><button type="button" class="limit-btn" data-act="sell-edit">Edit</button><button type="button" class="limit-btn" data-act="sell-clear">Clear</button></span>`
+      : ` <button type="button" class="limit-btn" data-act="sell-edit">+ Set sell target</button>${sug ? `<button type="button" class="limit-btn" data-act="sell-suggest" data-v="${sug}" title="Just under the peak, or +25% on what you paid">Use ${fmtYen(sug)}</button>` : ''}<span class="limit-gap">get a Sell signal when the price reaches it</span>`}
+      <span class="sell-state">${sellChip(card)}</span>${targetSyncHtml(card)}${st.reasons.length ? `<span class="limit-sync-hint">${st.reasons.map(escapeHtml).join(' · ')}</span>` : ''}</div>`;
+  }
+  function wireSellRow(article, card) {
+    const row = article.querySelector('.sell-row');
+    if (!row) return;
+    row.addEventListener('click', (e) => e.stopPropagation());
+    row.addEventListener('click', (e) => {
+      const btn = e.target.closest('.limit-btn');
+      if (!btn) return;
+      const act = btn.dataset.act;
+      if (act === 'sell-clear') { setTarget(card, null); render(); }
+      else if (act === 'sell-suggest') { setTarget(card, Number(btn.dataset.v)); render(); }
+      else if (act === 'sell-edit') openTargetEditor(row, card);
+    });
+  }
+  function openTargetEditor(row, card) {
+    const start = getTarget(card) || suggestedTarget(card) || '';
+    row.innerHTML = `<span class="limit-lbl">Sell target</span> ¥<input type="number" class="limit-input" inputmode="numeric" min="${LIMIT_STEP}" step="${LIMIT_STEP}" value="${start}">
+      <button type="button" class="limit-btn primary" data-act="save">Save</button><button type="button" class="limit-btn" data-act="cancel">Cancel</button>
+      <span class="limit-hint">Rounded to ¥${LIMIT_STEP}.</span>`;
+    const input = row.querySelector('.limit-input');
+    input.focus(); input.select();
+    const save = () => { const v = Number(input.value); if (v > 0) setTarget(card, v); render(); };
+    row.querySelector('[data-act="save"]').addEventListener('click', (e) => { e.stopPropagation(); save(); });
+    row.querySelector('[data-act="cancel"]').addEventListener('click', (e) => { e.stopPropagation(); render(); });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') render(); });
   }
 
   // ---------- odds of a listing reaching a price ----------
@@ -2124,7 +2244,7 @@
     chgLast: { label: 'Change since last check', dir: 1, v: (c) => (priceChangeLast(c) || {}).pct ?? null },
     chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeAgo(c, 7) || {}).pct ?? null },
     chg30: { label: '30-day change', dir: 1, v: (c) => (priceChangeAgo(c, 30) || {}).pct ?? null },
-    verdict: { label: 'Verdict', dir: 1, v: (c) => (limitHit(c) ? -1 : VERDICT_RANK[displayTagFor(c)] ?? 5) },
+    verdict: { label: 'Verdict', dir: 1, v: (c) => (limitHit(c) || sellHit(c) ? -1 : VERDICT_RANK[displayTagFor(c)] ?? 5) },
     heat: { label: 'Trading activity', dir: -1, v: (c) => { const h = heatOf(c); return h && h.psa ? h.psa.rate : null; } },
   };
   let sortState = store.get('psa10.sort', { key: 'default', dir: 1 });
@@ -2594,13 +2714,13 @@
     el.innerHTML = list.map((card) => {
       const { short, code, pack } = parseCardName(card.card_name_ja);
       const owned = holdingsFor(card).length;
-      return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
+      return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) || sellHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
         ${slabHtml(card, 'xs')}
         <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
         <span class="wl-price display">${fmtYen(getRep(card))}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg')}${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg wl-c30')}
-        <span class="wl-tag">${owned ? '' : tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}${(mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
+        <span class="wl-tag">${owned ? sellChip(card) : tagChip(card)}${owned ? '<span class="owned-chip">Owned</span>' : ''}${limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}${(mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}${(tierReview(card) || {}).due ? '<span class="due-chip" title="Tiers are due for a review">Review</span>' : ''}</span>
         <span class="wl-heat">${heatChip(card)}</span>
       </a>`;
     }).join('');
@@ -2890,6 +3010,7 @@
           ${tierReviewHtml(card)}
           ${tierCheckHtml(card)}
           ${limitRowHtml}
+          ${sellRowHtml(card)}
           ${mercariRowHtml(card)}
           ${insightsHtml(card)}
           ${vsMarketHtml(card)}
@@ -2955,6 +3076,7 @@
       ${o.gaugeHtml}
       ${ins}
       <div class="dw-stats">${limTile}${moves}${peakTile}${holdTile}</div>
+      ${sellRowHtml(card)}
       <div class="dw-acts">
         <a class="btn btn-primary" href="#/card/${escapeAttr(id)}">Open card page →</a>
         <a class="btn" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">✓ Bought it</a>
@@ -3861,6 +3983,7 @@
   // Limit controls in a card detail (drawer or card page). Clicks stop propagating
   // so nothing around them reacts; every change re-renders the whole app.
   function wireLimitControls(article, card) {
+    wireSellRow(article, card);
     const row = article.querySelector('.limit-row');
     const stop = (e) => e.stopPropagation();
     row.addEventListener('click', stop);
