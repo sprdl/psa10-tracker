@@ -2056,28 +2056,28 @@
           "source": "pokeca-chart per-card PSA10 chart (monthly), Sept 26; peak lined up with the 30th-anniversary run-up"
         },
         "verdict": {
-          "tag": "watch",
-          "label": "Watch: ask eased to ¥61k, sales still in the ¥54-62k band",
-          "reasoning": "The lowest ask fell to ¥61.1k from ¥65k at the last verdict, but it is still above the ¥52k Buy line, and the last 20 sales ran ¥54-63k with several at ¥58-62k. Raw A is ¥38.9k and the population is 17,949 (83.8% gem), so self-grading costs about ¥61k, the same as the slab, so there is no cheaper route. With the My-tier index about 22% below a month ago, only ≤¥45k counts as a Buy; the model gives about 28% for ≤¥52k within 30 days and 24% for ≤¥45k within 90. Sales falling back to ¥54k would be the first sign of a real dip.",
+          "tag": "dont_buy",
+          "label": "Don't buy: ask ¥75k, 15% over the ¥65k ceiling",
+          "reasoning": "The lowest PSA10 ask is ¥75,000, up 23% from ¥61,100 and well above the ¥65k ceiling. Completed sales stepped up from ¥60–62k yesterday to ¥70–75k in the last 12 hours, so buyers are paying up, not just sellers asking more. Raw A is ¥37,500, which puts replacement cost near ¥57k, so the slab now carries a clear premium over self-grading. The My-tier index is still down about 10% on the month, so under the correction rule only ≤¥45k would count as a Buy. The model gives about 8% for a listing at ≤¥52k (Buy) within 30 days and 13% for ≤¥45k within 90 days.",
           "predictions": [
             {
-              "text": "A PSA10 listing at ≤¥52,000 (Buy) within 30 days",
-              "p": 0.28,
+              "text": "A PSA10 listing at ≤¥52k (Buy) within 30 days",
+              "p": 0.08,
               "type": "touch_below",
               "price": 52000,
-              "by": "2026-11-05"
+              "by": "2026-11-07"
             },
             {
-              "text": "A PSA10 listing at ≤¥45,000 (Definitely buy) within 3 months",
-              "p": 0.24,
+              "text": "A PSA10 listing at ≤¥45k (Definitely buy) within 90 days",
+              "p": 0.13,
               "type": "touch_below",
               "price": 45000,
-              "by": "2027-01-04"
+              "by": "2027-01-06"
             }
           ],
-          "written": "2026-10-06T07:18:20+09:00"
+          "written": "2026-10-08T07:04:11+09:00"
         },
-        "verdict_price_ref": 61100
+        "verdict_price_ref": 75000
       },
       "psa10_population": 17949,
       "psa10_gem_rate_pct": 83.8,
@@ -2333,6 +2333,17 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "price_source": "ask_unconfirmed",
+        "verdict": {
+          "tag": "defer",
+          "label": "Defer: one PSA10 ask (¥150k), no sales or population yet",
+          "reasoning": "The PSA10 market does not exist yet: a single listing at ¥150,000 against a raw A-rank ask of ¥12,300 (20 recent raw prints at ¥12.0–15.8k), no completed PSA10 sale, and no population on altema. The card comes from the 30th CELEBRATION premium deck set, which is still sold at retail via lottery, so supply is not scarce and the first slabs (PSA Standard takes about 100 business days) will not return before roughly Q1 2027. It also competes with the SV8a Umbreon ex SAR you already own, and that overlap has not been verified. I would not set tiers before a few real PSA10 sales exist; the next look is around the 10/16 カードセット release.",
+          "predictions": [],
+          "written": "2026-10-08T07:04:11+09:00"
+        },
+        "verdict_price_ref": 150000
       }
     },
     {
@@ -2609,28 +2620,28 @@
           "source": "pokeca-chart per-card PSA10 chart (daily/monthly median), Sept 27; after a launch spike of ¥250-296k in Oct 2025"
         },
         "verdict": {
-          "tag": "watch",
-          "label": "Watch: market still correcting",
-          "reasoning": "PSA10 has fallen about 44% from the May peak and is back at the Nov 2025-Jan 2026 pre-run floor (¥101-116k), with a deep book (20 of 20 listings within 15%) and sales clustered at ¥115k. The My-tier index is down 28% over 30 days, so under the correction rule only a listing at or below ¥95k (below that floor and about 10% under the ¥105k DIY replacement cost) is a Buy. Population is very large (51,341, 86.8% gem), so scarcity does not support a premium; it is also a ¥115k card, more than half the ¥200k budget.",
+          "tag": "dont_buy",
+          "label": "Don't buy: ask ¥140k, 12% over the ¥125k ceiling",
+          "reasoning": "The lowest PSA10 ask is ¥139,999, up 22% from ¥115,000 and above the ¥125k ceiling. Completed sales moved from ¥121k yesterday evening to ¥130–146k today, so the market is repricing upward, but the card is still about 31% below its May peak of ¥204.7k. Raw A is ¥72,000, so a DIY slab costs about ¥97k at the 86.8% gem rate, a floor well under today's ask. The My-tier index is still about 10% down on the month, so under the correction rule only ≤¥95k would count as a Buy. The model gives about 12% for a listing at ≤¥108k within 30 days and 17% for ≤¥95k within 90 days.",
           "predictions": [
             {
-              "text": "A PSA10 listing at or below ¥108k (Buy zone) appears within 3 months",
-              "p": 0.5,
+              "text": "A PSA10 listing at ≤¥108k (Buy) within 30 days",
+              "p": 0.12,
               "type": "touch_below",
               "price": 108000,
-              "by": "2026-12-27"
+              "by": "2026-11-07"
             },
             {
-              "text": "A PSA10 listing at or below ¥95k (Definitely buy) appears within 6 months",
-              "p": 0.25,
+              "text": "A PSA10 listing at ≤¥95k (Definitely buy) within 90 days",
+              "p": 0.17,
               "type": "touch_below",
               "price": 95000,
-              "by": "2027-03-27"
+              "by": "2027-01-06"
             }
           ],
-          "written": "2026-09-27T08:58:59+09:00"
+          "written": "2026-10-08T07:04:11+09:00"
         },
-        "verdict_price_ref": 115000
+        "verdict_price_ref": 139999
       },
       "psa10_population": 51341,
       "psa10_gem_rate_pct": 86.8,
@@ -3785,28 +3796,28 @@
           "source": "SNKRDUNK PSA10 1枚 daily sale prices, April median (single-day prints up to ¥65.6k on 8/18 treated as outliers)"
         },
         "verdict": {
-          "tag": "watch",
-          "label": "Watch: still sliding about 10–15% a month, wait for ≤¥9,500",
-          "reasoning": "Twenty sales in the last day at ¥10.0–11.0k and 20 of 20 asks within 15% make ¥10.7k a well-traded price, but the card has fallen every month since April (¥38.7k → ¥12.7k in September → ¥10.7k now), raw A-rank is still slipping (¥4.0k → ¥3.5k in two weeks) and 67k PSA10 copies exist at a 91% gem rate, so there is no scarcity or self-grading floor (DIY costs about ¥17.7k, well above the slab). The limit-odds model puts ¥9,500 at about 42% within 30 days and ¥8,500 at about 34% within 90; the correction rule (My-tier −25.8% over 30 days) would hold even a Buy-zone price at Watch until ¥8,500.",
+          "tag": "dont_buy",
+          "label": "Don't buy: ask ¥12,000, just over the ¥11.5k ceiling",
+          "reasoning": "The lowest PSA10 ask is ¥12,000, up 12% from ¥10,700 and above the ¥11.5k ceiling. Completed sales rose from ¥10.8–11.1k to ¥11.4–12.0k over the past day, the first sustained bounce after months of sliding about 10–15% a month. The population is large (66,963 at a 91.2% gem rate) and raw A is ¥4,000, so there is no scarcity and no DIY floor under the slab. Under the correction rule only ≤¥8.5k counts as a Buy. The model gives about 23% for a listing at ≤¥9.5k within 30 days and 24% for ≤¥8.5k within 90 days.",
           "predictions": [
             {
-              "text": "A listing at ≤¥9,500 within 30 days",
-              "p": 0.42,
+              "text": "A PSA10 listing at ≤¥9.5k (Buy) within 30 days",
+              "p": 0.23,
               "type": "touch_below",
               "price": 9500,
-              "by": "2026-11-02"
+              "by": "2026-11-07"
             },
             {
-              "text": "A listing at ≤¥8,500 by year-end",
-              "p": 0.34,
+              "text": "A PSA10 listing at ≤¥8.5k (Definitely buy) within 90 days",
+              "p": 0.24,
               "type": "touch_below",
               "price": 8500,
-              "by": "2026-12-31"
+              "by": "2027-01-06"
             }
           ],
-          "written": "2026-10-03T12:31:56+09:00"
+          "written": "2026-10-08T07:04:11+09:00"
         },
-        "verdict_price_ref": 10700
+        "verdict_price_ref": 12000
       },
       "psa10_population": 66963,
       "psa10_gem_rate_pct": 91.2,
