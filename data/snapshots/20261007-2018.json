@@ -545,28 +545,28 @@
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2450,
         "verdict": {
-          "tag": "watch",
-          "label": "Watch: thin book, ask 9% above sales",
-          "reasoning": "The lowest PSA10 ask is ¥30,950, up 10.5% from ¥28,000 at the last verdict and about 9% above the recent sales median of ¥28,400 (sales ¥27.4k to ¥30k). The book is thin, with only 4 of 20 asks within 15% of the low, so it can move on a few purchases. Raw A is ¥12,000, so grading yourself costs about ¥30,000 expected at the 79.9% gem rate, close to the slab price. It rose with Pikachu VMAX CSR (same set), so the two are one correlated bet, and the PSA10 index is down 20.2% on the month. The model gives about 20% odds of a listing at ≤¥25k (Buy) within 30 days and 22% for ≤¥22k (Definitely buy) within 90 days.",
+          "tag": "dont_buy",
+          "label": "Don't buy: ask jumped to ¥44k, 42% over the ceiling",
+          "reasoning": "The lowest PSA10 ask is ¥44,000, up 44% from ¥30,500 at the last check and far above the ¥31k ceiling. The cheap listings sold out: the last completed sales ran ¥28k to ¥31k, with only two prints at ¥33k and ¥40k in the past 13 hours, so the ask now sits about 49% above the sales median of ¥29.5k. The book is thin (11 of 20 asks within 15% of the low), so a few purchases move it. Raw A is ¥11,800, so grading yourself costs about ¥28k expected, well under the slab. This card moves with Pikachu VMAX CSR (same set), so the two are one correlated bet. The model gives only about 3% for a listing at ≤¥25k (Buy) within 30 days and 8% for ≤¥22k within 90 days, so wait for the book to refill rather than chase.",
           "predictions": [
             {
               "text": "A PSA10 listing at ≤¥25k (Buy) within 30 days",
-              "p": 0.2,
+              "p": 0.03,
               "type": "touch_below",
               "price": 25000,
-              "by": "2026-11-04"
+              "by": "2026-11-06"
             },
             {
               "text": "A PSA10 listing at ≤¥22k (Definitely buy) within 90 days",
-              "p": 0.22,
+              "p": 0.08,
               "type": "touch_below",
               "price": 22000,
-              "by": "2027-01-03"
+              "by": "2027-01-05"
             }
           ],
-          "written": "2026-10-05T09:04:04+09:00"
+          "written": "2026-10-07T20:19:18+09:00"
         },
-        "verdict_price_ref": 30950
+        "verdict_price_ref": 44000
       },
       "psa10_population": 8140,
       "psa10_gem_rate_pct": 79.9,
@@ -1777,28 +1777,28 @@
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2450,
         "verdict": {
-          "tag": "watch",
-          "label": "Watch: ask is above the ceiling, sales still ¥42–50k",
-          "reasoning": "The lowest PSA10 ask is ¥49,500, up 16% from ¥42,750 and now above the ¥49k ceiling, so the ¥40–42k listing the last verdict waited for has not appeared. Sales from 9/29 to 10/1 ran ¥41.5–55k, mostly ¥44–50k, and 9 of 20 asks sit within 15% of the low. Raw A is ¥36,999, so the slab carries a modest premium over raw. Under the correction rule a Buy needs ≤¥38k. I'd wait for a listing at ≤¥43k; the old ≤¥42k prediction stays on the Track record until its deadline.",
+          "tag": "dont_buy",
+          "label": "Don't buy: ask ¥60k, 22% over the ceiling",
+          "reasoning": "The lowest PSA10 ask is ¥59,999, up 21% from ¥49,500 and well above the ¥49k ceiling. Completed sales climbed from ¥49k on 10/3 to ¥55–59k in the last two hours, so the market is paying up, not just the asks. Raw A is ¥36,999 and the slab premium is 2.21x on pokeca-chart against a 6-month norm of 1.82x, so the slab is no longer cheap against raw. The My-tier index is up 6.9% on the day, and this card is the strongest in it at +31.7% against the 9/26 base. Under the correction rule a Buy needs ≤¥38k. The model gives about 6% for a listing at ≤¥43k (Buy) within 30 days and 10% for ≤¥38k within 90 days; the ≤¥42k prediction from earlier stays on the Track record until its deadline.",
           "predictions": [
             {
               "text": "A PSA10 listing at ≤¥43k (Buy) within 30 days",
-              "p": 0.24,
+              "p": 0.06,
               "type": "touch_below",
               "price": 43000,
-              "by": "2026-11-03"
+              "by": "2026-11-06"
             },
             {
               "text": "A PSA10 listing at ≤¥38k (Definitely buy) within 90 days",
-              "p": 0.22,
+              "p": 0.1,
               "type": "touch_below",
               "price": 38000,
-              "by": "2027-01-02"
+              "by": "2027-01-05"
             }
           ],
-          "written": "2026-10-04T08:29:01+09:00"
+          "written": "2026-10-07T20:19:18+09:00"
         },
-        "verdict_price_ref": 49500
+        "verdict_price_ref": 59999
       },
       "psa10_population": 15191,
       "psa10_gem_rate_pct": 84.6,
@@ -2875,28 +2875,28 @@
           "source": "pokeca-chart per-card PSA10 chart (monthly median), Sept 27"
         },
         "verdict": {
-          "tag": "watch",
-          "label": "Watch: in the Buy zone, but the market is still correcting",
-          "reasoning": "The ask fell to ¥57.0k, inside the Buy zone (≤¥58k) and near the ¥53k replacement cost (raw A ¥33k), but the My-tier index is down 24% over 30 days, so only ≤¥52k counts as a Buy. The graded-supply wave expected Nov-Feb is the main downside risk; the model gives about 40% for ≤¥52k within 30 days.",
+          "tag": "dont_buy",
+          "label": "Don't buy: ask ¥69k, just above the ¥68k ceiling",
+          "reasoning": "The lowest PSA10 ask is ¥69,000, up 21% from ¥57,000 and now above the ¥68k ceiling. Completed sales rose from ¥59.8k to ¥64–67.8k over the past day (one ¥95k print looks like an outlier). Raw A is ¥32,000, which puts replacement cost near ¥52k, so the slab carries a growing premium; pokeca-chart shows it at 1.63x on 9/30 against a 1.99x norm. The Nov to Feb graded-supply wave is still the main downside risk, and under the correction rule only ≤¥52k counts as a Buy. The model gives about 24% for a listing at ≤¥58k (Buy) within 30 days and 11% for ≤¥52k within 30 days, rising to 24% over 90 days. The earlier ≤¥52k predictions stay on the Track record.",
           "predictions": [
             {
-              "text": "A PSA10 listing at ≤¥52k (Definitely buy) within 30 days",
-              "p": 0.4,
+              "text": "A PSA10 listing at ≤¥58k (Buy) within 30 days",
+              "p": 0.24,
               "type": "touch_below",
-              "price": 52000,
-              "by": "2026-11-04"
+              "price": 58000,
+              "by": "2026-11-06"
             },
             {
-              "text": "A PSA10 listing at ≤¥52k (Definitely buy) within 3 months",
-              "p": 0.43,
+              "text": "A PSA10 listing at ≤¥52k (Definitely buy) within 90 days",
+              "p": 0.24,
               "type": "touch_below",
               "price": 52000,
-              "by": "2027-01-03"
+              "by": "2027-01-05"
             }
           ],
-          "written": "2026-10-05T15:10:05+09:00"
+          "written": "2026-10-07T20:19:18+09:00"
         },
-        "verdict_price_ref": 56999
+        "verdict_price_ref": 69000
       },
       "psa10_population": 37021,
       "psa10_gem_rate_pct": 88.8,
