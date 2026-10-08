@@ -699,8 +699,16 @@
     const hs = holdingsFor(card);
     if (!hs.length) return null;
     const dates = hs.map((h) => h.purchase_date).filter(Boolean).sort();
-    return { hs, n: hs.length, cost: hs.reduce((a, h) => a + holdingCost(h), 0) / hs.length, since: dates[0] || null, last: dates[dates.length - 1] || null,
-      toGrade: hs.some((h) => h.condition === 'raw_to_grade') };
+    // cost = cash out per copy (price + grading for a raw copy); basis = what the position is measured against: a slab's
+    // price paid, a raw copy's DIY cost with the price paid (rawCopyBasis); paid = the purchase price alone.
+    let basis = 0, paid = 0, gem = null, fee = 0;
+    for (const h of hs) {
+      paid += h.purchase_price_jpy || 0;
+      if (h.condition === 'raw_to_grade') { const b = rawCopyBasis(h, card); basis += b.v; gem = b.gem; fee = b.fee; } else basis += h.purchase_price_jpy || 0;
+    }
+    const toGrade = hs.some((h) => h.condition === 'raw_to_grade');
+    return { hs, n: hs.length, cost: hs.reduce((a, h) => a + holdingCost(h), 0) / hs.length, basis: basis / hs.length, paid: paid / hs.length, gem, fee,
+      since: dates[0] || null, last: dates[dates.length - 1] || null, toGrade };
   }
   // The lowest sale price whose proceeds after SNKRDUNK's fee, fixed fee and shipping (sellNet) cover the cost.
   function breakEven(cost) {
@@ -802,7 +810,7 @@
   // coloured by the written sell tiers when there are any.
   function sellScale(card, own) {
     const a = card.analysis || {}, t = sellTiersOf(card), peak = a.peak && a.peak.price;
-    return roundToThousand(Math.max(peak || 0, t ? t.sell_from * 1.12 : 0, getTarget(card) || 0, getRep(card) || 0, own.cost) * 1.08) || 1000;
+    return roundToThousand(Math.max(peak || 0, t ? t.sell_from * 1.12 : 0, getTarget(card) || 0, getRep(card) || 0, own.basis) * 1.08) || 1000;
   }
   function sellSegments(card, scale) {
     const t = sellTiersOf(card), w = (x) => Math.min(100, Math.max(0, (x / scale) * 100));
@@ -815,26 +823,26 @@
     if (!own || price == null) return '';
     const scale = sellScale(card, own), pct = (v) => Math.min(100, Math.max(0, (v / scale) * 100)).toFixed(1);
     const edge = (x) => (x > 86 ? ' edge-r' : x < 10 ? ' edge-l' : '');
-    const be = breakEven(own.cost);
+    const be = breakEven(own.basis);
     const mk = (cls, v, title) => `<div class="marker ${cls}" style="left:${pct(v)}%" title="${escapeAttr(title)}"><div class="stem"></div></div>`;
     return `<div class="gauge-wrap sell-gauge">
       <div class="gauge-track" data-scale="${scale}"><span class="sg-bar">${sellSegments(card, scale)}</span>
-        ${mk('cost', own.cost, 'You paid ' + fmtYen(own.cost))}${mk('be', be, 'Break-even after selling costs ' + fmtYen(be))}
+        ${mk('cost', own.basis, own.toGrade ? 'DIY cost with your raw price ' + fmtYen(own.basis) : 'You paid ' + fmtYen(own.basis))}${mk('be', be, 'Break-even after selling costs ' + fmtYen(be))}
         ${target != null ? mk('target', target, 'Your sell target ' + fmtYen(target)) : ''}
         <div class="marker${edge(pct(price))}" style="left:${pct(price)}%"><div class="tag">${fmtYenShort(price)}</div><div class="stem"></div></div>
         ${peak ? `<div class="marker peak${edge(pct(peak))}" style="left:${pct(peak)}%"><div class="tag">Peak ${fmtYenShort(peak)}</div><div class="stem"></div></div>` : ''}
       </div>
       <div class="gauge-legend sg-legend">${t ? `${typeof t.reassess_below === 'number' ? `<span><i class="z-sr"></i>Reassess &lt;${fmtYenShort(t.reassess_below)}</span>` : ''}<span><i class="z-sh"></i>Hold</span><span><i class="z-st"></i>Take profit ≥${fmtYenShort(t.take_profit_from)}</span><span><i class="z-ss"></i>Sell ≥${fmtYenShort(t.sell_from)}</span>` : ''}
-        <span><i class="sg-dot cost"></i>Paid ${fmtYenShort(own.cost)}</span><span><i class="sg-dot be"></i>Break-even ${fmtYenShort(be)}</span>${target != null ? `<span><i class="sg-dot target"></i>Target ${fmtYenShort(target)}</span>` : ''}</div>
+        <span><i class="sg-dot cost"></i>${own.toGrade ? 'DIY cost' : 'Paid'} ${fmtYenShort(own.basis)}</span><span><i class="sg-dot be"></i>Break-even ${fmtYenShort(be)}</span>${target != null ? `<span><i class="sg-dot target"></i>Target ${fmtYenShort(target)}</span>` : ''}</div>
     </div>`;
   }
   // What you hold, what it's worth now, and what selling would leave after costs.
   function positionStats(card) {
     const own = ownedOf(card), price = getRep(card);
     if (!own || price == null) return null;
-    const gross = price - own.cost, net = sellNet(price) - own.cost, be = breakEven(own.cost);
+    const gross = price - own.basis, net = sellNet(price) - own.basis, be = breakEven(own.basis);
     const days = own.since ? Math.max(0, Math.floor((Date.now() - Date.parse(own.since + 'T00:00:00+09:00')) / 86400000)) : null;
-    return { own, price, gross, grossPct: own.cost ? (gross / own.cost) * 100 : null, net, netPct: own.cost ? (net / own.cost) * 100 : null, be, days };
+    return { own, price, gross, grossPct: own.basis ? (gross / own.basis) * 100 : null, net, netPct: own.basis ? (net / own.basis) * 100 : null, be, days };
   }
   const signedYen = (v) => `${v >= 0 ? '+' : '−'}${fmtYen(Math.abs(v))}`;
   function positionHtml(card) {
@@ -843,9 +851,12 @@
     const { own } = ps;
     const dts = own.hs.map((h) => `${escapeHtml(h.purchase_date || '—')} ${fmtYen(h.purchase_price_jpy)}`).join(' · ');
     return `<div class="cd-stats pos-stats">
-      <div class="cd-stat"><div class="lbl">You paid${own.n > 1 ? ` (avg of ${own.n})` : ''}</div><div class="val">${fmtYen(own.cost)}</div><div class="s muted">${dts}${own.hs.some((h) => h.condition === 'raw_to_grade') ? ' · incl. grading' : ''}</div></div>
-      <div class="cd-stat"><div class="lbl">Worth now</div><div class="val">${fmtYen(ps.price)}</div><div class="s ${ps.gross >= 0 ? 'pos' : 'neg'}">${signedYen(ps.gross)}${ps.grossPct != null ? ' (' + fmtPct(ps.grossPct) + ')' : ''}</div></div>
-      ${(() => { const bg = boughtGap(card); return bg && bg.raw ? `<div class="cd-stat" title="${escapeAttr(boughtGapTitle(bg))}"><div class="lbl">PSA10 vs your DIY cost</div><div class="val">${fmtYen(bg.basis)}</div><div class="s ${bg.pct >= 0 ? 'pos' : 'neg'}">${fmtPct(bg.pct)} · PSA10 sells for ${fmtYen(bg.now)}</div></div>` : ''; })()}
+      ${own.toGrade
+        ? `<div class="cd-stat"><div class="lbl">You paid for the card${own.n > 1 ? ` (avg of ${own.n})` : ''}</div><div class="val">${fmtYen(own.paid)}</div><div class="s muted">${dts} · with grading ${fmtYen(own.cost)}</div></div>
+      <div class="cd-stat" title="(price paid + grading &amp; shipping) ÷ gem rate"><div class="lbl">Your PSA10 DIY cost</div><div class="val">${fmtYen(own.basis)}</div><div class="s muted">(${fmtYen(own.paid)} + ${fmtYen(own.fee)} grading) ÷ ${own.gem != null ? Math.round(own.gem * 10) / 10 + '% gem rate' : 'no gem rate yet'}</div></div>
+      <div class="cd-stat"><div class="lbl">PSA10 price now</div><div class="val">${fmtYen(ps.price)}</div><div class="s ${ps.gross >= 0 ? 'pos' : 'neg'}">${signedYen(ps.gross)}${ps.grossPct != null ? ' (' + fmtPct(ps.grossPct) + ')' : ''} vs your DIY cost</div></div>`
+        : `<div class="cd-stat"><div class="lbl">You paid${own.n > 1 ? ` (avg of ${own.n})` : ''}</div><div class="val">${fmtYen(own.paid)}</div><div class="s muted">${dts}</div></div>
+      <div class="cd-stat"><div class="lbl">Worth now</div><div class="val">${fmtYen(ps.price)}</div><div class="s ${ps.gross >= 0 ? 'pos' : 'neg'}">${signedYen(ps.gross)}${ps.grossPct != null ? ' (' + fmtPct(ps.grossPct) + ')' : ''}</div></div>`}
       <div class="cd-stat"><div class="lbl">After selling costs</div><div class="val ${ps.net >= 0 ? 'pos' : 'neg'}">${signedYen(ps.net)}</div><div class="s muted">fee 9.5% + fixed fee + shipping${ps.netPct != null ? ' · ' + fmtPct(ps.netPct) : ''}</div></div>
       <div class="cd-stat"><div class="lbl">Break-even price</div><div class="val">${fmtYen(ps.be)}</div><div class="s muted">${ps.price >= ps.be ? fmtYen(ps.price - ps.be) + ' above' : fmtYen(ps.be - ps.price) + ' to go'}${ps.days != null ? ` · held ${ps.days} day${ps.days === 1 ? '' : 's'}` : ''}</div></div>
     </div>`;
@@ -860,7 +871,9 @@
       reassess: `Reassess: ${fmtYen(price)} is below ${t ? fmtYen(t.reassess_below) : ''}`, peak: `Hold, near the peak: ${fmtYen(price)} is within 5% of ${fmtYen(a.peak && a.peak.price)}`,
       rich: 'Hold, but the ask looks rich against recent sales', hold: t ? `Hold: ${fmtYen(t.take_profit_from - price)} to the Take-profit zone` : 'Hold' };
     const head = st.tag === 'hold' && st.target != null && !t ? `Hold: ${fmtYen(st.target - price)} to your sell target` : heads[st.tag];
-    lines.push(`You paid ${fmtYen(ps.own.cost)}; it is worth ${fmtYen(price)} now (${signedYen(ps.gross)}), ${signedYen(ps.net)} after selling costs.`);
+    lines.push(ps.own.toGrade
+      ? `You paid ${fmtYen(ps.own.paid)} for the raw card (${fmtYen(ps.own.cost)} with grading). Getting a PSA10 out of it is expected to cost ${fmtYen(ps.own.basis)} (${ps.own.gem != null ? Math.round(ps.own.gem * 10) / 10 + '% gem rate' : 'no gem rate yet'}). A PSA10 sells for ${fmtYen(price)}: ${signedYen(ps.gross)} over that, ${signedYen(ps.net)} after selling costs.`
+      : `You paid ${fmtYen(ps.own.paid)}; it is worth ${fmtYen(price)} now (${signedYen(ps.gross)}), ${signedYen(ps.net)} after selling costs.`);
     if (t) lines.push(`Sell tiers: ${typeof t.reassess_below === 'number' ? `reassess below ${fmtYen(t.reassess_below)}, ` : ''}take profit from ${fmtYen(t.take_profit_from)}, sell from ${fmtYen(t.sell_from)}.`);
     if (st.target != null) lines.push(price >= st.target ? `Your sell target ${fmtYen(st.target)} is reached.` : `Your sell target is ${fmtYen(st.target)}, ${fmtYen(st.target - price)} away.`);
     st.reasons.filter((r) => !/sell target|Sell zone|Take-profit zone|fell below/.test(r)).forEach((r) => lines.push(r + '.'));
@@ -881,7 +894,7 @@
     const own = ownedOf(card), price = getRep(card);
     if (!own || price == null) return '<span class="zb-none">—</span>';
     const scale = sellScale(card, own), pct = (v) => Math.min(100, Math.max(0, (v / scale) * 100)).toFixed(1) + '%', target = getTarget(card);
-    return `<span class="zb ${cls || ''}" title="Your cost, selling target and the sell zones"><span class="zb-track">${sellSegments(card, scale)}</span><span class="zb-cost" style="left:${pct(own.cost)}"></span><span class="zb-now" style="left:${pct(price)}"></span>${target != null ? `<span class="zb-lim" style="left:${pct(target)}"></span>` : ''}</span>`;
+    return `<span class="zb ${cls || ''}" title="Your cost, selling target and the sell zones"><span class="zb-track">${sellSegments(card, scale)}</span><span class="zb-cost" style="left:${pct(own.basis)}"></span><span class="zb-now" style="left:${pct(price)}"></span>${target != null ? `<span class="zb-lim" style="left:${pct(target)}"></span>` : ''}</span>`;
   }
 
   // ---------- odds of a listing reaching a price ----------
@@ -3818,7 +3831,7 @@
       ? `<p class="cd-note warn">This card is ${age} month${age === 1 ? '' : 's'} old. Cards this young have kept falling against the market (on average ${Math.round(-Math.expm1(d12.drift) * 100)}% over the next 12 months), so the middle of the range is lower than for an older card.</p>` : '';
     const sw = d12 ? (d12.k > 1.04 ? 'has swung more than most modern cards lately, so its range is a little wider (only a little: in the backtest, a card’s past swings barely predicted its later ones)' : d12.k < 0.96 ? 'has swung less than most modern cards lately, so its range is a little narrower (only a little: in the backtest, calm cards later moved almost as much as the rest)' : 'swings about as much as most modern cards') : '';
     return `<div class="up-wrap">
-      <div class="up-cols">${own ? upsideCol(card, ask, 'Your copy, from today\'s ask', own.cost) : upsideCol(card, ask, "Bought today") + (lim != null && lim < ask ? upsideCol(card, lim, 'Bought at my limit') : '')}</div>
+      <div class="up-cols">${own ? upsideCol(card, ask, 'Your copy, from today\'s ask', own.basis) : upsideCol(card, ask, "Bought today") + (lim != null && lim < ask ? upsideCol(card, lim, 'Bought at my limit') : '')}</div>
       ${ageNote}
       ${!own && lim != null && lim < ask ? `<p class="cd-note">The chance of a profit is about the same in both columns: if a listing does drop to your limit, history gives no sign that the price then recovers faster or slower, so the limit buys the same chances for less money, if it fills (${(() => { const o = touchOdds(card, lim); return o && !o.reached ? `${fmtOdds(o.p90)} within 90 days` : 'already reachable'; })()}).</p>` : ''}
       <p class="cd-note">How it's worked out: every 12- and 24-month stretch of 125 modern PSA10s on pokeca-chart, ${escapeHtml((vm.source || '').replace(/^.*cards, /, ''))}. The market part comes from how the whole tier moved, shifted so the typical outcome is no change (no market growth assumed), because 2022–26 holds one big rally and one crash and its average says little about the next years. So “Typical” is roughly today's price, and the loss shown there is the cost of selling; the italic figure shows the odds if the market repeats 2022–26. The card part is how far single cards strayed from the market; this card ${sw}. Selling costs SNKRDUNK's Regular-rank fee (9.5%), the ¥300 transfer fee and about ¥1,000 shipping. Not modelled: events for this Pokémon, reprints and the coming wave of graded copies. The 2022–26 data has only one full boom and bust, so treat these as rough ranges, not forecasts.</p>

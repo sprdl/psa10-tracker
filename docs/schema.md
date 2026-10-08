@@ -202,6 +202,13 @@ back. The Holdings page lists sales with a yearly summary; the value-over-time c
 history and, from the sale date on, counts the money received (so its result is total profit, unrealized plus
 realized, while the header's +/− only covers what you still own).
 
+## Owned raw cards on the card page and the side panel
+
+For a card you hold raw, the position (gain, result after selling costs, break-even, the sell gauge's marker, the
+Upside tab) is measured against your **PSA10 DIY cost with the price you paid**, (price paid + grading & shipping) ÷
+gem rate, the same number as the Overview's "DIY ¥X". "You paid for the card" shows the purchase price alone, with the
+all-in figure including grading next to it. Slabs are measured against the price paid, as before (`ownedOf().basis`).
+
 ## Sorting by the Limit column, and the price log
 
 Sorting by Limit keeps two groups apart: cards you watch first (closest to your limit first, then cards without a
