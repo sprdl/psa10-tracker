@@ -109,7 +109,9 @@ def save(found, root=ROOT, push=True, dry=False):
         return
     out = {"updated": datetime.now(JST).replace(microsecond=0).isoformat(), "prices": prices}
     path.write_text(json.dumps(out, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    hist = log_history(prices, root)
+    # only what was actually read today goes into the history: a carried-over last-good price is not a reading
+    fresh = {sid: v for sid, v in prices.items() if sid in found and "error" not in found[sid]}
+    hist = log_history(fresh, root)
     print(f"holdings prices: {sum(1 for v in prices.values() if v['price'] is not None)}/{len(prices)} priced")
     if not push:
         return
@@ -122,14 +124,16 @@ def save(found, root=ROOT, push=True, dry=False):
 
 
 def log_history(prices, root=ROOT, now=None):
-    """Append today's readings to data/portfolio_history.json (one entry per day; a later run the same day replaces it).
+    """Append today's readings to data/portfolio_history.json (one entry per day; a later run the same day adds to it).
     The site's portfolio-value chart back-fills singles and tracked pulls from history.json; this file is what
     gives sealed products and untracked cards a price history from the first day they were read."""
     path = root / "data" / "portfolio_history.json"
     data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
     now = now or datetime.now(JST)
-    pts = [x for x in data.get("points", []) if x.get("d") != now.strftime("%Y-%m-%d")]
-    pts.append({"d": now.strftime("%Y-%m-%d"), "p": {sid: v["price"] for sid, v in prices.items() if v.get("price") is not None}})
+    day = now.strftime("%Y-%m-%d")
+    same_day = next((x.get("p", {}) for x in data.get("points", []) if x.get("d") == day), {})   # a second run today adds to the first
+    pts = [x for x in data.get("points", []) if x.get("d") != day]
+    pts.append({"d": day, "p": {**same_day, **{sid: v["price"] for sid, v in prices.items() if v.get("price") is not None}}})
     data["about"] = ("Daily price readings of bought items that aren't tracked cards (sealed products: lowest ask per unit; "
                      "untracked cards: raw A-rank price, see scripts/raw_price.py), keyed by SNKRDUNK id. Written by scripts/holdings_prices.py from the full check.")
     data["points"] = sorted(pts, key=lambda x: x["d"])[-800:]

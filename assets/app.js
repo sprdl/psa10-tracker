@@ -2419,7 +2419,10 @@
     name: { label: 'Card name', dir: 1, v: (c) => parseCardName(c.card_name_ja).short },
     price: { label: 'Price', dir: -1, v: (c) => getRep(c) },
     zone: { label: 'Closest to Buy', dir: 1, v: (c) => { if (holdingsFor(c).length) return null; const t = c.analysis && c.analysis.tiers; const p = getRep(c); return t && p != null ? p / t.buy_upper : null; } },
-    limit: { label: 'Distance to my limit (vs bought for owned)', dir: 1, v: (c) => (boughtGap(c) || limitGap(c) || {}).pct ?? null },
+    // Cards you watch first, closest to your limit first; then cards you own, biggest gain first. The two groups never
+    // mix (a distance to a limit and a gain are different things); reversing the order flips each group, not the groups.
+    limit: { label: 'Limit: distance to my limit, then gain on owned', dir: 1, group: (c) => (holdingsFor(c).length ? 1 : 0),
+      v: (c) => { const bg = boughtGap(c); return bg ? -bg.pct : (limitGap(c) || {}).pct ?? null; } },
     chgLast: { label: 'Change since last check', dir: 1, v: (c) => (priceChangeLast(c) || {}).pct ?? null },
     chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeAgo(c, 7) || {}).pct ?? null },
     chg30: { label: '30-day change', dir: 1, v: (c) => (priceChangeAgo(c, 30) || {}).pct ?? null },
@@ -2439,7 +2442,9 @@
     const sd = defs[st.key] || defs.default;
     if (!sd.v) return base.sort((a, b) => rank(a.card) - rank(b.card) || a.i - b.i).map((x) => x.card);
     const vals = new Map(base.map((x) => [x.card, sd.v(x.card)]));
+    const grp = new Map(base.map((x) => [x.card, sd.group ? sd.group(x.card) : 0]));
     return base.sort((a, b) => {
+      if (grp.get(a.card) !== grp.get(b.card)) return grp.get(a.card) - grp.get(b.card);
       const va = vals.get(a.card), vb = vals.get(b.card);
       if (va == null && vb == null) return a.i - b.i;
       if (va == null) return 1;

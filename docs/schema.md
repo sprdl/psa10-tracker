@@ -202,6 +202,13 @@ back. The Holdings page lists sales with a yearly summary; the value-over-time c
 history and, from the sale date on, counts the money received (so its result is total profit, unrealized plus
 realized, while the header's +/− only covers what you still own).
 
+## Sorting by the Limit column, and the price log
+
+Sorting by Limit keeps two groups apart: cards you watch first (closest to your limit first, then cards without a
+limit), then cards you own (biggest gain first). Reversing flips the order inside each group, not the groups.
+`data/portfolio_history.json` only receives prices actually read that day (a failed read's carried-over last-good
+price stays out); a second run on the same day adds to that day's entry instead of replacing it.
+
 ## How Holdings counts a raw card and an unpriced product
 
 A raw copy you bought to grade (`condition: raw_to_grade`) is always counted at its **DIY cost with the price you
