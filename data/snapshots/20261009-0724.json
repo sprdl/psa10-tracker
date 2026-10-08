@@ -1538,6 +1538,16 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 72000,
+        "price_source": "unconfirmed",
+        "verdict": {
+          "tag": "defer",
+          "label": "Defer — one PSA10 ask, no real PSA10 market yet",
+          "reasoning": "The only PSA10 listing is a single ¥72,000 ask against a raw A-rank near ¥7,000 (about 10x, versus a normal 1.5-3x slab premium), and the one PSA10 sale on record (¥12,980 on 9/18) is not a usable price. The Standard tier (~100 business days) hasn't returned slabs from this 9/16 set yet, so population, gem rate and a PSA10 price range don't exist; tiers would be guesses. Re-evaluate once several PSA10 listings and sales form (watch the 10/16 CELEBRATION card set release).",
+          "written": "2026-10-09T07:24:44+09:00"
+        }
       }
     },
     {

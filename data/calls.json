@@ -29,6 +29,25 @@
  },
  "calls": [
   {
+   "url": "https://snkrdunk.com/apparels/882279",
+   "name": "ピカチュウex SAR [M6a 126/103](拡張パック「30th CELEBRATION」)",
+   "tag": "defer",
+   "label": "Defer — one PSA10 ask, no real PSA10 market yet",
+   "latest_label": "Defer — one PSA10 ask, no real PSA10 market yet",
+   "reaffirmed": 0,
+   "made": "2026-10-09T07:24:21+09:00",
+   "price": 72000,
+   "window_end": "2026-11-08T07:24:21+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "unscored",
+   "why": "Defer isn't scored",
+   "threshold": 0.05
+  },
+  {
    "url": "https://snkrdunk.com/apparels/224087",
    "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
    "tag": "watch",
