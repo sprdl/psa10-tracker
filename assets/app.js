@@ -423,20 +423,44 @@
   const PSA_STD = { fee: 9980, ship: 1900, handling: 550, cap: 150000 };
   function psaExtras(v) { return v == null || v === 2000 ? PSA_STD.ship + PSA_STD.handling : v; }
 
+  // Raw A-rank price (decided 2026-10-08): the cheapest listing is often a copy that won't grade
+  // (bad centering) and doesn't sell, while PSA10-worthy copies sell higher. So the price is the median
+  // of the last 5 one-copy sales from the past 30 days, but never below the lowest ask (you can't buy
+  // under it). Fewer than 3 such sales: the lowest ask. No listing: the sales median.
+  const RAW_SALES_N = 5, RAW_SALES_DAYS = 30, RAW_SALES_MIN = 3;
+  function rawPrice(card) {
+    const r = (card && card.grades && card.grades.raw_a_grade) || {};
+    const ask = r.lowest_price != null ? r.lowest_price : null;
+    const ref = Date.parse(refTime());
+    const recent = (r.recent_completed_sales || []).map((x) => ({ p: x.price, a: saleAgeDays(x.when, ref) }))
+      .filter((x) => x.p && x.a != null && x.a <= RAW_SALES_DAYS).slice(-RAW_SALES_N);
+    const med = recent.length >= RAW_SALES_MIN ? median(recent.map((x) => x.p)) : null;
+    if (med == null) return ask == null ? null : { v: ask, ask, med: null, n: recent.length, src: 'ask' };
+    if (ask == null) return { v: med, ask, med, n: recent.length, src: 'sales' };
+    return med > ask ? { v: med, ask, med, n: recent.length, src: 'sales' } : { v: ask, ask, med, n: recent.length, src: 'ask' };
+  }
+  function rawPriceNote(rp) {
+    if (!rp) return 'No raw A-rank listing or recent sales right now';
+    const sales = rp.med != null ? `median of the last ${rp.n} sales in ${RAW_SALES_DAYS} days ${fmtYen(rp.med)}` : `fewer than ${RAW_SALES_MIN} sales in ${RAW_SALES_DAYS} days`;
+    const ask = rp.ask != null ? `lowest ask ${fmtYen(rp.ask)}` : 'no listing right now';
+    return `Raw A-rank ${fmtYen(rp.v)}: ${rp.src === 'sales' ? sales + ' (' + ask + ')' : ask + ' (' + sales + ')'}`;
+  }
+  function rawPriceV(card) { const rp = rawPrice(card); return rp ? rp.v : null; }
+
   function computeDiyEconomics(card, repPrice) {
     const a = card.analysis;
-    const raw = card.grades && card.grades.raw_a_grade;
-    // Computed for every card with a raw A-rank ask, a gem rate and a PSA10 price; the fees default to
+    const rp = rawPrice(card);
+    // Computed for every card with a raw A-rank price, a gem rate and a PSA10 price; the fees default to
     // PSA Standard, and an evaluation may override them (grading_fee_jpy / shipping_insurance_jpy).
-    if (!raw || !raw.lowest_price || card.psa10_gem_rate_pct == null || !repPrice) return null;
+    if (!rp || !rp.v || card.psa10_gem_rate_pct == null || !repPrice) return null;
     const gradingFee = a && a.grading_fee_jpy != null ? a.grading_fee_jpy : PSA_STD.fee;
     const shipping = psaExtras(a && a.shipping_insurance_jpy);
     const gemRate = card.psa10_gem_rate_pct / 100;
     if (!gemRate) return null;
-    const rawPrice = raw.lowest_price;
-    const diyExpected = (rawPrice + gradingFee + shipping) / gemRate;
+    const rawP = rp.v;
+    const diyExpected = (rawP + gradingFee + shipping) / gemRate;
     const delta = diyExpected - repPrice;
-    return { gradingFee, shipping, rawPrice, diyExpected, delta, gemRate };
+    return { gradingFee, shipping, rawPrice: rawP, rawInfo: rp, diyExpected, delta, gemRate };
   }
 
   function computeGauge(tiers, peakPrice, currentPrice) {
@@ -2433,7 +2457,7 @@
     population: { label: 'PSA10 population', dir: -1, v: (c) => c.psa10_population ?? null },
     gem: { label: 'Gem rate', dir: -1, v: (c) => c.psa10_gem_rate_pct ?? null },
     offpeak: { label: 'Off peak', dir: -1, v: (c) => { const pk = c.analysis && c.analysis.peak; return pk && pk.price ? computeOffPeakPct(pk.price, getRep(c)) : null; } },
-    raw: { label: 'Raw A-rank price', dir: 1, v: (c) => { const r = c.grades && c.grades.raw_a_grade; return r ? r.lowest_price ?? null : null; } },
+    raw: { label: 'Raw A-rank price', dir: 1, v: (c) => rawPriceV(c) },
     diy: { label: 'DIY vs. slab', dir: 1, v: (c) => { const d = computeDiyEconomics(c, getRep(c)); return d ? d.delta : null; } },
   });
   let tableSort = store.get('psa10.tableSort', { key: 'default', dir: 1 });
@@ -2545,10 +2569,10 @@
   }
   function gradeCalc(card, c) {
     const it = c.item, tierKey = GRADE_TIERS[it.tier] ? it.tier : 'standard', tier = GRADE_TIERS[tierKey];
-    const raw = ((card.grades || {}).raw_a_grade || {}).lowest_price, psa = getRep(card);
+    const raw = rawPriceV(card), psa = getRep(card);
     const own = it.gem_rate_pct != null, gem = own ? it.gem_rate_pct : card.psa10_gem_rate_pct;
     const ret = it.sent ? { date: addBusinessDays(it.sent, tier.days), days: tier.days, assumed: !GRADE_TIERS[it.tier] } : null;
-    if (!raw || !psa || gem == null || !gem) return { missing: !psa ? 'no PSA10 price yet' : !raw ? 'no raw A-rank listing to compare with' : 'no gem rate yet (give your own chance of a 10 in the grading info)', ret, tierKey };
+    if (!raw || !psa || gem == null || !gem) return { missing: !psa ? 'no PSA10 price yet' : !raw ? 'no raw A-rank price to compare with' : 'no gem rate yet (give your own chance of a 10 in the grading info)', ret, tierKey };
     const fee = tier.fee + PSA_STD.ship + PSA_STD.handling;
     const n10 = sellNet(psa), nraw = sellNet(raw), p = gem / 100;
     const ev = p * n10 + (1 - p) * nraw;
@@ -2612,8 +2636,8 @@
   function pullValue(p, cards) {
     const card = p.card_url ? cards.find((c) => c.url === p.card_url) : null;
     if (card && p.status === 'psa10' && getRep(card) != null) return { v: getRep(card), src: 'PSA10 price', card };
-    const raw = card && ((card.grades || {}).raw_a_grade || {}).lowest_price;
-    if (card && raw && p.status !== 'graded_other') return { v: raw, src: 'raw A-rank ask', card };
+    const raw = card && rawPriceV(card);
+    if (card && raw && p.status !== 'graded_other') return { v: raw, src: 'raw A-rank price', card };
     const held = !card && p.status !== 'psa10' && p.status !== 'graded_other' ? heldPrice(p.card_url) : null;
     if (held) return { v: held, src: 'raw A-rank ask', card };
     if (p.value_jpy) return { v: p.value_jpy, src: 'your estimate', card };
@@ -3159,11 +3183,10 @@
     const how = bg.diy ? `(raw ${fmtYen(pt.raw)} paid + grading ${fmtYen(pt.fee)}) ÷ ${Math.round(pt.gem * 10) / 10}% gem rate` : `raw ${fmtYen(pt.raw)} paid + grading ${fmtYen(pt.fee)} (no gem rate yet, so not divided)`;
     return `PSA10 now ${fmtYen(bg.now)} vs your DIY cost ${fmtYen(bg.basis)} = ${how} (${gap})`;
   }
-  // Owned rows: the current raw A-rank ask under the PSA10 price (what an ungraded copy costs today).
+  // Owned rows: the current raw A-rank price (see rawPrice) under the PSA10 price (what an ungraded copy costs today).
   function rawAskSub(card) {
-    const r = ((card.grades || {}).raw_a_grade || {}).lowest_price;
-    const tip = r != null ? `Lowest raw A-rank ask on SNKRDUNK: ${fmtYen(r)}` : 'No raw A-rank listing right now';
-    return `<small class="wl-sub" title="${escapeAttr(tip)}">raw A ${r != null ? fmtYenShort(r) : '—'}</small>`;
+    const rp = rawPrice(card);
+    return `<small class="wl-sub" title="${escapeAttr(rawPriceNote(rp))}">raw A ${rp ? fmtYenShort(rp.v) : '—'}</small>`;
   }
   function limitGapCell(card, cls) {
     // Once bought, the column shows how far the price has moved from what you paid instead.
@@ -3306,7 +3329,7 @@
       return `<a class="watch-row" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">
         <span class="wthumb">${thumbHtml}</span>
         <span class="wname"><b class="jp">${escapeHtml(short || card.card_name_ja)}</b><small>${escapeHtml(code)}</small></span>
-        <span class="wraw"><small>Raw A</small><b class="display">${raw && raw.lowest_price != null ? fmtYen(raw.lowest_price) : '—'}</b></span>
+        <span class="wraw" title="${escapeAttr(rawPriceNote(rawPrice(card)))}"><small>Raw A</small><b class="display">${rawPriceV(card) != null ? fmtYen(rawPriceV(card)) : '—'}</b></span>
         <span class="wheat">${heatChip(card, 'raw')}${(heatOf(card) || {}).raw ? `<small>≈${rateTxt(heatOf(card).raw)} raw A sales / day</small>` : ''}</span>
         <span class="wmeta">♥ ${fav}</span>
         <span class="wstate">${escapeHtml(status)}</span>
@@ -3403,7 +3426,7 @@
         ${heatStatHtml(card)}
         <div class="cd-stat"><div class="lbl">Favorites</div><div class="val">${favHtml}</div></div>
         <div class="cd-stat"><div class="lbl">Population · gem rate</div><div class="val">${popText}${card.population_as_of ? asOfHtml(card.population_as_of) : ''}</div></div>
-        <div class="cd-stat"><div class="lbl">Raw A lowest</div><div class="val">${raw ? fmtYen(raw.lowest_price) : '—'}</div></div>
+        <div class="cd-stat" title="${escapeAttr(rawPriceNote(rawPrice(card)))}"><div class="lbl">Raw A-rank</div><div class="val">${rawPriceV(card) != null ? fmtYen(rawPriceV(card)) : '—'}${raw && raw.lowest_price != null && rawPriceV(card) !== raw.lowest_price ? `<small class="muted"> · ask ${fmtYenShort(raw.lowest_price)}</small>` : ''}</div></div>
       </div>`;
 
     const displayTag = displayTagFor(card);
@@ -3453,17 +3476,18 @@
     const diyHtml = diy ? `
       <div class="cd-stats">
         <div class="cd-stat"><div class="lbl">Buy the slab</div><div class="val">${fmtYen(rep)}</div></div>
-        <div class="cd-stat"><div class="lbl">Raw A-rank</div><div class="val">${fmtYen(diy.rawPrice)}</div></div>
+        <div class="cd-stat" title="${escapeAttr(rawPriceNote(diy.rawInfo))}"><div class="lbl">Raw A-rank</div><div class="val">${fmtYen(diy.rawPrice)}${diy.rawInfo.src === 'sales' && diy.rawInfo.ask != null ? `<small class="muted"> · ask ${fmtYenShort(diy.rawInfo.ask)}</small>` : ''}</div></div>
         <div class="cd-stat"><div class="lbl">Grade it yourself (expected)</div><div class="val">${fmtYen(diy.diyExpected)}</div></div>
         <div class="cd-stat"><div class="lbl">vs. buying the slab</div><div class="val ${diy.delta >= 0 ? 'neg' : 'pos'}">${diy.delta >= 0 ? '+' : '−'}${fmtYen(Math.abs(diy.delta))}</div></div>
       </div>
+      <p class="cd-note">Raw A-rank price = ${diy.rawInfo.src === 'sales' ? `median of the last ${diy.rawInfo.n} sales in ${RAW_SALES_DAYS} days, because the cheapest listing (${fmtYen(diy.rawInfo.ask)}) is below what copies actually sell for` : diy.rawInfo.med != null ? `the lowest ask (recent sales median ${fmtYen(diy.rawInfo.med)} is lower, and you can't buy below the ask)` : `the lowest ask (fewer than ${RAW_SALES_MIN} sales in ${RAW_SALES_DAYS} days)`}.</p>
       <p class="cd-note">Expected DIY cost = (raw ¥${Math.round(diy.rawPrice).toLocaleString()} + ${diy.gradingFee === PSA_STD.fee && diy.shipping === PSA_STD.ship + PSA_STD.handling
         ? `PSA Standard ¥${(PSA_STD.fee + PSA_STD.ship + PSA_STD.handling).toLocaleString()}: grading ¥${PSA_STD.fee.toLocaleString()} + insurance &amp; shipping ¥${PSA_STD.ship.toLocaleString()} + handling ¥${PSA_STD.handling.toLocaleString()}`
         : `grading ¥${diy.gradingFee.toLocaleString()} + shipping &amp; fees ¥${diy.shipping.toLocaleString()}`}) ÷ ${card.psa10_gem_rate_pct}% gem rate.</p>
       ${rep > PSA_STD.cap ? `<p class="cd-note warn">A PSA10 is worth ${fmtYen(rep)} here, above the ¥${PSA_STD.cap.toLocaleString()} declared-value limit of PSA's Standard service, so self-grading would need a pricier tier than the one in this sum.</p>` : ''}
       ${rt ? `<p class="cd-note">If buying raw anyway (as a PSA hedge, not a saving): definitely buy ≤${fmtYen(rt.definitely_buy)}, buy ≤${fmtYen(rt.buy_upper)}, don't pay over ${fmtYen(rt.ceiling)}.</p>` : ''}`
       : `<div class="tier-pending">${!rep ? 'No PSA10 price yet, so there is nothing to compare grading it yourself against.'
-          : !(card.grades && card.grades.raw_a_grade && card.grades.raw_a_grade.lowest_price) ? 'No raw A-rank listing right now, so the DIY cost can\'t be worked out.'
+          : !rawPriceV(card) ? 'No raw A-rank listing or recent sales right now, so the DIY cost can\'t be worked out.'
           : 'No PSA10 gem rate yet (the card\'s population hasn\'t been looked up), so the DIY cost can\'t be worked out.'}</div>`;
 
     const tabs = [['overview', 'Overview'], ['story', 'Story'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY'], ['upside', 'Upside']]
