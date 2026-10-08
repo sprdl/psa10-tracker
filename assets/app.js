@@ -952,7 +952,7 @@
       : 0;
     return (h.purchase_price_jpy || 0) + grading;
   }
-  // Latest price read for something bought but not tracked (full check): raw A-rank ask of a card, or the
+  // Latest price read for something bought but not tracked (full check): raw A-rank price of a card (rawPrice rule), or the
   // lowest ask of one sealed product. null when there's no reading or nothing is for sale.
   function heldPrice(url) { const e = state.heldPrices[(url || '').replace(/\/$/, '').split('/').pop()]; return e && e.price != null ? e.price : null; }
   function holdingsFor(card) { return state.holdings.filter((h) => h.card_url === card.url); }
@@ -2618,7 +2618,7 @@
   // ---------- sealed product (data/holdings.json "sealed", written by GitHub Actions) ----------
   // Boxes, sets and packs bought at MSRP (never on the second market, so no market price for them),
   // plus the cards worth keeping that came out of them. A pull of a tracked card is valued from
-  // SNKRDUNK: raw A-rank lowest ask, or the PSA10 price once it came back a 10; anything else uses
+  // SNKRDUNK: raw A-rank price (rawPrice), or the PSA10 price once it came back a 10; anything else uses
   // the estimate typed into the form.
   const SEALED_KIND = { box: 'Box', set: 'Set', pack: 'Pack', other: 'Other' };
   const PULL_STATUS = { raw: ['Raw', ''], grading: ['At PSA', 'at-psa'], psa10: ['PSA10', 'psa10'], graded_other: ['Graded', ''] };
@@ -2639,7 +2639,7 @@
     const raw = card && rawPriceV(card);
     if (card && raw && p.status !== 'graded_other') return { v: raw, src: 'raw A-rank price', card };
     const held = !card && p.status !== 'psa10' && p.status !== 'graded_other' ? heldPrice(p.card_url) : null;
-    if (held) return { v: held, src: 'raw A-rank ask', card };
+    if (held) return { v: held, src: 'raw A-rank price', card };
     if (p.value_jpy) return { v: p.value_jpy, src: 'your estimate', card };
     return { v: null, src: card ? 'no price yet' : 'not tracked, no estimate', card };
   }
@@ -2784,7 +2784,7 @@
 
   // ---------- portfolio value over time (Holdings page) ----------
   // Singles and pulls of tracked cards are valued at each snapshot from data/history.json (PSA10 price, or the
-  // raw A-rank ask for raw pulls); sealed products and untracked cards from data/portfolio_history.json (daily
+  // raw A-rank price for raw pulls, see rawPrice); sealed products and untracked cards from data/portfolio_history.json (daily
   // readings, only from the day they were first read; before that: at cost). Same rules as the totals above the
   // list: an item with no price at all is left out of "worth" but still counts as spent.
   // Holdings values: at the lowest ask, or after SNKRDUNK's selling costs (sellNet: 9.5% fee, fixed fee, shipping per sale).
@@ -2805,7 +2805,7 @@
     const phist = (state.portHist || []).map((x) => ({ t: dayT(x.d), p: x.p || {} })).sort((a, b) => a.t - b.t);
     const lastAt = (arr, T, pick) => { let v = null; for (const x of arr) { if (x.t > T) break; const y = pick(x); if (y != null) v = y; } return v; };
     const psaAt = (url, T) => lastAt(snaps, T, (x) => (x.p[url] ? x.p[url][0] : null));
-    const rawAt = (url, T) => lastAt(snaps, T, (x) => (x.r[url] && x.r[url][1]) || null);
+    const rawAt = (url, T) => lastAt(snaps, T, (x) => (x.r[url] && (x.r[url][4] || x.r[url][1])) || null); // [4] = raw A-rank price (rawPrice rule), [1] = ask in older entries
     const heldAt = (url, T) => { const id = (url || '').replace(/\/$/, '').split('/').pop(); return lastAt(phist, T, (x) => x.p[id]); };
     const now = snaps.length ? snaps[snaps.length - 1].t : Date.now();
     // purchases

@@ -308,7 +308,7 @@ In order:
 | top | `state`, `els`, `parseCardName`, `verdictHeadline` | global app state and shortcuts to page elements |
 | formatting helpers | `fmtYen`, `fmtPct`, `fmtDateJST`, `escapeHtml`, `dirClass` | turning numbers into display text |
 | data loading | `fetchJSON`, `loadFreshBundle`, `showBundle`, `init`, `loadIndex` | fetching, caching, startup |
-| derived-value helpers | `getRep`, `depthInfo`, `computeDiyEconomics`, `computeGauge`, `zoneOf`, `liveTagOf`, `displayTagFor` | the core calculations |
+| derived-value helpers | `getRep`, `rawPrice` (raw A-rank price: median of the last 5 sales in 30 days, never below the ask; `scripts/raw_price.py` is the Python twin), `depthInfo`, `computeDiyEconomics`, `computeGauge`, `zoneOf`, `liveTagOf`, `displayTagFor` | the core calculations |
 | event rule | `upcomingEvents`, `activeEvents`, `eventFor`, `heldByEvent`, `renderEvents` | release-calendar logic |
 | (correction rule) | `correctionState`, `heldByCorrection` | market-correction logic |
 | my limit prices + buy signals | `store`, `getLimit`, `setLimit`, `reconcileLimits`, `limitFormUrl` | limits |

@@ -82,7 +82,8 @@ On Mondays you can do step 6/6b's web searches while it runs.
 ## 2b. Bought cards and unopened sealed items
 
 Skip if `HELD = []`. `HELD` lists what the Holdings page needs a price for but the tracked cards don't
-cover: bought raw cards and raw/at-PSA pulls that aren't tracked (raw A-rank lowest ask), and sealed
+cover: bought raw cards and raw/at-PSA pulls that aren't tracked (raw A-rank ask plus the last 30 days of
+one-copy A sales, turned into the raw A-rank price by `scripts/raw_price.py`), and sealed
 products with no pull logged (lowest ask). A sealed product with a pull is opened and no longer
 listed; its stored price is deleted by the publish step. Full checks only, never the quick check.
 Same tab, run the `snkrdunk_held` script verbatim with its `const HELD = [...]` line replaced by the

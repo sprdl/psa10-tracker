@@ -143,7 +143,11 @@ accepts `sell_tiers` / `sell_verdict` alone (an owned card needs no new buy tier
 - **Off-peak %** — `(peak.price - representative_price) / peak.price`
 - **Price delta since last snapshot** — diffed against the previous snapshot's
   representative price for the same card `url`
-- **DIY expected cost & delta** — `(raw_lowest + grading_fee + shipping) / gem_rate`,
+- **Raw A-rank price** (`rawPrice` in `assets/app.js`, `scripts/raw_price.py`, since 2026-10-08) — the median of
+  the last 5 one-copy A-rank sales from the past 30 days, never below the lowest A-rank ask; fewer than 3 such
+  sales: the lowest ask. The cheapest raw listing is often a copy that won't grade and doesn't sell. Used for the
+  DIY cost, the grading calculator, raw pulls, the raw figure under owned cards and raw-only cards.
+- **DIY expected cost & delta** — `(raw A-rank price + grading_fee + shipping) / gem_rate`,
   compared against the representative PSA10 price
 - **Gauge zone boundaries & scale** — `scale_max = round(peak * 1.08, -3)`, with the
   watch band split into two visual shades at its midpoint
@@ -277,7 +281,7 @@ raw A-rank price and everything is net of selling costs; see `gradeCalc` in `ass
 
 Prices of what isn't tracked come from `data/holdings_prices.json` (written by the full check, never by
 hand; `scripts/holdings_prices.py`): `{"updated": …, "prices": {"<snkrdunk id>": {"kind": "card|sealed",
-"price": 7600, "date": "2026-10-07"}}}`, only the latest reading per id. `card` = raw A-rank lowest ask of a
+"price": 7600, "date": "2026-10-07"}}}`, only the latest reading per id. `card` = raw A-rank price (rule above; `ask` and `sales` stored too) of a
 bought raw card or a raw/at-PSA pull that isn't a tracked card; `sealed` = lowest ask of a product with no
 pull logged (× `qty` on the site). Logging a pull opens the product, so its price is removed by the next
 full check. Quick checks never read these.

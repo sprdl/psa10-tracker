@@ -67,6 +67,10 @@ def sales_median(sales, ref):
     return pick[n // 2] if n % 2 else round((pick[n // 2 - 1] + pick[n // 2]) / 2)
 
 
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+from raw_price import raw_price  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -124,8 +128,12 @@ def build(root: Path = ROOT) -> Path:
                 rl = (g.get("raw_a_grade") or {}).get("lowest_price")
                 ps = sales_median((g.get("psa10") or {}).get("recent_completed_sales"), ref)
                 rs = sales_median((g.get("raw_a_grade") or {}).get("recent_completed_sales"), ref)
-                if (pl and rl) or (ps and rs):
-                    prem[c.get("url")] = [pl, rl, ps, rs]
+                # 5th value: the raw A-rank price (scripts/raw_price.py), used to value raw pulls over time
+                raw_sales = [x.get("price") for x in reversed((g.get("raw_a_grade") or {}).get("recent_completed_sales") or [])
+                             if x.get("price") and (lambda a: a is not None and a <= 30)(sale_age_days(x.get("when"), ref))]
+                rp = raw_price(rl, raw_sales)[0]
+                if (pl and rl) or (ps and rs) or rp:
+                    prem[c.get("url")] = [pl, rl, ps, rs, rp]
         entry = {"d": when, "m": s.get("check_mode", "full"), "p": points}
         if heat:
             entry["h"] = heat

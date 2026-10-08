@@ -11,7 +11,8 @@ Current SNKRDUNK prices for what's on the Holdings page but not in the tracked-c
 
 What gets read (one product page each, FULL check only, never the quick check):
   card    a bought single (condition raw_to_grade) or a pull (status raw / grading) whose card is NOT
-          tracked: its raw A-rank lowest ask. Tracked cards already carry raw A-rank and PSA10 prices
+          tracked: its raw A-rank price (scripts/raw_price.py: median of the last 5 one-copy sales in 30 days,
+          never below the lowest ask; `ask` and `sales` are stored next to it). Tracked cards already carry raw A-rank and PSA10 prices
           in the snapshot; bought-as-PSA10 cards and PSA10 pulls are valued from PSA10 prices elsewhere.
   sealed  a sealed product (box / set / pack) with a SNKRDUNK link and NO pulls: the lowest ask of the
           product page, per unit (the site multiplies by qty). Logging a pull opens the product, so it
@@ -69,7 +70,13 @@ def decode(lines):
     for ln in lines:
         p = ln.strip().split(" ")
         if len(p) >= 4 and p[0] == "H":
-            out[p[1]] = {"kind": p[2], "price": int(p[3]) if p[3].isdigit() else None}
+            ask = int(p[3]) if p[3].isdigit() else None
+            e = {"kind": p[2], "price": ask}
+            if p[2] == "card" and len(p) >= 5:
+                from raw_price import raw_price
+                sales = [int(x) for x in p[4].split(",") if x.isdigit()]
+                e.update(price=raw_price(ask, sales)[0], ask=ask, sales=sales)
+            out[p[1]] = e
         elif len(p) >= 3 and p[0] == "HE":
             out[p[1]] = {"error": unquote(" ".join(p[2:]))}
     return out
@@ -84,7 +91,7 @@ def save(found, root=ROOT, push=True, dry=False):
     for sid, kind in needed(root).items():
         e = found.get(sid)
         if e and "error" not in e:
-            prices[sid] = {"kind": kind, "price": e["price"], "date": today}
+            prices[sid] = {"kind": kind, "price": e["price"], "date": today, **{k: e[k] for k in ("ask", "sales") if k in e}}
         elif sid in old and old[sid].get("kind") == kind:
             prices[sid] = old[sid]
             notes.append(f"{sid}: {(e or {}).get('error', 'not read this run')}; kept {old[sid].get('date')} price")
@@ -124,7 +131,7 @@ def log_history(prices, root=ROOT, now=None):
     pts = [x for x in data.get("points", []) if x.get("d") != now.strftime("%Y-%m-%d")]
     pts.append({"d": now.strftime("%Y-%m-%d"), "p": {sid: v["price"] for sid, v in prices.items() if v.get("price") is not None}})
     data["about"] = ("Daily price readings of bought items that aren't tracked cards (sealed products: lowest ask per unit; "
-                     "untracked cards: raw A-rank ask), keyed by SNKRDUNK id. Written by scripts/holdings_prices.py from the full check.")
+                     "untracked cards: raw A-rank price, see scripts/raw_price.py), keyed by SNKRDUNK id. Written by scripts/holdings_prices.py from the full check.")
     data["points"] = sorted(pts, key=lambda x: x["d"])[-800:]
     path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     return path
