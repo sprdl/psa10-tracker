@@ -337,9 +337,9 @@
     return `${REPO_URL}/issues/new?${q}`;
   }
   function removeBtnHtml(card) {
-    const owned = holdingsFor(card).length;
+    const owned = holdingsFor(card).length || (state.sealed || []).some((sd) => (sd.pulls || []).some((p) => p.card_url === card.url));
     return owned
-      ? `<button type="button" class="btn cd-remove" disabled title="You've logged this card as bought; remove the purchase first">Remove card</button>`
+      ? `<button type="button" class="btn cd-remove" disabled title="You've logged this card as bought or pulled; remove that first">Remove card</button>`
       : `<button type="button" class="btn cd-remove" data-remove-card="${escapeAttr(card.url)}" title="Stop tracking this card">Remove card</button>`;
   }
   // The rows on the collection page that list removed cards, with Undo / Restore.
@@ -2656,7 +2656,7 @@
       const pulls = (s.pulls || []).map((p) => { const pv = pullValue(p, cards); return Object.assign({ p }, pv, { v: basisV(pv.v) }); });
       const val = pulls.reduce((a, x) => a + (x.v || 0), 0);
       const mkt = basisV(sealedValue(s));
-      spent += s.price_jpy || 0; worth += pulls.length ? val : (mkt || 0); nPulls += pulls.length;
+      spent += s.price_jpy || 0; worth += pulls.length ? val : (mkt != null ? mkt : (s.price_jpy || 0)); nPulls += pulls.length;
       const pct = s.price_jpy ? (val / s.price_jpy) * 100 : null;
       const mpnl = mkt != null ? mkt - (s.price_jpy || 0) : null;
       const meta = [SEALED_KIND[s.kind] || 'Sealed', s.set_code, `bought ${s.date}`, s.where, `${fmtYen(s.price_jpy)}${s.qty > 1 ? ` (${fmtYen(Math.round(s.price_jpy / s.qty))} each)` : ''}`].filter(Boolean).map(escapeHtml).join(' · ');
@@ -2681,7 +2681,7 @@
               ? `<a class="sl-icon" href="${escapeAttr(s.url)}" target="_blank" rel="noopener" title="The picture comes from SNKRDUNK with the next price check">${BOX_ICON}<span>next check</span></a>`
               : `<a class="sl-icon" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener" title="Link it to its SNKRDUNK page for the name and picture">${BOX_ICON}<span>+ SNKRDUNK</span></a>`}
           <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${s.url ? `<a href="${escapeAttr(s.url)}" target="_blank" rel="noopener">${escapeHtml(sealedName(s))}</a>` : escapeHtml(sealedName(s))}</div><div class="pf-meta">${meta}${s.url && !s.snkrdunk_name ? ' · name and picture come from SNKRDUNK with the next price check' : ''} · <a class="pf-remove" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener">${s.url ? 'Change SNKRDUNK link' : 'Add SNKRDUNK link'}</a> · ${pulls.length ? '' : `<a class="pf-remove" href="${escapeAttr(soldFormUrl(s.id, sealedName(s), mkt != null ? (state.holdBasis === 'net' ? sealedValue(s) : mkt) : null))}" target="_blank" rel="noopener">Sold it</a> · `}<a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, sealedName(s)))}" target="_blank" rel="noopener">Remove</a></div></div>
-          <div class="pf-current"><div class="val">${pulls.length ? fmtYen(val) : mkt != null ? fmtYen(mkt) : '—'}</div><div class="pf-pnl ${pulls.length ? (pct == null ? 'muted' : pct >= 100 ? 'pos' : '') : mpnl == null ? 'muted' : mpnl >= 0 ? 'pos' : 'neg'}">${pulls.length ? `pulls worth ${pct != null ? Math.round(pct) + '% of cost' : ''}` : mpnl != null ? `${mpnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(mpnl))} · lowest ask${s.qty > 1 ? ' × ' + s.qty : ''}` : 'no pulls yet'}</div></div>
+          <div class="pf-current"><div class="val">${pulls.length ? fmtYen(val) : mkt != null ? fmtYen(mkt) : fmtYen(s.price_jpy || 0)}</div><div class="pf-pnl ${pulls.length ? (pct == null ? 'muted' : pct >= 100 ? 'pos' : '') : mpnl == null ? 'muted' : mpnl >= 0 ? 'pos' : 'neg'}">${pulls.length ? `pulls worth ${pct != null ? Math.round(pct) + '% of cost' : ''}` : mpnl != null ? `${mpnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(mpnl))} · lowest ask${s.qty > 1 ? ' × ' + s.qty : ''}` : 'at cost · no price yet'}</div></div>
         </div>
         <div class="sl-pulls">${rows}</div>
         <div class="sl-add">${chips ? `<span class="sl-add-lbl">Pulled one of these?</span>${chips}` : ''}<a class="sl-chip sl-other" href="${escapeAttr(pullFormUrl(s, null))}" target="_blank" rel="noopener">+ ${chips ? 'Other card' : 'Add pull'}</a></div>
@@ -2702,7 +2702,7 @@
   function holdingsTotals(cards) {
     let spent = 0, worth = 0, unpriced = 0, unopened = 0;
     for (const h of state.holdings) {
-      const c = cards.find((x) => x.url === h.card_url), v = c ? getRep(c) : (h.condition !== 'psa10' ? heldPrice(h.card_url) : null);
+      const c = cards.find((x) => x.url === h.card_url), v = holdingValue(h, c);
       spent += holdingCost(h);
       if (v != null) worth += basisV(v); else unpriced++;
     }
@@ -2744,7 +2744,12 @@
   // "Sold it" for an owned card: opens the form for your latest copy (a second copy is marked sold the same way afterwards).
   function soldBtnHtml(card, own) {
     const h = own.hs[own.hs.length - 1];
-    return `<a class="btn" href="${escapeAttr(soldFormUrl(h.id, parseCardName(card.card_name_ja).short, getRep(card)))}" target="_blank" rel="noopener" title="Record the sale of ${own.n > 1 ? 'your latest copy' : 'this card'}">✓ Sold it</a>`;
+    return `<a class="btn" href="${escapeAttr(soldFormUrl(h.id, parseCardName(card.card_name_ja).short, soldPrefill(h, card)))}" target="_blank" rel="noopener" title="Record the sale of ${own.n > 1 ? 'your latest copy' : 'this card'}">✓ Sold it</a>`;
+  }
+  // Suggested sale price for the Sold form: a slab sells at the PSA10 price, a raw copy at the raw A-rank price.
+  function soldPrefill(h, card) {
+    if (h.condition === 'raw_to_grade') return card ? rawPriceV(card) : heldPrice(h.card_url);
+    return card ? getRep(card) : null;
   }
   function soldTotals() {
     const t = { n: 0, revenue: 0, fees: 0, cost: 0, profit: 0, cash: 0, years: {} };
@@ -2823,8 +2828,13 @@
     const items = [];
     for (const h of state.holdings) {
       const t = dayT(h.purchase_date), url = h.card_url, cost = holdingCost(h), trk = tracked.has(url);
-      const nowV = trk ? getRep(cards.find((c) => c.url === url)) : (h.condition !== 'psa10' ? heldPrice(url) : null);
-      items.push({ cat: 'singles', t, cost, at: nowV == null ? () => 0 : (T) => { const v = trk ? psaAt(url, T) : heldAt(url, T); return v != null ? basisV(v) : cost; } });
+      if (h.condition === 'raw_to_grade') {   // raw copies: always their DIY cost with the price paid
+        const dv = basisV(rawCopyBasis(h, trk ? cards.find((c) => c.url === url) : null).v);
+        items.push({ cat: 'singles', t, cost, at: () => dv });
+        continue;
+      }
+      const nowV = trk ? getRep(cards.find((c) => c.url === url)) : null;
+      items.push({ cat: 'singles', t, cost, at: nowV == null ? () => 0 : (T) => { const v = psaAt(url, T); return v != null ? basisV(v) : cost; } });
     }
     for (const sd of state.sealed || []) {
       const t = dayT(sd.date), pulls = sd.pulls || [];
@@ -2963,7 +2973,7 @@
 
     const rows = holdings.map((h) => {
       const match = currentCards.find((c) => c.url === h.card_url);
-      const currentPrice = basisV(match ? getRep(match) : (h.condition !== 'psa10' ? heldPrice(h.card_url) : null));
+      const currentPrice = basisV(holdingValue(h, match));
       const cost = holdingCost(h);
       const pnl = currentPrice != null ? currentPrice - cost : null;
       const pnlPct = currentPrice != null && cost ? (pnl / cost) * 100 : null;
@@ -3002,7 +3012,7 @@
           <span class="pf-thumb">${thumbHtml}</span>
           <div class="pf-info">
             <div class="pf-name">${nameHtml}</div>
-            <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(soldFormUrl(h.id, parseCardName(h.card_name_ja || '').short, match ? getRep(match) : null))}" target="_blank" rel="noopener">Sold it</a> · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
+            <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(soldFormUrl(h.id, parseCardName(h.card_name_ja || '').short, soldPrefill(h, match)))}" target="_blank" rel="noopener">Sold it</a> · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
             ${h.condition === 'raw_to_grade' && h.id && match ? gradeLineHtml(match, { kind: 'holding', id: h.id, item: h, sunk: true }) : ''}
           </div>
           <div class="pf-current">
@@ -3152,25 +3162,37 @@
     const l = getLimit(card), a = lowestAsk(card);
     return l != null && a != null ? { pct: (a / l - 1) * 100, lim: l, ask: a } : null;
   }
+  // A raw copy you bought to grade is always counted at its DIY cost with the price you paid:
+  // (price paid + grading & shipping) ÷ gem rate, i.e. what getting a PSA10 out of your copy is expected to cost.
+  // The gem rate is the holding's own estimate (gem_rate_pct) or the card's population rate; without either, the
+  // cost is price + grading, undivided.
+  function rawCopyBasis(h, card) {
+    const price = h.purchase_price_jpy || 0;
+    const fee = (h.grading_fee_jpy != null ? h.grading_fee_jpy : PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
+    const gem = h.gem_rate_pct != null ? h.gem_rate_pct : (card && card.psa10_gem_rate_pct) || null;
+    return gem ? { v: (price + fee) / (gem / 100), price, fee, gem, diy: true } : { v: price + fee, price, fee, gem: null, diy: false };
+  }
+  // What a single is counted at on the Holdings page and in the value chart: raw copies at their DIY cost, slabs at
+  // today's PSA10 price (null when an untracked slab has no price).
+  function holdingValue(h, card) {
+    if (h.condition === 'raw_to_grade') return rawCopyBasis(h, card).v;
+    return card ? getRep(card) : null;
+  }
   // The Overview's Limit column for a card you own: the PSA10 price now against your cost basis.
   //  - bought as a PSA10: the price you paid;
-  //  - bought raw (to grade): the DIY cost with the price you paid instead of today's lowest raw listing,
-  //    (your raw price + grading & shipping) ÷ gem rate, i.e. what getting a PSA10 out of your copy is expected to cost.
-  // Several copies average their bases. Without a gem rate a raw copy counts price + grading, undivided.
-  // null for a card you don't own. `paid` is the average purchase price alone.
+  //  - bought raw (to grade): its DIY cost with the price you paid (rawCopyBasis).
+  // Several copies average their bases. null for a card you don't own. `paid` is the average purchase price alone.
   function boughtGap(card) {
     const held = holdingsFor(card), now = getRep(card);
     if (!held.length || now == null) return null;
     let sum = 0, paid = 0, anyRaw = false, allDiy = true, parts = null;
     for (const h of held) {
-      const price = h.purchase_price_jpy || 0;
-      paid += price;
-      if (h.condition !== 'raw_to_grade') { sum += price; continue; }
+      paid += h.purchase_price_jpy || 0;
+      if (h.condition !== 'raw_to_grade') { sum += h.purchase_price_jpy || 0; continue; }
       anyRaw = true;
-      const fee = (h.grading_fee_jpy != null ? h.grading_fee_jpy : PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
-      const gem = h.gem_rate_pct != null ? h.gem_rate_pct : card.psa10_gem_rate_pct;
-      if (gem) { sum += (price + fee) / (gem / 100); parts = { raw: price, fee, gem }; }
-      else { sum += price + fee; allDiy = false; parts = { raw: price, fee, gem: null }; }
+      const b = rawCopyBasis(h, card);
+      sum += b.v; parts = { raw: b.price, fee: b.fee, gem: b.gem };
+      if (!b.diy) allDiy = false;
     }
     const basis = sum / held.length;
     return basis > 0 ? { pct: (now / basis - 1) * 100, diff: now - basis, now, basis, paid: paid / held.length, raw: anyRaw, diy: anyRaw && allDiy, parts } : null;

@@ -202,6 +202,16 @@ back. The Holdings page lists sales with a yearly summary; the value-over-time c
 history and, from the sale date on, counts the money received (so its result is total profit, unrealized plus
 realized, while the header's +/− only covers what you still own).
 
+## How Holdings counts a raw card and an unpriced product
+
+A raw copy you bought to grade (`condition: raw_to_grade`) is always counted at its **DIY cost with the price you
+paid**: (price paid + its grading & shipping) ÷ gem rate (the holding's own `gem_rate_pct`, else the card's
+population gem rate; without either, price + grading undivided) — in the header totals, the singles list and the
+value chart (`rawCopyBasis` in `assets/app.js`). Slabs count at today's PSA10 price. A sealed product with no price
+yet (e.g. not released) counts at what you paid, in the header, the Sealed section and the chart. The Sold form's
+suggested price is the PSA10 price for a slab and the raw A-rank price for a raw copy. "Remove card" is disabled
+for a card you hold or pulled, on the page and in `scripts/remove_card.py`.
+
 ## Holdings values: lowest ask or after selling costs
 
 A switch at the top of the Holdings page (saved in this browser) shows every value either at the lowest ask or

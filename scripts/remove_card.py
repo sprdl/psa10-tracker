@@ -51,8 +51,10 @@ def owned_ids():
     p = ROOT / "data" / "holdings.json"
     if not p.exists():
         return set()
-    hs = json.loads(p.read_text(encoding="utf-8")).get("holdings", [])
-    return {str(h.get("card_url", "")).rstrip("/").split("/")[-1] for h in hs}
+    d = json.loads(p.read_text(encoding="utf-8"))
+    urls = [h.get("card_url", "") for h in d.get("holdings", [])]
+    urls += [x.get("card_url", "") for sd in d.get("sealed", []) for x in sd.get("pulls", [])]   # pulled cards too
+    return {str(u).rstrip("/").split("/")[-1] for u in urls if u}
 
 
 def apply(issue, labels, store):
@@ -71,7 +73,7 @@ def apply(issue, labels, store):
         return (f"Restored **{name}** ({sid}). It's back on the site now and in the next price check.",
                 f"cards: restore {sid} {name} (#{issue['number']})")
     if sid in owned_ids():
-        raise FormError(f"You've logged {name} as bought. Remove the purchase first if you really want to stop tracking it.")
+        raise FormError(f"You've logged {name} as bought or pulled. Remove that first if you really want to stop tracking it.")
     if sid in rem:
         raise FormError(f"{name} ({sid}) is already removed.")
     rem[sid] = {"name": name, "at": datetime.now(JST).replace(microsecond=0).isoformat(), "issue": issue["number"],
