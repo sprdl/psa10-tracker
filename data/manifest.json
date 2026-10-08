@@ -329,6 +329,11 @@
       "file": "20261008-1208.json",
       "collected_at_jst": "2026-10-08T12:08:26+09:00",
       "check_mode": "full"
+    },
+    {
+      "file": "20261008-2140.json",
+      "collected_at_jst": "2026-10-08T21:40:00+09:00",
+      "check_mode": "quick"
     }
   ]
 }
