@@ -4996,13 +4996,13 @@
     const ownedOnly = store.get('psa10.ownedOnly', false) === true;
     const nOwned = ((state.currentData && state.currentData.cards) || []).filter((c) => hasMarket(c) && ownsCard(c)).length;
     const ownedToggle = `<label class="own-filter"><input type="checkbox" data-own-filter${ownedOnly ? ' checked' : ''}> Only cards I own <span class="muted">(${nOwned})</span></label>`;
-    bar.innerHTML = ownedToggle + (state.cmpMode
+    bar.innerHTML = (state.cmpMode
       ? `<span class="cmp-hint">${n === 2
           ? `<b style="color:${CMP_COLORS[0]}">${escapeHtml(parseCardName(picked[0].card_name_ja).short)}</b> vs <b style="color:${CMP_COLORS[1]}">${escapeHtml(parseCardName(picked[1].card_name_ja).short)}</b>`
           : n === 1 ? 'Pick one more card' : 'Tap two cards to compare them'}</span>
          <button type="button" class="btn" data-cmp="cancel">Cancel</button>
          <button type="button" class="btn btn-primary" data-cmp="go"${n === 2 ? '' : ' disabled'}>Head to head</button>`
-      : `<button type="button" class="btn" data-cmp="start">⇄ Compare two cards</button>`);
+      : `<button type="button" class="btn" data-cmp="start">⇄ Compare two cards</button>`) + ownedToggle;
     bar.querySelector('[data-own-filter]').addEventListener('change', (e) => {
       store.set('psa10.ownedOnly', e.target.checked);
       renderCollection((state.currentData && state.currentData.cards) || []);

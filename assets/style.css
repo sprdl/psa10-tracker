@@ -1531,5 +1531,5 @@ a.sl-icon:hover { border-color: var(--accent); }
 .pf-tri small { font-size: 10.5px; color: var(--muted-2); }
 @media (max-width: 720px) { .pf-trio { flex-direction: column; gap: 6px; } .pf-tri { flex-direction: row; gap: 8px; align-items: baseline; justify-content: flex-end; } }
 
-.own-filter { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--soft); cursor: pointer; margin-right: 14px; }
+.own-filter { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--soft); cursor: pointer; margin-left: auto; }
 .own-filter input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
