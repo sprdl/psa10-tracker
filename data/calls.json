@@ -1,5 +1,5 @@
 {
- "as_of": "2026-10-09T17:58:11+09:00",
+ "as_of": "2026-10-09T17:59:27+09:00",
  "window_days": 30,
  "threshold": 0.05,
  "confirm_readings": 2,
@@ -424,8 +424,8 @@
    "now": 72800,
    "now_pct": 25.5,
    "status": "right",
-   "why": "dropped to ¥54,800 on 2026-09-28 (held under −6% for 2 checks)",
-   "threshold": 0.055
+   "why": "dropped to ¥54,900 on 2026-09-27 (held under −5% for 2 checks)",
+   "threshold": 0.053
   },
   {
    "url": "https://snkrdunk.com/apparels/100567",
