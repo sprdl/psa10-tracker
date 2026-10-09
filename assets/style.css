@@ -1524,7 +1524,7 @@ a.sl-icon:hover { border-color: var(--accent); }
 /* raw singles on the Holdings page: raw A-rank, PSA10 ask and the DIY cost side by side */
 .pf-trio { display: flex; gap: 22px; align-items: flex-start; text-align: right; }
 .pf-tri { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; width: 112px; font-variant-numeric: tabular-nums; }
-.pf-tri:last-child { width: 168px; }
+.pf-tri:nth-child(2) { width: 168px; }
 .pf-tri .k { font: 13px var(--display); letter-spacing: 0.06em; color: var(--muted); }
 .pf-tri b { font: 22px var(--display); letter-spacing: 0.02em; font-weight: 400; color: var(--text); }
 .pf-tri span:not(.k) { font-size: 12px; font-weight: 600; min-height: 14px; }

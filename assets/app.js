@@ -2987,8 +2987,8 @@
     const rp = card ? rawPrice(card) : null;
     return `<div class="pf-current pf-trio">
       ${cell('Raw A-rank', raw, pct(raw, paid), 'vs ' + fmtYen(paid) + ' paid', (rp ? rawPriceNote(rp) : 'Raw A-rank price') + `; you paid ${fmtYen(paid)} for the raw card`)}
-      ${cell('PSA10 lowest ask', ask, pct(ask, basis), 'vs your DIY cost', `PSA10 lowest ask ${ask != null ? fmtYen(ask) : '—'} against your DIY cost ${fmtYen(basis)}`)}
       <div class="pf-tri" title="(price paid + grading & shipping) ÷ gem rate"><span class="k">My DIY cost</span><b>${fmtYen(basis)}</b><span class="muted"></span><small>(${fmtYen(paid)} + ${fmtYen(rawCopyBasis(h, card).fee)}) ÷ ${rawCopyBasis(h, card).gem != null ? Math.round(rawCopyBasis(h, card).gem * 10) / 10 + '%' : '—'}</small></div>
+      ${cell('PSA10 lowest ask', ask, pct(ask, basis), 'vs your DIY cost', `PSA10 lowest ask ${ask != null ? fmtYen(ask) : '—'} against your DIY cost ${fmtYen(basis)}`)}
     </div>`;
   }
   function renderPortfolio(holdings, currentCards) {
