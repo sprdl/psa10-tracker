@@ -49,6 +49,20 @@ SNKRDUNK listing photo's URL, whatever's convenient. It's entirely optional and
 per-card: a missing or broken URL just means no thumbnail for that card, nothing
 else changes.
 
+### Fields the publishing scripts add
+
+These are written by `scripts/full_update.py` / `quick_update.py` / `add_snapshot.py`, never by hand:
+
+- `check_mode` (top level): `"full"` or `"quick"`; also stored per entry in `data/manifest.json`.
+- `as_of` on each `pokeca_chart_index` object, `listings_as_of` on a grade, `population_as_of` on a
+  card: when a value carried by a quick check was really measured. The site shows them as small
+  "as of 9/26 15:15" labels.
+- `quick_note` on a card or a grade: why a quick check couldn't re-read it (values carried).
+- `population_error` / `population_note` on a card: why the altema population couldn't be read.
+- `volume_note` on an index object: the 7-day / 14-day / prior-30-day volume averages the site
+  recomputes the volume trend from.
+- `psa_tier_status` (Mondays) and `notes` (free text from the run).
+
 ## Analysis overlay (optional — adds verdicts, gauges, tiers, banners)
 
 This is the judgment layer from an actual evaluation (e.g. running the
@@ -99,8 +113,16 @@ gauge positions, tier zone math — all computed client-side from these inputs, 
         "verdict": {
           "tag": "buy",                    // "definitely_buy" | "buy" | "watch" | "dont_buy" | "defer"
           "label": "Buy — at Definitely-buy, but weak demand",
-          "reasoning": "The break to a lower price is now confirmed by a full sales window..."
+          "reasoning": "The break to a lower price is now confirmed by a full sales window...",
+          "written": "2026-10-06T07:18:01+09:00",   // added by apply_analysis.py; shown on the folded written analysis
+          "predictions": [                 // optional stated odds, scored on the Track record (build_calls.py)
+            { "text": "Reaches Buy (≤¥70k) within 3 months", "p": 0.45, "type": "touch_below",   // or "touch_above"
+              "price": 70000, "by": "2026-12-25", "made": "2026-09-25T10:03:18+09:00" }
+          ]
         },
+        "verdict_price_ref": 69000,        // set by apply_analysis.py / carried by add_snapshot.py when there is no
+                                           // representative_price: the price the verdict was written against. The
+                                           // site says the verdict is out of date once the price moves 5% from it.
 
         "sell_tiers": {                    // optional, only used for cards you own (data/holdings.json);
           "reassess_below": 62000,         // optional: below this, rethink holding (the "Reassess" zone)
@@ -165,16 +187,15 @@ population, labeled "tiers not yet established" — rather than a guessed verdic
 Add the `analysis` overlay only once you've actually done the depth-check →
 sales-check → peak-check work; false precision is worse than an honest gap.
 
-## Price history (computed, not stored)
+## Price history (derived from the snapshots, cached in `data/history.json`)
 
-Every card's expanded detail shows a long-run price chart built by reading
-`representative_price` (or `lowest_price` as a fallback) out of every snapshot file
-on file, matched by card `url` — not a separate field anywhere. Nothing needs to
-change about how you add snapshots; the chart just gets one more data point each
-time. To keep the worst-case page load bounded as the archive grows over months of
-2x/day checks, the app only fetches the most recent `HISTORY_MAX_SNAPSHOTS` (200 as
-of writing, in `assets/app.js`) snapshot files for this — plenty of runway for a
-multi-month trend without ever downloading years of history on every card expand.
+Every card's History tab shows a long-run price chart of `representative_price` (or `lowest_price`
+as a fallback) across every snapshot, matched by card `url` — not a separate field in any snapshot.
+Nothing needs to change about how you add snapshots; the chart just gets one more data point each
+time. The points come from `data/history.json`, a compact index `scripts/build_history.py` rebuilds
+on every publish (shape in the "Other data files" section below), so the site downloads one small
+file instead of every snapshot. If that file is missing, the app falls back to fetching the most
+recent `HISTORY_MAX_SNAPSHOTS` (200) snapshot files.
 
 ## Overview columns: Price and Limit
 
@@ -311,8 +332,9 @@ site's **+ Add sealed product** / **+ Add pull** forms (labels `sealed` / `pull`
 ]
 ```
 `kind` is box / set / pack / other. `snkrdunk_name` and `image` are read from the product's SNKRDUNK
-page by the next price check (`scripts/sealed_info.py`, FULL-CHECK step 8h); the Action never opens SNKRDUNK. A pull of a tracked card is valued from the snapshot (raw A-rank
-lowest ask, or the PSA10 price once `status` is psa10); `value_jpy` (optional) covers untracked cards.
+page by the next price check (`scripts/sealed_info.py`, FULL-CHECK step 8h); the Action never opens SNKRDUNK. A pull of a tracked card is valued from the snapshot (the raw A-rank
+price, see `rawPrice`, or the PSA10 price once `status` is psa10); an untracked raw pull from `holdings_prices.json`;
+`value_jpy` (optional) covers the rest.
 Raw copies (a pull with status `raw` / `grading`, or a holding with `condition: raw_to_grade`) can also carry
 `"sent": "2026-10-01"` (date sent to PSA), `"tier": "standard|priority|express"` and `"gem_rate_pct": 60` (your own
 chance of a PSA10 for this copy, overriding the card's population gem rate). They are set with the site's
@@ -332,5 +354,32 @@ Removing uses the same Remove form with an `s…` (product and its pulls) or `u�
 
 Normally purchases are logged from the site (✓ Bought it → GitHub issue → `scripts/log_purchase.py` in Actions; see README). For bulk entry, add holdings with `python3 scripts/add_holding.py` (same clipboard-or-file-argument
 pattern as `add_snapshot.py`) rather than hand-editing the file, so the commit
-message and validation stay consistent. The "Your holdings" section on the site is
-hidden entirely whenever `data/holdings.json` has no entries.
+message and validation stay consistent. With no entries, the Holdings page shows an empty state
+and the owned-card views never appear.
+
+## Other data files
+
+All in `data/`. "Generated" files are rebuilt by a script and never edited by hand; the script named
+in each row has the details in its docstring.
+
+| File | Shape |
+|---|---|
+| `manifest.json` | `{"snapshots": [{"file": "20261009-1758.json", "collected_at_jst": "…", "check_mode": "full"}]}`, oldest first |
+| `history.json` (generated, `build_history.py`) | `{"snapshots": [{"d": time, "m": mode, "i": pokeca PSA10 index, "p": {url: [price, confirmed 0/1]}, "h": {url: [PSA10 sales/day, raw A sales/day]}, "r": {url: [PSA10 ask, raw A ask, PSA10 sales median, raw A sales median, raw A-rank price]}}], "tiers": {url: {"since": when the tiers were last set or reviewed, "i": index then}}}` |
+| `calls.json` (generated, `build_calls.py`) | `{"as_of", "window_days", "threshold", "confirm_readings", "summary", "calls": [{url, name, tag, label, made, price, status: right/wrong/neutral/pending/unscored, low, now, why, threshold, …}], "predictions": [{…, p, type, price, by, status: yes/no/open/void}], "model_odds": [{url, kind, price, days: 30/90, p, made, by, status}]}` |
+| `limits.json` / `sell_targets.json` (`set_limit.py`) | `{"limits": {url: {"price", "set", "issue"}}}` / `{"targets": {…same…}}` |
+| `custom_index.json` (`add_custom_index.py`) | `{"meta": {name, base_date, base_level, method, selection, constituents: [{code, name, base}], backfill, revisions, next_review}, "series": [{"d", "level", "n", "prices": {code: price}, "carried": [codes], "pokeca_psa10", "backfill"}]}` |
+| `events.json` (`events.py`) | `{"window_days": 3, "events": [{"d": "2026-10-16" or null, "name", "major", "scope": "all" or [set codes], "kind", "source", "note"}]}` |
+| `holdings_prices.json` / `portfolio_history.json` (`holdings_prices.py`) | see "Holdings values" and "portfolio_history" above |
+| `odds_model.json` (`save_odds_model.py`) | `{"about", "built", "pool_sigma": [σ30, σ90], "market_vol", "z_end30": [quantiles], "z_touch90": [quantiles], "cards": {code: [σ30, σ90, n]}}` |
+| `odds_log.json` (generated, `odds_model.py`) | `{"entries": [{"url", "made", "ask", "price", "kind": definitely_buy/buy/limit, "p30", "p90", "model"}]}` |
+| `value_model.json` (`save_value_model.py`) | `{"built", "horizons": {"12"/"24": {"market": [log moves], "card_part": [log moves]}}, "age_curve": [{from, to, monthly}], "swing_pool", "swing": {code: σ}, "swing_power", "release": {code: "YYYY-MM"}}` |
+| `hype.json` (`hype.py`, `premium.py`) | `{"ref": {n, built}, "evidence": {fall, rise}, "cards": {url: {"d", "gain_pct", "gain_rank", "trade_rank", "score", "level": high/medium/low}}}` |
+| `premium.json` (`premium.py`) | `{"cards": {url: {"asof", "raw", "psa", "prem", "norm", "dev", "n", "series": [[date, premium]]} or {"error"}}}` |
+| `insights.json` (`set_insight.py`) | `{"insights": {url: {"written", "headline", "text", "signals", "sources": [{title, url}]}}}` (dropped after 30 days) |
+| `stories.json` (`set_story.py`) | `{"cards": {url: {"illustrator", "illustrator_ja", "art", "story", "set", "trivia": [], "english", "sources": [{title, url}], "confidence"}}}` |
+| `predict.json` (`predict.py`, `set_predictions.py`) | `{"weeks": {"2026-10-05": {"created", "close", "answer_by", "questions": [{id, url, name, dir: below/above, target, ask, lo30, hi30, model, why, days}], "answers": {id: {p, at}}, "results": {id: {outcome: 0/1, extreme, at}}}}}` |
+| `scout.json` (`scout.py`) | `{"updated", "pool": {slug: {nm, set, rel, sid, price, pre, peak, pk, prem, norm, gem, vol, ser, …}}, "ranked": [{slug, score, kind, reasons}], "daily": {date: {"p": [slugs], "a": [slugs]}}}` |
+| `mercari.json` (`mercari.py`) | `{"cards": {url: {"checked", "seen", "matched", "items": [{id, url, price, eff, fee, auction, ends, anshin, grade, num}], "error"}}}` |
+| `tracked_cards.json` (`card_requests.py`) | `{"cards": [{"snkrdunk_id", "card_name_ja", "url", "image_url", "altema_url", "altema_mode", "note"}]}` |
+| `removed_cards.json` (`remove_card.py`) | `{"removed": {snkrdunk_id: {"name", "at", "issue"}}}` |

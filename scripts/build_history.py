@@ -11,8 +11,9 @@ a few hundred bytes per snapshot.
 
 Per snapshot: {"d": collected_at_jst, "m": check_mode, "i": pokeca PSA10 index, "p": {url: [price, confirmed]},
                "h": {url: [PSA10 sales/day, raw A sales/day]},
-               "r": {url: [PSA10 lowest ask, raw A lowest ask, PSA10 sales median, raw A sales median]}}
-"r" feeds the card page's SNKRDUNK slab-premium line (PSA10 ÷ raw A-rank).
+               "r": {url: [PSA10 lowest ask, raw A lowest ask, PSA10 sales median, raw A sales median, raw A-rank price]}}
+"r" feeds the card page's SNKRDUNK slab-premium line (PSA10 ÷ raw A-rank); its 5th value, the raw A-rank price
+(scripts/raw_price.py), values raw copies over time on the Holdings page.
 
 "h" is how fast the card trades on SNKRDUNK: the number of recent completed sales in
 the snapshot (up to 20, one-copy sales) divided by the days since the oldest of them.
