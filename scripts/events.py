@@ -30,6 +30,13 @@ def today():
     return datetime.now(JST).date()
 
 
+def active(d, t):
+    """Dated, major events within the rule window of day t (the same rule as activeEvents in assets/app.js)."""
+    win = d.get("window_days", 3)
+    return [e for e in d["events"] if e.get("d") and e.get("major", True)
+            and 0 <= (date.fromisoformat(e["d"]) - t).days <= win]
+
+
 def fmt(e, t):
     scope = e.get("scope", "all")
     scope = "all cards" if scope == "all" else "sets " + ", ".join(scope)
@@ -83,8 +90,7 @@ def main():
                 print(fmt(e, t))
         return
     if args.cmd == "window":
-        hits = [e for e in d["events"] if e.get("d") and e.get("major", True)
-                and 0 <= (date.fromisoformat(e["d"]) - t).days <= win]
+        hits = active(d, t)
         print(f"Event rule ({win} days, JST {t}): " + ("ON" if hits else "off"))
         for e in hits:
             print("  " + fmt(e, t))

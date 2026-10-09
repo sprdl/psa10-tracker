@@ -1538,3 +1538,42 @@ a.sl-icon:hover { border-color: var(--accent); }
 .tile-raw { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 .tile-raw b { color: var(--soft); font-weight: 600; } .tile-raw i { font-style: normal; font-weight: 600; }
 .tile-raw .pos { color: var(--green); } .tile-raw .neg { color: var(--neg); }
+
+/* ---------- track record: closed windows, baseline, return vs the market ---------- */
+.pl-stat .val.tr-two { font: 500 13px/1.6 var(--sans); letter-spacing: 0; }
+.pl-stat .val.tr-two b { font-weight: 700; color: var(--text); }
+.tr-cmph, .tr-cmp { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 12px; align-items: baseline; font-variant-numeric: tabular-nums; }
+.tr-cmph { font-size: 10.5px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+.tr-cmph span:nth-child(n+2), .tr-cmp b, .tr-cmp i { text-align: right; min-width: 48px; }
+.pl-summary.tr-sum { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.tr-cmp { font-size: 13px; color: var(--muted); }
+.tr-cmp b { font-weight: 700; color: var(--text); } .tr-cmp b.pos { color: var(--green); } .tr-cmp b.neg { color: var(--neg); }
+.tr-cmp i { font-style: normal; color: var(--muted-2); }
+.tr-res .tr-meta { display: block; margin-top: 2px; }
+
+/* ---------- holdings: vs the market since purchase, entry timing, benchmark ---------- */
+.pf-timing { font-size: 12px; line-height: 1.5; margin-top: 4px; color: var(--muted); }
+.pf-timing > i { font-style: normal; margin: 0 6px; color: var(--line-3); }
+.pf-timing b { font-weight: 700; color: var(--soft); } .pf-timing b.pos { color: var(--green); } .pf-timing b.neg { color: var(--neg); }
+.pos-stats + .pf-timing { margin: -4px 0 12px; }
+.pfh-bench { fill: none; stroke: #7cb8ff; stroke-width: 1.6; stroke-dasharray: 2 4; stroke-linecap: round; opacity: 0.9; }
+.pfh-key.bm { background: #7cb8ff; }
+
+/* ---------- market: My-tier breadth; card page: supply and demand ---------- */
+.ci-breadth { margin: 4px 0 14px; padding: 12px 0 0; border-top: 1px solid var(--line); }
+.ci-bh { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ci-breadth .ci-stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 800px) { .ci-breadth .ci-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.sd-block { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); }
+.sd-h { margin-bottom: 8px; }
+
+/* ---------- PSA submission planner (#/submit) ---------- */
+.sub-field { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.sub-field input { background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 6px; color: var(--text); font: 500 13px var(--sans); padding: 5px 8px; }
+.sub-field input[type=number] { width: 90px; font-variant-numeric: tabular-nums; }
+.submit-page .pl-top { flex-wrap: wrap; gap: 10px 16px; }
+.sub-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 14px 0; font-size: 12.5px; }
+.submit-page .pl-name a { color: var(--text); } .submit-page .pl-name a:hover { color: var(--accent); }
+.sub-h { margin-top: 24px; }
+.sub-link { margin: 10px 0 4px; display: inline-flex; white-space: normal; max-width: 100%; text-align: left; }
+.submit-page .pl-mode { flex-wrap: wrap; max-width: 100%; }

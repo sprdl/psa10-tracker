@@ -1,7 +1,7 @@
 # How the PSA10 Tracker works
 
 A guide to the code, written so you can understand, change and fix the site yourself.
-It describes the repo as of 2026-10-09 (code at commit `f4a7c55`). Function names are
+It describes the repo as of 2026-10-09 (after the analysis, widget and submission-planner update). Function names are
 given instead of line numbers, because line numbers move with every edit. Search for
 the name in your editor (Cmd+F, or Cmd+Shift+F across the project in VS Code).
 
@@ -145,8 +145,8 @@ something (a purchase price, a date), the site asks first in its own dialog
 
 ```
 index.html                     the page skeleton: sidebar, tab bar, one <section> per view
-assets/app.js                  all browser logic (~5,500 lines, one file)
-assets/style.css               all styling (~1,550 lines)
+assets/app.js                  all browser logic (~6,000 lines, one file)
+assets/style.css               all styling (~1,600 lines)
 assets/*.png, favicon.ico      icons
 
 data/manifest.json             list of snapshots (file name, time, full/quick)
@@ -167,6 +167,7 @@ pricecheck/references/         the skill's card list (cards.json), PSA tier stat
 .github/workflows/*.yml        deploy + the Actions behind the site's forms (section 10)
 .github/ISSUE_TEMPLATE/*.yml   the 13 issue forms the site opens
 widgets/psa10-widget.js        Scriptable widget for iPhone/iPad (section 12)
+tests/rules.mjs, test_rules.py check that the site, the widget and the Python scripts apply the same rules (section 13)
 docs/schema.md                 exact shape of a snapshot, holdings.json and the other files
 docs/HOW-IT-WORKS.md           this guide
 ```
@@ -181,8 +182,9 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 |---|---|---|---|
 | `manifest.json` | `add_snapshot.py` | site, scripts, widget | `{"snapshots": [{"file", "collected_at_jst", "check_mode"}]}`, oldest first |
 | `snapshots/YYYYMMDD-HHMM.json` | `add_snapshot.py` (via `full_update.py` / `quick_update.py`), `apply_analysis.py`, `email_price_alert.py` | site, widget | `collected_at_jst`, `check_mode`, `notes`, `cards[]`, `pokeca_chart_index`, optional `banners`, `market_context` |
-| `history.json` *generated* | `build_history.py` (on every publish) | site: price history, 7D/30D, heat trend, tier review, slab premium line, value chart; widget | per snapshot: `d` time, `m` mode, `i` pokeca index, `p {url: [price, confirmed]}`, `h {url: [PSA10/day, raw/day]}`, `r {url: [PSA10 ask, raw ask, PSA10 sales median, raw sales median, raw A-rank price]}`; plus `tiers {url: {since, i}}` |
-| `calls.json` *generated* | `build_calls.py` (via `build_history.py`) | Track record, Scored calls | `summary`, `calls[]`, `predictions[]`, `model_odds[]` |
+| `history.json` *generated* | `build_history.py` (on every publish) | site: price history, 7D/30D, heat trend, tier review, slab premium line, value chart, holding timing, supply & demand charts; widget; `predict.py`, `outliers.py`, `review_due.py` | per snapshot: `d` time, `m` mode, `i` pokeca index, `p {url: [price, confirmed]}`, `h {url: [PSA10/day, raw/day]}`, `r {url: [PSA10 ask, raw ask, PSA10 sales median, raw sales median, raw A-rank price]}`, `f {url: favorites}` (once a day, when changed), `q {url: [cheap listings, listings read]}` (fresh listing reads), `n {url: [population, gem rate]}` (fresh readings, when changed); plus `tiers {url: {since, i}}` and `tier_log {url: [[since, db, bu, ceil], …]}`. Entries older than 30 days keep one check per JST day |
+| `sales.json` *generated* | `build_history.py` | History tab (loaded when opened) | every PSA10 one-copy sale the checks saw, once each: `{url: [[hour, price], …]}` |
+| `calls.json` *generated* | `build_calls.py` (via `build_history.py`) | Track record, Scored calls | `summary` (closed-window score, early decisions, baseline, return vs the market, Brier scores), `calls[]`, `predictions[]`, `model_odds[]` |
 | `custom_index.json` | `add_custom_index.py` | Market page, KPI tile, correction rule, tier review, widget | `meta` (constituents, base prices) + `series[]` of daily `{d, level, prices, pokeca_psa10}` |
 | `events.json` | `events.py` | event rule, release calendar, widget | `window_days`, `events[] {d, name, major, scope}` |
 | `limits.json` | `set_limit.py` (Action) | site, widget, `mercari.py`, `predict.py` | `{"limits": {url: {price, set, issue}}}` |
@@ -282,8 +284,9 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    (`carry_forward_analysis`, `carry_forward_population`);
 4. saves `data/snapshots/<YYYYMMDD-HHMM>.json` and appends it to `manifest.json`;
 5. logs limit-odds forecasts on full checks (`odds_model.log_for_snapshot`) and rebuilds
-   `history.json`, which in turn updates `predict.json` (`predict.update`) and `calls.json`
-   (`build_calls.build`);
+   `history.json` and `sales.json`, which in turn updates `predict.json` (`predict.update`) and `calls.json`
+   (`build_calls.build`). It refuses a `collected_at_jst` without a time and adds `+09:00` when the offset is
+   missing (a date-only timestamp is read as midnight by Python and 09:00 JST by browsers);
 6. commits and pushes. The deploy Action publishes the site.
 
 ### Quick check (any later run that day)
@@ -317,7 +320,7 @@ hands off to `add_snapshot.py`, and ends with the same Mercari block as a full c
 | + Add sealed product | `sealed.yml` (`sealed`) | same | product `s<issue#>` in `sealed[]` |
 | Pulled one of these? / + Add pull | `pull.yml` (`pull`) | same | pull `u<issue#>` under its product |
 | Add / Change SNKRDUNK link | `sealed-link.yml` (`sealed-link`) | same | product's `url` set |
-| Grading info | `grading-info.yml` (`grading-info`) | same | `sent`, `tier`, `gem_rate_pct` (and a pull's status) |
+| Grading info / Mark N as sent (PSA submission planner) | `grading-info.yml` (`grading-info`) | same | `sent`, `tier`, `gem_rate_pct` (and a pull's status), for one card or several |
 | Save to all devices (limit) | `set-limit.yml` (`set-limit`) | Action `limits.yml` → `set_limit.py` | `limits.json` |
 | Save to all devices (sell target) | `set-sell-target.yml` (`set-sell-target`) | same | `sell_targets.json` |
 | Save to all devices (You vs model) | `predict.yml` (`predict`) | Action `predictions.yml` → `set_predictions.py` | answers in `predict.json` |
@@ -354,11 +357,11 @@ Two details worth knowing:
 - **`<main>`**: `#page-title` / `#page-sub` (set by `applyRoute`), `#back-link`, `#page-aside`
   (the Holdings totals), then **one `<section class="view" data-view="...">` per page**: overview,
   collection, watching, holdings, planner, record, scored, scout, predict, stories, market, tables,
-  more, compare, duel, combos, rate and card. Only one is visible at a time.
+  more, compare, duel, combos, rate, submit and card. Only one is visible at a time.
 - **`<nav class="tabbar">`**: the phone bottom bar (Overview, Collection, Holdings, Planner, More).
   The **More** view lists Scout, Stories, You vs model, Watching, Track record, Market & notes, Tables
   and + Add card.
-- At the end: `<script src="assets/app.js?v=20261009h">`. The `?v=` part is a cache
+- At the end: `<script src="assets/app.js?v=20261009i">`. The `?v=` part is a cache
   buster, see section 13.
 
 When you look for where something appears, find its container `id` here (for example
@@ -381,11 +384,12 @@ In order:
 |---|---|---|
 | top | `state`, `els`, `parseCardName`, `verdictHeadline` | global app state and shortcuts to page elements |
 | formatting helpers | `fmtYen`, `fmtYenShort`, `fmtPct`, `fmtDateJST`, `asOfHtml`, `escapeHtml`, `dirClass` | turning numbers into display text |
-| data loading | `fetchJSON`, `OPTIONAL_DATA`, `loadFreshBundle`, `showBundle`, `init`, `loadIndex` | fetching, caching, startup |
+| data loading | `fetchJSON`, `OPTIONAL_DATA`, `idb`, `cacheRead`, `cacheWrite`, `loadFreshBundle`, `showBundle`, `init`, `loadIndex` | fetching, the IndexedDB cache, startup |
 | removing cards from the tracker | `withoutRemoved`, `reconcileRemovals`, `removeBtnHtml`, `removedListHtml` | Remove card / Undo / Restore |
 | derived-value helpers | `getRep`, `depthInfo`, `rawPrice` (raw A-rank price; `scripts/raw_price.py` is the Python twin), `computeDiyEconomics`, `computeGauge`, `zoneOf`, `liveTagOf`, `displayTagFor` | the core calculations |
 | event rule | `upcomingEvents`, `activeEvents`, `eventFor`, `heldByEvent`, `renderEvents` | release-calendar logic |
 | (correction rule) | `correctionState`, `heldByCorrection` | market-correction logic |
+| (rally rule, index breadth) | `rallyState`, `indexBreadth` | rally flag; how broad the My-tier index's move is |
 | my limit prices + buy signals | `store`, `getLimit`, `setLimit`, `reconcileLimits`, `limitFormUrl` | limits |
 | sell targets and sell signals | `getTarget`, `setTarget`, `reconcileTargets`, `suggestedTarget`, `sellRowHtml` | sell targets for cards you own |
 | owned cards: position, sell tiers, sell verdict | `ownedOf`, `breakEven`, `sellState`, `sellChip`, `sellGaugeHtml`, `positionStats`, `ownedVerdict`, `sellBarHtml` | the sell view |
@@ -411,9 +415,11 @@ In order:
 | sorting | `SORTS`, `sortCardsBy`, `setSort`, `TABLE_SORTS`, `setTableSort` | sortable columns |
 | render: key numbers | `renderKpis` | KPI tiles on the overview |
 | should I grade this? | `GRADE_TIERS`, `gradeCopies`, `gradeCalc`, `gradeLineHtml`, `gradePanelHtml` | grading calculator for raw copies |
+| PSA submission planner | `rawCopies`, `submitCalc`, `submitFormUrl`, `submitLinkHtml`, `renderSubmit` | #/submit |
 | sealed product | `pullValue`, `sealedValue`, `sealedHtml`, `holdingsTotals`, `renderHoldingsAside` | Sealed section and Holdings totals |
 | sold items | `soldFormUrl`, `soldPrefill`, `soldTotals`, `soldHtml` | Sold section |
-| portfolio value over time | `basisV`, `portfolioSeries`, `drawPortfolioChart`, `rawHoldingCols`, `renderPortfolio` | Holdings chart and singles list |
+| portfolio value over time | `basisV`, `markPsa`, `markRaw`, `portfolioSeries`, `drawPortfolioChart`, `rawHoldingCols`, `renderPortfolio` | Holdings chart (with the My-tier benchmark) and singles list |
+| how your bought cards move | `histPoints`, `tiersOn`, `holdingTiming`, `holdingTimingHtml`, `timingSummary` | vs the market since purchase, entry timing |
 | overview list + drawer | `zoneBarHtml`, `renderOverviewList`, `renderDrawer`, `drawerHtml`, `cardNavHtml`, `renderCardPage` | Overview and card page |
 | trading activity ("heat") | `saleAgeDays`, `salesPerDay`, `heatOf`, `heatChip`, `renderHeat` | Activity labels |
 | (cost basis helpers) | `priceChangeAgo`, `priceChangeLast`, `limitGap`, `rawCopyBasis`, `holdingValue`, `holdingPaid`, `boughtGap` | Limit column, owned positions |
@@ -425,30 +431,32 @@ In order:
 | rate my portfolio | `renderRate`, `rtKeepHtml` | #/rate |
 | track record | `renderTrackRecord`, `renderScored` | Track record, Scored calls |
 | limit controls | `wireLimitControls`, `openLimitEditor`, `limitSyncHtml` | editing and dragging limits |
-| price history | `getCardPriceHistory`, `buildPriceHistoryHtml`, `buildGradeDetail`, `buildDistribution` | History and Listings tabs |
+| price history | `getCardPriceHistory`, `loadSales`, `salesRolling`, `buildPriceHistoryHtml`, `supplyDemandHtml`, `buildGradeDetail`, `buildDistribution` | History tab (prices, sales, supply & demand) and Listings tab |
 | interactive charts | `chartSlot`, `mountCharts`, `drawLineChart`, `drawBarChart`, `wireHover` | SVG charts |
 | head to head / budget duel | `relation`, `renderCompareBar`, `renderCompare`, `tapeHtml`, `raceHtml`, `ladderHtml`, `renderDuel`, `drawMultiChart` | comparing cards |
 | render: tables | `renderTables`, `buildDiyTable`, `buildComparisonTable` | Tables page |
-| end | `loadCardRequests`, `init()` | pending-issue notices, start |
+| end | the test hook, `loadCardRequests`, `init()` | tests, pending-issue notices, start |
 
 ### Startup, step by step
 
 1. The browser loads the HTML and CSS, then runs `app.js`. The last lines call
    `init()` and `loadCardRequests()`.
-2. `init()` registers the `hashchange` listener, reads the cached bundle from localStorage
-   (`psa10.cache.v1`, the complete data from your last visit) and **immediately starts**
-   `loadFreshBundle(cached)` (network) without waiting for it.
+2. `init()` registers the `hashchange` listener, reads the cached bundle (`cacheRead`: the complete data from
+   your last visit, kept in IndexedDB under `psa10.cache.v2`; localStorage only where IndexedDB isn't available)
+   and **immediately starts** `loadFreshBundle(cached)` (network) without waiting for it. The bundle is about
+   0.7 MB and grows with every check, which is why it moved out of localStorage (about 5 MB on Safari).
 3. If a cached bundle was found, `showBundle(cached, false)` draws the site right away and
    the body gets the class `is-updating`, which shows the thin yellow bar at the top.
 4. `loadFreshBundle()` fetches `manifest.json`, all optional files (`OPTIONAL_DATA`: holdings,
    holdings prices, portfolio history, sell targets, calls, custom index, events, history, limits,
-   odds model, insights, premium, scout, predict, stories, value model, removed cards, Mercari, hype)
+   odds model, insights, premium, scout, predict, stories, value model, removed cards, Mercari, hype; `sales.json`
+   is not part of it, it loads when a History tab opens)
    **and** the two snapshots the cached manifest names, all in parallel. Only if the fresh manifest
    names newer snapshots are those fetched afterwards. Each fetch uses `{cache: 'no-cache'}`: the
    browser asks GitHub "has this changed?" and gets a tiny "304 Not Modified" answer if not.
 5. When fresh data arrives, `init()` compares it with what's shown. If anything changed, and you
    haven't picked a different snapshot in the meantime, it calls `showBundle(fresh, true)` and saves
-   the fresh bundle as the new cache.
+   the fresh bundle as the new cache (`cacheWrite`, which also removes the old localStorage copies).
 6. `showBundle()` copies each file into `state`, fills both snapshot pickers, sets up sorting
    (once), drops removed cards (`withoutRemoved`), and calls `render()`. Only with fresh data does it
    reconcile local limits, sell targets and pending removals against the synced files.
@@ -549,6 +557,11 @@ check rewrites it (`review_due.py --text`, FULL-CHECK step 8g).
   (`heldByEvent`, `heldByCorrection`). The evaluation skill applies the same rules,
   so the site and the written verdicts agree. `scripts/event_study.py` measures on the
   tracker's own checks whether prices really dip around releases.
+- **Rally rule** (`rallyState`): the counterpart for a fast rise, on while the My-tier index is up
+  `RALLY_PCT` (10%) or more over `RALLY_DAYS` (7). It's a flag only: a banner (with the index's breadth: how
+  many of its cards rose and how much of the move the top 3 made), a "Rally rule on" chip on the Market page,
+  and a reason on owned cards near their Take-profit zone. Limits set before a rally are less likely to fill
+  soon (the odds assume no trend), and a card still in its Buy zone is lagging. No pill or signal changes.
 
 ### Zone bar and gauge
 
@@ -629,7 +642,7 @@ fires, `quietChecks` lists the same checks with today's values ("Nothing unusual
 (score ≥ 1.5) put an "Insight" star on the overview row. `scripts/outliers.py` applies the same rules
 in Python; the full check (step 7b) writes a short analysis for its top cards with
 `scripts/set_insight.py` into `data/insights.json`, which replaces the computed findings on the card
-page (not for cards you own). The thresholds are in `INSIGHT` / `PREM_FLAG` (JavaScript) and `T`
+page (not for cards you own, which `outliers.py` therefore leaves out). The thresholds are in `INSIGHT` / `PREM_FLAG` (JavaScript) and `T`
 (Python); change both together.
 
 ### Hype exposure
@@ -707,7 +720,8 @@ rules in `style.css`.
     break-even), the sell-target row, the grading panel for raw copies, the same analysis panels and
     the sell verdict (`ownedVerdict`).
   - *Story* (when `stories.json` has one), *History* (loads lazily on first open:
-    `renderPriceHistoryInto`), *Listings* (distribution, sales sparkline and list for PSA10 and raw A),
+    `renderPriceHistoryInto`, see "Price history, sales and supply & demand" below), *Listings*
+    (distribution, sales sparkline and list for PSA10 and raw A),
     *DIY* (buy the slab vs grade it yourself, plus the slab premium; hidden when you own a slab) and
     *Upside*.
   - `cardNavHtml` adds Previous / Next links (← → keys) in the overview's sort order.
@@ -718,6 +732,23 @@ rules in `style.css`.
 `wireCardDetail` attaches the tab switching (remembered in `state.cardTab`), the limit and sell
 controls, the lightbox and the charts.
 
+### Price history, sales and supply & demand (History tab)
+
+- The price line is the PSA10 price at each check (`history.json` `p`). Over it, `buildPriceHistoryHtml` draws
+  every one-copy sale from `data/sales.json` as a small dot and their rolling median (`salesRolling`: at the end
+  of each day, the median of the sales in the `SALES_MED_DAYS` (7) days before, with at least 3) as a dashed
+  line: steadier than the lowest ask, which jumps when one listing appears or sells. `sales.json` is built by
+  `build_history.py`: each check shows the last 20 sales, oldest first; consecutive lists overlap, so a new list
+  is aligned with the previous one (same prices in order, at times both timestamps allow) and only the sales
+  after the overlap are added. Single sales outside the price line's range are left out so one odd sale can't
+  squash the chart.
+- `supplyDemandHtml` adds four small charts and a stat row from `history.json`: PSA10 population (`n`; supply,
+  a fast rise = a wave of new slabs), SNKRDUNK favorites (`f`; demand), cheap listings (`q`: within 15% of the
+  lowest ask, of the 20 cheapest read on full checks) and how many days of sales they would cover (`q` ÷ `h`).
+  `f` and `n` are stored only when they change, so `histSeries` carries the last value forward (`growth` gives
+  the 7- or 30-day change). The card's population tile shows "+N in 7 days" (`popGrowthTxt`). SNKRDUNK's total
+  listing count isn't read, only the 20 cheapest.
+
 ### Charts
 
 All charts are hand-drawn SVG, with no chart library:
@@ -726,7 +757,8 @@ All charts are hand-drawn SVG, with no chart library:
   returns an empty `<div data-chart="ch12">`.
 - After the HTML is on the page, `mountCharts(root)` draws each slot at its real pixel
   width (`drawLineChart`, `drawBarChart` or `drawMultiChart`). A `ResizeObserver` redraws it when
-  the width changes, for example when a hidden tab is opened.
+  the width changes, for example when a hidden tab is opened. `drawLineChart` takes `overlays`: extra series on
+  the same axes, as a line (counted in the y range, shown in the tooltip) or as dots (not counted).
 - `wireHover` adds the crosshair and tooltip for mouse, touch and arrow keys.
 - The My-tier index chart (`drawIndexChart`) and the Holdings value chart (`drawPortfolioChart`) have
   their own, similar drawing code.
@@ -766,17 +798,30 @@ The Holdings page has five parts, all valued with today's snapshot:
 
 - **Totals** (`holdingsTotals`, shown in `#page-aside`): total spent (purchase prices, sealed prices),
   worth now, +/− and realized profit from sales. Unpriced sealed products count at cost.
-- **Show values** switch (`psa10.basis`): at the lowest ask, or after SNKRDUNK's selling costs
-  (`basisV` → `sellNet`). It changes the totals, the lists and the chart together.
+- **Show values** switch (`psa10.basis`): **Lowest ask** (a raw copy at the raw A-rank price), **Recent sales**
+  (`markPsa` / `markRaw`: the median of recent one-copy sales, the last week's or the last 5; sealed products and
+  cards without sales stay at the ask; the chart uses `history.json`'s sales medians `r[2]` / `r[3]`) or **After
+  selling costs** (the ask, `basisV` → `sellNet`). It changes the totals, the lists and the chart together.
 - **Value over time** (`portfolioSeries`, `drawPortfolioChart`): worth vs. money spent, with a
   result strip and purchase markers, by Total / Singles / Sealed / Pulls and 30 / 90 days / All
-  (`psa10.pfh`). Tracked cards are valued from `history.json`, untracked cards and sealed products from
+  (`psa10.pfh`). A dotted blue line is the **benchmark**: the same money put into the My-tier index on each
+  purchase day (and taken out on a sale day), so "you +¥X" in the header line says whether your picks beat
+  simply holding the tier. Tracked cards are valued from `history.json`, untracked cards and sealed products from
   `portfolio_history.json` (at cost before their first reading). Sold items count as the cash received
   from their sale date on.
 - **Singles** (`renderPortfolio`): each holding matched to the snapshot by `card_url`. A slab is worth
   the PSA10 price; a raw card (`raw_to_grade`) the raw A-rank price (`holdingValue`), against what was
   paid without grading (`holdingPaid`). A raw single shows three figures (`rawHoldingCols`): raw A-rank
   vs paid, your DIY cost, and the PSA10 ask vs that DIY cost, plus its grading dates (`gradeMetaHtml`).
+  Under each single, `holdingTimingHtml` (`holdingTiming`, from `history.json`) shows:
+  - **Since you bought:** the card's price change since the purchase day (PSA10 price for a slab, raw A-rank
+    price for a raw copy) against the My-tier index over the same days, and the difference in points;
+  - **Entry:** where the price you paid sat between the low (0%) and high (100%) of the card's 30 days before
+    the purchase (needs 3 checks in that window);
+  - for a slab, the **zone it was in that day** by the tiers it had then (`history.json` `tier_log`, `tiersOn`).
+  Two summary tiles average them: **Vs. the market** (and how many beat it) and **Entry timing** (and how many
+  slabs were bought in a Buy zone). The owned card page shows the same line under its position.
+- A **PSA submission planner** link sits under the switch when there are raw copies (see below).
 - **Sealed** (`sealedHtml`): boxes, sets and packs. An unopened product is worth its lowest SNKRDUNK
   ask × quantity (`sealedValue`, from `holdings_prices.json`); once a pull is logged it counts as
   opened and only its pulls are valued (`pullValue`: PSA10 price, raw A-rank price or your estimate).
@@ -797,6 +842,28 @@ form. "Grade it" when your chance is 10+ points above break-even, "Don't grade" 
 "Close call". Once a copy is sent (or was bought to grade), the fee is spent: it only shows the
 expected result and the return date (`addBusinessDays`). It warns when the PSA10 price is above
 Standard's ¥150,000 declared-value limit.
+
+### PSA submission planner (#/submit)
+
+`renderSubmit` lists every raw copy not sent yet (`rawCopies`: singles bought raw without a send date, pulls
+with status raw) with its chance of a 10, PSA10 price (= its declared value), raw A-rank price, the expected
+result graded vs sold raw (`submitCalc`, the same sums as `gradeCalc`) and the card page's verdict for sending it
+on its own. Tick the cards to send together (by default every priced card that isn't "Don't grade"):
+
+- **Service:** one order uses one service, so **Auto** picks the cheapest whose declared-value cap
+  (`GRADE_TIERS[...].cap`) covers the most valuable card; only Standard's (¥150,000) is known, so a higher
+  service shows a note to check its cap on PSA's order screen. A manual choice warns when a card is over the cap.
+- **Cost:** grading fee × cards + shipping, insurance and handling **once per order** (an editable estimate,
+  ¥2,450 from a 1-card Standard order; the per-order amount for several cards isn't known yet).
+- **Back around:** the send date + the service's business days. **Expected 10s** and **grading vs selling raw**
+  (expected, after selling costs and the order's cost).
+- **Mark N as sent** opens one `grading-info` form for all ticked cards (`id` = "p73, p74, u52", the date, the
+  service and "Sending it to PSA"); `log_purchase.py` applies it to each (with several ids an empty chance keeps
+  each card's own estimate).
+- **At PSA now** lists the copies already sent with their return dates.
+
+Ticks, service, date and shipping are kept in this browser (`psa10.submit`). The card page's Grade it? panel
+and the Holdings page link here.
 
 ### Budget planner, combination finder, rate my portfolio
 
@@ -846,8 +913,23 @@ of `app.js`. Nothing new is stored; every number comes from functions described 
 per-card noise thresholds, two-reading confirmation, Brier scores for the evaluations' stated odds
 and for the limit-odds model's logged forecasts) happens in `scripts/build_calls.py` when a check is
 published. To change how calls are judged, edit the Python, not the JavaScript. Which cards you
-expanded is remembered in `psa10.trOpen`. `renderScored` (`#/scored`, from the "Buy / Watch calls"
-tile) lists only the resolved right / wrong calls.
+expanded is remembered in `psa10.trOpen`. Since 2026-10-09:
+
+- **Only finished windows are scored.** A Watch can be proven right early (the dip came) but wrong only at the end
+  of its 30 days, a Buy the other way round, so counting calls as they're decided would favour one kind. The
+  "Buy / Watch calls" tile counts calls whose window is over (`summary.closed`); calls decided early show their
+  outcome with "counts <date>" and join the score later (`summary.early`). Each call carries `final`.
+- **Stated odds and the model's odds are scored after their deadline** (`final`): "happened" can be known early,
+  "didn't happen" only at the deadline. The model's 30-day and 90-day forecasts are scored separately
+  (`model_odds.h30` / `h90`), so a logged price counts once in each.
+- **Vs. a call on every day** (`summary.baseline`): the same rules applied to a Buy and a Watch call on every day
+  for the same cards. In a rising market almost every Buy is "right"; the calls only show skill where they beat it.
+- **Return vs. the market:** for each closed call, the card's 30-day change minus the My-tier index's
+  (`rel_pts`; `edge_pts` is signed so a good call is positive), averaged per kind next to the same measure for
+  any day.
+
+`renderScored` (`#/scored`, from the "Buy / Watch calls" tile) lists the scored right / wrong calls and, separately,
+the ones decided early.
 
 ### Stories (#/stories and the card page's Story tab)
 
@@ -869,8 +951,10 @@ For cards whose SNKRDUNK ask is within 5% of your limit, price checks read Merca
 
 - `renderMarketStrip`: the pokeca-chart index cells, with the trading-volume trend recomputed from
   the index's volume note (`volTrendOf`).
-- `renderCustomIndex`: My-tier stats, the range buttons (3M/1Y/All, remembered in
-  `psa10.ciRange`), the chart and the constituents table.
+- `renderCustomIndex`: My-tier stats, the **breadth** block (`indexBreadth`: cards up and down over 7 days,
+  the median card, the middle half of the moves, the top 3 cards' share of the index's move, and a chart of the
+  share of cards up over 7 days), the range buttons (3M/1Y/All, remembered in `psa10.ciRange`), the chart and
+  the constituents table.
 - `renderHeat`, `renderEvents`, plus the snapshot's `notes`.
 - `renderTables`: cards become *columns* and statistics *rows*. Rows with a
   `sortableLabel()` button sort the columns (`TABLE_SORTS`, saved in `psa10.tableSort`).
@@ -926,6 +1010,9 @@ live to try things before changing the file.
 - **`cards.yml`** → `remove_card.py`: `remove-card` and `restore-card`.
 - **`labels.yml`** → `issue_labels.py --sync`: on a push that changes an issue form (or by hand),
   creates the labels the forms use and processes open issues that arrived unlabeled.
+- **`tests.yml`** → `tests/test_rules.py`: on a push or pull request that changes `assets/app.js`, the widget,
+  `scripts/` or `tests/`, checks on every snapshot that the site, the widget and the Python scripts apply the
+  same rules (section 13). Price checks don't trigger it.
 
 The issue-driven workflows run when an issue is opened or edited, only if it's open and was opened
 by you (`github.repository_owner`). Each uses one concurrency group per issue, so several forms
@@ -966,7 +1053,7 @@ with a docstring explaining its usage. Open the file and read the top.
 |---|---|
 | `apply_analysis.py` | applying an evaluation (tiers, peak, verdict, sell tiers; `--dry-run` to preview) |
 | `review_due.py` | listing cards due for re-evaluation (`--text`: written verdicts the price has moved away from) |
-| `outliers.py` / `set_insight.py` | finding cards that stand out / saving the written analysis for one |
+| `outliers.py` / `set_insight.py` | finding cards that stand out (cards you own are left out) / saving the written analysis for one |
 | `set_story.py` | listing cards without a story (`--missing`) / saving one |
 | `events.py` | managing the release calendar: `list`, `add`, `date`, `remove`, `window` |
 | `event_study.py` | checking whether prices really dip around releases |
@@ -990,8 +1077,8 @@ with a docstring explaining its usage. Open the file and read the top.
 
 | Script | You'd run it when… |
 |---|---|
-| `build_history.py` | rebuilding `history.json`, `predict.json` and `calls.json` by hand (normally automatic) |
-| `build_calls.py` | rebuilding only the track record |
+| `build_history.py` | rebuilding `history.json`, `sales.json`, `predict.json` and `calls.json` by hand (normally automatic) |
+| `build_calls.py` | rebuilding only the track record (`build(root, now=…)` scores as of another time, for tests) |
 | `predict.py` | generating / resolving this week's You vs the model questions by hand |
 
 **Run by Actions, or for maintenance**
@@ -1002,6 +1089,7 @@ with a docstring explaining its usage. Open the file and read the top.
 | `issue_labels.py` | `--check` lists the form labels; `--sync` runs in Actions |
 | `card_requests.py` | handling Add-card issues: `list`, `add`, `set`, `reject` |
 | `add_holding.py` | bulk-entering purchases from the Mac |
+| `../tests/test_rules.py` | checking that the site, the widget and the scripts still apply the same rules (needs Node) |
 
 Scripts that push use the credential file configured for the repo. **Never put a
 token in a script or a command, and never commit one.** `.git-credentials` is in
@@ -1014,11 +1102,14 @@ token in a script or a command, and never commit one.** `.git-credentials` is in
 `widgets/psa10-widget.js` runs in the Scriptable app. It fetches the public files from
 `https://sprdl.github.io/psa10-tracker/data/...` directly (manifest, the latest
 snapshot, limits, history, custom index, events), keeps the last good copy for offline use,
-and re-implements a small part of the site's logic: zones, the correction and event rules, signals,
-limit hits, the 7-day change and heat, drawn with Scriptable's widget API. Only limits saved to all
-devices are visible to it. It doesn't read `holdings.json`, sell targets or Mercari, so it doesn't know
-which cards you own. If you change a rule in `app.js` (say, the correction threshold), check whether
-the widget has its own copy of that rule.
+and re-implements a small part of the site's logic: zones, the correction, rally and event rules, signals,
+limit hits, the 7-day change and heat, drawn with Scriptable's widget API. Only limits and sell targets saved to
+all devices are visible to it. It also reads `holdings.json` and `sell_targets.json`: like the site, a card you
+own never gives a limit or Buy signal; it gets the site's sell signal instead (`sellState`: Sell / Take profit /
+Reassess from the sell tiers, your sell target, Near peak, Rich ask), shown with its gain on what you paid (a raw
+copy against its DIY cost). Actionable sell signals rank after limit hits and before Buy signals in every size;
+the large widget marks owned rows with their gain. Mercari isn't read. If you change a rule in `app.js` (say, the
+correction threshold), change the widget's copy too: `tests/test_rules.py` compares them on every snapshot.
 
 ---
 
@@ -1050,17 +1141,41 @@ git push                     # the site updates in ~1 minute
 ### Bump the version after changing app.js or style.css
 
 Browsers keep `app.js` and `style.css` for up to 10 minutes. To make everyone get the
-new file immediately, change the `?v=20261009h` in **both** places in `index.html`
+new file immediately, change the `?v=20261009i` in **both** places in `index.html`
 (the `<link>` for style.css and the `<script>` for app.js) to today's date, adding a letter
 for a second change on the same day (`?v=20261010`, `?v=20261010b`, …). Data files don't need
 this; they're always revalidated.
 
 ### If you change the shape of the data
 
-The site shows the cached copy from localStorage first. If you rename or restructure
-a field, bump `CACHE_KEY` in `app.js` (`'psa10.cache.v1'` → `'psa10.cache.v2'`), so an
-old cached bundle in the previous shape is never rendered by the new code. If you add a new
-data file, add it to `OPTIONAL_DATA` and copy it into `state` in `showBundle`.
+The site shows the cached copy first. If you rename or restructure a field, bump `CACHE_KEY` in `app.js`
+(`'psa10.cache.v2'` → `'psa10.cache.v3'`) and add the old key to `CACHE_OLD`, so an old cached bundle in the
+previous shape is never rendered by the new code. If you add a new data file, add it to `OPTIONAL_DATA` and copy
+it into `state` in `showBundle` (or load it lazily like `sales.json`, if it's big and only one page needs it).
+
+### Rules that exist twice: run the tests
+
+Several rules live in more than one place, and they must agree:
+
+| Rule | Site (`assets/app.js`) | Twin |
+|---|---|---|
+| raw A-rank price | `rawPrice` | `scripts/raw_price.py` (via `build_history.py`) |
+| trading rate | `salesPerDay` | `build_history.sales_per_day` |
+| "What stands out" | `insightsFor` | `outliers.findings` |
+| tier review due | `tierReview` | `review_due.compute` |
+| limit odds | `touchOdds` | `odds_model.odds` |
+| event rule | `activeEvents` / `eventFor` | `events.active`, the widget's `eventFor` |
+| verdict pill, limit hit, sell signal, correction and rally rules | `displayTagFor`, `limitHit`, `sellState`, `correctionState`, `rallyState` | the widget |
+
+`python3 tests/test_rules.py` runs both sides on the repo's own data (the latest 3 snapshots; `RULES_N=100 python3
+tests/test_rules.py` for more) with the clock frozen at each snapshot's time, and fails on any difference.
+`tests/rules.mjs` loads `app.js` and the widget in Node through their test hooks (`window.__PSA10_TEST__` /
+`globalThis.__PSA10_TEST__`, never set in a browser or in Scriptable). GitHub Actions runs it on every push that
+changes code (`tests.yml`). It needs Node 18+ on your Mac (`brew install node`). When you change one side of a rule,
+change the other, and run the test before pushing. The first full run (2026-10-09) found three real differences,
+now fixed: card names without a pack name or with a note after it weren't parsed by the site (so their odds used
+the pooled model), one snapshot's date-only timestamp was read as two different times, and `outliers.py` crashed
+on it.
 
 ### Debugging in the browser
 
@@ -1073,14 +1188,15 @@ Open DevTools with **Cmd+Option+I**.
 
   | Key | Holds |
   |---|---|
-  | `psa10.cache.v1` | last loaded data (for instant start) |
+  | `psa10.cache.v2` | last loaded data, for instant start: in **IndexedDB** (database `psa10`, store `kv`; Application → IndexedDB), in Local Storage only where IndexedDB is unavailable |
   | `psa10.limits` | limits changed on this device only |
   | `psa10.sell` | sell targets changed on this device only |
   | `psa10.planner` | budget, price mode, ticked cards, pins, left-out cards, finder category |
   | `psa10.sort`, `psa10.tableSort` | sort orders |
   | `psa10.seenSignals` | which buy signals are no longer NEW |
   | `psa10.ownedOnly` | Collection's "Only cards I own" |
-  | `psa10.basis` | Holdings values at the lowest ask or after selling costs |
+  | `psa10.basis` | Holdings values: `ask`, `sales` or `net` |
+  | `psa10.submit` | PSA submission planner: ticked cards, service, send date, shipping per order |
   | `psa10.pfh` | Holdings chart range and part |
   | `psa10.ciRange` | My-tier chart range |
   | `psa10.race` | head to head price race mode and range |
@@ -1103,12 +1219,12 @@ Open DevTools with **Cmd+Option+I**.
 - **Change a label or text on the page.** Search `app.js` for the visible text (for
   example `Buy signals`) and edit the string.
 - **Change a threshold.** Constants are named in capitals near their feature:
-  `CORRECTION_PCT`, `TIER_MAX_AGE_DAYS`, `TIER_MAX_INDEX_MOVE`, `HEAT_LEVELS`, `LIMIT_STEP`,
+  `CORRECTION_PCT`, `RALLY_PCT` / `RALLY_DAYS`, `TIER_MAX_AGE_DAYS`, `TIER_MAX_INDEX_MOVE`, `HEAT_LEVELS`, `LIMIT_STEP`,
   `RAW_SALES_N` / `RAW_SALES_DAYS` / `RAW_SALES_MIN`, `PSA_STD`, `GRADE_TIERS`, `GRADE_MARGIN`,
   `SELL_FEE` / `SELL_SHIP`, `SELL_NEAR_PEAK`, `INSIGHT`, `PREM_FLAG`, `MERC_FRESH_H` /
-  `MERC_ENDING_MIN`, `CB_MIN` / `CB_MAX`, `HISTORY_MAX_SNAPSHOTS`. The event window lives in
+  `MERC_ENDING_MIN`, `CB_MIN` / `CB_MAX`, `SALES_MED_DAYS`, `HISTORY_MAX_SNAPSHOTS`. The event window lives in
   `data/events.json` → `window_days`. Scoring constants are at the top of
-  `scripts/build_calls.py`. For rules a Python script also applies (insights in `outliers.py`, the raw
+  `scripts/build_calls.py`; how long `history.json` keeps every check is `FULL_DAYS` in `scripts/build_history.py`. For rules a Python script also applies (insights in `outliers.py`, the raw
   price in `raw_price.py`, tier review in `review_due.py`, odds in `odds_model.py`) or the evaluation
   skill applies, change those too, so the site, the scripts and written verdicts stay consistent.
 - **Change the default budget.** `plannerState()` → `200000`.
@@ -1145,3 +1261,5 @@ Open DevTools with **Cmd+Option+I**.
 | A sealed product has no picture or price | no SNKRDUNK link yet, or no full check since | "Add SNKRDUNK link" on Holdings; the next full check reads it (`sealed_info.py`, `holdings_prices.py`) |
 | A removed card is back | the Remove card form was never submitted (local hide expired after 3 days) | submit the form, or check `data/removed_cards.json` |
 | Card photos too small or offset | trim measurement cached from a bad load | delete `psa10.imgTrim.v1` in Local Storage |
+| The "Rules tests" workflow fails | a rule was changed on one side only (site, widget or script) | run `python3 tests/test_rules.py`; the failure names the snapshot, the card and both values |
+| The site shows data in an old shape after an update | an old cached bundle | bump `CACHE_KEY` (section 13); to clear it by hand: DevTools → Application → IndexedDB → `psa10` → delete |

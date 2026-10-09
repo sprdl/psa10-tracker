@@ -58,10 +58,11 @@ def per_run(due):
     return REVIEW_PER_RUN_MARKET if market >= 3 else REVIEW_PER_RUN
 
 
-def compute(root=ROOT):
-    """(review-due list, text-due list). review: (score, url, name, ask, reasons); text: (abs drift, url, name, ask, ref, drift)."""
+def compute(root=ROOT, latest=None):
+    """(review-due list, text-due list). review: (score, url, name, ask, reasons); text: (abs drift, url, name, ask, ref, drift).
+    latest: a snapshot file to treat as the latest (tests); default = the newest in the manifest."""
     m = json.loads((root / "data" / "manifest.json").read_text(encoding="utf-8"))
-    latest = sorted(m["snapshots"], key=lambda s: s["collected_at_jst"])[-1]["file"]
+    latest = latest or sorted(m["snapshots"], key=lambda s: s["collected_at_jst"])[-1]["file"]
     snap = json.loads((root / "data" / "snapshots" / latest).read_text(encoding="utf-8"))
     hist = json.loads((root / "data" / "history.json").read_text(encoding="utf-8"))
     tiers_state = hist.get("tiers", {})

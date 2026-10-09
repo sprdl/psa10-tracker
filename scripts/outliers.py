@@ -15,7 +15,9 @@ Same findings and thresholds as the site's "What stands out" panel (insightsFor 
   premium      slab premium (PSA10 ÷ raw, pokeca-chart) >= 20% from its own 6-month norm (data/premium.json)
 Score = size / threshold (weighted like the site), so 1.0 = just at the threshold.
 Each printed line carries the numbers the analysis needs; the full check reads it, looks at the
-card's data, and saves a short analysis with scripts/set_insight.py.
+card's data, and saves a short analysis with scripts/set_insight.py. Cards you own are left out (the site
+shows them the sell view, not a written analysis), and get no "near limit" finding (as on the site).
+findings() returns every card's findings with keys; tests/test_rules.py compares them with the site's.
 """
 import json
 import re
@@ -35,7 +37,8 @@ def load(p, default=None):
 
 
 def ts(s):
-    return datetime.fromisoformat(s)
+    d = datetime.fromisoformat(s)
+    return d if d.tzinfo else d.replace(tzinfo=JST)   # collected_at_jst is JST by definition
 
 
 def sale_age(when, ref):
@@ -58,16 +61,23 @@ def median(a):
     return None if not n else (s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2)
 
 
-def main():
-    show_all = "--all" in sys.argv
+def findings(root=ROOT, upto=None):
+    """Every card with a PSA10 ask: (sid, url, name, owned, [(key, score, text), ...] strongest first, context line).
+    upto: a snapshot file to treat as the latest (tests); default = the newest. Cards you own get no limit finding
+    (on the site they read as a seller), like insightsFor in assets/app.js."""
+    def load(p, default=None):
+        p = root / p
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else default
     man = load("data/manifest.json")
     snaps = sorted([s for s in man["snapshots"] if s.get("collected_at_jst")], key=lambda s: s["collected_at_jst"])
-    cur = load("data/snapshots/" + snaps[-1]["file"])
-    prev = load("data/snapshots/" + snaps[-2]["file"]) if len(snaps) > 1 else None
+    i = next(k for k, s in enumerate(snaps) if s["file"] == upto) if upto else len(snaps) - 1
+    cur = load("data/snapshots/" + snaps[i]["file"])
+    prev = load("data/snapshots/" + snaps[i - 1]["file"]) if i > 0 else None
     hist = load("data/history.json", {"snapshots": []})["snapshots"]
     ci = (load("data/custom_index.json", {}) or {}).get("series", [])
     limits = (load("data/limits.json", {}) or {}).get("limits", {})
     prem = (load("data/premium.json", {}) or {}).get("cards", {})
+    owned = {h.get("card_url") for h in (load("data/holdings.json", {}) or {}).get("holdings", [])}
     now_s = cur["collected_at_jst"]
     now = ts(now_s)
 
@@ -133,7 +143,7 @@ def main():
             pick = (g7, 7)
         if pick:
             x, d = pick
-            f.append((abs(x["gap"]) / T["gap7" if d == 7 else "gap30"],
+            f.append(("market", abs(x["gap"]) / T["gap7" if d == 7 else "gap30"],
                       f"{d}d price {x['card']:+.1f}% (¥{x['old']:,}→¥{x['now']:,}) vs {x['name']} {x['market']:+.1f}% = {x['gap']:+.1f} pts"))
         sales = [(s["price"], sale_age(s["when"], now)) for s in g.get("recent_completed_sales") or []]
         sales = [(p, a) for p, a in sales if a is not None]
@@ -143,7 +153,7 @@ def main():
         if ref:
             dv = (ask / ref - 1) * 100
             if abs(dv) >= T["askVsSales"]:
-                f.append((abs(dv) / T["askVsSales"] * 0.9, f"lowest ask ¥{ask:,} is {dv:+.0f}% vs recent sales median ¥{ref:,.0f}"))
+                f.append(("sales", abs(dv) / T["askVsSales"] * 0.9, f"lowest ask ¥{ask:,} is {dv:+.0f}% vs recent sales median ¥{ref:,.0f}"))
         if len(recent) >= 3 and len(before) >= 3:
             f_sales = f"sales median last 7d ¥{median(recent):,.0f} ({len(recent)}) vs before ¥{median(before):,.0f} ({len(before)})"
         else:
@@ -155,28 +165,35 @@ def main():
             if pa:
                 mv = (pn / pa - 1) * 100
                 if abs(mv) >= T["move"]:
-                    f.append((abs(mv) / T["move"] * 0.8, f"{mv:+.0f}% since the previous check (¥{pa:,}→¥{pn:,})"))
+                    f.append(("move", abs(mv) / T["move"] * 0.8, f"{mv:+.0f}% since the previous check (¥{pa:,}→¥{pn:,})"))
         hn, hp = heat(url, 0), heat(url, 7)
         if hn is not None and hp and max(hn, hp) >= 1:
             hc = (hn / hp - 1) * 100
             if abs(hc) >= T["heat"]:
-                f.append((abs(hc) / T["heat"] * 0.7, f"PSA10 sales/day {hn:.1f} vs {hp:.1f} a week ago ({hc:+.0f}%)"))
-        lim = (limits.get(url) or {}).get("price")
+                f.append(("heat", abs(hc) / T["heat"] * 0.7, f"PSA10 sales/day {hn:.1f} vs {hp:.1f} a week ago ({hc:+.0f}%)"))
+        own = url in owned
+        lim = None if own else (limits.get(url) or {}).get("price")
         if lim and ask > lim and (ask / lim - 1) * 100 <= 5:
-            f.append((1.2, f"lowest ask within {(ask / lim - 1) * 100:.1f}% of your limit ¥{lim:,}"))
+            f.append(("limit", 1.2, f"lowest ask within {(ask / lim - 1) * 100:.1f}% of your limit ¥{lim:,}"))
         pe = prem.get(url) or {}
         if pe.get("dev") is not None and abs(pe["dev"]) >= T["premium"]:
-            age = (now - datetime.fromisoformat(pe["asof"] + "T12:00:00+09:00")).days
+            age = (now - datetime.fromisoformat(pe["asof"] + "T12:00:00+09:00")).total_seconds() / 86400
             if age <= 21:
-                f.append((min(1.2, abs(pe["dev"]) / T["premium"] * 0.6),  # capped: a small effect, never the lead story on its own
+                f.append(("premium", min(1.2, abs(pe["dev"]) / T["premium"] * 0.6),  # capped: a small effect, never the lead story on its own
                           f"slab premium {pe['prem']:.2f}x vs its 6-month norm {pe['norm']:.2f}x ({pe['dev']:+.0f}%, pokeca-chart {pe['asof']})"))
-        if not f:
-            continue
-        f.sort(reverse=True)
+        f.sort(key=lambda x: -x[1])
         depth = f"{g.get('count_within_15pct', '?')}/{len(g.get('top20_cheapest_listings') or []) or 20} listings within 15%"
         tiers = (c.get("analysis") or {}).get("tiers") or {}
         tier = f"tiers {tiers.get('definitely_buy')}/{tiers.get('buy_upper')}/{tiers.get('ceiling')}" if tiers else "no tiers"
-        rows.append((f[0][0], sid, name, [t for _, t in f], f"ask ¥{ask:,} · {tier} · limit {('¥%s' % format(lim, ',')) if lim else 'none'} · {depth} · {f_sales} · sales/day {hn if hn is not None else '—'}"))
+        rows.append((sid, url, name, own, f, f"ask ¥{ask:,} · {tier} · limit {('¥%s' % format(lim, ',')) if lim else 'none'} · {depth} · {f_sales} · sales/day {hn if hn is not None else '—'}"))
+    return rows
+
+
+def main():
+    show_all = "--all" in sys.argv
+    # A written analysis is only shown for cards you don't own (the card page shows the sell view instead),
+    # so owned cards aren't candidates.
+    rows = [(r[4][0][1], r[0], r[2], [t for _, _, t in r[4]], r[5]) for r in findings(ROOT) if r[4] and not r[3]]
     rows.sort(reverse=True)
     top = [r for r in rows if show_all or r[0] >= 1][: None if show_all else 3]
     if not top:

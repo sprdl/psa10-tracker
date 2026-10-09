@@ -7,7 +7,7 @@ Do prices really dip around releases? Measures the event rule on our own price c
 
 Why our own checks: pokeca-chart keeps only ~30-day average points for older history (weekly for a
 card's first two months, daily only for the most recent week), so a release-day dip can't be seen
-in its history (checked 2026-10-02). Our snapshots (data/history.json) are roughly daily since
+in its history (checked 2026-10-02). Our snapshots (read at full resolution) are several a day since
 2026-09-15, so every release from now on adds evidence.
 
 Question, matching the rule: if you buy at the lowest ask during the rule window (from 3 days before
@@ -47,7 +47,9 @@ def set_code(name):
 
 
 def main():
-    hist = json.loads((ROOT / "data" / "history.json").read_text(encoding="utf-8"))["snapshots"]
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import build_history   # full resolution: history.json keeps one check a day after 30 days
+    hist = build_history.entries(ROOT)[0]
     ev = json.loads((ROOT / "data" / "events.json").read_text(encoding="utf-8"))
     man = json.loads((ROOT / "data" / "manifest.json").read_text(encoding="utf-8"))
     latest = sorted(man["snapshots"], key=lambda s: s["collected_at_jst"])[-1]["file"]

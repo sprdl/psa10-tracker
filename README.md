@@ -114,7 +114,9 @@ Watching, Track record, Market & notes and Tables). Every section has its own ad
 - **Card page:** price, off-peak, change since the last check, the price gauge with your limit, a
   verdict computed from today's price with the written analysis folded below it, "What stands out",
   vs. the market, hype exposure and stats. Tabs show the **Story** behind the artwork, the full price
-  **History**, the **Listings** (spread, 15% cutoff, recent sales for PSA10 and raw A), the **DIY**
+  **History** (with every sale the checks saw and their 7-day median, plus supply and demand over time:
+  PSA10 population, favorites, cheap listings and how many days of sales they cover), the **Listings**
+  (spread, 15% cutoff, recent sales for PSA10 and raw A), the **DIY**
   grading comparison with the slab premium, and the **Upside** (12- and 24-month ranges). Previous /
   Next (← →) walk through the cards. For a card you own, the page switches to the sell view (below).
 - **Scout:** three new cards a day that you don't track yet, fit your criteria and look cheap.
@@ -123,7 +125,8 @@ Watching, Track record, Market & notes and Tables). Every section has its own ad
   Friday?"); lock in your odds, then see the model's. Scored with Brier scores.
 - **Watching:** cards with no PSA10 market yet (raw A price, trading, favorites).
 - **Holdings**, **Budget planner**, **Track record** and **Tables:** see the sections below.
-- **Market & notes:** both pokeca-chart indices and their trading volume, the My-tier index chart,
+- **Market & notes:** both pokeca-chart indices and their trading volume, the My-tier index chart with its
+  breadth (how many of its cards rose over 7 days, the median card, and how much of the move the top 3 made),
   trading activity per card, the release calendar and the check's methodology notes.
 
 Cards without an evaluation are labeled "tiers not yet established" rather than guessing. Alerts on
@@ -184,7 +187,8 @@ nothing runs on your Mac.
 - **Pulled one of these? / + Add pull** (under a sealed product): a valuable card that came out of it,
   raw, at PSA, PSA10 or graded otherwise. Logging a pull marks the product as opened.
 - **Grading info** (raw singles and pulls): when it was sent to PSA, the service tier, and your own
-  chance of a PSA10 for that copy. The site uses it for the "Grade it?" verdict and the return date.
+  chance of a PSA10 for that copy. The site uses it for the "Grade it?" verdict and the return date. The PSA
+  submission planner sends one form for several cards.
 - **✓ Sold it** (owned card page, Holdings rows, unopened sealed products): the sale price (suggested:
   the PSA10 price for a slab, the raw A-rank price for a raw card), date, quantity for sealed lots and
   the real fees if you know them. **Undo sale** puts the item back.
@@ -196,14 +200,21 @@ nothing runs on your Mac.
 ## Holdings
 
 The Holdings page shows what you spent, what it's worth now, the +/− and realized profit at the top;
-a switch values everything at the lowest ask or after SNKRDUNK's selling costs (9.5% fee, ¥200/¥300
-fixed fee, ¥1,000 shipping). Below:
+a switch values everything at the **lowest ask**, at **recent sales** (the median of recent one-copy sales, closer
+to what a sale would fetch) or **after SNKRDUNK's selling costs** (9.5% fee, ¥200/¥300 fixed fee, ¥1,000
+shipping). Below:
 
 - **Value over time:** worth against money spent since your first purchase, by Total / Singles /
-  Sealed / Pulls.
+  Sealed / Pulls, with a benchmark line: the same money put into the My-tier index on each purchase day.
 - **Singles:** a slab is worth the PSA10 price. A card bought raw is worth the raw A-rank price
   (the median of recent sales, never below the lowest ask) and shows the PSA10 ask against your DIY
-  cost, (price paid + grading & shipping) ÷ gem rate.
+  cost, (price paid + grading & shipping) ÷ gem rate. Under each card: how it moved since you bought it
+  against the My-tier index ("−2.6 pts vs the market"), where your price sat in its 30-day range ("Entry:
+  36%", 0% = the low), and for a slab the zone it was in that day. Two tiles average them over all singles.
+- **PSA submission planner** (the link under the switch, or from a card's Grade it? panel): tick the raw
+  cards to send together; it picks the service by the most valuable card's declared value (Standard takes up
+  to ¥150,000), adds up grading and one order's shipping, shows the return date, the expected number of 10s and
+  the expected gain over selling raw, and **Mark as sent** records them all with one form.
 - **Sealed:** unopened products at their lowest SNKRDUNK ask; opened ones by the value of their pulls,
   with a "Grade it?" verdict for raw pulls.
 - **Sold:** every sale with fees and profit, plus a yearly summary.
@@ -225,16 +236,21 @@ The **Track record** page scores the tracker's own advice against what prices di
 check, so nothing needs doing by hand. The "Buy / Watch calls" tile opens the **Scored calls** page.
 
 - **Calls:** each change of verdict tag (Buy ↔ Watch …) is one call. Rewrites with the same tag count
-  as "reaffirmed". A call is measured on the lowest PSA10 ask over the next 30 days:
+  as "reaffirmed". A call is measured on the lowest PSA10 ask over the next 30 days, and only counts in
+  the score once those 30 days are over (a Watch can be proven right early but wrong only at the end, so
+  counting early would favour Watch calls); calls decided early show "counts <date>":
   - A **Buy** is wrong once the ask drops more than the card's threshold below the call price, and
     right if that never happens.
   - A **Watch** is right once it drops more than the threshold. It's wrong if the window ends more than
     the threshold higher with no dip, and neutral otherwise.
   - The threshold is 5%, or the card's own normal swing between checks if larger (up to 10%), and a
     drop only counts after two checks in a row below it.
-- **Stated odds:** evaluations include `verdict.predictions`, e.g. `{"text": "Reaches Buy (≤¥70k) within 3 months", "p": 0.45, "type": "touch_below", "price": 70000, "by": "2026-12-25"}`. Each resolves as happened, didn't happen (deadline passed) or void (already true when made). The Brier score shows how well the odds are calibrated (0 = perfect, 0.25 = always saying 50%). `apply_analysis.py` validates predictions and warns when a reasoning text states odds without them.
+- **Vs. a call on every day:** the same rules for a Buy and a Watch call on every day, as the level the
+  calls have to beat (in a rising market nearly every Buy is "right").
+- **Return vs. the market:** each closed call's 30-day change minus the My-tier index's, averaged.
+- **Stated odds:** evaluations include `verdict.predictions`, e.g. `{"text": "Reaches Buy (≤¥70k) within 3 months", "p": 0.45, "type": "touch_below", "price": 70000, "by": "2026-12-25"}`. Each resolves as happened, didn't happen (deadline passed) or void (already true when made), and is scored once its deadline has passed. The Brier score shows how well the odds are calibrated (0 = perfect, 0.25 = always saying 50%). `apply_analysis.py` validates predictions and warns when a reasoning text states odds without them.
 - **Limit-odds model:** each full check logs the model's odds for every card's tier prices and your
-  limits (`data/odds_log.json`), scored the same way.
+  limits (`data/odds_log.json`), scored the same way, the 30-day and 90-day forecasts separately.
 
 ## Project layout
 
@@ -244,7 +260,8 @@ assets/app.js                   all client-side logic (fetches data/, renders ev
 assets/style.css                styling
 data/manifest.json              list of snapshots, in chronological order
 data/snapshots/*.json           one file per run — see docs/schema.md for the shape
-data/history.json               per-card price series across all snapshots (auto-rebuilt on every publish)
+data/history.json               per-card price, trading, favorites, listings and population series (auto-rebuilt on every publish)
+data/sales.json                 every PSA10 sale the checks saw, once each (auto-rebuilt on every publish)
 data/calls.json                 track record (auto-rebuilt on every publish)
 data/holdings.json              your purchases, sealed product, pulls and sales
 data/limits.json, sell_targets.json   limits and sell targets saved to all devices
@@ -258,6 +275,7 @@ scripts/log_purchase.py, set_limit.py, set_predictions.py, remove_card.py   run 
 scripts/*.py                    everything else (docs/HOW-IT-WORKS.md §11)
 pricecheck/                     the price-check skill's in-page scripts, plan and procedure
 widgets/psa10-widget.js         iPhone/iPad Home Screen widget (Scriptable)
+tests/                          checks that the site, the widget and the scripts apply the same rules
 docs/schema.md                  the data shapes: snapshot, analysis overlay, holdings and the other files
 docs/HOW-IT-WORKS.md            guide to how the code works
 .github/workflows/              deploy to Pages + the Actions behind the site's forms
@@ -306,7 +324,9 @@ python3 scripts/event_study.py                     # did prices actually dip aro
 ```
 
 The **correction rule** works the same way: while the My-tier index is down more than 10% over 30
-days, Buy-zone prices show as Watch.
+days, Buy-zone prices show as Watch. The **rally rule** is its counterpart, a flag only: while the index is up
+10% or more over 7 days, a banner says so (limits set before the rally are less likely to fill soon, a card
+still in its Buy zone is lagging, owned cards near their Take-profit zone are worth a look).
 
 ## Limit prices on every device
 
@@ -333,7 +353,17 @@ at or under your limit becomes a buy signal.
 `widgets/psa10-widget.js` is a [Scriptable](https://apps.apple.com/app/scriptable/id1405459188) widget that reads this site's public data:
 small = rotates through cards at your limit (first) or in a Buy zone, every ~15 min
 (widget parameter = a SNKRDUNK id pins one card); medium = buy signals + My-tier index;
-large = compact overview. It uses limits saved to all devices (`data/limits.json`) and doesn't know
-which cards you own.
+large = compact overview. It uses limits and sell targets saved to all devices (`data/limits.json`,
+`data/sell_targets.json`) and knows which cards you own (`data/holdings.json`): those never show a limit or Buy
+signal, but a sell signal (Sell / Take profit / Reassess, ranked after limit hits and before Buy signals) with
+their gain on what you paid.
 Setup: install Scriptable, create a new script, paste the file, then add a Scriptable
 widget to the Home Screen and choose the script. Tapping opens the tracker.
+
+## Tests
+
+Some rules exist twice: in the site and in the Python scripts the price checks run (raw A-rank price, trading
+rate, "What stands out", tier review, limit odds, event rule), or in the site and the widget (verdict pills,
+limit hits, sell signals, correction and rally rules). `python3 tests/test_rules.py` runs both sides on the repo's
+own snapshots and fails when they disagree (it needs Node: `brew install node`). GitHub Actions runs it on every
+push that changes code (`.github/workflows/tests.yml`). See docs/HOW-IT-WORKS.md §13.

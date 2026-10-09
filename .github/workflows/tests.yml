@@ -1,0 +1,36 @@
+name: Rules tests
+
+# The same rules live in the site (assets/app.js), the Python scripts and the widget. tests/test_rules.py runs them
+# on the repo's own data and fails when two versions disagree. Runs when code changes (not on price checks).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'assets/app.js'
+      - 'widgets/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    paths:
+      - 'assets/app.js'
+      - 'widgets/**'
+      - 'scripts/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Site, widget and Python rules agree on every snapshot
+        env:
+          RULES_N: '100000'
+        run: python3 tests/test_rules.py

@@ -76,9 +76,11 @@
     return capitalize((m ? m[1] : label).trim());
   }
 
+  // "名前 [SET 000/000](パック名)"; the pack can be missing ("名探偵ピカチュウ プロモ [SV-P 098]") and a note can follow it
+  // ("… ★grail"): the code is still read, like the Python scripts' \[([^\]]+)\] (odds_model.card_code).
   function parseCardName(name) {
-    const m = (name || '').match(/^(.*?)\s*\[([^\]]+)\]\s*\(([^)]+)\)\s*$/);
-    if (m) return { short: m[1].trim(), code: m[2].trim(), pack: m[3].trim() };
+    const m = (name || '').match(/^(.*?)\s*\[([^\]]+)\]\s*(?:\(([^)]+)\))?/);
+    if (m && m[1].trim()) return { short: m[1].trim(), code: m[2].trim(), pack: (m[3] || '').trim() };
     return { short: name || '', code: '', pack: '' };
   }
 
@@ -165,7 +167,54 @@
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
     valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
   };
-  const CACHE_KEY = 'psa10.cache.v1';
+  // The last loaded bundle, for an instant start, lives in IndexedDB: it's ~0.7 MB and grows with every check, and
+  // localStorage stops at about 5 MB (Safari). Without IndexedDB (some private modes) it falls back to localStorage,
+  // where a write that doesn't fit just isn't kept. v2: shape of 2026-10-09 (calls.json summary, history.json fields).
+  const CACHE_KEY = 'psa10.cache.v2', CACHE_OLD = ['psa10.cache.v1'];
+  const idb = {
+    db: null,
+    open() {
+      if (!this.db) {
+        this.db = new Promise((resolve) => {
+          const done = (v) => { clearTimeout(t); resolve(v); };
+          const t = setTimeout(() => resolve(null), 1500);   // a stuck open (seen in some WebViews) must not hold up the page
+          try {
+            const r = indexedDB.open('psa10', 1);
+            r.onupgradeneeded = () => r.result.createObjectStore('kv');
+            r.onsuccess = () => done(r.result);
+            r.onerror = r.onblocked = () => done(null);
+          } catch (e) { done(null); }
+        });
+      }
+      return this.db;
+    },
+    async get(key) {
+      const db = await this.open();
+      if (!db) return undefined;
+      return new Promise((resolve) => {
+        try { const q = db.transaction('kv').objectStore('kv').get(key); q.onsuccess = () => resolve(q.result); q.onerror = () => resolve(undefined); } catch (e) { resolve(undefined); }
+      });
+    },
+    async set(key, val) {
+      const db = await this.open();
+      if (!db) return false;
+      return new Promise((resolve) => {
+        try { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put(val, key); tx.oncomplete = () => resolve(true); tx.onerror = tx.onabort = () => resolve(false); } catch (e) { resolve(false); }
+      });
+    },
+  };
+  async function cacheRead() {
+    const v = await idb.get(CACHE_KEY);
+    if (v !== undefined) return v || null;
+    try { return localStorage.getItem(CACHE_KEY); } catch (e) { return null; }
+  }
+  async function cacheWrite(raw) {
+    if (await idb.set(CACHE_KEY, raw)) {
+      try { localStorage.removeItem(CACHE_KEY); CACHE_OLD.forEach((k) => localStorage.removeItem(k)); } catch (e) { /* nothing to free */ }
+      return;
+    }
+    try { CACHE_OLD.forEach((k) => localStorage.removeItem(k)); localStorage.setItem(CACHE_KEY, raw); } catch (e) { /* not persisted */ }
+  }
 
   async function loadFreshBundle(cached) {
     const optional = (path) => fetchJSON(path).catch(() => null);
@@ -251,7 +300,7 @@
     window.addEventListener('hashchange', onHashChange);
     // The cache is read and parsed once; its raw text doubles as the "did anything change" check below.
     let cachedRaw = null, cached = null;
-    try { cachedRaw = localStorage.getItem(CACHE_KEY); cached = cachedRaw ? JSON.parse(cachedRaw) : null; } catch (e) { cachedRaw = cached = null; }
+    try { cachedRaw = await cacheRead(); cached = cachedRaw ? JSON.parse(cachedRaw) : null; } catch (e) { cachedRaw = cached = null; }
     const freshP = loadFreshBundle(cached);
 
     let shown = null;
@@ -283,7 +332,7 @@
       const before = pending(); reconcileRemovals();
       if (pending() !== before) refreshRemoved();
     }
-    if (changed) { try { localStorage.setItem(CACHE_KEY, freshRaw); } catch (e) { /* not persisted */ } }
+    if (changed) cacheWrite(freshRaw);
   }
 
   async function loadIndex(idx) {
@@ -596,6 +645,48 @@
     return v;
   }
 
+  // Rally rule: the counterpart of the correction rule. While the My-tier index is up RALLY_PCT or more over
+  // RALLY_DAYS, the market is moving fast: limits set before the rally are less likely to fill soon (the odds model
+  // assumes no trend), a card still in its Buy zone is lagging the rally (worth checking why before buying), and owned
+  // cards near their Take-profit zone are worth a look. It's a flag only: no pill or signal changes.
+  const RALLY_PCT = 10, RALLY_DAYS = 7;
+  let rallyCache = null;
+  function rallyState() {
+    const key = (state.currentData && state.currentData.collected_at_jst) || '';
+    if (rallyCache && rallyCache.key === key) return rallyCache.v;
+    const ser = (state.customIndex && state.customIndex.series) || [];
+    const day = (key || new Date().toISOString()).slice(0, 10);
+    const past = new Date(Date.parse(day + 'T00:00:00Z') - RALLY_DAYS * 86400000).toISOString().slice(0, 10);
+    let now = null, then = null;
+    for (const e of ser) { if (e.d <= day) now = e; if (e.d <= past) then = e; }
+    const pct = now && then && then !== now ? (now.level / then.level - 1) * 100 : null;
+    const v = { active: pct != null && pct >= RALLY_PCT, pct, from: then ? then.d : null };
+    rallyCache = { key, v };
+    return v;
+  }
+  // Breadth of the My-tier index over `days`: how many constituents rose, the spread of their moves and how much of
+  // the level's move the top 3 cards made (equal weights: a card's share = its price change ÷ base price).
+  function indexBreadth(days, atDay) {
+    const ci = state.customIndex, ser = ((ci && ci.series) || []).filter((e) => e.prices);
+    if (ser.length < 2) return null;
+    const end = atDay ? [...ser].reverse().find((e) => e.d <= atDay) : ser[ser.length - 1];
+    if (!end) return null;
+    const cut = new Date(Date.parse(end.d + 'T00:00:00Z') - days * 86400000).toISOString().slice(0, 10);
+    const start = [...ser].reverse().find((e) => e.d <= cut);
+    if (!start) return null;
+    const meta = (ci.meta && ci.meta.constituents) || [];
+    const rows = meta.map((c) => {
+      const a = start.prices[c.code], b = end.prices[c.code];
+      return a && b ? { code: c.code, name: c.name || c.code, chg: (b / a - 1) * 100, contrib: (b - a) / c.base } : null;
+    }).filter(Boolean);
+    if (rows.length < 3) return null;
+    const chg = rows.map((r) => r.chg).sort((x, y) => x - y), q = (f) => chg[Math.round(f * (chg.length - 1))];
+    const total = rows.reduce((a, r) => a + r.contrib, 0);
+    const top = rows.slice().sort((x, y) => (total >= 0 ? y.contrib - x.contrib : x.contrib - y.contrib)).slice(0, 3);
+    return { from: start.d, to: end.d, n: rows.length, up: rows.filter((r) => r.chg > 0.5).length, down: rows.filter((r) => r.chg < -0.5).length,
+      median: q(0.5), q1: q(0.25), q3: q(0.75), top, topShare: total ? (top.reduce((a, r) => a + r.contrib, 0) / total) * 100 : null };
+  }
+
   function tagLabel(tag) {
     return VERDICT_TAG_LABELS[tag] || (tag || '').replace(/_/g, ' ');
   }
@@ -751,6 +842,8 @@
       up('rich');
       reasons.push(`Lowest ask ${fmtYen(ask)} is ${Math.round((ask / ref - 1) * 100)}% above recent sales (${fmtYen(ref)})`);
     }
+    const rl = rallyState();
+    if (rl.active && tiers && price != null && price >= tiers.take_profit_from * 0.95) reasons.push(`Market rally: My-tier index ${fmtPct(rl.pct)} over ${RALLY_DAYS} days with the price near or in the Take-profit zone`);
     const v = { tag, reasons, target, tierTag };
     sellCache.set(card, { key, v });
     return v;
@@ -859,7 +952,7 @@
       <div class="cd-stat"><div class="lbl">Worth now</div><div class="val">${fmtYen(ps.price)}</div><div class="s ${ps.gross >= 0 ? 'pos' : 'neg'}">${signedYen(ps.gross)}${ps.grossPct != null ? ' (' + fmtPct(ps.grossPct) + ')' : ''}</div></div>`}
       <div class="cd-stat"><div class="lbl">After selling costs</div><div class="val ${ps.net >= 0 ? 'pos' : 'neg'}">${signedYen(ps.net)}</div><div class="s muted">fee 9.5% + fixed fee + shipping${ps.netPct != null ? ' · ' + fmtPct(ps.netPct) : ''}</div></div>
       <div class="cd-stat"><div class="lbl">Break-even price</div><div class="val">${fmtYen(ps.be)}</div><div class="s muted">${ps.price >= ps.be ? fmtYen(ps.price - ps.be) + ' above' : fmtYen(ps.be - ps.price) + ' to go'}${ps.days != null ? ` · held ${ps.days} day${ps.days === 1 ? '' : 's'}` : ''}</div></div>
-    </div>`;
+    </div>${own.hs.map((h) => { const t = holdingTimingHtml(h, card); return t && own.n > 1 ? t.replace('<div class="pf-timing">', `<div class="pf-timing"><span class="muted">${escapeHtml(h.purchase_date || '')}:</span><i>·</i>`) : t; }).join('')}`;
   }
   // The live sell verdict (computed from today's price vs the written sell tiers), the written sell analysis
   // (folded) and the old buy-side analysis (folded, from before you owned it). Returns { html, dv }.
@@ -1348,6 +1441,24 @@
         <td>${fmtYen(p)}${carried ? ' <span class="muted">(carried)</span>' : ''}</td><td class="${dirClass(ch)}">${fmtPct(ch)}</td></tr>`).join('')}
       </tbody></table></div></details>`;
 
+    const br = indexBreadth(7), rl = rallyState();
+    let breadthHtml = '';
+    if (br) {
+      // share of cards up over 7 days, for each day with constituent prices (last 60 days)
+      const days = ser.filter((e) => e.prices && Date.parse(e.d) >= Date.parse(last.d) - 60 * 864e5).map((e) => e.d);
+      const pts = days.map((d) => { const b = indexBreadth(7, d); return b && b.to === d ? { x: Date.parse(d + 'T12:00:00+09:00'), y: (b.up / b.n) * 100, title: d, sub: `${b.up} of ${b.n} up · median ${fmtPct(b.median)}` } : null; }).filter(Boolean);
+      const bChart = pts.length >= 3 ? chartSlot({ type: 'line', xMode: 'time', height: 120, color: '#7cb8ff', label: 'Share of index cards up over 7 days', fmt: (v) => Math.round(v) + '%', fmtTip: (v) => Math.round(v) + '% up', refs: [{ y: 50, label: 'half', cls: 'norm', left: true }], points: pts }) : '';
+      breadthHtml = `<div class="ci-breadth"><div class="ci-bh"><span class="lbl">Breadth · ${escapeHtml(br.from.slice(5).replace('-', '/'))} → ${escapeHtml(br.to.slice(5).replace('-', '/'))}</span>${rl.active ? `<span class="due-chip">Rally rule on</span>` : ''}</div>
+        <div class="ci-stats">
+          ${cell('Cards up', `${br.up} of ${br.n}`)}
+          ${cell('Cards down', String(br.down))}
+          ${cell('Median card', fmtPct(br.median), dirClass(br.median))}
+          ${cell('Middle half', `${fmtPct(br.q1, 0)} to ${fmtPct(br.q3, 0)}`)}
+          ${cell('Top 3 share', br.topShare != null ? Math.round(br.topShare) + '%' : '—')}
+        </div>
+        <p class="ci-note">Over 7 days. Top 3 share = how much of the index's move its three biggest movers made (${escapeHtml(br.top.map((r) => `${r.name} ${fmtPct(r.chg, 0)}`).join(', '))}): a high share means a few cards carry the move, a low one that it's broad. Rally rule: on at +${RALLY_PCT}% over ${RALLY_DAYS} days (now ${fmtPct(rl.pct)}); correction rule: on at −${CORRECTION_PCT}% over 30 days.</p>
+        ${bChart ? `<div class="prem-ch"><div class="lbl">Share of the cards up over 7 days</div>${bChart}</div>` : ''}</div>`;
+    }
     el.innerHTML = `
       <h2 class="section-title">My-tier index</h2>
       <p class="ci-note">${escapeHtml(meta.selection || '')} Base ${escapeHtml(meta.base_date || '')} = ${meta.base_level || 100}. Updated once a day with the full check.${bfNote}</p>
@@ -1359,12 +1470,14 @@
         ${cell('Since base', fmtPct(since), dirClass(since))}
         ${cell('pokeca idx since base', fmtPct(pk != null ? pk - 100 : null), dirClass(pk != null ? pk - 100 : null))}
       </div>
+      ${breadthHtml}
       ${rangeBtns}
       ${chart}
       ${table}`;
     el.querySelectorAll('[data-rng]').forEach((b) => b.addEventListener('click', () => { store.set('psa10.ciRange', b.dataset.rng); renderCustomIndex(); }));
     const plot = el.querySelector('.ci-plot');
     if (plot) drawIndexChart(plot, view, { base, firstReal, pokecaRel, baseLevel: meta.base_level || 100 });
+    mountCharts(el);
   }
 
   // Time-based line chart with axes, gridlines and a hover/tap/keyboard crosshair.
@@ -2139,6 +2252,11 @@
       const held = (data.cards || []).filter(heldByCorrection).map((c) => parseCardName(c.card_name_ja).short);
       html += `<div class="banner warning"><strong>Correction rule on: ${escapeHtml(cs.name)} ${fmtPct(cs.pct)} over 30 days.</strong>While the market is still falling more than ${CORRECTION_PCT}% a month, only Definitely-buy prices count as a buy; cards in the Buy zone show as Watch${held.length ? ` (now: ${escapeHtml(held.join(', '))})` : ''}. Your own limit prices still trigger signals.</div>`;
     }
+    const rl = rallyState();
+    if (rl.active) {
+      const br = indexBreadth(RALLY_DAYS);
+      html += `<div class="banner auto"><strong>Rally rule on: My-tier index ${fmtPct(rl.pct)} over ${RALLY_DAYS} days${br ? `, ${br.up} of its ${br.n} cards up` : ''}.</strong>Prices across your tier are rising fast${br && br.topShare != null ? ` (the top 3 cards made ${Math.round(br.topShare)}% of the move: ${escapeHtml(br.top.map((r) => r.name).join(', '))})` : ''}. Limits set before the rally are less likely to fill soon, since the odds assume no trend; a card still in its Buy zone is lagging the rally, so check why before buying; and owned cards near their Take-profit zone are worth a look. Nothing changes the pills or signals.</div>`;
+    }
     (data.banners || []).forEach((b) => {
       const cls = b.type === 'warning' ? 'warning' : b.type === 'correction' ? 'correction' : '';
       html += `<div class="banner ${cls}"><strong>${escapeHtml(b.title || '')}</strong>${escapeHtml(b.body || '')}</div>`;
@@ -2152,13 +2270,13 @@
 
   // ---------- app shell: views + routing ----------
   // Hash routes: #/overview, #/collection, #/watching, #/holdings, #/planner,
-  // #/record, #/market, #/tables, #/more (phone), #/card/<snkrdunk id>,
+  // #/record, #/market, #/tables, #/more (phone), #/card/<snkrdunk id>, #/submit (PSA submission planner),
   // #/compare/<id>,<id> (head to head), #/duel/<id>,<id>,… (budget duel), #/combos (combination finder)
   // and #/rate/<id>,<id>,… (rate my portfolio).
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
     planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
-    compare: 'Head to head', duel: 'Budget duel', combos: 'Combination finder', rate: 'Rate my portfolio', scored: 'Scored calls', scout: 'Scout', predict: 'You vs the model', stories: 'Stories',
+    compare: 'Head to head', duel: 'Budget duel', combos: 'Combination finder', rate: 'Rate my portfolio', scored: 'Scored calls', submit: 'PSA submission planner', scout: 'Scout', predict: 'You vs the model', stories: 'Stories',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
@@ -2177,7 +2295,7 @@
     const { view, arg } = parseRoute();
     document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== view; });
     renderLazy(view);
-    const PARENT = { compare: 'collection', duel: 'planner', combos: 'planner', rate: 'planner', scored: 'record' };
+    const PARENT = { compare: 'collection', duel: 'planner', combos: 'planner', rate: 'planner', scored: 'record', submit: 'holdings' };
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
@@ -2202,7 +2320,7 @@
     } else if (PARENT[view]) {
       back.href = '#/' + PARENT[view];
       back.querySelector('span').textContent = VIEWS[PARENT[view]];
-      ({ title, sub } = view === 'compare' ? renderCompare(arg) : view === 'duel' ? renderDuel(arg) : view === 'combos' ? renderCombos() : view === 'rate' ? renderRate(arg) : renderScored());
+      ({ title, sub } = view === 'compare' ? renderCompare(arg) : view === 'duel' ? renderDuel(arg) : view === 'combos' ? renderCombos() : view === 'rate' ? renderRate(arg) : view === 'submit' ? renderSubmit() : renderScored());
     } else {
       state.cardFrom = view === 'more' ? 'overview' : view;
     }
@@ -2299,7 +2417,7 @@
     const tr = state.calls && state.calls.summary;
     const counts = {
       collection: market || '', watching: (cards.length - market) || '', holdings: (state.holdings.length + (state.sealed || []).length) || '',
-      record: tr && tr.calls_scored ? `${(tr.calls || {}).right || 0}–${(tr.calls || {}).wrong || 0}` : '',
+      record: tr && tr.calls_scored && tr.closed ? `${tr.closed.right || 0}–${tr.closed.wrong || 0}` : '',
       scout: scoutNewCount(),
       predict: predOpenCount(),
     };
@@ -2569,7 +2687,9 @@
   // rate unless you gave your own for this copy. Verdict: Grade it when your chance is 10+ points above the
   // break-even chance, Don't grade 10+ below, else Close call. Once a copy is sent (or was bought to grade) the
   // fee is spent: it only shows the expected result and the return date.
-  const GRADE_TIERS = { standard: { label: 'Standard', fee: 9980, days: 100 }, priority: { label: 'Priority', fee: 11980, days: 80 }, express: { label: 'Express', fee: 29980, days: 25 } };
+  // cap = the highest declared value (a card's value after grading) the service accepts; only Standard's is known
+  // (pricecheck/references/state.md), the others are null until someone reads them off PSA Japan's order screen.
+  const GRADE_TIERS = { standard: { label: 'Standard', fee: 9980, days: 100, cap: 150000 }, priority: { label: 'Priority', fee: 11980, days: 80, cap: null }, express: { label: 'Express', fee: 29980, days: 25, cap: null } };
   const GRADE_MARGIN = 0.10;
   function addBusinessDays(iso, n) {
     const d = new Date(iso + 'T12:00:00Z');
@@ -2638,7 +2758,129 @@
     if (!copies.length) return '';
     return `<div class="grade-panel"><div class="gp-head"><span class="limit-lbl">Grade it?</span><span class="muted">${copies.length} raw cop${copies.length === 1 ? 'y' : 'ies'} of this card</span></div>
       ${copies.map((c) => `<div class="gp-copy"><b>${c.kind === 'pull' ? 'Pull' : 'Bought raw'} ${escapeHtml(c.id)}</b>${gradeLineHtml(card, c)}</div>`).join('')}
-      <p class="cd-note">Values are net of selling costs; a non-10 is valued at the raw A-rank price. Grading takes months (PSA Standard about 100 business days), so the PSA10 price may have moved by the time it is back.</p></div>`;
+      <p class="cd-note">Values are net of selling costs; a non-10 is valued at the raw A-rank price. Grading takes months (PSA Standard about 100 business days), so the PSA10 price may have moved by the time it is back. <a href="#/submit">Plan a PSA submission ›</a></p></div>`;
+  }
+
+
+  // ---------- PSA submission planner (#/submit, opened from Holdings and the card page's Grade it? panel) ----------
+  // The raw copies not sent yet (singles bought raw, pulls kept raw): tick the ones to send together. One order uses one
+  // service, so "Auto" picks the cheapest whose declared-value cap covers the most valuable card (a card's declared value =
+  // its PSA10 price). Cost = grading fee × cards + shipping, insurance & handling once per order (an editable estimate:
+  // ¥2,450 is from a 1-card Standard order). Expected result per card as in gradeCalc: chance of a 10 × the PSA10 price
+  // after selling costs + the rest × the raw A-rank price after selling costs. "Mark as sent" opens one grading-info
+  // form for all ticked cards (scripts/log_purchase.py takes several ids).
+  const SUBMIT_KEY = 'psa10.submit';
+  function submitState() {
+    const st = store.get(SUBMIT_KEY, {});
+    return { sel: Array.isArray(st.sel) ? st.sel : null, tier: GRADE_TIERS[st.tier] ? st.tier : 'auto',
+             ship: typeof st.ship === 'number' && st.ship >= 0 ? st.ship : PSA_STD.ship + PSA_STD.handling, date: st.date || null };
+  }
+  // Raw copies: { kind, id, item, card, name, sent } for every raw single and raw / at-PSA pull.
+  function rawCopies() {
+    const cards = (state.currentData && state.currentData.cards) || [];
+    const find = (url) => cards.find((c) => c.url === url) || null;
+    const out = [];
+    for (const h of state.holdings) if (h.condition === 'raw_to_grade') out.push({ kind: 'holding', id: h.id, item: h, card: find(h.card_url), name: h.card_name_ja || '', sent: !!h.sent });
+    for (const sd of state.sealed || []) for (const pl of sd.pulls || []) {
+      if (pl.status === 'raw' || pl.status === 'grading') out.push({ kind: 'pull', id: pl.id, item: pl, card: pl.card_url ? find(pl.card_url) : null, name: pl.card_name_ja || '', sent: pl.status === 'grading' || !!pl.sent });
+    }
+    return out.filter((c) => c.id);
+  }
+  // One copy in a submission at a given service: chance of a 10, values after selling costs, expected result.
+  function submitCalc(c, tierKey) {
+    const card = c.card, it = c.item;
+    if (!card) return { missing: 'not a tracked card, so no prices' };
+    const psa = getRep(card), raw = rawPriceV(card), gem = it.gem_rate_pct != null ? it.gem_rate_pct : card.psa10_gem_rate_pct;
+    if (!psa || !raw || !gem) return { missing: !psa ? 'no PSA10 price yet' : !raw ? 'no raw A-rank price' : 'no gem rate (give your own chance of a 10 in the grading info)', psa };
+    const p = gem / 100, n10 = sellNet(psa), nraw = sellNet(raw);
+    const fee = GRADE_TIERS[tierKey].fee + PSA_STD.ship + PSA_STD.handling;   // one card on its own, for the verdict
+    const pBE = n10 > nraw ? fee / (n10 - nraw) : null;
+    const verdict = pBE == null || p <= pBE - GRADE_MARGIN ? 'dont' : p >= pBE + GRADE_MARGIN ? 'grade' : 'close';
+    return { psa, raw, p, gem, own: it.gem_rate_pct != null, n10, nraw, ev: p * n10 + (1 - p) * nraw, verdict, pBE };
+  }
+  function submitFormUrl(copies, tierKey, date) {
+    const q = { template: 'grading-info.yml', title: `Grading: ${copies.length} card${copies.length === 1 ? '' : 's'} sent ${date}`,
+      id: copies.map((c) => c.id).join(', '), sent: date, service: GRADE_TIERS[tierKey].label, status: 'Sending it to PSA' };
+    return `${REPO_URL}/issues/new?${new URLSearchParams(q)}`;
+  }
+  function submitLinkHtml() {
+    const all = rawCopies(), ready = all.filter((c) => !c.sent).length, away = all.length - ready;
+    return all.length ? `<a class="btn sub-link" href="#/submit">PSA submission planner · ${ready} raw to send${away ? ` · ${away} at PSA` : ''} ›</a>` : '';
+  }
+  function renderSubmit() {
+    const el = document.getElementById('submit-page');
+    const st = submitState(), all = rawCopies();
+    const todo = all.filter((c) => !c.sent), away = all.filter((c) => c.sent);
+    const save = (patch) => { store.set(SUBMIT_KEY, Object.assign(submitState(), patch)); const r = renderSubmit(); document.getElementById('page-sub').textContent = r.sub; };
+    if (!all.length) {
+      el.innerHTML = `<div class="empty-state">No raw copies to grade. Cards you buy raw (✓ Bought it → Raw) and raw pulls under a sealed product show up here.</div>`;
+      return { title: 'PSA submission planner', sub: '' };
+    }
+    const base = todo.map((c) => Object.assign({}, c, { std: submitCalc(c, 'standard') }));
+    const selIds = st.sel ? st.sel.filter((id) => todo.some((c) => c.id === id)) : base.filter((c) => !c.std.missing && c.std.verdict !== 'dont').map((c) => c.id);
+    const picked = base.filter((c) => selIds.includes(c.id));
+    const maxDecl = Math.max(0, ...picked.map((c) => (c.card && getRep(c.card)) || 0));
+    const autoKey = !maxDecl || maxDecl <= GRADE_TIERS.standard.cap ? 'standard' : 'priority';
+    const tierKey = st.tier === 'auto' ? autoKey : st.tier, tier = GRADE_TIERS[tierKey];
+    const date = st.date || todayJST();
+    const calc = picked.map((c) => Object.assign({}, c, { k: submitCalc(c, tierKey) }));
+    const priced = calc.filter((c) => !c.k.missing);
+    const cost = picked.length ? picked.length * tier.fee + st.ship : 0;
+    const ev = priced.reduce((a, c) => a + c.k.ev, 0), nraw = priced.reduce((a, c) => a + c.k.nraw, 0);
+    const gain = ev - nraw - cost, tens = priced.reduce((a, c) => a + c.k.p, 0);
+    const over = tier.cap != null ? picked.filter((c) => c.card && getRep(c.card) > tier.cap) : [];
+    const back = picked.length ? addBusinessDays(date, tier.days) : null;
+    const tierBtn = (k, l) => `<button type="button" data-tier="${k}" class="${st.tier === k ? 'on' : ''}">${l}</button>`;
+    const top = `<div class="pl-top">
+        <div class="pl-mode" role="group" aria-label="PSA service">${tierBtn('auto', `Auto (${GRADE_TIERS[autoKey].label})`)}${Object.entries(GRADE_TIERS).map(([k, t]) => tierBtn(k, t.label)).join('')}</div>
+        <label class="sub-field">Sent on <input type="date" class="sub-date" value="${escapeAttr(date)}"></label>
+        <label class="sub-field">Shipping, insurance &amp; handling per order ¥<input type="number" class="sub-ship" inputmode="numeric" min="0" step="10" value="${st.ship}"></label>
+      </div>`;
+    const summary = `<div class="pl-summary">
+        <div class="pl-stat"><div class="lbl">Cards</div><div class="val">${picked.length}</div><div class="tr-hint">of ${todo.length} raw cop${todo.length === 1 ? 'y' : 'ies'} not sent</div></div>
+        <div class="pl-stat"><div class="lbl">${escapeHtml(tier.label)} service</div><div class="val">${fmtYen(cost)}</div><div class="tr-hint">${picked.length} × ${fmtYen(tier.fee)} + ${fmtYen(st.ship)} per order${picked.length ? ` · ${fmtYen(cost / picked.length)} a card` : ''}</div></div>
+        <div class="pl-stat"><div class="lbl">Back around</div><div class="val">${back ? escapeHtml(back.slice(5).replace('-', '/')) : '—'}</div><div class="tr-hint">${tier.days} business days from ${escapeHtml(date)}</div></div>
+        <div class="pl-stat"><div class="lbl">Expected 10s</div><div class="val">${priced.length ? tens.toFixed(1) : '—'}</div><div class="tr-hint">${priced.length ? `of ${priced.length} priced card${priced.length === 1 ? '' : 's'}` : 'no priced card ticked'}</div></div>
+        <div class="pl-stat"><div class="lbl">Grading vs selling raw</div><div class="val ${priced.length ? (gain >= 0 ? 'pos' : 'neg') : ''}">${priced.length ? signedYen(gain) : '—'}</div><div class="tr-hint">expected, after selling costs and this order's cost</div></div>
+      </div>`;
+    const warn = [
+      over.length ? `${escapeHtml(over.map((c) => parseCardName(c.name).short).join(', '))} ${over.length === 1 ? 'is' : 'are'} worth more than ${tier.label}'s ${fmtYen(tier.cap)} declared-value limit as a PSA10: choose a higher service (or Auto).` : '',
+      tierKey !== 'standard' ? `The tracker doesn't know ${tier.label}'s declared-value limit: check it on PSA Japan's order screen.` : '',
+      picked.length && picked.length < calc.length ? '' : '',
+    ].filter(Boolean).map((t) => `<p class="cd-note warn">${t}</p>`).join('');
+    const row = (c) => {
+      const on = selIds.includes(c.id), k = on ? (calc.find((x) => x.id === c.id) || {}).k : c.std;
+      const nm = parseCardName((c.card && c.card.card_name_ja) || c.name);
+      const img = (c.card && c.card.image_url) || c.item.image_url;
+      const sub = k.missing ? escapeHtml(k.missing)
+        : `${Math.round(k.gem)}% chance of a 10${k.own ? ' (yours)' : ''} · PSA10 ${fmtYen(k.psa)} · raw ${fmtYen(k.raw)} · graded ${fmtYen(k.ev)} expected vs ${fmtYen(k.nraw)} raw, after selling costs`;
+      return `<label class="pl-row ${on ? 'on' : ''}">
+        <input type="checkbox" data-sub="${escapeAttr(c.id)}" ${on ? 'checked' : ''}>
+        <span class="wthumb pl-thumb">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+        <span class="pl-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.kind === 'pull' ? 'pull' : 'bought raw')} ${escapeHtml(c.id)}</span>${!c.std.missing ? ` <span class="vtag gr-${c.std.verdict}" title="On its own at Standard (¥${(GRADE_TIERS.standard.fee + PSA_STD.ship + PSA_STD.handling).toLocaleString()} all-in): it pays off at a ${c.std.pBE != null ? Math.ceil(c.std.pBE * 100) + '%+' : '—'} chance of a 10">${GRADE_LABELS[c.std.verdict]}</span>` : ''}</span>
+        <span class="pl-price">${k.psa ? fmtYen(k.psa) : '—'}<span class="pl-src">declared</span></span>
+        <span class="pl-sub">${sub}</span>
+      </label>`;
+    };
+    const awayHtml = away.length ? `<h2 class="section-title sub-h">At PSA now <span class="muted">${away.length}</span></h2><div class="pf-list">${away.map((c) => {
+      const t = GRADE_TIERS[c.item.tier] || GRADE_TIERS.standard, nm = parseCardName((c.card && c.card.card_name_ja) || c.name);
+      return `<div class="pf-row"><div class="pf-info"><div class="pf-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.id)}</span></div>
+        <div class="pf-meta">${c.item.sent ? `Sent ${escapeHtml(c.item.sent)} · ${escapeHtml(t.label)}${GRADE_TIERS[c.item.tier] ? '' : ' (assumed)'} · back around <b>${escapeHtml(addBusinessDays(c.item.sent, t.days))}</b>` : 'At PSA, no send date saved'} · <a class="pf-remove" href="${escapeAttr(gradingFormUrl({ id: c.id, item: c.item }, nm.short))}" target="_blank" rel="noopener">Grading info</a></div></div></div>`;
+    }).join('')}</div>` : '';
+    const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeAttr(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(date)} ↗</a>` : '';
+    el.innerHTML = top + summary + warn + `<div class="sub-acts">${sendBtn}<span class="muted">${picked.length ? 'opens one GitHub form for all ticked cards; submit it after you post them' : 'tick the cards to send'}</span></div>`
+      + (todo.length ? `<div class="pl-list">${base.map(row).join('')}</div>` : '<div class="empty-state">Every raw copy is at PSA.</div>') + awayHtml
+      + `<p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), and Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are business days from the send date. Ticks, service and shipping are saved in this browser.</p>`;
+    trimImages(el);
+    el.querySelectorAll('[data-tier]').forEach((b) => b.addEventListener('click', () => save({ tier: b.dataset.tier })));
+    el.querySelectorAll('[data-sub]').forEach((cb) => cb.addEventListener('change', () => {
+      const sel = new Set(selIds);
+      if (cb.checked) sel.add(cb.dataset.sub); else sel.delete(cb.dataset.sub);
+      save({ sel: [...sel] });
+    }));
+    const sd = el.querySelector('.sub-date'); if (sd) sd.addEventListener('change', () => save({ date: sd.value || null }));
+    const sh = el.querySelector('.sub-ship'); if (sh) sh.addEventListener('change', () => { const v = Number(sh.value); save({ ship: v >= 0 ? Math.round(v) : PSA_STD.ship + PSA_STD.handling }); });
+    return { title: 'PSA submission planner', sub: `${todo.length} raw cop${todo.length === 1 ? 'y' : 'ies'} to send · ${away.length} at PSA` };
   }
 
   // ---------- sealed product (data/holdings.json "sealed", written by GitHub Actions) ----------
@@ -2661,9 +2903,9 @@
   function removeIdUrl(id, name) { return `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'remove-purchase.yml', title: 'Remove: ' + name, id })}`; }
   function pullValue(p, cards) {
     const card = p.card_url ? cards.find((c) => c.url === p.card_url) : null;
-    if (card && p.status === 'psa10' && getRep(card) != null) return { v: getRep(card), src: 'PSA10 price', card };
-    const raw = card && rawPriceV(card);
-    if (card && raw && p.status !== 'graded_other') return { v: raw, src: 'raw A-rank price', card };
+    if (card && p.status === 'psa10' && markPsa(card) != null) return { v: markPsa(card), src: state.holdBasis === 'sales' ? 'PSA10 recent sales' : 'PSA10 price', card };
+    const raw = card && markRaw(card);
+    if (card && raw && p.status !== 'graded_other') return { v: raw, src: state.holdBasis === 'sales' ? 'raw A recent sales' : 'raw A-rank price', card };
     const held = !card && p.status !== 'psa10' && p.status !== 'graded_other' ? heldPrice(p.card_url) : null;
     if (held) return { v: held, src: 'raw A-rank price', card };
     if (p.value_jpy) return { v: p.value_jpy, src: 'your estimate', card };
@@ -2819,12 +3061,29 @@
   // readings, only from the day they were first read; before that: at cost). Same rules as the totals above the
   // list: an item with no price at all is left out of "worth" but still counts as spent.
   // Holdings values: at the lowest ask, or after SNKRDUNK's selling costs (sellNet: 9.5% fee, fixed fee, shipping per sale).
-  state.holdBasis = store.get('psa10.basis', 'ask') === 'net' ? 'net' : 'ask';
+  // 'ask' = lowest ask (raw copies at the raw A-rank price), 'sales' = median of recent one-copy sales (markPsa / markRaw),
+  // 'net' = the lowest ask minus SNKRDUNK's selling costs.
+  state.holdBasis = ['ask', 'sales', 'net'].includes(store.get('psa10.basis', 'ask')) ? store.get('psa10.basis', 'ask') : 'ask';
   const basisV = (v) => (v == null ? v : state.holdBasis === 'net' ? (v > 0 ? Math.max(0, Math.round(sellNet(v))) : 0) : v);
-  const basisWord = () => (state.holdBasis === 'net' ? 'Worth after selling costs' : 'Worth now');
+  const basisWord = () => (state.holdBasis === 'net' ? 'Worth after selling costs' : state.holdBasis === 'sales' ? 'Worth at recent sales' : 'Worth now');
+  const BASIS_NOTE = {
+    ask: 'The cheapest current listing (a raw copy at the raw A-rank price), before any selling costs.',
+    sales: 'The median of recent one-copy sales on SNKRDUNK (the last week\'s, or the last 5): closer to what a sale would actually fetch than the cheapest listing. Sealed products and cards without recent sales stay at the lowest ask.',
+    net: 'Each item as one sale at the lowest ask: 9.5% SNKRDUNK fee, ¥200 fixed fee (¥300 from ¥30,000) and ¥1,000 shipping come off.',
+  };
   function basisBarHtml() {
-    return `<div class="basis-bar"><span class="lbl">Show values</span><span class="seg" role="group" aria-label="Value basis"><button type="button" class="${state.holdBasis === 'ask' ? 'on' : ''}" data-basis="ask">Lowest ask</button><button type="button" class="${state.holdBasis === 'net' ? 'on' : ''}" data-basis="net">After selling costs</button></span>
-      <span class="muted">${state.holdBasis === 'net' ? 'Each item as one sale: 9.5% SNKRDUNK fee, ¥200 fixed fee (¥300 from ¥30,000) and ¥1,000 shipping come off.' : 'The cheapest current listing, before any selling costs.'}</span></div>`;
+    const b = (k, l) => `<button type="button" class="${state.holdBasis === k ? 'on' : ''}" data-basis="${k}">${l}</button>`;
+    return `<div class="basis-bar"><span class="lbl">Show values</span><span class="seg" role="group" aria-label="Value basis">${b('ask', 'Lowest ask')}${b('sales', 'Recent sales')}${b('net', 'After selling costs')}</span>
+      <span class="muted">${BASIS_NOTE[state.holdBasis]}</span></div>`;
+  }
+  // What a PSA10 / a raw A-rank copy of a tracked card is worth on the Holdings page, by the chosen basis (before basisV).
+  function markPsa(card) {
+    if (state.holdBasis === 'sales') { const m = salesMedianOf(((card.grades || {}).psa10 || {}).recent_completed_sales); if (m != null) return Math.round(m); }
+    return getRep(card);
+  }
+  function markRaw(card) {
+    if (state.holdBasis === 'sales') { const m = salesMedianOf(((card.grades || {}).raw_a_grade || {}).recent_completed_sales); if (m != null) return Math.round(m); }
+    return rawPriceV(card);
   }
   const PFH_KEY = 'psa10.pfh';
   const PFH_CATS = { total: 'Total', singles: 'Singles', sealed: 'Sealed', pulls: 'Pulls' };
@@ -2835,8 +3094,9 @@
     const tracked = new Set(cards.map((c) => c.url));
     const phist = (state.portHist || []).map((x) => ({ t: Date.parse(x.d.slice(0, 10) + 'T00:00:00+09:00'), p: x.p || {} }))   // a day's reading counts from the start of that day, so today's last point equals today's price.sort((a, b) => a.t - b.t);
     const lastAt = (arr, T, pick) => { let v = null; for (const x of arr) { if (x.t > T) break; const y = pick(x); if (y != null) v = y; } return v; };
-    const psaAt = (url, T) => lastAt(snaps, T, (x) => (x.p[url] ? x.p[url][0] : null));
-    const rawAt = (url, T) => lastAt(snaps, T, (x) => (x.r[url] && (x.r[url][4] || x.r[url][1])) || null); // [4] = raw A-rank price (rawPrice rule), [1] = ask in older entries
+    const sales = state.holdBasis === 'sales';   // "Recent sales": the sales medians history.json keeps per check ([2] PSA10, [3] raw A)
+    const psaAt = (url, T) => lastAt(snaps, T, (x) => (sales && x.r[url] && x.r[url][2]) || (x.p[url] ? x.p[url][0] : null));
+    const rawAt = (url, T) => lastAt(snaps, T, (x) => (sales && x.r[url] && x.r[url][3]) || (x.r[url] && (x.r[url][4] || x.r[url][1])) || null); // [4] = raw A-rank price (rawPrice rule), [1] = ask in older entries
     const heldAt = (url, T) => { const id = (url || '').replace(/\/$/, '').split('/').pop(); return lastAt(phist, T, (x) => x.p[id]); };
     const now = snaps.length ? snaps[snaps.length - 1].t : Date.now();
     // purchases
@@ -2886,18 +3146,22 @@
     // sold items stay in the history until their sale; from then on they count as the cash received
     for (const r of state.sold || []) {
       const t = dayT(r.bought), ts = dayT(r.sold_date), cost = r.cost_jpy || 0, cash = r.sold_price_jpy - (r.fees_jpy || 0), url = r.card_url || r.url, q = r.qty || 1;
-      items.push({ cat: r.kind === 'single' ? 'singles' : 'sealed', t, cost, at: (T) => {
+      items.push({ cat: r.kind === 'single' ? 'singles' : 'sealed', t, cost, end: ts, at: (T) => {
         if (T >= ts) return cash;
         const v = r.kind === 'single' ? (tracked.has(url) ? psaAt(url, T) : heldAt(url, T)) : (heldAt(url, T) != null ? heldAt(url, T) * q : null);
         return v != null ? basisV(v) : cost;
       } });
     }
+    // Benchmark: the same money put into the My-tier index on each purchase day (and taken out on a sale day).
+    const lvl = (T) => { const e = myTierAt(new Date(T).toISOString()); return e ? e.level : null; };
     const pts = times.map((T) => {
-      const o = { t: T, spent: { total: 0, singles: 0, sealed: 0, pulls: 0 }, worth: { total: 0, singles: 0, sealed: 0, pulls: 0 } };
+      const o = { t: T, spent: { total: 0, singles: 0, sealed: 0, pulls: 0 }, worth: { total: 0, singles: 0, sealed: 0, pulls: 0 }, bench: { total: 0, singles: 0, sealed: 0, pulls: 0 } };
       for (const it of items) {
         if (it.t > T) continue;
         const v = it.at(T);
-        o.spent[it.cat] += it.cost; o.spent.total += it.cost; o.worth[it.cat] += v; o.worth.total += v;
+        const b0 = lvl(it.t), b1 = lvl(it.end != null ? Math.min(T, it.end) : T);
+        const b = b0 && b1 ? basisV(it.cost * (b1 / b0)) : it.cost;
+        o.spent[it.cat] += it.cost; o.spent.total += it.cost; o.worth[it.cat] += v; o.worth.total += v; o.bench[it.cat] += b; o.bench.total += b;
       }
       return o;
     });
@@ -2916,14 +3180,14 @@
     let pts = ser.pts.filter((p) => p.t >= cutoff);
     if (pts.length < 2) pts = ser.pts.slice(-2);
     const cat = st.cat, W = Math.max(300, Math.round(box.clientWidth || 640));
-    const row = (p) => ({ t: p.t, w: p.worth[cat], s: p.spent[cat], r: p.worth[cat] - p.spent[cat] });
+    const row = (p) => ({ t: p.t, w: p.worth[cat], s: p.spent[cat], r: p.worth[cat] - p.spent[cat], b: p.bench[cat] });
     const rows = pts.map(row), last = rows[rows.length - 1];
     const buys = ser.buys.filter((b) => (cat === 'total' || b.cat === cat) && b.t >= pts[0].t && b.t <= pts[pts.length - 1].t + 86400000);
     const H = W < 520 ? 190 : 230, H2 = 84, m = { l: 62, r: 14, t: 10, b: 26 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b, ih2 = H2 - 16;
     const t0 = rows[0].t, t1 = rows[rows.length - 1].t;
     const X = (t) => m.l + ((t - t0) * iw) / (t1 - t0 || 1);
-    const hi0 = Math.max(...rows.map((r) => Math.max(r.w, r.s)), 1);
+    const hi0 = Math.max(...rows.map((r) => Math.max(r.w, r.s, r.b)), 1);
     const mag = Math.pow(10, Math.floor(Math.log10(hi0 / 4))), step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= hi0 / 4) || 10 * mag;
     const hi = Math.ceil(hi0 / step) * step;
     const Y = (v) => m.t + ih * (1 - v / hi);
@@ -2939,16 +3203,18 @@
     const resP = rows.map((r, i) => `${i ? 'L' : 'M'}${X(r.t).toFixed(1)},${Yr(r.r).toFixed(1)}`).join(' ');
     const resArea = `${resP} L${X(t1).toFixed(1)},${Yr(0).toFixed(1)} L${X(t0).toFixed(1)},${Yr(0).toFixed(1)} Z`;
     const good = last.r >= 0;
+    const hasBench = !!(state.customIndex && state.customIndex.series && state.customIndex.series.length);
+    const vsB = last.w - last.b;
     const rangeBtns = [['30', '30 days'], ['90', '90 days'], ['all', 'All']].map(([k, l]) => `<button type="button" class="${st.range === k ? 'on' : ''}" data-pf-range="${k}">${l}</button>`).join('');
     const catBtns = Object.entries(PFH_CATS).map(([k, l]) => `<button type="button" class="${cat === k ? 'on' : ''}" data-pf-cat="${k}">${l}</button>`).join('');
-    const tableRows = rows.slice().reverse().slice(0, 40).map((r) => `<tr><td>${fmtD(r.t)}</td><td>${fmtYen(r.s)}</td><td>${fmtYen(r.w)}</td><td class="${r.r >= 0 ? 'pos' : 'neg'}">${signedYen(r.r)}</td></tr>`).join('');
+    const tableRows = rows.slice().reverse().slice(0, 40).map((r) => `<tr><td>${fmtD(r.t)}</td><td>${fmtYen(r.s)}</td><td>${fmtYen(r.w)}</td><td class="${r.r >= 0 ? 'pos' : 'neg'}">${signedYen(r.r)}</td><td>${fmtYen(r.b)}</td></tr>`).join('');
     box.innerHTML = `<div class="pfh-head"><h2 class="section-title">Value over time</h2>
         <div class="pfh-ctl"><span class="seg" role="group" aria-label="Portfolio part">${catBtns}</span><span class="seg" role="group" aria-label="Range">${rangeBtns}</span></div></div>
-      <div class="pfh-read" id="pfh-read"><span><i class="pfh-key w"></i>${state.holdBasis === 'net' ? 'Net worth' : 'Worth'} <b>${fmtYen(last.w)}</b></span><span><i class="pfh-key s"></i>Spent <b>${fmtYen(last.s)}</b></span><span class="${good ? 'pos' : 'neg'}">${good ? '▲' : '▼'} Result <b>${signedYen(last.r)}</b></span><span class="muted">${fmtD(last.t)}</span>${(state.sold || []).length ? `<span class="muted">worth includes ${fmtYen(soldTotals().cash)} received from sales</span>` : ''}</div>
+      <div class="pfh-read" id="pfh-read"><span><i class="pfh-key w"></i>${state.holdBasis === 'net' ? 'Net worth' : 'Worth'} <b>${fmtYen(last.w)}</b></span><span><i class="pfh-key s"></i>Spent <b>${fmtYen(last.s)}</b></span><span class="${good ? 'pos' : 'neg'}">${good ? '▲' : '▼'} Result <b>${signedYen(last.r)}</b></span>${hasBench ? `<span title="The same money put into the My-tier index on each purchase day"><i class="pfh-key bm"></i>In the My-tier index <b>${fmtYen(last.b)}</b> <span class="${vsB >= 0 ? 'pos' : 'neg'}">(you ${signedYen(vsB)})</span></span>` : ''}<span class="muted">${fmtD(last.t)}</span>${(state.sold || []).length ? `<span class="muted">worth includes ${fmtYen(soldTotals().cash)} received from sales</span>` : ''}</div>
       <div class="pfh-wrap"><svg width="${W}" height="${H + H2}" viewBox="0 0 ${W} ${H + H2}" role="img" aria-label="Portfolio worth and money spent over time">
         ${yTicks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${fmtYenShort(v)}</text>`).join('')}
         ${xTicks.map((t) => `<text x="${X(t).toFixed(1)}" y="${m.t + ih + 17}" class="ci-xtick">${fmtD(t)}</text>`).join('')}
-        <path d="${stepP}" class="pfh-spent"/><path d="${lineP('w')}" class="pfh-worth"/>
+        <path d="${stepP}" class="pfh-spent"/>${hasBench ? `<path d="${lineP('b')}" class="pfh-bench"/>` : ''}<path d="${lineP('w')}" class="pfh-worth"/>
         ${buys.map((b) => `<g class="pfh-buy"><title>${escapeHtml(`${fmtD(b.t)}: bought ${b.name} for ${fmtYen(b.cost)}`)}</title><path d="M${X(Math.max(b.t, t0)).toFixed(1)},${m.t + ih - 2}l5,-7l-5,-7l-5,7z"/></g>`).join('')}
         <g transform="translate(0,${H})"><text x="${m.l}" y="6" class="pfh-sub">Result (worth minus spent)</text>
           <line x1="${m.l}" x2="${m.l + iw}" y1="${Yr(0).toFixed(1)}" y2="${Yr(0).toFixed(1)}" class="ci-axis"/>
@@ -2957,8 +3223,8 @@
         <line class="pfh-cross" id="pfh-cross" x1="0" x2="0" y1="${m.t}" y2="${H + H2 - 8}" hidden/>
         <rect x="${m.l}" y="0" width="${iw}" height="${H + H2}" fill="transparent" id="pfh-hit"/></svg>
         <div class="pfh-tip" id="pfh-tip" hidden></div></div>
-      <div class="ci-legend"><span><i class="pfh-key w"></i>${state.holdBasis === 'net' ? 'Worth after selling costs' : 'Worth now (lowest ask)'}</span><span><i class="pfh-key s"></i>Spent in total</span><span><i class="pfh-key b"></i>Purchase</span><span class="muted">Sealed and untracked items are valued at cost until their first price reading${state.portHist.length ? ` (${state.portHist[0].d})` : ''}.</span></div>
-      <details class="pfh-table"><summary>Show as a table</summary><div class="table-scroll"><table><thead><tr><th>Date</th><th>Spent</th><th>Worth</th><th>Result</th></tr></thead><tbody>${tableRows}</tbody></table></div></details>`;
+      <div class="ci-legend"><span><i class="pfh-key w"></i>${state.holdBasis === 'net' ? 'Worth after selling costs' : state.holdBasis === 'sales' ? 'Worth at recent sales' : 'Worth now (lowest ask)'}</span><span><i class="pfh-key s"></i>Spent in total</span><span><i class="pfh-key b"></i>Purchase</span>${hasBench ? '<span><i class="pfh-key bm"></i>Same money in the My-tier index</span>' : ''}<span class="muted">Sealed and untracked items are valued at cost until their first price reading${state.portHist.length ? ` (${state.portHist[0].d})` : ''}.</span></div>
+      <details class="pfh-table"><summary>Show as a table</summary><div class="table-scroll"><table><thead><tr><th>Date</th><th>Spent</th><th>Worth</th><th>Result</th><th>In the My-tier index</th></tr></thead><tbody>${tableRows}</tbody></table></div></details>`;
     box.querySelectorAll('[data-pf-range]').forEach((b) => b.addEventListener('click', () => setSt('range', b.dataset.pfRange)));
     box.querySelectorAll('[data-pf-cat]').forEach((b) => b.addEventListener('click', () => setSt('cat', b.dataset.pfCat)));
     const hit = box.querySelector('#pfh-hit'), cross = box.querySelector('#pfh-cross'), tip = box.querySelector('#pfh-tip');
@@ -2966,7 +3232,7 @@
       const r = hit.getBoundingClientRect(), t = t0 + ((clientX - r.left) / r.width) * (t1 - t0);
       const q = rows.reduce((best, x) => (Math.abs(x.t - t) < Math.abs(best.t - t) ? x : best), rows[0]);
       cross.setAttribute('x1', X(q.t)); cross.setAttribute('x2', X(q.t)); cross.hidden = false;
-      tip.innerHTML = `<b>${fmtD(q.t)}</b><span>Worth ${fmtYen(q.w)}</span><span>Spent ${fmtYen(q.s)}</span><span class="${q.r >= 0 ? 'pos' : 'neg'}">Result ${signedYen(q.r)}</span>`;
+      tip.innerHTML = `<b>${fmtD(q.t)}</b><span>Worth ${fmtYen(q.w)}</span><span>Spent ${fmtYen(q.s)}</span><span class="${q.r >= 0 ? 'pos' : 'neg'}">Result ${signedYen(q.r)}</span>${hasBench ? `<span class="muted">My-tier index ${fmtYen(q.b)}</span>` : ''}`;
       tip.hidden = false;
       const wrap = tip.parentNode.getBoundingClientRect(), x = X(q.t) * (wrap.width / W);
       tip.style.left = Math.min(Math.max(8, x + 10), wrap.width - tip.offsetWidth - 4) + 'px';
@@ -2974,6 +3240,73 @@
     hit.addEventListener('pointermove', (e) => show(e.clientX));
     hit.addEventListener('pointerleave', () => { cross.hidden = true; tip.hidden = true; });
     if (window.ResizeObserver && !box._ro) { let lw = box.clientWidth; box._ro = new ResizeObserver(() => { const w = box.clientWidth; if (w && Math.abs(w - lw) > 2) { lw = w; drawPortfolioChart(); } }); box._ro.observe(box); }
+  }
+
+
+  // ---------- how your bought cards move: vs the market since purchase, and entry timing ----------
+  // From history.json: the card's price on the purchase day (PSA10 price for a slab, raw A-rank price for a raw copy)
+  // against today's, next to the My-tier index over the same days; and where the price you paid sat in the card's
+  // 30 days before the purchase and against the tiers it had that day (history.json "tier_log").
+  const DAY_MS = 864e5;
+  const psaPick = (e, url) => (e.p && e.p[url] ? e.p[url][0] : null);
+  const rawPick = (e, url) => (e.r && e.r[url] ? (e.r[url][4] || e.r[url][1] || null) : null);
+  function histPoints(url, pick) {
+    return ((state.hist && state.hist.snapshots) || []).map((e) => ({ t: Date.parse(e.d), d: e.d, v: pick(e, url) }))
+      .filter((x) => x.v != null && !isNaN(x.t)).sort((a, b) => a.t - b.t);
+  }
+  const dayEndJst = (d) => Date.parse(d + 'T23:59:59+09:00');
+  function tiersOn(url, day) {
+    const log = (state.hist && state.hist.tier_log && state.hist.tier_log[url]) || [];
+    let t = null;
+    for (const x of log) if (Date.parse(x[0]) <= dayEndJst(day)) t = x;
+    return t ? { since: t[0], definitely_buy: t[1], buy_upper: t[2], ceiling: t[3] } : null;
+  }
+  function holdingTiming(h, card) {
+    if (!h || !h.purchase_date || !card) return null;
+    const raw = h.condition === 'raw_to_grade';
+    const ser = histPoints(card.url, raw ? rawPick : psaPick);
+    const ref = Date.parse(refTime());
+    const upto = ser.filter((x) => x.t <= ref);
+    if (!upto.length) return null;
+    const tb = dayEndJst(h.purchase_date);
+    let at = null;
+    for (const x of upto) if (x.t <= tb) at = x;
+    const before = !!at;                       // false: bought before tracking began, so measured from the first check
+    if (!at) at = upto[0];
+    const now = upto[upto.length - 1];
+    const win = ser.filter((x) => x.t <= tb && x.t > tb - 30 * DAY_MS);
+    const range = win.length >= 3 ? { lo: Math.min(...win.map((x) => x.v)), hi: Math.max(...win.map((x) => x.v)), n: win.length } : null;
+    const paid = h.purchase_price_jpy || 0;
+    const pos = range && paid && range.hi > range.lo ? ((paid - range.lo) / (range.hi - range.lo)) * 100 : null;
+    const tiers = raw ? null : tiersOn(card.url, h.purchase_date);
+    const zone = tiers && paid ? liveTagOf(tiers, paid) : null;
+    const vsBuy = tiers && paid ? (paid / tiers.buy_upper - 1) * 100 : null;
+    const mkt = now.t > at.t ? marketMove(at.d, now.d) : null;
+    const cardPct = (now.v / at.v - 1) * 100;
+    return { raw, at, now, before, range, pos, paid, tiers, zone, vsBuy, cardPct, mkt, gap: mkt ? cardPct - mkt.pct : null,
+      days: Math.max(0, Math.round((now.t - at.t) / DAY_MS)) };
+  }
+  const ptsTxt = (v) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)} pts`;
+  function holdingTimingHtml(h, card) {
+    const x = holdingTiming(h, card);
+    if (!x) return '';
+    const what = x.raw ? 'raw A-rank' : 'PSA10';
+    const since = x.days < 1 ? '' : x.mkt
+      ? `<span title="${escapeAttr(`${what} price ${fmtYen(x.at.v)} on ${x.at.d.slice(0, 10)} → ${fmtYen(x.now.v)} now; ${x.mkt.name} ${fmtPct(x.mkt.pct)} over the same days`)}">${x.before ? 'Since you bought' : `Since the first check (${escapeHtml(x.at.d.slice(5, 10).replace('-', '/'))})`}: ${what} ${fmtPct(x.cardPct)} vs ${escapeHtml(x.mkt.name)} ${fmtPct(x.mkt.pct)} → <b class="${dirClass(x.gap)}">${ptsTxt(x.gap)}</b> vs the market</span>`
+      : `<span>${x.before ? 'Since you bought' : 'Since the first check'}: ${what} ${fmtPct(x.cardPct)}</span>`;
+    const entry = x.pos != null
+      ? `<span title="${escapeAttr(`The ${what} price ranged ${fmtYen(x.range.lo)}–${fmtYen(x.range.hi)} over the 30 days before you bought (${x.range.n} checks); you paid ${fmtYen(x.paid)}. 0% = the low, 100% = the high.`)}">Entry: <b>${Math.round(x.pos)}%</b> of its 30-day range (${fmtYenShort(x.range.lo)}–${fmtYenShort(x.range.hi)})</span>`
+      : x.before ? '<span class="muted">Entry: fewer than 3 checks in the 30 days before you bought</span>' : '<span class="muted">Entry: bought before tracking began</span>';
+    const tz = x.zone ? `<span title="${escapeAttr(`Tiers on ${h.purchase_date}: Definitely-buy ≤${fmtYen(x.tiers.definitely_buy)}, Buy ≤${fmtYen(x.tiers.buy_upper)}, ceiling ${fmtYen(x.tiers.ceiling)}`)}">${tagLabel(x.zone)} zone that day (${fmtPct(x.vsBuy)} vs the Buy line)</span>` : '';
+    return `<div class="pf-timing">${[since, entry, tz].filter(Boolean).join('<i>·</i>')}</div>`;
+  }
+  // Averages over every single with the data, for the Holdings summary.
+  function timingSummary(holdings, cards) {
+    const xs = holdings.map((h) => holdingTiming(h, cards.find((c) => c.url === h.card_url))).filter(Boolean);
+    const gaps = xs.filter((x) => x.gap != null && x.days >= 1), pos = xs.filter((x) => x.pos != null), z = xs.filter((x) => x.zone);
+    const avg = (a) => (a.length ? a.reduce((p, q) => p + q, 0) / a.length : null);
+    return { n: xs.length, gap: avg(gaps.map((x) => x.gap)), nGap: gaps.length, beat: gaps.filter((x) => x.gap > 0).length,
+      pos: avg(pos.map((x) => x.pos)), nPos: pos.length, buyZone: z.filter((x) => x.zone === 'buy' || x.zone === 'definitely_buy').length, nZone: z.length };
   }
 
   // A single bought raw: how the raw A-rank price moved against what you paid, how the PSA10 ask moved against your
@@ -2995,7 +3328,7 @@
     renderHoldingsAside(currentCards);
     const bb = document.getElementById('basis-bar');
     if (bb) {
-      bb.innerHTML = state.holdings.length || (state.sealed || []).length ? basisBarHtml() : '';
+      bb.innerHTML = state.holdings.length || (state.sealed || []).length ? basisBarHtml() + submitLinkHtml() : '';
       bb.querySelectorAll('[data-basis]').forEach((b) => b.addEventListener('click', () => { state.holdBasis = b.dataset.basis; store.set('psa10.basis', state.holdBasis); render(); }));
     }
     drawPortfolioChart();
@@ -3034,6 +3367,8 @@
         <div class="pf-stat"><div class="lbl">Current value</div><div class="val">${fmtYen(totalValue)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">slabs at the PSA10 price, raw cards at the raw A-rank price</div>` : ''}</div>
         <div class="pf-stat"><div class="lbl">Unrealized P&amp;L</div><div class="val ${totalPnl >= 0 ? 'pos' : 'neg'}">${totalPnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(totalPnl))}${totalPnlPct != null ? ' (' + fmtPct(totalPnlPct) + ')' : ''}</div></div>
         ${matchedCount < holdings.length ? `<div class="pf-stat"><div class="lbl">Untracked</div><div class="val muted">${holdings.length - matchedCount} card${holdings.length - matchedCount === 1 ? '' : 's'}</div></div>` : ''}
+        ${(() => { const t = timingSummary(holdings, currentCards); return (t.nGap ? `<div class="pf-stat" title="Each single's price change since its purchase day minus the My-tier index's over the same days, averaged"><div class="lbl">Vs. the market</div><div class="val ${dirClass(t.gap)}">${ptsTxt(t.gap)}</div><div class="kpi-d muted">average since purchase · ${t.beat} of ${t.nGap} beat the market</div></div>` : '')
+          + (t.nPos || t.nZone ? `<div class="pf-stat" title="Where the price you paid sat between the card's low (0%) and high (100%) of the 30 days before the purchase"><div class="lbl">Entry timing</div><div class="val">${t.nPos ? Math.round(t.pos) + '%' : '—'}</div><div class="kpi-d muted">${t.nPos ? `of the 30-day range, average of ${t.nPos}` : ''}${t.nPos && t.nZone ? ' · ' : ''}${t.nZone ? `${t.buyZone} of ${t.nZone} slabs bought in a Buy zone` : ''}</div></div>` : ''); })()}
       `;
     } else {
       els.portfolioSummary.innerHTML = `<div class="pf-stat"><div class="lbl">Status</div><div class="val muted">No current price data for any held card yet</div></div>`;
@@ -3055,6 +3390,7 @@
             <div class="pf-name">${nameHtml}</div>
             <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(soldFormUrl(h.id, parseCardName(h.card_name_ja || '').short, soldPrefill(h, match)))}" target="_blank" rel="noopener">Sold it</a> · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
             ${h.condition === 'raw_to_grade' && h.id && match ? gradeMetaHtml(match, { kind: 'holding', id: h.id, item: h }) : ''}
+            ${holdingTimingHtml(h, match)}
           </div>
           ${h.condition === 'raw_to_grade' ? rawHoldingCols(h, match) : `<div class="pf-current">
             <div class="val">${currentPrice != null ? fmtYen(currentPrice) : '—'}</div>
@@ -3217,8 +3553,8 @@
   // A slab at the PSA10 price, a raw card at the raw A-rank price (not the PSA10 price, not the DIY cost). null when
   // there is no price (an untracked slab, or a raw card without a raw price).
   function holdingValue(h, card) {
-    if (h.condition === 'raw_to_grade') return card ? rawPriceV(card) : heldPrice(h.card_url);
-    return card ? getRep(card) : null;
+    if (h.condition === 'raw_to_grade') return card ? markRaw(card) : heldPrice(h.card_url);
+    return card ? markPsa(card) : null;
   }
   // What you paid for a single, without grading or shipping (grading is a separate cost, see holdingCost).
   function holdingPaid(h) { return h.purchase_price_jpy || 0; }
@@ -3505,7 +3841,7 @@
         <div class="cd-stat"><div class="lbl">Recent sales</div><div class="val">${salesRangeText(psa10.recent_completed_sales)}</div></div>
         ${heatStatHtml(card)}
         <div class="cd-stat"><div class="lbl">Favorites</div><div class="val">${favHtml}</div></div>
-        <div class="cd-stat"><div class="lbl">Population · gem rate</div><div class="val">${popText}${card.population_as_of ? asOfHtml(card.population_as_of) : ''}</div></div>
+        <div class="cd-stat"><div class="lbl">Population · gem rate</div><div class="val">${popText}${card.population_as_of ? asOfHtml(card.population_as_of) : ''}${popGrowthTxt(card)}</div></div>
         <div class="cd-stat" title="${escapeAttr(rawPriceNote(rawPrice(card)))}"><div class="lbl">Raw A-rank</div><div class="val">${rawPriceV(card) != null ? fmtYen(rawPriceV(card)) : '—'}${raw && raw.lowest_price != null && rawPriceV(card) !== raw.lowest_price ? `<small class="muted"> · ask ${fmtYenShort(raw.lowest_price)}</small>` : ''}</div></div>
       </div>`;
 
@@ -3800,7 +4136,7 @@
   function cardAgeMonths(card) {
     const vm = state.valueModel, rel = vm && vm.release && vm.release[vmCode(card)];
     if (!rel) return null;
-    const now = new Date(Date.now() + 9 * 3600e3);
+    const now = new Date(Date.parse(refTime()) + 9 * 3600e3);   // the shown snapshot's month, like scripts/review_due.py
     return (now.getUTCFullYear() * 12 + now.getUTCMonth()) - (+rel.slice(0, 4) * 12 + (+rel.slice(5, 7) - 1));
   }
   function ageDrift(age, h) {
@@ -4424,19 +4760,36 @@
     const sm = tr.summary || {};
     const c = sm.calls || {};
     const win = tr.window_days || 30, th = Math.round((tr.threshold || 0.05) * 100);
-    const brier = sm.brier != null
-      ? `<div class="pl-stat"><div class="lbl">Odds accuracy (Brier)</div><div class="val ${sm.brier <= 0.2 ? 'pos' : sm.brier > 0.25 ? 'neg' : ''}">${sm.brier.toFixed(2)}</div><div class="tr-hint">0 = perfect · 0.25 = always saying 50%</div><div class="tr-explain">How well the chances written in the evaluations (e.g. “45% it reaches ¥70k by December”) match what happened. Lower is better: under 0.20 is good, above 0.25 is worse than always guessing 50%.</div></div>
-         <div class="pl-stat"><div class="lbl">Expected vs happened</div><div class="val">${sm.expected_yes} vs ${sm.actual_yes}</div><div class="tr-hint">of ${sm.odds_resolved} resolved</div><div class="tr-explain">The stated chances added up give how many predictions should have come true (first number); the second is how many did. The closer the two, the better calibrated the odds.${sm.odds_resolved < 10 ? ' With this few resolved, the numbers still swing a lot.' : ''}</div></div>`
-      : `<div class="pl-stat"><div class="lbl">Stated odds</div><div class="val muted">${sm.odds_open || 0} open</div><div class="tr-hint">none resolved yet</div><div class="tr-explain">How well the chances written in the evaluations (e.g. “45% it reaches ¥70k by December”) match what happened. Lower is better: under 0.20 is good, above 0.25 is worse than always guessing 50%.</div></div>`;
+    const cl = sm.closed || { right: 0, wrong: 0, neutral: 0 }, early = sm.early || { right: 0, wrong: 0 };
+    const nextClose = sm.next_close ? trDate(sm.next_close) : null;
+    const earlyTxt = early.right || early.wrong ? `${early.right} right · ${early.wrong} wrong decided early, counted when their ${win} days are up` : '';
+    const brierTile = (label, b, explain, extra) => (b && b.brier != null
+      ? `<div class="pl-stat"><div class="lbl">${label}</div><div class="val ${b.brier <= 0.2 ? 'pos' : b.brier > 0.25 ? 'neg' : ''}">${b.brier.toFixed(2)}</div><div class="tr-hint">${b.expected_yes} expected vs ${b.actual_yes} happened, of ${b.n} past their deadline${extra ? ' · ' + extra : ''}</div><div class="tr-explain">${explain}${b.n < 10 ? ' With this few scored, the number still swings a lot.' : ''}</div></div>`
+      : `<div class="pl-stat"><div class="lbl">${label}</div><div class="val muted tr-two">none scored yet</div><div class="tr-hint">${extra || 'scored once their deadline has passed'}</div><div class="tr-explain">${explain}</div></div>`);
+    const oddsExplain = 'How well the chances written in the evaluations (e.g. “45% it reaches ¥70k by December”) match what happened. Lower is better: under 0.20 is good, above 0.25 is worse than always guessing 50%. Only forecasts whose deadline has passed count: a “happened” can be known early, a “didn’t happen” only at the deadline, so counting early would favour the ones that happened.';
+    const brier = brierTile('Odds accuracy (Brier)', { n: sm.odds_resolved, brier: sm.brier, expected_yes: sm.expected_yes, actual_yes: sm.actual_yes },
+      oddsExplain, [sm.odds_open ? `${sm.odds_open} open` : '', sm.odds_early_yes ? `${sm.odds_early_yes} already happened` : ''].filter(Boolean).join(', '));
     const mo = sm.model_odds;
+    const moLine = (h, d) => (!h ? '' : h.brier != null ? `${d} days <b>${h.brier.toFixed(2)}</b> (${h.expected_yes} expected vs ${h.actual_yes}, of ${h.n})` : `${d} days: none past their deadline yet${h.early_yes ? ` (${h.early_yes} already happened)` : ''}`);
     const modelTile = mo && mo.logged
-      ? (mo.brier != null
-        ? `<div class="pl-stat"><div class="lbl">Limit-odds model (Brier)</div><div class="val ${mo.brier <= 0.2 ? 'pos' : mo.brier > 0.25 ? 'neg' : ''}">${mo.brier.toFixed(2)}</div><div class="tr-hint">${mo.expected_yes} expected vs ${mo.actual_yes} happened, of ${mo.resolved} resolved · ${mo.open} open</div><div class="tr-explain">The same score for the site’s automatic odds model, which logs the chance of a listing reaching your limits and tier prices on each full check. Lower is better.${mo.resolved < 10 ? ' Only a few forecasts have reached their date so far, so read it as an early signal.' : ''}</div></div>`
-        : `<div class="pl-stat"><div class="lbl">Limit-odds model</div><div class="val muted">${mo.open} open</div><div class="tr-hint">weekly forecasts for tier prices and your limits; first results after 30 days</div><div class="tr-explain">The same score for the site’s automatic odds model, which logs the chance of a listing reaching your limits and tier prices on each full check. Lower is better.</div></div>`)
+      ? `<div class="pl-stat"><div class="lbl">Limit-odds model (Brier)</div><div class="val tr-two">${[moLine(mo.h30, 30), moLine(mo.h90, 90)].filter(Boolean).join('<br>')}</div><div class="tr-hint">${mo.logged} logged prices · the 30- and 90-day forecasts are scored separately</div><div class="tr-explain">The same score for the site’s automatic odds model, which logs the chance of a listing reaching your limits and tier prices on each full check. Each logged price counts once in each column, and only after its deadline.</div></div>`
       : '';
-    const headline = sm.calls_scored
-      ? `${c.right || 0} right · ${c.wrong || 0} wrong${c.neutral ? ` · ${c.neutral} neutral` : ''}`
-      : 'no calls scored yet';
+    const closedN = cl.right + cl.wrong + cl.neutral;
+    const headline = closedN ? `${cl.right} right · ${cl.wrong} wrong${cl.neutral ? ` · ${cl.neutral} neutral` : ''}` : 'no window closed yet';
+    const callsHint = [earlyTxt, `${sm.pending != null ? sm.pending : c.pending || 0} still inside their ${win}-day window`, !closedN && nextClose ? `first window closes ${nextClose}` : ''].filter(Boolean).join(' · ');
+    const pct = (v) => (v == null ? '—' : Math.round(v) + '%');
+    const pts = (v) => (v == null ? '—' : `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)} pts`);
+    const bl = sm.baseline || {}, cb = cl.buy || {}, cw = cl.watch || {};
+    const baseRow = (lbl, mine, base) => `<div class="tr-cmp"><span>${lbl}</span><b>${mine && mine.n ? pct(mine.right_pct) : '—'}</b><i>${base && base.n ? pct(base.right_pct) : '—'}</i></div>`;
+    const baseTile = `<div class="pl-stat"><div class="lbl">Vs. a call on every day</div>
+        <div class="tr-cmph"><span>right</span><span>yours</span><span>every day</span></div>${baseRow('Buy', cb, bl.buy)}${baseRow('Watch', cw, bl.watch)}
+        <div class="tr-hint">${bl.buy && bl.buy.n ? `${bl.buy.n} daily calls with a closed window` : 'fills in as windows close'}</div>
+        <div class="tr-explain">The same rules applied to a Buy and a Watch call on every day for the same cards, with no judgment at all. In a rising market almost every Buy is “right” and every Watch “wrong”, and the reverse in a falling one, so the calls only show skill where they beat this line.</div></div>`;
+    const retRow = (lbl, mine) => `<div class="tr-cmp"><span>${lbl}</span><b class="${mine && mine.edge_pts != null ? dirClass(mine.edge_pts) : ''}">${mine && mine.n ? pts(mine.rel_pts) : '—'}</b><i>${bl.buy && bl.buy.n ? pts(bl.buy.rel_pts) : '—'}</i></div>`;
+    const retTile = `<div class="pl-stat"><div class="lbl">Return vs. the market</div>
+        <div class="tr-cmph"><span></span><span>after calls</span><span>any day</span></div>${retRow('Buy', cb)}${retRow('Watch', cw)}
+        <div class="tr-hint">the card's ${win}-day change minus the My-tier index's, closed windows</div>
+        <div class="tr-explain">A Buy did well when the card then beat the market (green), a Watch when it lagged. “Any day” is the same measure for every day, the level to beat.${cb.edge_pts != null || cw.edge_pts != null ? ` Edge: Buy ${pts(cb.edge_pts)}, Watch ${pts(cw.edge_pts)}.` : ''}</div></div>`;
 
     // Grouped by card: one collapsible block per card with its calls and stated odds,
     // cards with the most recent activity first.
@@ -4447,8 +4800,8 @@
       return `<div class="tr-row">
         <div class="tr-main"><span class="vtag ${k.tag}">${escapeHtml(tagLabel(k.tag))}</span>
           <span class="tr-meta">${trDate(k.made)} at ${fmtYen(k.price)}${k.reaffirmed ? ` · reaffirmed ${k.reaffirmed}×` : ''}</span></div>
-        <div class="tr-res">${trPill(k.status)}</div>
-        <div class="tr-sub">${escapeHtml(k.label || '')}<br>${so}</div>
+        <div class="tr-res">${trPill(k.status)}${!k.final && (k.status === 'right' || k.status === 'wrong') ? `<span class="tr-meta">counts ${trDate(k.window_end)}</span>` : ''}</div>
+        <div class="tr-sub">${escapeHtml(k.label || '')}<br>${so}${k.rel_pts != null ? `<br>${win} days: card ${trPct(k.ret_pct)}, My-tier ${trPct(k.mkt_pct)} → <span class="${dirClass(k.edge_pts)}">${k.rel_pts >= 0 ? '+' : '−'}${Math.abs(k.rel_pts).toFixed(1)} pts vs the market</span>` : ''}</div>
       </div>`;
     };
     const predRow = (p) => {
@@ -4458,7 +4811,7 @@
       return `<div class="tr-row">
         <div class="tr-main"><span class="tr-odds">${Math.round(p.p * 100)}%</span>
           <span class="tr-meta">${p.type === 'touch_below' ? '≤' : '≥'}${fmtYen(p.price)} by ${trDate(p.by)}</span></div>
-        <div class="tr-res">${trPill(p.status)}</div>
+        <div class="tr-res">${trPill(p.status)}${!p.final && p.status === 'yes' ? `<span class="tr-meta">scored ${trDate(p.by)}</span>` : ''}</div>
         <div class="tr-sub">${escapeHtml(p.text)} (said ${trDate(p.made)})<br>${detail}</div>
       </div>`;
     };
@@ -4494,10 +4847,12 @@
     }).join('');
 
     sec.innerHTML = `
-        <div class="pl-summary">
-          ${sm.calls_scored
-            ? `<a class="pl-stat pl-link" href="#/scored" title="See the calls behind this score"><div class="lbl">Buy / Watch calls</div><div class="val">${escapeHtml(headline)}</div><div class="tr-hint">${c.pending || 0} still inside their ${win}-day window · <span class="pl-link-go">see scored calls ›</span></div></a>`
-            : `<div class="pl-stat"><div class="lbl">Buy / Watch calls</div><div class="val">${escapeHtml(headline)}</div><div class="tr-hint">${c.pending || 0} still inside their ${win}-day window</div></div>`}
+        <div class="pl-summary tr-sum">
+          ${closedN || early.right || early.wrong
+            ? `<a class="pl-stat pl-link" href="#/scored" title="See the calls behind this score"><div class="lbl">Buy / Watch calls</div><div class="val${closedN ? '' : ' tr-two'}">${escapeHtml(headline)}</div><div class="tr-hint">${escapeHtml(callsHint)} · <span class="pl-link-go">see scored calls ›</span></div></a>`
+            : `<div class="pl-stat"><div class="lbl">Buy / Watch calls</div><div class="val${closedN ? '' : ' tr-two'}">${escapeHtml(headline)}</div><div class="tr-hint">${escapeHtml(callsHint)}</div></div>`}
+          ${baseTile}
+          ${retTile}
           ${brier}
           ${modelTile}
         </div>
@@ -4507,7 +4862,8 @@
           A <b>Buy</b> is wrong if the price drops more than the card's threshold below the call price (you could have bought cheaper), otherwise right.
           A <b>Watch</b> is right if it drops more than the threshold (waiting paid off), wrong if it ends more than the threshold higher without a dip, otherwise neutral.
           The threshold is ${th}% or the card's own normal swing between checks if larger (up to ${Math.round((tr.noise_threshold_cap || 0.1) * 100)}%), and a drop only counts after ${tr.confirm_readings || 2} checks in a row below it, so one stray cheap listing can't decide a call.
-          Stated odds are checked against their deadline; the Brier score rewards odds that match how often things actually happen.
+          The score only counts calls whose ${win} days are over: a Watch can be proven right early but wrong only at the end (a Buy the other way round), so counting calls as they are decided would favour one kind.
+          Stated odds are checked against their deadline and scored once it has passed; the Brier score rewards odds that match how often things actually happen.
           Updated with every price check (as of ${escapeHtml(fmtDateShort(tr.as_of))}).</p>`;
     const saveOpen = () => store.set('psa10.trOpen', [...sec.querySelectorAll('details.tr-card[open]')].map((d) => d.dataset.url));
     const toggle = sec.querySelector('.tr-toggle');
@@ -4532,11 +4888,12 @@
     const el = document.getElementById('scored-page');
     const tr = state.calls;
     const all = (tr && tr.calls) || [];
-    const done = all.filter((k) => k.status === 'right' || k.status === 'wrong');
+    const decided = all.filter((k) => k.status === 'right' || k.status === 'wrong');
+    const done = decided.filter((k) => k.final), early = decided.filter((k) => !k.final);
     const neutral = all.filter((k) => k.status === 'neutral');
     const win = (tr && tr.window_days) || 30;
-    if (!done.length) {
-      el.innerHTML = `<div class="empty-state">No call has been scored yet. Calls resolve within ${win} days; see the <a href="#/record">track record</a>.</div>`;
+    if (!decided.length) {
+      el.innerHTML = `<div class="empty-state">No call has been decided yet. Calls resolve within ${win} days; see the <a href="#/record">track record</a>.</div>`;
       return { title: 'Scored calls', sub: '' };
     }
     const right = done.filter((k) => k.status === 'right'), wrong = done.filter((k) => k.status === 'wrong');
@@ -4550,31 +4907,34 @@
       const meaning = k.tag === 'buy' || k.tag === 'definitely_buy'
         ? (k.status === 'right' ? 'Buying then was fine: no meaningfully cheaper chance came' : 'You could have bought meaningfully cheaper later')
         : (k.status === 'right' ? 'Waiting paid off: the price dipped' : 'Waiting cost money: the price rose without a dip');
+      const vsMkt = k.rel_pts != null ? ` Over the ${win} days the card went ${trPct(k.ret_pct)} against ${trPct(k.mkt_pct)} for the My-tier index (<span class="${dirClass(k.edge_pts)}">${k.rel_pts >= 0 ? '+' : '−'}${Math.abs(k.rel_pts).toFixed(1)} pts</span>).` : '';
       return `<div class="sc-row ${k.status}">
         ${thumb}
         <div class="sc-main">
           <div class="sc-top"><b class="jp sc-name">${nameHtml}</b><span class="tr-meta">${escapeHtml(code)}</span></div>
           <div class="sc-call"><span class="vtag ${k.tag}">${escapeHtml(tagLabel(k.tag))}</span> called ${trDate(k.made)} at <b>${fmtYen(k.price)}</b>${k.reaffirmed ? ` · reaffirmed ${k.reaffirmed}×` : ''}</div>
           <div class="sc-label">${escapeHtml(k.label || '')}</div>
-          <div class="sc-why"><b>${escapeHtml(meaning)}.</b> ${escapeHtml(k.why || '')}. Lowest since the call ${k.low != null ? `${fmtYen(k.low)} (${trPct(k.low_pct)})` : '—'} · now ${k.now != null ? `${fmtYen(k.now)} (${trPct(k.now_pct)})` : '—'}.</div>
+          <div class="sc-why"><b>${escapeHtml(meaning)}.</b> ${escapeHtml(k.why || '')}. Lowest since the call ${k.low != null ? `${fmtYen(k.low)} (${trPct(k.low_pct)})` : '—'} · now ${k.now != null ? `${fmtYen(k.now)} (${trPct(k.now_pct)})` : '—'}.${vsMkt}</div>
         </div>
-        <div class="sc-res">${trPill(k.status)}<span class="tr-meta">threshold ${Math.round((k.threshold || tr.threshold || 0.05) * 100)}%</span></div>
+        <div class="sc-res">${trPill(k.status)}<span class="tr-meta">${k.final ? `threshold ${Math.round((k.threshold || tr.threshold || 0.05) * 100)}%` : `counts ${trDate(k.window_end)}`}</span></div>
       </div>`;
     };
     const byNewest = (a, b) => (a.made < b.made ? 1 : a.made > b.made ? -1 : 0);
-    const section = (title, list) => list.length ? `<h2 class="section-title sc-h">${title} <span class="muted">${list.length}</span></h2><div class="sc-list">${list.sort(byNewest).map(row).join('')}</div>` : '';
+    const section = (title, list, note) => list.length ? `<h2 class="section-title sc-h">${title} <span class="muted">${list.length}</span></h2>${note ? `<p class="tr-hint">${note}</p>` : ''}<div class="sc-list">${list.sort(byNewest).map(row).join('')}</div>` : '';
     el.innerHTML = `
       <div class="pl-summary">
-        <div class="pl-stat"><div class="lbl">Right</div><div class="val pos">${right.length}</div></div>
-        <div class="pl-stat"><div class="lbl">Wrong</div><div class="val neg">${wrong.length}</div></div>
-        <div class="pl-stat"><div class="lbl">Hit rate</div><div class="val">${Math.round((right.length / done.length) * 100)}%</div><div class="tr-hint">of ${done.length} scored call${done.length === 1 ? '' : 's'}</div></div>
+        <div class="pl-stat"><div class="lbl">Right</div><div class="val pos">${right.length}</div><div class="tr-hint">window over</div></div>
+        <div class="pl-stat"><div class="lbl">Wrong</div><div class="val neg">${wrong.length}</div><div class="tr-hint">window over</div></div>
+        <div class="pl-stat"><div class="lbl">Hit rate</div><div class="val">${done.length ? Math.round((right.length / done.length) * 100) + '%' : '—'}</div><div class="tr-hint">${done.length ? `of ${done.length} scored call${done.length === 1 ? '' : 's'}` : 'no window closed yet'}</div></div>
+        <div class="pl-stat"><div class="lbl">Decided early</div><div class="val muted">${early.length}</div><div class="tr-hint">${early.filter((k) => k.status === 'right').length} right · ${early.filter((k) => k.status === 'wrong').length} wrong · counted when their window ends</div></div>
         <div class="pl-stat"><div class="lbl">Not in the score</div><div class="val muted">${pending + neutral.length}</div><div class="tr-hint">${pending} pending${neutral.length ? ` · ${neutral.length} neutral` : ''}</div></div>
       </div>
       ${section('Wrong', wrong)}
       ${section('Right', right)}
+      ${section('Decided early', early, `These calls already have their outcome, but they join the score only when their ${win} days are up, so the early-decidable kind (a Watch proven right, a Buy proven wrong) doesn't dominate the score.`)}
       <p class="tr-note">A call is scored on the lowest PSA10 ask in the ${win} days after it was made. A Buy is wrong if the ask dropped more than the card's threshold below the call price; a Watch is right if it did. A drop only counts after two checks in a row below the threshold. Neutral and pending calls aren't in the score; they're on the <a href="#/record">track record</a> page.</p>`;
     trimImages(el);
-    return { title: 'Scored calls', sub: `${right.length} right · ${wrong.length} wrong · as of ${fmtDateShort(tr.as_of)}` };
+    return { title: 'Scored calls', sub: `${right.length} right · ${wrong.length} wrong${early.length ? ` · ${early.length} decided early` : ''} · as of ${fmtDateShort(tr.as_of)}` };
   }
 
   // Limit controls in a card detail (drawer or card page). Clicks stop propagating
@@ -4714,11 +5074,85 @@
     return points;
   }
 
+  // data/sales.json: every PSA10 sale the checks saw, once each (scripts/build_history.py). Loaded the first time a
+  // History tab opens; it isn't part of the startup bundle.
+  let salesPromise = null;
+  function loadSales() {
+    if (!salesPromise) salesPromise = fetchJSON('data/sales.json').catch(() => null);
+    return salesPromise;
+  }
+  const SALES_MED_DAYS = 7, SALES_MED_MIN = 3;
+  // Rolling median of the sales: at the end of each JST day, the median of the sales in the SALES_MED_DAYS before it.
+  function salesRolling(sales) {
+    if (!sales || sales.length < SALES_MED_MIN) return [];
+    const ts = sales.map(([h, p]) => ({ t: h * 3600e3, p })).sort((a, b) => a.t - b.t);
+    const out = [];
+    const dayEnd = (t) => { const d = new Date(t + 9 * 3600e3); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 23, 59, 59) - 9 * 3600e3; };
+    for (let e = dayEnd(ts[0].t); e <= dayEnd(ts[ts.length - 1].t); e += 864e5) {
+      const w = ts.filter((x) => x.t <= e && x.t > e - SALES_MED_DAYS * 864e5).map((x) => x.p);
+      if (w.length >= SALES_MED_MIN) out.push({ x: e, y: median(w), n: w.length });
+    }
+    return out;
+  }
   async function renderPriceHistoryInto(card, container) {
     if (!container) return;
-    const points = await getCardPriceHistory(card);
-    container.innerHTML = buildPriceHistoryHtml(card, points);
+    const [points, sales] = await Promise.all([getCardPriceHistory(card), loadSales()]);
+    const own = sales && sales.cards && sales.cards[card.url];
+    container.innerHTML = buildPriceHistoryHtml(card, points, own || null) + supplyDemandHtml(card);
     mountCharts(container);
+  }
+
+  // ---------- supply and demand over time (card page, History tab; history.json "n", "f", "q", "h") ----------
+  // "f" and "n" are stored only when they change, so a series carries its last value forward to now.
+  function histSeries(url, key, pick) {
+    const out = [];
+    for (const e of (state.hist && state.hist.snapshots) || []) {
+      const m = e[key];
+      if (m && m[url] != null) { const v = pick ? pick(m[url], e) : m[url]; if (v != null) out.push({ t: Date.parse(e.d), d: e.d, v }); }
+    }
+    return out;
+  }
+  function valueAt(ser, T) { let v = null; for (const x of ser) { if (x.t <= T) v = x; else break; } return v; }
+  // Growth of a carried series over `days` up to the shown snapshot: {now, then, diff, pct} or null.
+  function growth(ser, days) {
+    const ref = Date.parse(refTime()), now = valueAt(ser, ref), then = valueAt(ser, ref - days * 864e5);
+    return now && then && then.t < now.t ? { now: now.v, then: then.v, diff: now.v - then.v, pct: then.v ? (now.v / then.v - 1) * 100 : null, from: then.d } : null;
+  }
+  const popSeries = (card) => histSeries(card.url, 'n', (v) => v[0]);
+  // "+N in 7 days" for the card page's population tile.
+  function popGrowthTxt(card) {
+    const g = growth(popSeries(card), 7);
+    return g && g.diff ? ` <small class="muted" title="PSA10 population ${g.then.toLocaleString()} on ${escapeAttr(g.from.slice(0, 10))}">${g.diff > 0 ? '+' : '−'}${Math.abs(g.diff).toLocaleString()} in 7 days</small>` : '';
+  }
+  function supplyDemandHtml(card) {
+    if (!state.hist) return '';
+    const ref = Date.parse(refTime());
+    const carried = (ser) => (ser.length && ser[ser.length - 1].t < ref ? ser.concat([{ t: ref, d: refTime(), v: ser[ser.length - 1].v, carried: true }]) : ser);
+    const pop = popSeries(card), fav = histSeries(card.url, 'f');
+    const cheap = histSeries(card.url, 'q', (v) => v[0]);
+    const cover = histSeries(card.url, 'q', (v, e) => { const h = e.h && e.h[card.url]; return h && h[0] ? v[0] / h[0] : null; });
+    const pts = (ser, fmt, sub) => ser.map((x) => ({ x: x.t, y: x.v, title: fmtDateShort(x.d) + ' JST', sub: x.carried ? 'unchanged since the last reading' : sub ? sub(x) : '' }));
+    const chart = (ser, label, color, f) => (ser.length >= 2 ? chartSlot(Object.assign({ type: 'line', xMode: 'time', height: 120, color, label, points: pts(ser) }, f || {})) : '');
+    const cnt = { fmt: (v) => (v >= 10000 ? (v / 1000).toFixed(v >= 1e5 ? 0 : 1) + 'k' : String(Math.round(v))), fmtTip: (v) => Math.round(v).toLocaleString() };
+    const dys = { fmt: (v) => v.toFixed(v < 10 ? 1 : 0) + 'd', fmtTip: (v) => v.toFixed(1) + ' days of sales' };
+    const p7 = growth(pop, 7), p30 = growth(pop, 30), f30 = growth(fav, 30), c30 = growth(cheap, 30), v7 = growth(cover, 7);
+    const charts = [
+      [chart(carried(pop), 'PSA10 population', '#7cb8ff', cnt), 'Supply: PSA10 population', 'graded copies in existence (altema); a fast rise means a wave of new slabs'],
+      [chart(carried(fav), 'SNKRDUNK favorites', 'var(--accent)', cnt), 'Demand: favorites on SNKRDUNK', 'people watching the card'],
+      [chart(cheap, 'Cheap PSA10 listings', '#c9a0ff', cnt), 'Cheap listings', 'PSA10 listings within 15% of the lowest ask (of the 20 cheapest read on full checks)'],
+      [chart(cover, 'Days of sales the cheap listings cover', '#5fd4b8', dys), 'How long the cheap listings would last', 'cheap listings ÷ PSA10 sales a day: rising = copies piling up, falling = the cheap end gets bought up'],
+    ].filter((c) => c[0]);
+    const tile = (k, v, s, cls) => `<div class="cd-stat"><div class="lbl">${k}</div><div class="val ${cls || ''}">${v}</div><div class="s muted">${s}</div></div>`;
+    const stats = `<div class="cd-stats">
+      ${tile('Population, 7 days', p7 ? `${p7.diff >= 0 ? '+' : '−'}${Math.abs(p7.diff).toLocaleString()}` : '—', p7 ? `${fmtPct(p7.pct)}${p30 ? ` · 30 days ${p30.diff >= 0 ? '+' : '−'}${Math.abs(p30.diff).toLocaleString()} (${fmtPct(p30.pct)})` : ''}` : 'needs two readings a week apart')}
+      ${tile('Favorites, 30 days', f30 ? fmtPct(f30.pct) : '—', f30 ? `${f30.then.toLocaleString()} → ${f30.now.toLocaleString()}` : 'needs a reading 30 days ago', f30 ? dirClass(f30.pct) : '')}
+      ${tile('Cheap listings', cheap.length ? String(cheap[cheap.length - 1].v) : '—', c30 ? `${c30.then} 30 days ago` : 'within 15% of the lowest ask')}
+      ${tile('They would last', cover.length ? `${cover[cover.length - 1].v.toFixed(1)} days` : '—', v7 ? `${v7.then.toFixed(1)} days a week ago` : 'at today\'s pace of sales')}
+    </div>`;
+    if (!charts.length && !p7 && !f30 && !cheap.length) return '';
+    return `<div class="sd-block"><div class="lbl sd-h">Supply and demand</div>${stats}
+      ${charts.map(([c, t, sub]) => `<div class="prem-ch"><div class="lbl">${t} <span class="muted">${sub}</span></div>${c}</div>`).join('')}
+      <p class="cd-note">Population comes from the full check's altema reading (young cards daily, mature ones on Mondays), favorites from every check (one reading a day kept), cheap listings and their cover from full checks. SNKRDUNK's total number of listings isn't read, only the 20 cheapest.</p></div>`;
   }
 
   // A long-run line chart of representative_price across every snapshot the
@@ -4726,10 +5160,15 @@
   // above (which only covers one snapshot's own recent_completed_sales). This
   // is the view for judging progress against a months-long thesis, not a
   // single check.
-  function buildPriceHistoryHtml(card, points) {
+  function buildPriceHistoryHtml(card, points, sales) {
     if (points.length < 2) {
       return `<div class="lbl">Price history</div><div class="hist-empty">Not enough history yet — this builds up as you run more price checks.</div>`;
     }
+    const roll = salesRolling(sales);
+    const overlays = sales && sales.length ? [
+      { name: 'sale', color: 'var(--accent)', dots: true, points: sales.map(([h, p]) => ({ x: h * 3600e3, y: p })) },
+      ...(roll.length >= 2 ? [{ name: `Sales median (${SALES_MED_DAYS} days)`, color: 'var(--accent)', dash: true, points: roll }] : []),
+    ] : [];
 
     const tiers = card.analysis && card.analysis.tiers;
     const lim = getLimit(card);
@@ -4738,12 +5177,12 @@
     if (lim != null) refs.push({ y: lim, label: 'My limit', cls: 'lim' });
     const up = points[points.length - 1].price > points[0].price;
     const chart = chartSlot({
-      type: 'line', xMode: 'time', height: 190, color: up ? 'var(--red)' : 'var(--green-strong)', refs,
+      type: 'line', xMode: 'time', height: 210, color: up ? 'var(--red)' : 'var(--green-strong)', refs, overlays,
       label: `PSA10 price history of ${card.card_name_ja}`,
       points: points.map((p) => ({ x: Date.parse(p.date), y: p.price, dim: !p.confirmed,
         title: fmtDateShort(p.date) + ' JST', sub: p.confirmed ? 'sales-confirmed price' : 'lowest ask' })),
     });
-    const note = `<div class="hist-note">Filled dots are sales-confirmed prices, grey dots lowest asks. Dashed lines are today's tiers${lim != null ? ' and your limit' : ''}, shown for reference; they may not have applied at every point in the past.</div>`;
+    const note = `<div class="hist-note">The line is the PSA10 price at each check: filled dots are sales-confirmed prices, grey dots lowest asks.${overlays.length ? ` Small yellow dots are single one-copy sales on SNKRDUNK (${sales.length} seen by the checks)${roll.length >= 2 ? `, and the dashed yellow line their median over the ${SALES_MED_DAYS} days before each day: steadier than the lowest ask, which jumps when one listing appears or sells` : ''}.` : ''} Dashed lines are today's tiers${lim != null ? ' and your limit' : ''}, shown for reference; they may not have applied at every point in the past.</div>`;
     return `<div class="lbl">Price history — ${points.length} checks, ${escapeHtml(fmtDateShort(points[0].date))} → ${escapeHtml(fmtDateShort(points[points.length - 1].date))}</div>${chart}${note}`;
   }
 
@@ -4846,9 +5285,12 @@
     const F = cfg.fmt || yenShort, FT = cfg.fmtTip || fmtYen; // axis / tooltip number format (yen by default)
     const W = Math.max(260, box.clientWidth), H = cfg.height || 170;
     const m = { l: 52, r: 12, t: 12, b: 26 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
-    const ys = pts.map((p) => p.y).concat((cfg.refs || []).map((r) => r.y));
-    const ticks = niceTicks(Math.min(...ys), Math.max(...ys), 4), lo = ticks[0], hi = ticks[ticks.length - 1];
     const x0 = pts[0].x, x1 = pts[pts.length - 1].x;
+    // overlays: extra series on the same axes ({name, color, points, dots, dash}); lines count for the y range,
+    // dots (single sales) don't, so one odd sale can't squash the chart: dots outside the range are left out
+    const ovs = (cfg.overlays || []).map((o) => Object.assign({}, o, { points: o.points.filter((q) => q.x >= x0 && q.x <= x1) })).filter((o) => o.points.length);
+    const ys = pts.map((p) => p.y).concat((cfg.refs || []).map((r) => r.y), ...ovs.filter((o) => !o.dots).map((o) => o.points.map((q) => q.y)));
+    const ticks = niceTicks(Math.min(...ys), Math.max(...ys), 4), lo = ticks[0], hi = ticks[ticks.length - 1];
     const X = (x) => m.l + (pts.length === 1 ? iw / 2 : ((x - x0) * iw) / (x1 - x0 || 1));
     const Y = (v) => m.t + ih * (1 - (v - lo) / (hi - lo || 1));
     const xy = pts.map((p) => [X(p.x), Y(p.y)]);
@@ -4873,7 +5315,9 @@
       <line x1="${m.l}" x2="${m.l + iw}" y1="${base}" y2="${base}" class="ci-axis"/>
       ${refs}
       <path d="${area}" fill="url(#${gid})"/>
+      ${ovs.filter((o) => o.dots).map((o) => o.points.filter((q) => q.y >= lo && q.y <= hi).map((q) => `<circle cx="${X(q.x).toFixed(1)}" cy="${Y(q.y).toFixed(1)}" r="1.8" fill="${o.color}" opacity="0.45"/>`).join('')).join('')}
       <path d="${line}" fill="none" stroke="${color}" stroke-width="2"/>
+      ${ovs.filter((o) => !o.dots).map((o) => `<path d="${o.points.map((q, i) => `${i ? 'L' : 'M'}${X(q.x).toFixed(1)},${Y(q.y).toFixed(1)}`).join(' ')}" fill="none" stroke="${o.color}" stroke-width="2"${o.dash ? ' stroke-dasharray="5 4"' : ''}/>`).join('')}
       ${xy.map(([x, y], i) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${pts[i].dim ? 2.2 : 2.8}" fill="${pts[i].dim ? 'var(--muted-2)' : color}"/>`).join('')}
       <g class="ci-hover" style="display:none"><line class="ci-cross" y1="${m.t}" y2="${base}"/><circle class="lc-dot" r="5" fill="${color}"/></g>
     </svg><div class="ci-tip" role="status" aria-live="polite" hidden></div>`;
@@ -4884,7 +5328,8 @@
       const [x, y] = xy[i], p = pts[i];
       g.style.display = ''; cross.setAttribute('x1', x); cross.setAttribute('x2', x); dot.setAttribute('cx', x); dot.setAttribute('cy', y);
       const prev = i > 0 ? pts[i - 1].y : null, ch = prev ? (p.y / prev - 1) * 100 : null;
-      tip.innerHTML = `<div class="ci-tip-d">${escapeHtml(p.title || '')}</div><div><b>${FT(p.y)}</b>${ch != null ? ` <span class="${dirClass(ch)}">${ch === 0 ? '±0' : fmtPct(ch)}</span>` : ''}</div>${p.sub ? `<div class="muted">${escapeHtml(p.sub)}</div>` : ''}${lim ? `<div class="muted">vs your limit ${fmtPct((p.y / lim.y - 1) * 100)}</div>` : ''}`;
+      const ovTxt = ovs.filter((o) => !o.dots).map((o) => { let v = null; for (const q of o.points) if (q.x <= p.x) v = q; return v ? `<div class="muted">${escapeHtml(o.name)} ${FT(v.y)}</div>` : ''; }).join('');
+      tip.innerHTML = `<div class="ci-tip-d">${escapeHtml(p.title || '')}</div><div><b>${FT(p.y)}</b>${ch != null ? ` <span class="${dirClass(ch)}">${ch === 0 ? '±0' : fmtPct(ch)}</span>` : ''}</div>${p.sub ? `<div class="muted">${escapeHtml(p.sub)}</div>` : ''}${ovTxt}${lim ? `<div class="muted">vs your limit ${fmtPct((p.y / lim.y - 1) * 100)}</div>` : ''}`;
       tipPlace(box, tip, x, y, W);
     };
     wireHover(box, svg, pts.length, xy.map((q) => q[0]), show, () => { g.style.display = 'none'; tip.hidden = true; });
@@ -5495,6 +5940,13 @@
     } catch (e) { /* offline or blocked — the button still works */ }
   }
 
+  // tests/rules.mjs loads this file with window.__PSA10_TEST__ set: hand over the rules that have a Python or
+  // widget twin, and start nothing. Never set in a browser.
+  if (window.__PSA10_TEST__) {
+    window.__PSA10_TEST__({ state, rawPrice, salesPerDay, heatOf, insightsFor, tierReview, touchOdds, correctionState, rallyState,
+      activeEvents, eventFor, displayTagFor, sellState, limitHit, getRep, lowestAsk, cardAgeMonths, salesMedianOf });
+    return;
+  }
   init();
   loadCardRequests();
 })();

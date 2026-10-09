@@ -21,6 +21,8 @@ site's "Bought it" or "Remove" form, so nothing runs on your Mac:
   sold for, the fees (typed, or estimated with the site's cost model) and the dates. Removing an "x…" id undoes the sale.
 - Label `grading-info`: sets when a raw card (a pull "u…" or a raw purchase "p…") was sent to PSA, the PSA
   service tier and the owner's own chance of a PSA10; a pull's status can be changed too. Blank fields remove the value.
+  Several ids at once ("p73, p74, u52", the site's PSA submission planner) get the same date, service and status;
+  there a blank chance keeps each card's own.
 - Label `sealed-link`: sets (or replaces) the SNKRDUNK link of an existing sealed product.
   A sealed product's name and picture come from its SNKRDUNK page, like a single's. This Action never
   opens SNKRDUNK (no automated access): the next price check reads the page in the user's browser
@@ -237,16 +239,21 @@ def optional_date(s):
 
 
 def apply_grading_info(issue, store):
+    """One card ("u52") or several ("p73, p74, u52", from the site's PSA submission planner). With several ids an
+    empty chance keeps each card's own estimate instead of clearing it; date, service and status apply to all."""
     form = parse_form(issue.get("body"))
-    m = re.search(r"\b[pu]\d+\b", field(form, "card id", "id") or "")
-    if not m:
+    ids = list(dict.fromkeys(re.findall(r"\b[pu]\d+\b", field(form, "card id", "id") or "")))
+    if not ids:
         raise FormError("No card id found (it looks like u52 or p63). Use the Grading info link next to the card on the site.")
-    gid = m.group(0)
-    item = next((h for h in store.get("holdings", []) if h.get("id") == gid), None)
-    if gid.startswith("u"):
-        item = next((p for x in store.get("sealed", []) for p in x.get("pulls", []) if p.get("id") == gid), None)
-    if not item:
-        raise FormError(f"There's no card with id {gid} (maybe it was removed).")
+    items = []
+    for gid in ids:
+        item = next((h for h in store.get("holdings", []) if h.get("id") == gid), None)
+        if gid.startswith("u"):
+            item = next((p for x in store.get("sealed", []) for p in x.get("pulls", []) if p.get("id") == gid), None)
+        if not item:
+            raise FormError(f"There's no card with id {gid} (maybe it was removed).")
+        items.append((gid, item))
+    multi = len(items) > 1
     sent = optional_date(field(form, "date sent", "sent"))
     tier = next((k for key, k in GRADE_TIERS if key in field(form, "psa service", "service").lower()), None)
     chance_txt = field(form, "your chance", "chance").replace("%", "").strip()
@@ -258,15 +265,23 @@ def apply_grading_info(issue, store):
             raise FormError(f"Chance of a PSA10 \"{chance_txt}\" isn't a number between 1 and 100.")
         if not 1 <= chance <= 100:
             raise FormError("Chance of a PSA10 must be between 1 and 100 (%).")
-    for key, val in (("sent", sent), ("tier", tier), ("gem_rate_pct", int(chance) if chance is not None and chance.is_integer() else chance)):
-        if val is None:
-            item.pop(key, None)
-        else:
-            item[key] = val
     st = field(form, "status").lower()
-    if gid.startswith("u") and st and "keep as is" not in st:
-        item["status"] = next((k for key, k in PULL_STATUS if key in st), item.get("status", "raw"))
-    bits = [x for x in (f"sent {sent}" if sent else "", f"{tier} service" if tier else "", f"your PSA10 chance {item['gem_rate_pct']}%" if chance is not None else "") if x]
+    for gid, item in items:
+        for key, val in (("sent", sent), ("tier", tier), ("gem_rate_pct", int(chance) if chance is not None and chance.is_integer() else chance)):
+            if key == "gem_rate_pct" and val is None and multi:
+                continue   # several cards: an empty chance keeps each card's own
+            if val is None:
+                item.pop(key, None)
+            else:
+                item[key] = val
+        if gid.startswith("u") and st and "keep as is" not in st:
+            item["status"] = next((k for key, k in PULL_STATUS if key in st), item.get("status", "raw"))
+    bits = [x for x in (f"sent {sent}" if sent else "", f"{tier} service" if tier else "", f"your PSA10 chance {int(chance) if chance.is_integer() else chance}%" if chance is not None else "") if x]
+    if multi:
+        names = ", ".join(f"**{gid}** ({item.get('card_name_ja', gid)})" for gid, item in items)
+        return (f"Saved grading info for {len(items)} cards: {names}: {', '.join(bits) if bits else 'date and service cleared'}. The site updates in about a minute.",
+                f"holdings: grading info for {', '.join(ids)} (#{issue['number']})")
+    gid, item = items[0]
     name = item.get("card_name_ja", gid)
     return (f"Saved grading info for **{gid}** ({name}): {', '.join(bits) if bits else 'nothing set (cleared)'}. The site updates in about a minute.",
             f"holdings: grading info for {gid} (#{issue['number']})")

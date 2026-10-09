@@ -32,13 +32,33 @@ Noise (added 2026-09-26)
   dip only counts once CONFIRM_READINGS consecutive readings are below the line.
   A dip seen in only the latest reading waits for the next check.
 
+Scoring only finished windows (added 2026-10-09)
+  A Watch call can turn out right early (the dip came) but only wrong at the end of
+  its window, and a Buy the other way round, so counting calls as they are decided
+  over-weights whatever can be decided early. The summary score ("closed") only counts
+  calls whose WINDOW_DAYS are over; calls decided before that show their outcome but
+  are counted when their window ends. The same goes for stated odds and the model's
+  logged odds: "happened" can be known early, "didn't happen" only at the deadline,
+  so only forecasts whose deadline has passed are scored.
+
+Baseline and return vs the market (added 2026-10-09)
+  baseline: the same rules applied to a call on every day (the first check of each JST
+  day, for every card that had a scored call), Buy and Watch alike, closed windows only.
+  It shows what the right/wrong rates look like with no judgment at all.
+  Return: for each closed call, the lowest ask at the end of its window vs the call
+  price, minus the My-tier index's change over the same days (points). A Buy is good
+  when the card then beat the market, a Watch / Don't buy when it lagged; "edge" is that
+  signed difference. The baseline gives the same numbers for a call on every day.
+
 Stated odds (analysis.verdict.predictions)
   [{"text": "...", "p": 0.45, "type": "touch_below" | "touch_above",
     "price": 70000, "by": "2026-12-25", "made": "2026-09-25T10:03:18+09:00"}]
   Happened if the lowest ask reaches the price after `made` and on or before `by`
   (end of day JST); didn't happen once a snapshot after `by` exists without it.
   A prediction that was already true when made is marked void and not scored.
-  Scored with the Brier score (0 = perfect, 0.25 = always saying 50%).
+  Scored with the Brier score (0 = perfect, 0.25 = always saying 50%), once its deadline
+  has passed ("final"). The limit-odds model's logged forecasts are scored the same way,
+  the 30-day and the 90-day forecasts separately (each logged price counts once in each).
 """
 import json
 from datetime import datetime, timedelta, timezone
@@ -77,11 +97,36 @@ def _load(root):
     return out
 
 
+def _mytier(root):
+    p = root / "data" / "custom_index.json"
+    try:
+        return sorted((e["d"], e["level"]) for e in json.loads(p.read_text(encoding="utf-8")).get("series", []) if e.get("level"))
+    except (OSError, json.JSONDecodeError):
+        return []
+
+
+def _level_at(ci, when):
+    """My-tier index level on the JST day of `when` (the last reading on or before it)."""
+    day = _dt(when).astimezone(JST).date().isoformat()
+    v = None
+    for d, lv in ci:
+        if d <= day:
+            v = lv
+        else:
+            break
+    return v
+
+
+def _r1(x):
+    return round(x, 1) if x is not None else None
+
+
 def _pct(a, b):
     return round((a - b) / b * 100, 1) if b else None
 
 
-def build(root: Path = ROOT) -> Path:
+def build(root: Path = ROOT, now: datetime = None) -> Path:
+    """now: score as if it were this time (tests); default = the latest snapshot."""
     snaps = _load(root)
     series, names, runs, preds = {}, {}, {}, {}
     for d, cards in snaps:
@@ -139,48 +184,81 @@ def build(root: Path = ROOT) -> Path:
         return None
 
     as_of = snaps[-1][0] if snaps else None
-    now = _dt(as_of) if as_of else datetime.now(JST)
+    now = now or (_dt(as_of) if as_of else datetime.now(JST))
+
+    ci = _mytier(root)
+
+    def judge(url, tag, price, made_s):
+        """Outcome of a call (tag at price, made at made_s): the same rules for real calls and the baseline."""
+        made = _dt(made_s)
+        end = made + timedelta(days=WINDOW_DAYS)
+        after = [(d, p) for d, p in series.get(url, []) if made < _dt(d) <= end]
+        low = min(after, key=lambda x: x[1]) if after else None
+        last = after[-1] if after else None
+        th = noise.get(url, THRESHOLD)
+        floor = price * (1 - th)
+        run = confirmed_run(after, lambda p: p <= floor)
+        dipped = run[0] if run else None
+        matured = now >= end
+        status, why = "pending", ""
+        if tag in BUYISH:
+            if dipped:
+                status, why = "wrong", f"dropped to ¥{dipped[1]:,} on {dipped[0][:10]} (held under −{th:.0%} for {CONFIRM_READINGS} checks)"
+            elif matured:
+                status, why = "right", f"never held more than {th:.0%} cheaper in {WINDOW_DAYS} days"
+        elif tag in WAITISH:
+            if dipped:
+                status, why = "right", f"dropped to ¥{dipped[1]:,} on {dipped[0][:10]} (held under −{th:.0%} for {CONFIRM_READINGS} checks)"
+            elif matured:
+                if last and last[1] >= price * (1 + th):
+                    status, why = "wrong", f"rose to ¥{last[1]:,} without a dip"
+                else:
+                    status, why = "neutral", "no clear move either way"
+        else:
+            status, why = "unscored", "Defer isn't scored"
+        ret = mkt = rel = edge = None
+        if matured and last:
+            ret = (last[1] / price - 1) * 100
+            a, b = _level_at(ci, made_s), _level_at(ci, end.isoformat())
+            if a and b:
+                mkt = (b / a - 1) * 100
+                rel = ret - mkt
+                edge = rel if tag in BUYISH else -rel if tag in WAITISH else None
+        return {"made": made, "end": end, "low": low, "last": last, "th": th, "status": status, "why": why, "final": matured,
+                "ret": ret, "mkt": mkt, "rel": rel, "edge": edge}
 
     calls = []
     for lst in runs.values():
         for r in lst:
             if r["price"] is None:
                 continue
-            made = _dt(r["made"])
-            end = made + timedelta(days=WINDOW_DAYS)
-            after = [(d, p) for d, p in series.get(r["url"], []) if made < _dt(d) <= end]
-            low = min(after, key=lambda x: x[1]) if after else None
-            last = after[-1] if after else None
-            th = noise.get(r["url"], THRESHOLD)
-            floor = r["price"] * (1 - th)
-            run = confirmed_run(after, lambda p: p <= floor)
-            dipped = run[0] if run else None
-            matured = now >= end
-            status, why = "pending", ""
-            if r["tag"] in BUYISH:
-                if dipped:
-                    status, why = "wrong", f"dropped to ¥{dipped[1]:,} on {dipped[0][:10]} (held under −{th:.0%} for {CONFIRM_READINGS} checks)"
-                elif matured:
-                    status, why = "right", f"never held more than {th:.0%} cheaper in {WINDOW_DAYS} days"
-            elif r["tag"] in WAITISH:
-                if dipped:
-                    status, why = "right", f"dropped to ¥{dipped[1]:,} on {dipped[0][:10]} (held under −{th:.0%} for {CONFIRM_READINGS} checks)"
-                elif matured:
-                    if last and last[1] >= r["price"] * (1 + th):
-                        status, why = "wrong", f"rose to ¥{last[1]:,} without a dip"
-                    else:
-                        status, why = "neutral", "no clear move either way"
-            else:
-                status, why = "unscored", "Defer isn't scored"
+            j = judge(r["url"], r["tag"], r["price"], r["made"])
+            low, last = j["low"], j["last"]
             calls.append({
                 "url": r["url"], "name": names.get(r["url"], r["url"]), "tag": r["tag"],
                 "label": r["label"], "latest_label": r["latest_label"], "reaffirmed": r["reaffirmed"],
-                "made": r["made"], "price": r["price"], "window_end": end.isoformat(),
-                "days_in": min(WINDOW_DAYS, max(0, (now - made).days)),
+                "made": r["made"], "price": r["price"], "window_end": j["end"].isoformat(),
+                "days_in": min(WINDOW_DAYS, max(0, (now - j["made"]).days)),
                 "low": low[1] if low else None, "low_pct": _pct(low[1], r["price"]) if low else None,
                 "now": last[1] if last else None, "now_pct": _pct(last[1], r["price"]) if last else None,
-                "status": status, "why": why, "threshold": th,
+                "status": j["status"], "why": j["why"], "threshold": j["th"], "final": j["final"],
+                "ret_pct": _r1(j["ret"]), "mkt_pct": _r1(j["mkt"]), "rel_pts": _r1(j["rel"]), "edge_pts": _r1(j["edge"]),
             })
+
+    # Baseline: a Buy and a Watch call on every day (first check of each JST day) for every card that had a scored call.
+    base = {"buy": [], "watch": []}
+    for url in {c["url"] for c in calls if c["tag"] in BUYISH | WAITISH}:
+        seen = set()
+        for d, p in series.get(url, []):
+            day = _dt(d).astimezone(JST).date()
+            if day in seen:
+                continue
+            seen.add(day)
+            for grp, tag in (("buy", "buy"), ("watch", "watch")):
+                j = judge(url, tag, p, d)
+                if j["final"]:
+                    base[grp].append(j)
+
     calls.sort(key=lambda c: c["made"], reverse=True)
 
     predictions = []
@@ -205,7 +283,7 @@ def build(root: Path = ROOT) -> Path:
         predictions.append({
             "url": p["url"], "name": names.get(p["url"], p["url"]), "text": p.get("text", ""),
             "p": p.get("p"), "type": p["type"], "price": p["price"], "by": p["by"], "made": p["made"],
-            "status": status, "why": why, "now": latest,
+            "status": status, "why": why, "now": latest, "final": now >= by,
             "gap_pct": _pct(p["price"], latest) if latest else None,
         })
     predictions.sort(key=lambda x: (x["by"], x["name"]))
@@ -224,26 +302,54 @@ def build(root: Path = ROOT) -> Path:
                 status = "yes" if hit else ("no" if now >= by else "open")
                 model_odds.append({"url": e["url"], "name": names.get(e["url"], e["url"]), "kind": e.get("kind"),
                                    "price": e["price"], "ask": e.get("ask"), "days": days, "p": e[pk],
-                                   "made": e["made"], "by": by.date().isoformat(), "status": status,
+                                   "made": e["made"], "by": by.date().isoformat(), "status": status, "final": now >= by,
                                    "why": f"¥{hit[1]:,} on {hit[0][:10]}" if hit else ""})
-    mo_res = [x for x in model_odds if x["status"] in ("yes", "no")]
+    def brier(rows):
+        """Brier score of final yes/no forecasts: {n, brier, expected_yes, actual_yes}."""
+        rows = [x for x in rows if x.get("final") and x["status"] in ("yes", "no") and isinstance(x.get("p"), (int, float))]
+        if not rows:
+            return {"n": 0, "brier": None, "expected_yes": None, "actual_yes": 0}
+        return {"n": len(rows), "brier": round(sum((x["p"] - (x["status"] == "yes")) ** 2 for x in rows) / len(rows), 3),
+                "expected_yes": round(sum(x["p"] for x in rows), 1), "actual_yes": sum(1 for x in rows if x["status"] == "yes")}
 
-    scored = [c for c in calls if c["status"] in ("right", "wrong", "neutral")]
-    resolved = [x for x in predictions if x["status"] in ("yes", "no") and isinstance(x.get("p"), (int, float))]
+    def rates(js):
+        n = len(js)
+        out = {k: sum(1 for j in js if j["status"] == k) for k in ("right", "wrong", "neutral")}
+        out["n"] = n
+        out["right_pct"] = round(out["right"] / n * 100, 1) if n else None
+        rel = [j["rel"] for j in js if j["rel"] is not None]
+        out["rel_pts"] = round(sum(rel) / len(rel), 1) if rel else None
+        return out
+
+    def group(cs):
+        js = [{"status": c["status"], "rel": c["rel_pts"]} for c in cs]
+        out = rates(js)
+        edge = [c["edge_pts"] for c in cs if c["edge_pts"] is not None]
+        out["edge_pts"] = round(sum(edge) / len(edge), 1) if edge else None
+        return out
+
+    closed = [c for c in calls if c["final"] and c["status"] in ("right", "wrong", "neutral")]
+    early = [c for c in calls if not c["final"] and c["status"] in ("right", "wrong")]
+    pending_calls = [c for c in calls if c["status"] == "pending"]
+    next_close = min((c["window_end"] for c in calls if not c["final"] and c["tag"] in BUYISH | WAITISH), default=None)
+    pred_open = [x for x in predictions if not x["final"] and x["status"] != "void"]
+    mo30, mo90 = [x for x in model_odds if x["days"] == 30], [x for x in model_odds if x["days"] == 90]
     summary = {
         "calls": {k: sum(1 for c in calls if c["status"] == k) for k in ("right", "wrong", "neutral", "pending")},
-        "calls_scored": len(scored),
-        "odds_resolved": len(resolved),
-        "odds_open": sum(1 for x in predictions if x["status"] == "open"),
-        "brier": round(sum((x["p"] - (1 if x["status"] == "yes" else 0)) ** 2 for x in resolved) / len(resolved), 3) if resolved else None,
-        "expected_yes": round(sum(x["p"] for x in resolved), 1) if resolved else None,
-        "actual_yes": sum(1 for x in resolved if x["status"] == "yes"),
+        "calls_scored": len(closed),
+        "closed": {"right": sum(1 for c in closed if c["status"] == "right"), "wrong": sum(1 for c in closed if c["status"] == "wrong"),
+                   "neutral": sum(1 for c in closed if c["status"] == "neutral"),
+                   "buy": group([c for c in closed if c["tag"] in BUYISH]), "watch": group([c for c in closed if c["tag"] in WAITISH])},
+        "early": {"right": sum(1 for c in early if c["status"] == "right"), "wrong": sum(1 for c in early if c["status"] == "wrong")},
+        "pending": len(pending_calls), "next_close": next_close,
+        "baseline": {"buy": rates(base["buy"]), "watch": rates(base["watch"])},
+        **{k: v for k, v in (lambda b: {"odds_resolved": b["n"], "brier": b["brier"], "expected_yes": b["expected_yes"], "actual_yes": b["actual_yes"]})(brier(predictions)).items()},
+        "odds_open": len(pred_open),
+        "odds_early_yes": sum(1 for x in pred_open if x["status"] == "yes"),
         "model_odds": {
-            "logged": len(model_odds), "open": sum(1 for x in model_odds if x["status"] == "open"),
-            "resolved": len(mo_res),
-            "brier": round(sum((x["p"] - (1 if x["status"] == "yes" else 0)) ** 2 for x in mo_res) / len(mo_res), 3) if mo_res else None,
-            "expected_yes": round(sum(x["p"] for x in mo_res), 1) if mo_res else None,
-            "actual_yes": sum(1 for x in mo_res if x["status"] == "yes"),
+            "logged": len(mo30), "open": sum(1 for x in mo90 if not x["final"]),
+            "h30": {**brier(mo30), "early_yes": sum(1 for x in mo30 if not x["final"] and x["status"] == "yes"), "open": sum(1 for x in mo30 if not x["final"])},
+            "h90": {**brier(mo90), "early_yes": sum(1 for x in mo90 if not x["final"] and x["status"] == "yes"), "open": sum(1 for x in mo90 if not x["final"])},
         },
     }
     out = root / "data" / "calls.json"
@@ -258,4 +364,5 @@ def build(root: Path = ROOT) -> Path:
 if __name__ == "__main__":
     p = build()
     s = json.loads(p.read_text(encoding="utf-8"))["summary"]
-    print(f"Rebuilt {p.relative_to(ROOT)}: calls {s['calls']}, odds resolved {s['odds_resolved']}, open {s['odds_open']}")
+    print(f"Rebuilt {p.relative_to(ROOT)}: calls {s['calls']} (closed windows {s['closed']['right']} right, {s['closed']['wrong']} wrong), "
+          f"odds scored {s['odds_resolved']}, open {s['odds_open']}")

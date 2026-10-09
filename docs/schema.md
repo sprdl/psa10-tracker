@@ -63,6 +63,10 @@ These are written by `scripts/full_update.py` / `quick_update.py` / `add_snapsho
   recomputes the volume trend from.
 - `psa_tier_status` (Mondays) and `notes` (free text from the run).
 
+`collected_at_jst` must be a full timestamp (`2026-10-09T17:59:27+09:00`): `add_snapshot.py` refuses one without a
+time and adds `+09:00` when the offset is missing, since a date alone is read as midnight by the scripts and as
+09:00 JST by browsers.
+
 ## Analysis overlay (optional — adds verdicts, gauges, tiers, banners)
 
 This is the judgment layer from an actual evaluation (e.g. running the
@@ -187,14 +191,15 @@ population, labeled "tiers not yet established" — rather than a guessed verdic
 Add the `analysis` overlay only once you've actually done the depth-check →
 sales-check → peak-check work; false precision is worse than an honest gap.
 
-## Price history (derived from the snapshots, cached in `data/history.json`)
+## Price history and sales (derived from the snapshots, cached in `data/history.json` and `data/sales.json`)
 
 Every card's History tab shows a long-run price chart of `representative_price` (or `lowest_price`
 as a fallback) across every snapshot, matched by card `url` — not a separate field in any snapshot.
 Nothing needs to change about how you add snapshots; the chart just gets one more data point each
 time. The points come from `data/history.json`, a compact index `scripts/build_history.py` rebuilds
 on every publish (shape in the "Other data files" section below), so the site downloads one small
-file instead of every snapshot. If that file is missing, the app falls back to fetching the most
+file instead of every snapshot. The single sales and their rolling 7-day median drawn over it come from
+`data/sales.json`, loaded the first time a History tab opens. If that file is missing, the app falls back to fetching the most
 recent `HISTORY_MAX_SNAPSHOTS` (200) snapshot files.
 
 ## Overview columns: Price and Limit
@@ -265,12 +270,26 @@ The same figures as the Holdings page. A card bought as a PSA10: the PSA10 price
 under the price, "Raw A ¥78.5k +4.7% · DIY ¥100.7k" (the raw A-rank price against what you paid, and your DIY cost). Hovering
 the line spells out the sums (`rawOnlyStats` in `assets/app.js`).
 
-## Holdings values: lowest ask or after selling costs
+## Holdings values: lowest ask, recent sales or after selling costs
 
-A switch at the top of the Holdings page (saved in this browser) shows every value either at the lowest ask or
-after SNKRDUNK's selling costs: 9.5% fee, ¥200 fixed fee (¥300 from ¥30,000) and ¥1,000 shipping, each single, pull
-and unopened sealed item counted as one sale (`sellNet` in `assets/app.js`). It changes the header totals, the
-singles list, the sealed section and the value-over-time chart together; spent amounts never change.
+A switch at the top of the Holdings page (saved in this browser) shows every value at the **lowest ask** (a raw copy at
+the raw A-rank price), at **recent sales** (the median of the last week's one-copy sales, or of the last 5, for PSA10
+and raw A-rank alike: `markPsa` / `markRaw`; the chart uses `history.json`'s `r[2]` / `r[3]`; sealed products and cards
+without recent sales stay at the ask), or **after SNKRDUNK's selling costs**: 9.5% fee, ¥200 fixed fee (¥300 from
+¥30,000) and ¥1,000 shipping off the lowest ask, each single, pull and unopened sealed item counted as one sale (`sellNet`
+in `assets/app.js`). It changes the header totals, the singles list, the sealed section and the value-over-time chart
+together; spent amounts never change.
+
+## Holdings: vs the market, entry timing and the benchmark (computed, not stored)
+
+- **Since you bought** (each single, and the owned card page): the card's price on the purchase day (`history.json`
+  `p` for a slab, `r[4]` for a raw copy; the first check if it was bought before tracking began) against the latest,
+  next to the My-tier index's change over the same days; the difference in points.
+- **Entry:** the price you paid between the low (0%) and high (100%) of the card's readings in the 30 days before the
+  purchase (at least 3); for a slab also the zone it was in that day by the tiers of that day (`history.json`
+  `tier_log`).
+- **Benchmark** on the value chart: each purchase's cost × the My-tier index's level now ÷ its level on the purchase
+  day (frozen on a sale day), summed: what the same money would be worth had it tracked the tier.
 
 ## `data/portfolio_history.json` — daily prices of bought items that aren't tracked cards
 
@@ -339,7 +358,8 @@ Raw copies (a pull with status `raw` / `grading`, or a holding with `condition: 
 `"sent": "2026-10-01"` (date sent to PSA), `"tier": "standard|priority|express"` and `"gem_rate_pct": 60` (your own
 chance of a PSA10 for this copy, overriding the card's population gem rate). They are set with the site's
 **Grading info** link (issue form `grading-info.yml`, label `grading-info`, handled by `scripts/log_purchase.py`;
-blank fields remove the value). The site uses them for the "Grade it?" verdict, the expected result and the
+blank fields remove the value). The PSA submission planner (`#/submit`) sends one form for several copies
+(`id: "p73, p74, u52"`): the same date, service and status for each, and a blank chance keeps each copy's own. The site uses them for the "Grade it?" verdict, the expected result and the
 return date (sent + 100 / 80 / 25 business days for Standard / Priority / Express). A non-10 is valued at the
 raw A-rank price and everything is net of selling costs; see `gradeCalc` in `assets/app.js`.
 
@@ -365,8 +385,9 @@ in each row has the details in its docstring.
 | File | Shape |
 |---|---|
 | `manifest.json` | `{"snapshots": [{"file": "20261009-1758.json", "collected_at_jst": "…", "check_mode": "full"}]}`, oldest first |
-| `history.json` (generated, `build_history.py`) | `{"snapshots": [{"d": time, "m": mode, "i": pokeca PSA10 index, "p": {url: [price, confirmed 0/1]}, "h": {url: [PSA10 sales/day, raw A sales/day]}, "r": {url: [PSA10 ask, raw A ask, PSA10 sales median, raw A sales median, raw A-rank price]}}], "tiers": {url: {"since": when the tiers were last set or reviewed, "i": index then}}}` |
-| `calls.json` (generated, `build_calls.py`) | `{"as_of", "window_days", "threshold", "confirm_readings", "summary", "calls": [{url, name, tag, label, made, price, status: right/wrong/neutral/pending/unscored, low, now, why, threshold, …}], "predictions": [{…, p, type, price, by, status: yes/no/open/void}], "model_odds": [{url, kind, price, days: 30/90, p, made, by, status}]}` |
+| `history.json` (generated, `build_history.py`) | `{"snapshots": [{"d": time, "m": mode, "i": pokeca PSA10 index, "p": {url: [price, confirmed 0/1]}, "h": {url: [PSA10 sales/day, raw A sales/day]}, "r": {url: [PSA10 ask, raw A ask, PSA10 sales median, raw A sales median, raw A-rank price]}, "f": {url: favorites}, "q": {url: [listings within 15%, listings read]}, "n": {url: [population, gem rate]}}], "tiers": {url: {"since": when the tiers were last set or reviewed, "i": index then}}, "tier_log": {url: [[since, definitely_buy, buy_upper, ceiling], …]}}`. `f` is kept on the last check of each JST day and, like `n`, only when it changed (readers carry the last value forward); `q` and `n` only come from fresh reads (no `listings_as_of` / `population_as_of`). Entries older than 30 days keep one check per JST day |
+| `sales.json` (generated, `build_history.py`) | `{"updated", "cards": {url: [[hour, price], …]}}`: every PSA10 one-copy sale the checks saw, once each; hour = hours since 1970-01-01 UTC (the middle of the window the SNKRDUNK timestamp allows) |
+| `calls.json` (generated, `build_calls.py`) | `{"as_of", "window_days", "threshold", "confirm_readings", "summary", "calls": [{url, name, tag, label, made, price, window_end, status: right/wrong/neutral/pending/unscored, final, low, now, why, threshold, ret_pct, mkt_pct, rel_pts, edge_pts, …}], "predictions": [{…, p, type, price, by, status: yes/no/open/void, final}], "model_odds": [{url, kind, price, days: 30/90, p, made, by, status, final}]}`. `final` = the window or deadline is over; only final items are scored. `summary`: `closed` (right/wrong/neutral of final calls, and per kind `buy` / `watch`: right_pct, rel_pts, edge_pts), `early` (decided, not final), `pending`, `next_close`, `baseline` (`buy` / `watch`: the same rules for a call on every day), `odds_resolved`/`brier`/`expected_yes`/`actual_yes` (final stated odds), `odds_open`, `odds_early_yes`, `model_odds` (`h30`, `h90`: n, brier, expected_yes, actual_yes, early_yes, open) |
 | `limits.json` / `sell_targets.json` (`set_limit.py`) | `{"limits": {url: {"price", "set", "issue"}}}` / `{"targets": {…same…}}` |
 | `custom_index.json` (`add_custom_index.py`) | `{"meta": {name, base_date, base_level, method, selection, constituents: [{code, name, base}], backfill, revisions, next_review}, "series": [{"d", "level", "n", "prices": {code: price}, "carried": [codes], "pokeca_psa10", "backfill"}]}` |
 | `events.json` (`events.py`) | `{"window_days": 3, "events": [{"d": "2026-10-16" or null, "name", "major", "scope": "all" or [set codes], "kind", "source", "note"}]}` |

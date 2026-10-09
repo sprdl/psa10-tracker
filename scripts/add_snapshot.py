@@ -394,6 +394,11 @@ def main():
     data = load_input(args)
     if "collected_at_jst" not in data:
         print("Warning: JSON has no 'collected_at_jst' field — using the current time for the filename.", file=sys.stderr)
+    elif not re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}", str(data["collected_at_jst"])):
+        # A date alone is read as midnight by the scripts and as 09:00 JST by browsers (the 2026-09-23 snapshot).
+        sys.exit(f"ERROR: collected_at_jst {data['collected_at_jst']!r} has no time; it needs the form 2026-10-09T17:59:27+09:00.")
+    elif not re.search(r"(Z|[+-]\d\d:?\d\d)$", str(data["collected_at_jst"])):
+        data["collected_at_jst"] = str(data["collected_at_jst"]) + "+09:00"   # JST by definition; browsers would read it as local time
 
     converted = normalize_schema(data)
     if converted:
@@ -472,7 +477,7 @@ def main():
         print(f"warning: couldn't log limit odds: {e}")
     import build_history
     build_history.build(root)
-    extra = [f for f in ("data/odds_log.json", "data/predict.json") if (root / f).exists()]
+    extra = [f for f in ("data/odds_log.json", "data/predict.json", "data/sales.json") if (root / f).exists()]
     subprocess.run(["git", "add", "data/manifest.json", "data/history.json", "data/calls.json", *extra, str(dest.relative_to(root))], cwd=root, check=True)
     commit_msg = f"snapshot: {data.get('collected_at_jst', filename)}"
     commit = subprocess.run(["git", "commit", "-m", commit_msg], cwd=root)

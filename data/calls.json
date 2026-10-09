@@ -12,19 +12,79 @@
    "neutral": 0,
    "pending": 24
   },
-  "calls_scored": 9,
-  "odds_resolved": 4,
-  "odds_open": 93,
-  "brier": 0.229,
-  "expected_yes": 2.1,
-  "actual_yes": 4,
+  "calls_scored": 0,
+  "closed": {
+   "right": 0,
+   "wrong": 0,
+   "neutral": 0,
+   "buy": {
+    "right": 0,
+    "wrong": 0,
+    "neutral": 0,
+    "n": 0,
+    "right_pct": null,
+    "rel_pts": null,
+    "edge_pts": null
+   },
+   "watch": {
+    "right": 0,
+    "wrong": 0,
+    "neutral": 0,
+    "n": 0,
+    "right_pct": null,
+    "rel_pts": null,
+    "edge_pts": null
+   }
+  },
+  "early": {
+   "right": 8,
+   "wrong": 1
+  },
+  "pending": 24,
+  "next_close": "2026-10-15T16:26:00+09:00",
+  "baseline": {
+   "buy": {
+    "right": 0,
+    "wrong": 0,
+    "neutral": 0,
+    "n": 0,
+    "right_pct": null,
+    "rel_pts": null
+   },
+   "watch": {
+    "right": 0,
+    "wrong": 0,
+    "neutral": 0,
+    "n": 0,
+    "right_pct": null,
+    "rel_pts": null
+   }
+  },
+  "odds_resolved": 0,
+  "brier": null,
+  "expected_yes": null,
+  "actual_yes": 0,
+  "odds_open": 97,
+  "odds_early_yes": 4,
   "model_odds": {
-   "logged": 200,
-   "open": 188,
-   "resolved": 12,
-   "brier": 0.276,
-   "expected_yes": 5.8,
-   "actual_yes": 12
+   "logged": 100,
+   "open": 100,
+   "h30": {
+    "n": 0,
+    "brier": null,
+    "expected_yes": null,
+    "actual_yes": 0,
+    "early_yes": 6,
+    "open": 100
+   },
+   "h90": {
+    "n": 0,
+    "brier": null,
+    "expected_yes": null,
+    "actual_yes": 0,
+    "early_yes": 6,
+    "open": 100
+   }
   }
  },
  "calls": [
@@ -45,7 +105,12 @@
    "now_pct": -9.7,
    "status": "unscored",
    "why": "Defer isn't scored",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/224087",
@@ -64,7 +129,12 @@
    "now_pct": -1.5,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/704401",
@@ -83,7 +153,12 @@
    "now_pct": -0.9,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/103080",
@@ -102,7 +177,12 @@
    "now_pct": 3.7,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/722239",
@@ -121,7 +201,12 @@
    "now_pct": -2.5,
    "status": "pending",
    "why": "",
-   "threshold": 0.092
+   "threshold": 0.092,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/881431",
@@ -140,7 +225,12 @@
    "now_pct": -33.3,
    "status": "unscored",
    "why": "Defer isn't scored",
-   "threshold": 0.1
+   "threshold": 0.1,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/96712",
@@ -159,7 +249,12 @@
    "now_pct": -16.4,
    "status": "right",
    "why": "dropped to ¥37,000 on 2026-10-08 (held under −5% for 2 checks)",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/224087",
@@ -178,7 +273,12 @@
    "now_pct": -1.8,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/724996",
@@ -197,7 +297,12 @@
    "now_pct": 5.5,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/455596",
@@ -216,7 +321,12 @@
    "now_pct": 17.7,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/100567",
@@ -235,7 +345,12 @@
    "now_pct": -0.5,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/103080",
@@ -254,7 +369,12 @@
    "now_pct": 1.8,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/730952",
@@ -273,7 +393,12 @@
    "now_pct": -2.8,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/224087",
@@ -292,7 +417,12 @@
    "now_pct": 19.0,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/722239",
@@ -311,7 +441,12 @@
    "now_pct": 10.4,
    "status": "pending",
    "why": "",
-   "threshold": 0.092
+   "threshold": 0.092,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/103079",
@@ -330,7 +465,12 @@
    "now_pct": 21.7,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/103080",
@@ -349,7 +489,12 @@
    "now_pct": 16.7,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/128099",
@@ -368,7 +513,12 @@
    "now_pct": -1.9,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/704401",
@@ -387,7 +537,12 @@
    "now_pct": 19.6,
    "status": "right",
    "why": "dropped to ¥109,800 on 2026-09-30 (held under −5% for 2 checks)",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/724996",
@@ -406,7 +561,12 @@
    "now_pct": 19.3,
    "status": "right",
    "why": "dropped to ¥56,500 on 2026-09-28 (held under −5% for 2 checks)",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/105553",
@@ -425,7 +585,12 @@
    "now_pct": 25.5,
    "status": "right",
    "why": "dropped to ¥54,900 on 2026-09-27 (held under −5% for 2 checks)",
-   "threshold": 0.053
+   "threshold": 0.053,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/100567",
@@ -444,7 +609,12 @@
    "now_pct": 11.6,
    "status": "right",
    "why": "dropped to ¥130,000 on 2026-09-27 (held under −5% for 2 checks)",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/585221",
@@ -463,7 +633,12 @@
    "now_pct": -9.7,
    "status": "right",
    "why": "dropped to ¥108,000 on 2026-09-27 (held under −5% for 2 checks)",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/224087",
@@ -482,7 +657,12 @@
    "now_pct": 40.2,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
@@ -501,7 +681,12 @@
    "now_pct": 10.5,
    "status": "right",
    "why": "dropped to ¥25,500 on 2026-09-26 (held under −5% for 2 checks)",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/138599",
@@ -520,7 +705,12 @@
    "now_pct": 34.2,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/96712",
@@ -539,7 +729,12 @@
    "now_pct": 47.9,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/387059",
@@ -558,7 +753,12 @@
    "now_pct": 18.5,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/91178",
@@ -577,7 +777,12 @@
    "now_pct": 10.5,
    "status": "pending",
    "why": "",
-   "threshold": 0.057
+   "threshold": 0.057,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/135232",
@@ -596,7 +801,12 @@
    "now_pct": 6.4,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/138599",
@@ -615,7 +825,12 @@
    "now_pct": 48.1,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/408333",
@@ -634,7 +849,12 @@
    "now_pct": 1.0,
    "status": "right",
    "why": "dropped to ¥73,500 on 2026-09-17 (held under −5% for 2 checks)",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/455596",
@@ -653,7 +873,12 @@
    "now_pct": 25.2,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/91178",
@@ -672,7 +897,12 @@
    "now_pct": -1.6,
    "status": "wrong",
    "why": "dropped to ¥296,000 on 2026-09-16 (held under −6% for 2 checks)",
-   "threshold": 0.057
+   "threshold": 0.057,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   },
   {
    "url": "https://snkrdunk.com/apparels/135232",
@@ -691,7 +921,12 @@
    "now_pct": 4.4,
    "status": "pending",
    "why": "",
-   "threshold": 0.05
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
   }
  ],
  "predictions": [
@@ -707,6 +942,7 @@
    "status": "void",
    "why": "already true when made",
    "now": 58900,
+   "final": false,
    "gap_pct": -28.7
   },
   {
@@ -721,6 +957,7 @@
    "status": "open",
    "why": "17 days left",
    "now": 154000,
+   "final": false,
    "gap_pct": -16.9
   },
   {
@@ -735,6 +972,7 @@
    "status": "open",
    "why": "24 days left",
    "now": 11700,
+   "final": false,
    "gap_pct": -18.8
   },
   {
@@ -749,6 +987,7 @@
    "status": "open",
    "why": "25 days left",
    "now": 58900,
+   "final": false,
    "gap_pct": -27.0
   },
   {
@@ -763,6 +1002,7 @@
    "status": "open",
    "why": "25 days left",
    "now": 106500,
+   "final": false,
    "gap_pct": -8.0
   },
   {
@@ -777,6 +1017,7 @@
    "status": "open",
    "why": "26 days left",
    "now": 36800,
+   "final": false,
    "gap_pct": -32.1
   },
   {
@@ -791,6 +1032,7 @@
    "status": "open",
    "why": "26 days left",
    "now": 40000,
+   "final": false,
    "gap_pct": -22.5
   },
   {
@@ -805,6 +1047,7 @@
    "status": "open",
    "why": "26 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -19.6
   },
   {
@@ -819,6 +1062,7 @@
    "status": "open",
    "why": "26 days left",
    "now": 30500,
+   "final": false,
    "gap_pct": -18.0
   },
   {
@@ -833,6 +1077,7 @@
    "status": "open",
    "why": "26 days left",
    "now": 6900,
+   "final": false,
    "gap_pct": -5.8
   },
   {
@@ -847,6 +1092,7 @@
    "status": "open",
    "why": "26 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -28.6
   },
   {
@@ -861,6 +1107,7 @@
    "status": "open",
    "why": "26 days left",
    "now": 154000,
+   "final": false,
    "gap_pct": -16.9
   },
   {
@@ -875,6 +1122,7 @@
    "status": "open",
    "why": "27 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -28.6
   },
   {
@@ -889,6 +1137,7 @@
    "status": "open",
    "why": "27 days left",
    "now": 84500,
+   "final": false,
    "gap_pct": -18.9
   },
   {
@@ -903,6 +1152,7 @@
    "status": "open",
    "why": "28 days left",
    "now": 58900,
+   "final": false,
    "gap_pct": -27.0
   },
   {
@@ -917,6 +1167,7 @@
    "status": "open",
    "why": "28 days left",
    "now": 36800,
+   "final": false,
    "gap_pct": -32.1
   },
   {
@@ -931,6 +1182,7 @@
    "status": "open",
    "why": "28 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -20.3
   },
   {
@@ -945,6 +1197,7 @@
    "status": "open",
    "why": "29 days left",
    "now": 58900,
+   "final": false,
    "gap_pct": -6.6
   },
   {
@@ -959,6 +1212,7 @@
    "status": "open",
    "why": "29 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -9.3
   },
   {
@@ -973,6 +1227,7 @@
    "status": "open",
    "why": "29 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -14.3
   },
   {
@@ -987,6 +1242,7 @@
    "status": "open",
    "why": "29 days left",
    "now": 11700,
+   "final": false,
    "gap_pct": -18.8
   },
   {
@@ -1001,6 +1257,7 @@
    "status": "open",
    "why": "29 days left",
    "now": 138699,
+   "final": false,
    "gap_pct": -22.1
   },
   {
@@ -1015,6 +1272,7 @@
    "status": "open",
    "why": "29 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -12.5
   },
   {
@@ -1029,6 +1287,7 @@
    "status": "open",
    "why": "77 days left",
    "now": 48000,
+   "final": false,
    "gap_pct": -20.8
   },
   {
@@ -1043,6 +1302,7 @@
    "status": "open",
    "why": "77 days left",
    "now": 36800,
+   "final": false,
    "gap_pct": -34.8
   },
   {
@@ -1057,6 +1317,7 @@
    "status": "open",
    "why": "77 days left",
    "now": 40000,
+   "final": false,
    "gap_pct": -32.5
   },
   {
@@ -1071,6 +1332,7 @@
    "status": "open",
    "why": "77 days left",
    "now": 79800,
+   "final": false,
    "gap_pct": -12.3
   },
   {
@@ -1085,6 +1347,7 @@
    "status": "yes",
    "why": "¥24,800 on 2026-09-29",
    "now": 30500,
+   "final": false,
    "gap_pct": -18.0
   },
   {
@@ -1099,6 +1362,7 @@
    "status": "open",
    "why": "78 days left",
    "now": 315000,
+   "final": false,
    "gap_pct": -9.5
   },
   {
@@ -1113,6 +1377,7 @@
    "status": "open",
    "why": "78 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -28.6
   },
   {
@@ -1127,6 +1392,7 @@
    "status": "open",
    "why": "78 days left",
    "now": 154000,
+   "final": false,
    "gap_pct": -16.9
   },
   {
@@ -1141,6 +1407,7 @@
    "status": "open",
    "why": "78 days left",
    "now": 154000,
+   "final": false,
    "gap_pct": -25.3
   },
   {
@@ -1155,6 +1422,7 @@
    "status": "yes",
    "why": "¥108,000 on 2026-09-27",
    "now": 106500,
+   "final": false,
    "gap_pct": 1.4
   },
   {
@@ -1169,6 +1437,7 @@
    "status": "open",
    "why": "78 days left",
    "now": 106500,
+   "final": false,
    "gap_pct": 22.1
   },
   {
@@ -1183,6 +1452,7 @@
    "status": "yes",
    "why": "¥57,980 on 2026-09-28",
    "now": 72800,
+   "final": false,
    "gap_pct": -20.3
   },
   {
@@ -1197,6 +1467,7 @@
    "status": "yes",
    "why": "¥108,000 on 2026-10-01",
    "now": 138699,
+   "final": false,
    "gap_pct": -22.1
   },
   {
@@ -1211,6 +1482,7 @@
    "status": "open",
    "why": "81 days left",
    "now": 10299,
+   "final": false,
    "gap_pct": -12.6
   },
   {
@@ -1225,6 +1497,7 @@
    "status": "open",
    "why": "81 days left",
    "now": 10299,
+   "final": false,
    "gap_pct": -27.2
   },
   {
@@ -1239,6 +1512,7 @@
    "status": "open",
    "why": "81 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -26.8
   },
   {
@@ -1253,6 +1527,7 @@
    "status": "open",
    "why": "81 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -37.5
   },
   {
@@ -1267,6 +1542,7 @@
    "status": "open",
    "why": "81 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -25.0
   },
   {
@@ -1281,6 +1557,7 @@
    "status": "open",
    "why": "81 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -35.7
   },
   {
@@ -1295,6 +1572,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 48000,
+   "final": false,
    "gap_pct": -12.5
   },
   {
@@ -1309,6 +1587,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 48000,
+   "final": false,
    "gap_pct": -20.8
   },
   {
@@ -1323,6 +1602,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 36800,
+   "final": false,
    "gap_pct": -32.1
   },
   {
@@ -1337,6 +1617,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 36800,
+   "final": false,
    "gap_pct": -40.2
   },
   {
@@ -1351,6 +1632,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 40000,
+   "final": false,
    "gap_pct": -22.5
   },
   {
@@ -1365,6 +1647,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 40000,
+   "final": false,
    "gap_pct": -30.0
   },
   {
@@ -1379,6 +1662,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 84500,
+   "final": false,
    "gap_pct": -29.0
   },
   {
@@ -1393,6 +1677,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 10299,
+   "final": false,
    "gap_pct": -7.8
   },
   {
@@ -1407,6 +1692,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 10299,
+   "final": false,
    "gap_pct": -22.3
   },
   {
@@ -1421,6 +1707,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -19.6
   },
   {
@@ -1435,6 +1722,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -30.4
   },
   {
@@ -1449,6 +1737,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 30500,
+   "final": false,
    "gap_pct": -18.0
   },
   {
@@ -1463,6 +1752,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 11700,
+   "final": false,
    "gap_pct": -27.4
   },
   {
@@ -1477,6 +1767,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -19.6
   },
   {
@@ -1491,6 +1782,7 @@
    "status": "open",
    "why": "83 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -30.4
   },
   {
@@ -1505,6 +1797,7 @@
    "status": "open",
    "why": "85 days left",
    "now": 58900,
+   "final": false,
    "gap_pct": -35.5
   },
   {
@@ -1519,6 +1812,7 @@
    "status": "open",
    "why": "86 days left",
    "now": 36800,
+   "final": false,
    "gap_pct": -40.2
   },
   {
@@ -1533,6 +1827,7 @@
    "status": "open",
    "why": "86 days left",
    "now": 40000,
+   "final": false,
    "gap_pct": -30.0
   },
   {
@@ -1547,6 +1842,7 @@
    "status": "open",
    "why": "86 days left",
    "now": 30500,
+   "final": false,
    "gap_pct": -27.9
   },
   {
@@ -1561,6 +1857,7 @@
    "status": "open",
    "why": "86 days left",
    "now": 6900,
+   "final": false,
    "gap_pct": -15.9
   },
   {
@@ -1575,6 +1872,7 @@
    "status": "open",
    "why": "86 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -28.6
   },
   {
@@ -1589,6 +1887,7 @@
    "status": "open",
    "why": "86 days left",
    "now": 154000,
+   "final": false,
    "gap_pct": -16.9
   },
   {
@@ -1603,6 +1902,7 @@
    "status": "open",
    "why": "86 days left",
    "now": 154000,
+   "final": false,
    "gap_pct": -25.3
   },
   {
@@ -1617,6 +1917,7 @@
    "status": "open",
    "why": "87 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -38.2
   },
   {
@@ -1631,6 +1932,7 @@
    "status": "open",
    "why": "87 days left",
    "now": 84500,
+   "final": false,
    "gap_pct": -31.4
   },
   {
@@ -1645,6 +1947,7 @@
    "status": "open",
    "why": "88 days left",
    "now": 58900,
+   "final": false,
    "gap_pct": -35.5
   },
   {
@@ -1659,6 +1962,7 @@
    "status": "open",
    "why": "88 days left",
    "now": 36800,
+   "final": false,
    "gap_pct": -40.2
   },
   {
@@ -1673,6 +1977,7 @@
    "status": "open",
    "why": "88 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -28.6
   },
   {
@@ -1687,6 +1992,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 58900,
+   "final": false,
    "gap_pct": -20.2
   },
   {
@@ -1701,6 +2007,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -23.1
   },
   {
@@ -1715,6 +2022,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 36800,
+   "final": false,
    "gap_pct": 25.0
   },
   {
@@ -1729,6 +2037,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 40000,
+   "final": false,
    "gap_pct": 7.5
   },
   {
@@ -1743,6 +2052,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 40000,
+   "final": false,
    "gap_pct": 35.0
   },
   {
@@ -1757,6 +2067,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 84500,
+   "final": false,
    "gap_pct": 11.2
   },
   {
@@ -1771,6 +2082,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 84500,
+   "final": false,
    "gap_pct": 30.2
   },
   {
@@ -1785,6 +2097,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -28.6
   },
   {
@@ -1799,6 +2112,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 6900,
+   "final": false,
    "gap_pct": 73.9
   },
   {
@@ -1813,6 +2127,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": 37.4
   },
   {
@@ -1827,6 +2142,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 11700,
+   "final": false,
    "gap_pct": -27.4
   },
   {
@@ -1841,6 +2157,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 11700,
+   "final": false,
    "gap_pct": 88.0
   },
   {
@@ -1855,6 +2172,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 138699,
+   "final": false,
    "gap_pct": -31.5
   },
   {
@@ -1869,6 +2187,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 138699,
+   "final": false,
    "gap_pct": 22.6
   },
   {
@@ -1883,6 +2202,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 138699,
+   "final": false,
    "gap_pct": 44.2
   },
   {
@@ -1897,6 +2217,7 @@
    "status": "open",
    "why": "89 days left",
    "now": 28000,
+   "final": false,
    "gap_pct": -25.0
   },
   {
@@ -1911,6 +2232,7 @@
    "status": "open",
    "why": "114 days left",
    "now": 30500,
+   "final": false,
    "gap_pct": -27.9
   },
   {
@@ -1925,6 +2247,7 @@
    "status": "open",
    "why": "167 days left",
    "now": 58900,
+   "final": false,
    "gap_pct": -35.5
   },
   {
@@ -1939,6 +2262,7 @@
    "status": "open",
    "why": "167 days left",
    "now": 48000,
+   "final": false,
    "gap_pct": -33.3
   },
   {
@@ -1953,6 +2277,7 @@
    "status": "open",
    "why": "167 days left",
    "now": 36800,
+   "final": false,
    "gap_pct": -45.7
   },
   {
@@ -1967,6 +2292,7 @@
    "status": "open",
    "why": "167 days left",
    "now": 79800,
+   "final": false,
    "gap_pct": -25.4
   },
   {
@@ -1981,6 +2307,7 @@
    "status": "open",
    "why": "167 days left",
    "now": 84500,
+   "final": false,
    "gap_pct": -31.4
   },
   {
@@ -1995,6 +2322,7 @@
    "status": "open",
    "why": "167 days left",
    "now": 30500,
+   "final": false,
    "gap_pct": -27.9
   },
   {
@@ -2009,6 +2337,7 @@
    "status": "open",
    "why": "168 days left",
    "now": 315000,
+   "final": false,
    "gap_pct": -20.6
   },
   {
@@ -2023,6 +2352,7 @@
    "status": "open",
    "why": "168 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -38.2
   },
   {
@@ -2037,6 +2367,7 @@
    "status": "open",
    "why": "168 days left",
    "now": 106500,
+   "final": false,
    "gap_pct": -8.0
   },
   {
@@ -2051,6 +2382,7 @@
    "status": "open",
    "why": "169 days left",
    "now": 72800,
+   "final": false,
    "gap_pct": -28.6
   },
   {
@@ -2065,6 +2397,7 @@
    "status": "open",
    "why": "169 days left",
    "now": 138699,
+   "final": false,
    "gap_pct": -31.5
   }
  ],
@@ -2080,6 +2413,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2093,6 +2427,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2106,6 +2441,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "yes",
+   "final": false,
    "why": "¥29,500 on 2026-09-28"
   },
   {
@@ -2119,6 +2455,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "yes",
+   "final": false,
    "why": "¥29,500 on 2026-09-28"
   },
   {
@@ -2132,6 +2469,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2145,6 +2483,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2158,6 +2497,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2171,6 +2511,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2184,6 +2525,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2197,6 +2539,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2210,6 +2553,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2223,6 +2567,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2236,6 +2581,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2249,6 +2595,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2262,6 +2609,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "yes",
+   "final": false,
    "why": "¥68,000 on 2026-09-28"
   },
   {
@@ -2275,6 +2623,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "yes",
+   "final": false,
    "why": "¥68,000 on 2026-09-28"
   },
   {
@@ -2288,6 +2637,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2301,6 +2651,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2314,6 +2665,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2327,6 +2679,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2340,6 +2693,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2353,6 +2707,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2366,6 +2721,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2379,6 +2735,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2392,6 +2749,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "yes",
+   "final": false,
    "why": "¥24,800 on 2026-09-29"
   },
   {
@@ -2405,6 +2763,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "yes",
+   "final": false,
    "why": "¥24,800 on 2026-09-29"
   },
   {
@@ -2418,6 +2777,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2431,6 +2791,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2444,6 +2805,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
    "status": "yes",
+   "final": false,
    "why": "¥108,000 on 2026-09-27"
   },
   {
@@ -2457,6 +2819,7 @@
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
    "status": "yes",
+   "final": false,
    "why": "¥108,000 on 2026-09-27"
   },
   {
@@ -2470,6 +2833,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2483,6 +2847,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2496,6 +2861,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2509,6 +2875,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2522,6 +2889,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2535,6 +2903,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2548,6 +2917,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2561,6 +2931,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2574,6 +2945,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2587,6 +2959,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2600,6 +2973,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2613,6 +2987,7 @@
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2626,6 +3001,7 @@
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2639,6 +3015,7 @@
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2652,6 +3029,7 @@
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2665,6 +3043,7 @@
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2678,6 +3057,7 @@
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2691,6 +3071,7 @@
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2704,6 +3085,7 @@
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-10-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2717,6 +3099,7 @@
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-12-25",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2730,6 +3113,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2743,6 +3127,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2756,6 +3141,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2769,6 +3155,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2782,6 +3169,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2795,6 +3183,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2808,6 +3197,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2821,6 +3211,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2834,6 +3225,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2847,6 +3239,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2860,6 +3253,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2873,6 +3267,7 @@
    "made": "2026-09-27T08:58:59+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2886,6 +3281,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2899,6 +3295,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2912,6 +3309,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-10-27",
    "status": "yes",
+   "final": false,
    "why": "¥108,000 on 2026-10-01"
   },
   {
@@ -2925,6 +3323,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-12-26",
    "status": "yes",
+   "final": false,
    "why": "¥108,000 on 2026-10-01"
   },
   {
@@ -2938,6 +3337,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2951,6 +3351,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2964,6 +3365,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2977,6 +3379,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -2990,6 +3393,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-10-27",
    "status": "yes",
+   "final": false,
    "why": "¥57,980 on 2026-09-28"
   },
   {
@@ -3003,6 +3407,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-12-26",
    "status": "yes",
+   "final": false,
    "why": "¥57,980 on 2026-09-28"
   },
   {
@@ -3016,6 +3421,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-10-27",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3029,6 +3435,7 @@
    "made": "2026-09-27T18:39:13+09:00",
    "by": "2026-12-26",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3042,6 +3449,7 @@
    "made": "2026-09-30T09:25:18+09:00",
    "by": "2026-10-30",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3055,6 +3463,7 @@
    "made": "2026-09-30T09:25:18+09:00",
    "by": "2026-12-29",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3068,6 +3477,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-10-31",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3081,6 +3491,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-12-30",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3094,6 +3505,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-10-31",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3107,6 +3519,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-12-30",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3120,6 +3533,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-10-31",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3133,6 +3547,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-12-30",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3146,6 +3561,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-10-31",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3159,6 +3575,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-12-30",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3172,6 +3589,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-10-31",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3185,6 +3603,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-12-30",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3198,6 +3617,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-10-31",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3211,6 +3631,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-12-30",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3224,6 +3645,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-10-31",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3237,6 +3659,7 @@
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-12-30",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3250,6 +3673,7 @@
    "made": "2026-10-02T08:10:32+09:00",
    "by": "2026-11-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3263,6 +3687,7 @@
    "made": "2026-10-02T08:10:32+09:00",
    "by": "2026-12-31",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3276,6 +3701,7 @@
    "made": "2026-10-02T16:31:33+09:00",
    "by": "2026-11-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3289,6 +3715,7 @@
    "made": "2026-10-02T16:31:33+09:00",
    "by": "2026-12-31",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3302,6 +3729,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3315,6 +3743,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3328,6 +3757,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3341,6 +3771,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3354,6 +3785,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3367,6 +3799,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3380,6 +3813,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3393,6 +3827,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3406,6 +3841,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3419,6 +3855,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3432,6 +3869,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3445,6 +3883,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3458,6 +3897,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3471,6 +3911,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3484,6 +3925,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3497,6 +3939,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3510,6 +3953,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3523,6 +3967,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3536,6 +3981,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3549,6 +3995,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3562,6 +4009,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3575,6 +4023,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3588,6 +4037,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3601,6 +4051,7 @@
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3614,6 +4065,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3627,6 +4079,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3640,6 +4093,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3653,6 +4107,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3666,6 +4121,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3679,6 +4135,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3692,6 +4149,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3705,6 +4163,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3718,6 +4177,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3731,6 +4191,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3744,6 +4205,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3757,6 +4219,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3770,6 +4233,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3783,6 +4247,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3796,6 +4261,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3809,6 +4275,7 @@
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3822,6 +4289,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3835,6 +4303,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3848,6 +4317,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3861,6 +4331,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3874,6 +4345,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3887,6 +4359,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3900,6 +4373,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3913,6 +4387,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3926,6 +4401,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3939,6 +4415,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3952,6 +4429,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3965,6 +4443,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3978,6 +4457,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -3991,6 +4471,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4004,6 +4485,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4017,6 +4499,7 @@
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4030,6 +4513,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2026-11-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4043,6 +4527,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2027-01-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4056,6 +4541,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2026-11-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4069,6 +4555,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2027-01-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4082,6 +4569,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2026-11-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4095,6 +4583,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2027-01-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4108,6 +4597,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2026-11-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4121,6 +4611,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2027-01-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4134,6 +4625,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2026-11-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4147,6 +4639,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2027-01-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4160,6 +4653,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2026-11-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4173,6 +4667,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2027-01-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4186,6 +4681,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2026-11-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4199,6 +4695,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2027-01-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4212,6 +4709,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2026-11-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4225,6 +4723,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2027-01-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4238,6 +4737,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2026-11-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4251,6 +4751,7 @@
    "made": "2026-10-05T09:02:43+09:00",
    "by": "2027-01-03",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4264,6 +4765,7 @@
    "made": "2026-10-06T07:17:12+09:00",
    "by": "2026-11-05",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4277,6 +4779,7 @@
    "made": "2026-10-06T07:17:12+09:00",
    "by": "2027-01-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4290,6 +4793,7 @@
    "made": "2026-10-06T07:17:12+09:00",
    "by": "2026-11-05",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4303,6 +4807,7 @@
    "made": "2026-10-06T07:17:12+09:00",
    "by": "2027-01-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4316,6 +4821,7 @@
    "made": "2026-10-06T07:17:12+09:00",
    "by": "2026-11-05",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4329,6 +4835,7 @@
    "made": "2026-10-06T07:17:12+09:00",
    "by": "2027-01-04",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4342,6 +4849,7 @@
    "made": "2026-10-07T20:18:27+09:00",
    "by": "2026-11-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4355,6 +4863,7 @@
    "made": "2026-10-07T20:18:27+09:00",
    "by": "2027-01-05",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4368,6 +4877,7 @@
    "made": "2026-10-07T20:18:27+09:00",
    "by": "2026-11-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4381,6 +4891,7 @@
    "made": "2026-10-07T20:18:27+09:00",
    "by": "2027-01-05",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4394,6 +4905,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4407,6 +4919,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4420,6 +4933,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4433,6 +4947,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4446,6 +4961,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4459,6 +4975,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4472,6 +4989,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4485,6 +5003,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4498,6 +5017,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4511,6 +5031,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4524,6 +5045,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4537,6 +5059,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4550,6 +5073,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4563,6 +5087,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4576,6 +5101,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4589,6 +5115,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4602,6 +5129,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4615,6 +5143,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4628,6 +5157,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2026-11-07",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4641,6 +5171,7 @@
    "made": "2026-10-08T12:08:26+09:00",
    "by": "2027-01-06",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4654,6 +5185,7 @@
    "made": "2026-10-09T07:24:21+09:00",
    "by": "2026-11-08",
    "status": "open",
+   "final": false,
    "why": ""
   },
   {
@@ -4667,6 +5199,7 @@
    "made": "2026-10-09T07:24:21+09:00",
    "by": "2027-01-07",
    "status": "open",
+   "final": false,
    "why": ""
   }
  ]

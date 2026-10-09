@@ -7,7 +7,7 @@ body:
     id: id
     attributes:
       label: Card id
-      description: Filled in by the site, e.g. u52 (a pull) or p63 (a card you bought raw).
+      description: Filled in by the site, e.g. u52 (a pull) or p63 (a card you bought raw). Several ids separated by commas (the PSA submission planner) get the same date, service and status.
     validations:
       required: true
   - type: input

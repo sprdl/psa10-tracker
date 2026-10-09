@@ -13,6 +13,9 @@
 //
 // Limits: uses the limits saved "to all devices" (data/limits.json). A limit only changed on
 // one device's browser isn't visible to the widget until it's saved to all devices.
+// Cards you own (data/holdings.json): like the site, they never give a limit or Buy signal; they show a
+// sell signal instead (Sell / Take profit / Reassess from the sell tiers, your sell target saved to all
+// devices in data/sell_targets.json, Near peak, Rich ask), with the gain on what you paid.
 
 const BASE = 'https://sprdl.github.io/psa10-tracker/';
 const ROTATE_MINUTES = 15; // one card per slot; iOS decides the exact refresh time
@@ -50,20 +53,23 @@ async function getJSON(path, optional) {
 async function loadData() {
   const manifest = await getJSON('data/manifest.json');
   const latest = manifest.snapshots.slice().sort((a, b) => a.collected_at_jst.localeCompare(b.collected_at_jst)).pop();
-  const [snap, limits, hist, ci, events] = await Promise.all([
+  const [snap, limits, hist, ci, events, holdings, targets] = await Promise.all([
     getJSON('data/snapshots/' + latest.file),
     getJSON('data/limits.json', true),
     getJSON('data/history.json', true),
     getJSON('data/custom_index.json', true),
     getJSON('data/events.json', true),
+    getJSON('data/holdings.json', true),
+    getJSON('data/sell_targets.json', true),
   ]);
-  return { snap, limits: (limits && limits.limits) || {}, hist, ci, events };
+  return { snap, limits: (limits && limits.limits) || {}, hist, ci, events,
+    holdings: (holdings && holdings.holdings) || [], targets: (targets && targets.targets) || {} };
 }
 
 // ---------------------------------------------------------------- same rules as the site
 function parseName(name) {
-  const m = (name || '').match(/^(.*?)\s*\[([^\]]+)\]\s*\(([^)]+)\)\s*$/);
-  return m ? { short: m[1].trim(), code: m[2].trim() } : { short: name || '', code: '' };
+  const m = (name || '').match(/^(.*?)\s*\[([^\]]+)\]/);   // same as parseCardName in assets/app.js
+  return m && m[1].trim() ? { short: m[1].trim(), code: m[2].trim() } : { short: name || '', code: '' };
 }
 const cardId = (c) => (c.url || '').replace(/\/+$/, '').split('/').pop();
 const lowestAsk = (c) => ((c.grades || {}).psa10 || {}).lowest_price ?? null;
@@ -78,6 +84,16 @@ function liveTag(tiers, p) {
   if (p <= tiers.buy_upper) return 'buy';
   if (p <= tiers.ceiling) return 'watch';
   return 'dont_buy';
+}
+// Rally rule (site: rallyState): the My-tier index up 10%+ over 7 days. A flag only.
+function rallyOn(d) {
+  const ser = (d.ci && d.ci.series) || [];
+  const ref = d.snap.collected_at_jst.slice(0, 10);
+  const past = new Date(Date.parse(ref + 'T00:00:00Z') - 7 * 864e5).toISOString().slice(0, 10);
+  let now = null, then = null;
+  for (const e of ser) { if (e.d <= ref) now = e; if (e.d <= past) then = e; }
+  const pct = now && then && then !== now ? (now.level / then.level - 1) * 100 : null;
+  return { on: pct != null && pct >= 10, pct };
 }
 function correctionOn(d) {
   const ser = (d.ci && d.ci.series) || [];
@@ -109,6 +125,57 @@ function displayTag(d, card, corr) {
   return live || (a.verdict && a.verdict.tag) || null;
 }
 const limitOf = (d, card) => { const e = d.limits[card.url]; return e && typeof e.price === 'number' ? e.price : null; };
+
+// ---- cards you own: the site's sellState (assets/app.js), with the synced sell target
+const SELL_RANK = { sell: 5, take_profit: 4, reassess: 3, peak: 2, rich: 1, hold: 0 };
+const ASK_VS_SALES = 8, NEAR_PEAK = 0.95;
+const REL_S = { '秒': 1 / 86400, '分': 1 / 1440, '時間': 1 / 24, '日': 1, '週間': 7, 'ヶ月': 30, 'か月': 30 };
+function saleAge(when, ref) {
+  const w = String(when || '').trim();
+  if (w === 'たった今' || w === '今') return 0;
+  let m = w.match(/^(\d+)\s*(秒|分|時間|日|週間|ヶ月|か月)前/);
+  if (m) return (Number(m[1]) + 0.5) * REL_S[m[2]];
+  m = w.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
+  if (m) return Math.max(0, (ref - Date.parse(`${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T12:00:00+09:00`)) / 864e5);
+  return null;
+}
+function median(a) { const s = a.slice().sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
+function salesMedian(list, refIso) {
+  const ref = Date.parse(refIso);
+  const rows = (list || []).map((s) => ({ p: s.price, a: saleAge(s.when, ref) })).filter((s) => s.p);
+  const recent = rows.filter((s) => s.a != null && s.a <= 7).map((s) => s.p);
+  return recent.length >= 3 ? median(recent) : rows.length >= 3 ? median(rows.slice(-5).map((s) => s.p)) : null;
+}
+const targetOf = (d, card) => { const e = d.targets[card.url]; return e && typeof e.price === 'number' ? e.price : null; };
+// What a copy is measured against: a slab's price paid, a raw copy's DIY cost, (paid + grading & shipping) ÷ gem rate.
+function copyBasis(h, card) {
+  const paid = h.purchase_price_jpy || 0;
+  if (h.condition !== 'raw_to_grade') return paid;
+  const ship = h.shipping_insurance_jpy == null || h.shipping_insurance_jpy === 2000 ? 2450 : h.shipping_insurance_jpy;
+  const fee = (h.grading_fee_jpy != null ? h.grading_fee_jpy : 9980) + ship;
+  const gem = h.gem_rate_pct != null ? h.gem_rate_pct : card.psa10_gem_rate_pct;
+  return gem ? (paid + fee) / (gem / 100) : paid + fee;
+}
+function sellState(d, card) {
+  const hs = d.holdings.filter((h) => h.card_url === card.url);
+  if (!hs.length) return null;
+  const a = card.analysis || {}, price = repPrice(card), ask = lowestAsk(card), target = targetOf(d, card);
+  const t = a.sell_tiers && typeof a.sell_tiers.take_profit_from === 'number' && typeof a.sell_tiers.sell_from === 'number' ? a.sell_tiers : null;
+  const peak = a.peak && a.peak.price;
+  let tag = 'hold';
+  const up = (x) => { if (SELL_RANK[x] > SELL_RANK[tag]) tag = x; };
+  if (t && price != null) {
+    if (price >= t.sell_from) up('sell');
+    else if (price >= t.take_profit_from) up('take_profit');
+    else if (typeof t.reassess_below === 'number' && price < t.reassess_below) up('reassess');
+  }
+  if (target != null && price != null && price >= target) up('sell');
+  if (peak && price != null && price >= peak * NEAR_PEAK) up('peak');
+  const ref = salesMedian(((card.grades || {}).psa10 || {}).recent_completed_sales, d.snap.collected_at_jst);
+  if (ask != null && ref && (ask / ref - 1) * 100 >= ASK_VS_SALES) up('rich');
+  const basis = hs.reduce((x, h) => x + copyBasis(h, card), 0) / hs.length;
+  return { tag, target, basis, pct: price != null && basis ? (price / basis - 1) * 100 : null, raw: hs.every((h) => h.condition === 'raw_to_grade') };
+}
 function change7d(d, card) {
   const snaps = (d.hist && d.hist.snapshots) || [];
   const cut = Date.parse(d.snap.collected_at_jst) - 7 * 864e5;
@@ -138,17 +205,20 @@ function heat(d, card) {
 function buildModel(d) {
   const corr = correctionOn(d);
   const cards = (d.snap.cards || []).filter((c) => lowestAsk(c) != null).map((c) => {
-    const lim = limitOf(d, c), ask = lowestAsk(c), tag = displayTag(d, c, corr);
-    return { c, id: cardId(c), name: parseName(c.card_name_ja), price: repPrice(c), ask, lim, tag,
+    const own = sellState(d, c), ask = lowestAsk(c);
+    const lim = own ? null : limitOf(d, c), tag = own ? 'sell_' + own.tag : displayTag(d, c, corr);
+    return { c, id: cardId(c), name: parseName(c.card_name_ja), price: repPrice(c), ask, lim, tag, own,
       limitHit: lim != null && ask <= lim, chg7: change7d(d, c), heat: heat(d, c), tiers: (c.analysis || {}).tiers };
   });
   const limitHits = cards.filter((x) => x.limitHit);
-  const buys = cards.filter((x) => !x.limitHit && (x.tag === 'buy' || x.tag === 'definitely_buy'))
+  // owned cards with an actionable sell signal, strongest first (the site's sort puts these first too)
+  const sells = cards.filter((x) => x.own && ['sell', 'take_profit', 'reassess'].includes(x.own.tag)).sort((a, b) => SELL_RANK[b.own.tag] - SELL_RANK[a.own.tag]);
+  const buys = cards.filter((x) => !x.own && !x.limitHit && (x.tag === 'buy' || x.tag === 'definitely_buy'))
     .sort((a, b) => (a.tag === 'definitely_buy' ? 0 : 1) - (b.tag === 'definitely_buy' ? 0 : 1));
-  // closest to a buy: % above your limit, or above the Buy line when there's no limit
+  // closest to a buy: % above your limit, or above the Buy line when there's no limit (cards you don't own)
   const gap = (x) => x.lim != null ? x.ask / x.lim - 1 : x.tiers ? x.price / x.tiers.buy_upper - 1 : Infinity;
-  const closest = cards.filter((x) => !x.limitHit && x.tag !== 'buy' && x.tag !== 'definitely_buy').sort((a, b) => gap(a) - gap(b));
-  return { cards, limitHits, buys, closest, gap, corr, when: d.snap.collected_at_jst };
+  const closest = cards.filter((x) => !x.own && !x.limitHit && x.tag !== 'buy' && x.tag !== 'definitely_buy').sort((a, b) => gap(a) - gap(b));
+  return { cards, limitHits, sells, buys, closest, gap, corr, rally: rallyOn(d), when: d.snap.collected_at_jst };
 }
 
 // ---------------------------------------------------------------- drawing helpers
@@ -156,7 +226,10 @@ const yen = (n) => n == null ? '—' : '¥' + Math.round(n).toLocaleString('en-U
 const pct = (v) => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '±') + Math.abs(v).toFixed(1) + '%';
 const pctColor = (v) => v == null ? C.muted : v > 0 ? C.green : v < 0 ? C.red : C.muted;
 const TAG = { definitely_buy: ['DEF. BUY', C.greenStrong, true], buy: ['BUY', C.green, true], watch: ['WATCH', C.amber, false],
-  dont_buy: ["DON'T BUY", C.red, false], defer: ['DEFER', C.muted, false] };
+  dont_buy: ["DON'T BUY", C.red, false], defer: ['DEFER', C.muted, false],
+  sell_sell: ['SELL', C.accent, true], sell_take_profit: ['TAKE PROFIT', C.green, true], sell_reassess: ['REASSESS', C.red, false],
+  sell_peak: ['NEAR PEAK', C.accent, false], sell_rich: ['RICH ASK', C.accent, false], sell_hold: ['HOLD', C.muted, false] };
+const ownTxt = (x) => x.own && x.own.pct != null ? `${pct(x.own.pct)} vs ${x.own.raw ? 'DIY' : 'paid'}` : '';
 
 function txt(stack, s, size, color, bold, lines) {
   const t = stack.addText(String(s));
@@ -280,7 +353,7 @@ function footer(w, m, extra) {
 // ---------------------------------------------------------------- small: rotating signal card
 async function small(w, m) {
   const pin = (args.widgetParameter || '').trim();
-  let pool = m.limitHits.length ? m.limitHits : m.buys, kind = m.limitHits.length ? 'limit' : 'buy';
+  let pool = m.limitHits.length ? m.limitHits : m.sells.length ? m.sells : m.buys, kind = m.limitHits.length ? 'limit' : m.sells.length ? 'sell' : 'buy';
   if (pin) { const x = m.cards.find((x) => x.id === pin); if (x) { pool = [x]; kind = x.limitHit ? 'limit' : 'pin'; } }
   const slot = Math.floor(Date.now() / (ROTATE_MINUTES * 6e4));
   w.refreshAfterDate = new Date((slot + 1) * ROTATE_MINUTES * 6e4);
@@ -308,6 +381,7 @@ async function small(w, m) {
   if (zb) { const zi = w.addImage(zb); zi.imageSize = new Size(130, 10); }
   const sub = w.addStack(); sub.centerAlignContent();
   if (closest) { const g = m.gap(x); txt(sub, isFinite(g) ? `+${(g * 100).toFixed(0)}% to ${x.lim != null ? 'limit' : 'Buy'}` : '', 10, C.ice, true); }
+  else if (x.own) txt(sub, ownTxt(x) || 'owned', 10, x.own.pct != null ? pctColor(x.own.pct) : C.soft, true);
   else if (x.lim != null) txt(sub, 'limit ' + yen(x.lim), 10, C.soft);
   else if (x.tiers) txt(sub, 'buy ≤ ' + yen(x.tiers.buy_upper), 10, C.soft);
   sub.addSpacer(6);
@@ -322,14 +396,15 @@ async function medium(w, m, ci) {
   w.url = openLink('#/overview');
   header(w, m, ci, z);
   w.addSpacer(5);
-  const sig = m.limitHits.concat(m.buys);
+  const sig = m.limitHits.concat(m.sells, m.buys);
   // signals first; free slots are filled with the cards closest to a buy
   const list = sig.slice(0, 3).concat(m.closest.slice(0, Math.max(0, 3 - sig.length)));
   const sub = w.addStack(); sub.centerAlignContent();
-  txt(sub, m.limitHits.length ? 'AT YOUR LIMIT' : sig.length ? 'BUY SIGNALS' : 'NO SIGNALS · CLOSEST', z.small, m.limitHits.length ? C.accent : C.muted, true);
+  txt(sub, m.limitHits.length ? 'AT YOUR LIMIT' : m.sells.length && !m.buys.length ? 'SELL SIGNALS' : m.sells.length ? 'SIGNALS' : sig.length ? 'BUY SIGNALS' : 'NO SIGNALS · CLOSEST', z.small, m.limitHits.length ? C.accent : C.muted, true);
   if (sig.length > 3) { sub.addSpacer(4); txt(sub, `+${sig.length - 3} more`, z.small, C.muted); }
   sub.addSpacer();
   if (m.corr.on) { txt(sub, 'CORRECTION', z.small, C.amber, true); sub.addSpacer(4); }
+  if (m.rally.on) { txt(sub, 'RALLY', z.small, C.green, true); sub.addSpacer(4); }
   txt(sub, m.when.slice(5, 16).replace('-', '/').replace('T', ' '), z.small, C.muted);
   w.addSpacer();
   const row = w.addStack(); row.topAlignContent();
@@ -355,7 +430,8 @@ async function medium(w, m, ci) {
     const ch = tile.addStack(); ch.size = new Size(z.tileW, 0); ch.centerAlignContent();
     txt(ch, '7d ' + pct(x.chg7), z.small, pctColor(x.chg7), false, 1);
     ch.addSpacer();
-    if (x.heat) txt(ch, x.heat[0], z.small, x.heat[1], true, 1);
+    if (x.own && x.own.pct != null) txt(ch, pct(x.own.pct) + (x.own.raw ? ' DIY' : ' paid'), z.small, pctColor(x.own.pct), true, 1);
+    else if (x.heat) txt(ch, x.heat[0], z.small, x.heat[1], true, 1);
   }
   if (!list.length) txt(w, 'No tracked cards with a PSA10 market yet.', 10, C.muted);
   w.addSpacer();
@@ -366,7 +442,7 @@ async function large(w, m, ci) {
   w.url = openLink('#/overview');
   header(w, m, ci);
   w.addSpacer(8);
-  const list = m.limitHits.concat(m.buys, m.cards.filter((x) => !m.limitHits.includes(x) && !m.buys.includes(x)));
+  const list = m.limitHits.concat(m.sells, m.buys, m.cards.filter((x) => !m.limitHits.includes(x) && !m.sells.includes(x) && !m.buys.includes(x)));
   for (const x of list.slice(0, 10)) {
     const r = w.addStack(); r.centerAlignContent();
     const nm = r.addStack(); nm.size = new Size(125, 0);
@@ -378,10 +454,11 @@ async function large(w, m, ci) {
     txt(ch, pct(x.chg7), 10, pctColor(x.chg7));
     r.addSpacer(4);
     if (x.limitHit) pill(r, 'LIMIT', C.accent, true); else if (TAG[x.tag]) pill(r, ...TAG[x.tag]);
+    if (x.own) { r.addSpacer(4); txt(r, x.own.pct != null ? pct(x.own.pct) : 'OWNED', 9, x.own.pct != null ? pctColor(x.own.pct) : C.muted, true, 1); }
     if (x.heat) { r.addSpacer(4); pill(r, x.heat[0], x.heat[1], false); }
     w.addSpacer(5);
   }
-  footer(w, m, m.corr.on ? 'correction rule on · 7d change' : '7d change');
+  footer(w, m, [m.corr.on ? 'correction rule on' : '', m.rally.on ? 'rally rule on' : '', '7d change', m.cards.some((x) => x.own) ? 'owned: gain vs paid' : ''].filter(Boolean).join(' · '));
 }
 
 // ---------------------------------------------------------------- opening the tracker
@@ -393,7 +470,10 @@ function openLink(route) {
   if (OPEN_IN_SAFARI) return BASE + route;
   return 'scriptable:///run/' + encodeURIComponent(Script.name()) + '?route=' + encodeURIComponent(route);
 }
-if (config.runsInApp && args.queryParameters && args.queryParameters.route) {
+if (globalThis.__PSA10_TEST__) {
+  // tests/rules.mjs: hand the rules to the test and draw nothing (never set in Scriptable)
+  globalThis.__PSA10_TEST__({ buildModel, displayTag, correctionOn, rallyOn, eventFor, sellState, liveTag, repPrice, salesMedian });
+} else if (config.runsInApp && args.queryParameters && args.queryParameters.route) {
   const wv = new WebView();
   await wv.loadURL(BASE + args.queryParameters.route);
   await wv.present(true);
