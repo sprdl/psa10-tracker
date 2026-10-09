@@ -237,6 +237,13 @@ paid, in the header, the Sealed section and the chart. The Sold form's suggested
 the raw A-rank price for a raw copy. "Remove card" is disabled for a card you hold or pulled, on the page and in
 `scripts/remove_card.py`.
 
+## Collection tiles for cards you own
+
+The same figures as the Holdings page. A card bought as a PSA10: the PSA10 price with the gain against the price paid (badge
+"+20.6% vs paid"). A card held only raw: the PSA10 price with the badge "+39.0% vs DIY" (PSA10 ask against your DIY cost) and,
+under the price, "Raw A ¥78.5k +4.7% · DIY ¥100.7k" (the raw A-rank price against what you paid, and your DIY cost). Hovering
+the line spells out the sums (`rawOnlyStats` in `assets/app.js`).
+
 ## Holdings values: lowest ask or after selling costs
 
 A switch at the top of the Holdings page (saved in this browser) shows every value either at the lowest ask or

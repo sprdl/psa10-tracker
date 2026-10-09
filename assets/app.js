@@ -3344,6 +3344,14 @@
   // A card you own: bought as a single (Holdings) or pulled from a sealed product (the Sealed section).
   function pulledCard(card) { return (state.sealed || []).some((sd) => (sd.pulls || []).some((p) => p.card_url === card.url)); }
   function ownsCard(card) { return holdingsFor(card).length > 0 || pulledCard(card); }
+  // A card held only as raw copies: how the raw A-rank price moved against what you paid, and how the PSA10 ask moved
+  // against your DIY cost with that price (the same three figures as a raw single on the Holdings page).
+  function rawOnlyStats(card) {
+    const own = ownedOf(card);
+    if (!own || !own.hs.every((h) => h.condition === 'raw_to_grade')) return null;
+    const raw = rawPriceV(card), ask = lowestAsk(card);
+    return { own, raw, ask, rawPct: raw != null && own.paid ? (raw / own.paid - 1) * 100 : null, psaPct: ask != null && own.basis ? (ask / own.basis - 1) * 100 : null };
+  }
   function renderCollection(cards) {
     const el = document.getElementById('collection');
     const ownedOnly = store.get('psa10.ownedOnly', false) === true;
@@ -3354,18 +3362,20 @@
       const lim = getLimit(card);
       const owned = holdingsFor(card).length;
       const bg = boughtGap(card);
+      const rs = rawOnlyStats(card);
       const pop = card.psa10_population != null ? card.psa10_population.toLocaleString() : '—';
       const pk = state.cmpPick.indexOf(card.url);
       const pickHtml = state.cmpMode ? `<span class="tile-pick${pk >= 0 ? ' on' : ''}" style="${pk >= 0 ? `background:${CMP_COLORS[pk]};border-color:${CMP_COLORS[pk]}` : ''}" aria-hidden="true">${pk >= 0 ? 'AB'[pk] : ''}</span>` : '';
       return `<a class="tile${limitHit(card) || sellHit(card) ? ' hit' : ''}${state.cmpMode ? ' picking' : ''}${pk >= 0 ? ' picked' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}"${state.cmpMode ? ` aria-pressed="${pk >= 0}" style="--pc:${pk >= 0 ? CMP_COLORS[pk] : 'transparent'}"` : ''}>
         <span class="tile-slab">${slabHtml(card, 'lg')}${pickHtml}
           <span class="tile-chips">${heatChip(card)}${owned ? sellChip(card) : tagChip(card)}</span>
-          ${owned ? (bg ? `<span class="tile-pl ${bg.pct >= 0 ? 'pos' : 'neg'}" title="${escapeAttr(boughtGapTitle(bg))}">${bg.pct === 0 ? '±0%' : fmtPct(bg.pct)} vs paid</span>` : '')
+          ${owned ? (bg ? `<span class="tile-pl ${bg.pct >= 0 ? 'pos' : 'neg'}" title="${escapeAttr(boughtGapTitle(bg))}">${bg.pct === 0 ? '±0%' : fmtPct(bg.pct)} vs ${rs ? 'DIY' : 'paid'}</span>` : '')
             : lim != null ? `<span class="tile-limit">Limit ${fmtYen(lim)}</span>` : ''}
           ${owned ? '<span class="tile-owned">Owned</span>' : pulledCard(card) ? '<span class="tile-owned">Pulled</span>' : ''}
         </span>
         <span class="tile-name jp">${escapeHtml(short)}</span>
         <span class="tile-price"><b class="display">${fmtYen(getRep(card))}</b><span class="tile-chg"><small>7d</small>${changeCell(card, 7, 'tc')}<small>30d</small>${changeCell(card, 30, 'tc')}</span></span>
+        ${rs ? `<span class="tile-raw" title="${escapeAttr(rawPriceNote(rawPrice(card)) + `; you paid ${fmtYen(rs.own.paid)} for the raw card. DIY cost = (price paid + grading & shipping) ÷ gem rate. The PSA10 ask is ${rs.psaPct != null ? fmtPct(rs.psaPct) + ' against it' : 'unknown'}.`)}">Raw A <b>${rs.raw != null ? fmtYenShort(rs.raw) : '—'}</b>${rs.rawPct != null ? ` <i class="${rs.rawPct >= 0 ? 'pos' : 'neg'}">${rs.rawPct === 0 ? '±0%' : fmtPct(rs.rawPct)}</i>` : ''} · DIY <b>${fmtYenShort(rs.own.basis)}</b></span>` : ''}
         ${zoneBarHtml(card, 'thin')}
         <span class="tile-meta">${escapeHtml(code)} · ${bg ? `Paid ${fmtYen(bg.paid)}` : `Pop ${pop}`}</span>
       </a>`;

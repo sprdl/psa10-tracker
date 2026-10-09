@@ -1533,3 +1533,8 @@ a.sl-icon:hover { border-color: var(--accent); }
 
 .own-filter { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--soft); cursor: pointer; margin-left: auto; }
 .own-filter input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+
+/* raw cards on the collection page: raw A-rank vs paid, and the DIY cost */
+.tile-raw { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.tile-raw b { color: var(--soft); font-weight: 600; } .tile-raw i { font-style: normal; font-weight: 600; }
+.tile-raw .pos { color: var(--green); } .tile-raw .neg { color: var(--neg); }
