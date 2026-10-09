@@ -38,7 +38,6 @@
     snapshotSelects: [document.getElementById('snapshot-select'), document.getElementById('snapshot-select-m')],
     collectedAt: document.getElementById('collected-at'),
     marketStrip: document.getElementById('market-strip'),
-    banners: document.getElementById('banners'),
     notesBody: document.getElementById('notes-body'),
     cards: document.getElementById('watchlist'),
     watchPanel: document.getElementById('watch-panel'),
@@ -1282,29 +1281,84 @@
     return out.sort((a, b) => a.rank - b.rank);
   }
 
-  function renderSignals(cards) {
-    const el = document.getElementById('signals');
+  // Overview "Needs you": everything that asks for a decision today, most urgent first. Buy signals (limit hits,
+  // Buy zones, Mercari), sell signals on cards you own, and buy tiers due for a review. With no buy signal it
+  // says which card is closest, so an empty day still answers "how far off am I?".
+  function inboxItems(cards) {
+    const items = computeSignals(cards).map((s) => ({ key: s.key, card: s.card, name: sealedName(s), text: s.text,
+      pill: s.kind === 'limit' ? '<span class="sig-pill limit">My limit</span>' : s.kind === 'mercari' ? '<span class="sig-pill merc">Mercari</span>' : `<span class="vtag ${s.kind}">${escapeHtml(tagLabel(s.kind))}</span>`, buy: true }));
+    for (const card of cards) {
+      const st = sellState(card);
+      if (!st || st.tag === 'hold') continue;
+      items.push({ key: card.url + '|sell|' + st.tag, card, name: parseCardName(card.card_name_ja).short, text: st.reasons[0] || '', pill: sellChip(card), rank: -SELL_RANK[st.tag] });
+    }
+    for (const card of cards) {
+      if (holdingsFor(card).length || !hasMarket(card)) continue;
+      const r = tierReview(card);
+      if (r && r.due) items.push({ key: card.url + '|review', card, name: parseCardName(card.card_name_ja).short, text: `Buy tiers due for a review: ${r.reasons.join(', ')}`, pill: '<span class="vtag review">Review</span>', rank: 10 });
+    }
+    return items.map((x, i) => Object.assign(x, { i, rank: x.buy ? -100 + i : x.rank })).sort((x, y) => x.rank - y.rank || x.i - y.i);
+  }
+  // The non-owned card closest to a buy: smallest gap from the lowest ask to your limit, else to its Buy line.
+  function closestBuy(cards) {
+    let best = null;
+    for (const c of cards) {
+      if (holdingsFor(c).length || !hasMarket(c)) continue;
+      const g = limitGap(c), t = c.analysis && c.analysis.tiers, rep = getRep(c);
+      const x = g ? { pct: g.pct, what: `above your ${fmtYen(g.lim)} limit` } : t && rep ? { pct: (rep / t.buy_upper - 1) * 100, what: `above its Buy line (${fmtYen(t.buy_upper)})` } : null;
+      if (x && x.pct > 0 && (!best || x.pct < best.pct)) best = Object.assign(x, { card: c });
+    }
+    return best;
+  }
+  function renderInbox(cards) {
+    const el = document.getElementById('inbox');
+    if (!el) return;
     const snaps = state.manifest.snapshots || [];
     const isLatest = state.currentIndex === snaps.length - 1;
-    const signals = computeSignals(cards);
-    // "NEW" = not shown on this browser's previous visit to the latest snapshot.
     const seen = new Set(store.get('psa10.seenSignals', []));
+    const items = inboxItems(cards), buys = items.filter((x) => x.buy);
     const tracked = cards.filter((c) => lowestAsk(c) != null).length;
+    const near = buys.length ? null : closestBuy(cards);
+    const rules = correctionState().active || activeEvents().length;
+    const empty = buys.length ? '' : `<div class="ib-quiet"><span class="vtag none">Buy</span><span>No buy signals${rules ? ` (${correctionState().active ? 'correction' : 'event'} rule on: only Definitely-buy and your limits count)` : ''}.${near ? ` Closest: <a href="#/card/${escapeAttr(cardId(near.card))}" data-ib="${escapeAttr(near.card.url)}"><b class="jp">${escapeHtml(parseCardName(near.card.card_name_ja).short)}</b></a>, ${fmtPct(near.pct)} ${escapeHtml(near.what)}.` : ` ${tracked} cards tracked.`}</span></div>`;
+    el.innerHTML = `<h2 class="section-title">Needs you${items.length ? ` <span class="ib-n">${items.length}</span>` : ''}</h2>
+      ${items.length || empty ? '' : '<p class="ib-none">Nothing to act on today.</p>'}
+      <ul class="ib-list">${items.map((x) => {
+        const isNew = x.buy && isLatest && !seen.has(x.key);
+        return `<li><a class="ib-item" href="#/card/${escapeAttr(cardId(x.card))}" data-ib="${escapeAttr(x.card.url)}">${x.pill}<span class="ib-txt"><b class="jp">${escapeHtml(x.name)}</b><small>${escapeHtml(x.text)}</small></span>${isNew ? '<span class="sig-new">NEW</span>' : ''}<svg class="ib-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></li>`;
+      }).join('')}</ul>${empty}`;
+    el.querySelectorAll('[data-ib]').forEach((a) => a.addEventListener('click', (e) => {
+      const card = cards.find((c) => c.url === a.dataset.ib);
+      if (!card || !DESKTOP.matches) return;
+      e.preventDefault();
+      openCard(card);
+    }));
+    if (isLatest) store.set('psa10.seenSignals', buys.map((x) => x.key));
+  }
 
-    if (!signals.length) {
-      el.innerHTML = `<div class="signals-head">Buy signals</div><div class="signals-empty">None right now. ${correctionState().active || activeEvents().length ? `No card is at Definitely-buy or your limit (${correctionState().active ? 'correction' : 'event'} rule on; Buy-zone cards count as Watch)` : 'No card is in a Buy zone or at your limit'} (${tracked} tracked).</div>`;
-    } else {
-      el.innerHTML = `<div class="signals-head">Buy signals</div>` + signals.map((s) => {
-        const isNew = isLatest && !seen.has(s.key);
-        const pill = s.kind === 'limit' ? '<span class="sig-pill limit">My limit</span>' : s.kind === 'mercari' ? '<span class="sig-pill merc">Mercari</span>' : `<span class="vtag ${s.kind}">${escapeHtml(tagLabel(s.kind))}</span>`;
-        return `<button type="button" class="signal" data-idx="${s.i}">${pill}<span class="sig-name">${escapeHtml(sealedName(s))}</span><span class="sig-text">${escapeHtml(s.text)}</span>${isNew ? '<span class="sig-new">NEW</span>' : ''}</button>`;
-      }).join('');
-      el.querySelectorAll('.signal').forEach((b) => b.addEventListener('click', () => {
-        const card = cards[Number(b.dataset.idx)];
-        if (card) openCard(card);
-      }));
-    }
-    if (isLatest) store.set('psa10.seenSignals', signals.map((s) => s.key));
+  // Overview "Your money": what the holdings are worth (by the Holdings page's value basis), against what they cost
+  // and against the same money put into the My-tier index on the same days, plus the budget left.
+  function renderMoney() {
+    const el = document.getElementById('money');
+    if (!el || !state.currentData) return;
+    const cards = state.currentData.cards || [];
+    const t = holdingsTotals(cards);
+    const st = plannerState();
+    const left = st.budget - state.holdings.reduce((a, h) => a + holdingCost(h), 0);
+    let bench = null;
+    try {
+      const ps = portfolioSeries(), last = ps && ps.pts && ps.pts[ps.pts.length - 1];
+      if (last && last.bench.total) bench = last.worth.total - last.bench.total;
+    } catch (e) { bench = null; }
+    const pct = t.spent ? (t.pnl / t.spent) * 100 : null;
+    el.innerHTML = `<div class="mn-head"><h2 class="section-title">Your money</h2><a href="#/holdings">Holdings ›</a></div>
+      ${t.n ? `<span class="lbl">Holdings · ${escapeHtml(basisWord().toLowerCase())}</span>
+      <span class="mn-v display">${fmtYen(t.worth)}</span>
+      <span class="mn-d ${t.pnl >= 0 ? 'pos' : 'neg'}">${signedYen(t.pnl)}${pct != null ? ` (${fmtPct(pct)})` : ''} <small>on ${fmtYen(t.spent)}</small></span>` : '<span class="mn-d muted">Nothing bought yet.</span>'}
+      <dl class="mn-rows">
+        ${bench != null ? `<div title="The same purchases put into the My-tier index on the same days"><dt>vs My-tier index</dt><dd class="${dirClass(bench)}">${signedYen(bench)}</dd></div>` : ''}
+        <div title="Budget ${fmtYen(st.budget)} minus what you spent on singles (budget planner)"><dt>Budget left</dt><dd class="${left < 0 ? 'amb' : ''}">${left < 0 ? fmtYen(-left) + ' over' : fmtYen(left)}</dd></div>
+      </dl>`;
   }
 
   // ---------- render: market strip ----------
@@ -2237,35 +2291,54 @@
     return flags;
   }
 
-  function renderBanners(data, prevData) {
-    let html = '';
+  // Overview "Market today": one chip per rule or note that is on (event, correction, rally, the snapshot's own
+  // banners, changes since the last check). A chip opens its full explanation underneath; one at a time.
+  function todayItems(data, prevData) {
+    const out = [];
     const act = activeEvents();
     if (act.length) {
       const held = (data.cards || []).filter(heldByEvent).map((c) => parseCardName(c.card_name_ja).short);
-      html += `<div class="banner warning"><strong>Event rule on: ${escapeHtml(act.map((e) => e.name + ' ' + eventWhen(e)).join(' · '))}.</strong>Right before a major release prices often dip, so Buy-zone prices show as Watch until it's out (${escapeHtml([...new Set(act.map(eventScope))].join(', '))})${held.length ? `; now: ${escapeHtml(held.join(', '))}` : ''}. Definitely-buy prices and your own limits still count.</div>`;
+      out.push({ key: 'event', tone: 'warning', label: `Event rule on · ${act.map((e) => e.name).join(', ')}`,
+        body: `<strong>Event rule on: ${escapeHtml(act.map((e) => e.name + ' ' + eventWhen(e)).join(' · '))}.</strong>Right before a major release prices often dip, so Buy-zone prices show as Watch until it's out (${escapeHtml([...new Set(act.map(eventScope))].join(', '))})${held.length ? `; now: ${escapeHtml(held.join(', '))}` : ''}. Definitely-buy prices and your own limits still count.` });
     } else {
       const next = upcomingEvents().find((e) => e.d && e.major !== false && daysUntil(e.d) <= 14);
-      if (next) html += `<div class="banner auto"><strong>Coming up: ${escapeHtml(next.name)}, ${escapeHtml(eventWhen(next))}</strong>The event rule holds Buy calls for ${escapeHtml(eventScope(next))} in the ${eventWindow()} days before it.</div>`;
+      if (next) out.push({ key: 'next', tone: 'info', label: `${next.name} · ${eventWhen(next)}`,
+        body: `<strong>Coming up: ${escapeHtml(next.name)}, ${escapeHtml(eventWhen(next))}</strong>The event rule holds Buy calls for ${escapeHtml(eventScope(next))} in the ${eventWindow()} days before it.` });
     }
     const cs = correctionState();
     if (cs.active) {
       const held = (data.cards || []).filter(heldByCorrection).map((c) => parseCardName(c.card_name_ja).short);
-      html += `<div class="banner warning"><strong>Correction rule on: ${escapeHtml(cs.name)} ${fmtPct(cs.pct)} over 30 days.</strong>While the market is still falling more than ${CORRECTION_PCT}% a month, only Definitely-buy prices count as a buy; cards in the Buy zone show as Watch${held.length ? ` (now: ${escapeHtml(held.join(', '))})` : ''}. Your own limit prices still trigger signals.</div>`;
+      out.push({ key: 'correction', tone: 'warning', label: `Correction rule on · ${cs.name} ${fmtPct(cs.pct)}`,
+        body: `<strong>Correction rule on: ${escapeHtml(cs.name)} ${fmtPct(cs.pct)} over 30 days.</strong>While the market is still falling more than ${CORRECTION_PCT}% a month, only Definitely-buy prices count as a buy; cards in the Buy zone show as Watch${held.length ? ` (now: ${escapeHtml(held.join(', '))})` : ''}. Your own limit prices still trigger signals.` });
     }
     const rl = rallyState();
     if (rl.active) {
       const br = indexBreadth(RALLY_DAYS);
-      html += `<div class="banner auto"><strong>Rally rule on: My-tier index ${fmtPct(rl.pct)} over ${RALLY_DAYS} days${br ? `, ${br.up} of its ${br.n} cards up` : ''}.</strong>Prices across your tier are rising fast${br && br.topShare != null ? ` (the top 3 cards made ${Math.round(br.topShare)}% of the move: ${escapeHtml(br.top.map((r) => r.name).join(', '))})` : ''}. Limits set before the rally are less likely to fill soon, since the odds assume no trend; a card still in its Buy zone is lagging the rally, so check why before buying; and owned cards near their Take-profit zone are worth a look. Nothing changes the pills or signals.</div>`;
+      out.push({ key: 'rally', tone: 'warning', label: `Rally rule on · ${fmtPct(rl.pct)}${br ? ` · ${br.up}/${br.n} up` : ''}`,
+        body: `<strong>Rally rule on: My-tier index ${fmtPct(rl.pct)} over ${RALLY_DAYS} days${br ? `, ${br.up} of its ${br.n} cards up` : ''}.</strong>Prices across your tier are rising fast${br && br.topShare != null ? ` (the top 3 cards made ${Math.round(br.topShare)}% of the move: ${escapeHtml(br.top.map((r) => r.name).join(', '))})` : ''}. Limits set before the rally are less likely to fill soon, since the odds assume no trend; a card still in its Buy zone is lagging the rally, so check why before buying; and owned cards near their Take-profit zone are worth a look. Nothing changes the pills or signals.` });
     }
-    (data.banners || []).forEach((b) => {
-      const cls = b.type === 'warning' ? 'warning' : b.type === 'correction' ? 'correction' : '';
-      html += `<div class="banner ${cls}"><strong>${escapeHtml(b.title || '')}</strong>${escapeHtml(b.body || '')}</div>`;
+    (data.banners || []).forEach((b, i) => {
+      out.push({ key: 'b' + i, tone: b.type === 'warning' ? 'warning' : b.type === 'correction' ? 'correction' : 'info', label: b.title || 'Note',
+        body: `<strong>${escapeHtml(b.title || '')}</strong>${escapeHtml(b.body || '')}` });
     });
     const autoFlags = computeAutoFlags(data.cards || [], prevData);
-    if (autoFlags.length) {
-      html += `<div class="banner auto"><strong>Automatically detected since last snapshot</strong><ul>${autoFlags.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul></div>`;
-    }
-    els.banners.innerHTML = html;
+    if (autoFlags.length) out.push({ key: 'auto', tone: 'auto', label: `${autoFlags.length} change${autoFlags.length === 1 ? '' : 's'} since last check`,
+      body: `<strong>Automatically detected since last snapshot</strong><ul>${autoFlags.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>` });
+    return out;
+  }
+  function renderToday(data, prevData) {
+    const el = document.getElementById('today');
+    if (!el) return;
+    const items = todayItems(data, prevData);
+    if (!items.some((x) => x.key === state.todayOpen)) state.todayOpen = null;
+    const open = items.find((x) => x.key === state.todayOpen);
+    el.innerHTML = `<div class="today-row"><span class="today-h">Market today</span>${items.length ? items.map((x) =>
+      `<button type="button" class="tchip t-${x.tone}" data-today="${escapeAttr(x.key)}" aria-expanded="${x === open}" title="${escapeAttr(x.label)}"><i></i><span>${escapeHtml(x.label)}</span></button>`).join('')
+      : '<span class="tchip t-quiet"><i></i>Quiet: no market rule on</span>'}</div>${open ? `<div class="banner ${open.tone === 'info' ? 'auto' : open.tone}">${open.body}</div>` : ''}`;
+    el.querySelectorAll('[data-today]').forEach((b) => b.addEventListener('click', () => {
+      state.todayOpen = state.todayOpen === b.dataset.today ? null : b.dataset.today;
+      renderToday(data, prevData);
+    }));
   }
 
   // ---------- app shell: views + routing ----------
@@ -2295,11 +2368,11 @@
     const { view, arg } = parseRoute();
     document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== view; });
     renderLazy(view);
-    const PARENT = { compare: 'collection', duel: 'planner', combos: 'planner', rate: 'planner', scored: 'record', submit: 'holdings' };
+    const PARENT = { compare: 'collection', duel: 'planner', combos: 'planner', rate: 'planner', scored: 'record' };
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
-    if (tab && ['watching', 'record', 'market', 'tables', 'scout', 'predict', 'stories'].includes(navView)) tab.classList.add('on');
+    if (tab && ['watching', 'planner', 'collection', 'submit', 'record', 'market', 'tables', 'predict', 'stories'].includes(navView)) tab.classList.add('on');
 
     const back = document.getElementById('back-link');
     back.hidden = view !== 'card' && !PARENT[view];
@@ -2320,9 +2393,10 @@
     } else if (PARENT[view]) {
       back.href = '#/' + PARENT[view];
       back.querySelector('span').textContent = VIEWS[PARENT[view]];
-      ({ title, sub } = view === 'compare' ? renderCompare(arg) : view === 'duel' ? renderDuel(arg) : view === 'combos' ? renderCombos() : view === 'rate' ? renderRate(arg) : view === 'submit' ? renderSubmit() : renderScored());
+      ({ title, sub } = view === 'compare' ? renderCompare(arg) : view === 'duel' ? renderDuel(arg) : view === 'combos' ? renderCombos() : view === 'rate' ? renderRate(arg) : renderScored());
     } else {
       state.cardFrom = view === 'more' ? 'overview' : view;
+      if (view === 'submit') ({ title, sub } = renderSubmit());
     }
     document.getElementById('page-title').textContent = title;
     document.getElementById('page-sub').textContent = sub;
@@ -2420,6 +2494,7 @@
       record: tr && tr.calls_scored && tr.closed ? `${tr.closed.right || 0}–${tr.closed.wrong || 0}` : '',
       scout: scoutNewCount(),
       predict: predOpenCount(),
+      submit: rawCopies().filter((c) => !c.sent).length || '',
     };
     document.querySelectorAll('em[data-count]').forEach((em) => { em.textContent = counts[em.dataset.count] || ''; });
   }
@@ -2499,8 +2574,8 @@
     renderEvents();
     renderHeat();
     renderKpis(data);
-    renderSignals(cards);
-    renderBanners(data, state.previousData);
+    renderToday(data, state.previousData);
+    renderInbox(cards);
     els.notesBody.textContent = data.notes || '';
     renderPortfolio(state.holdings, cards);
     renderOverviewList(cards);
@@ -2639,12 +2714,7 @@
     if (sel) sel.value = sortState.key;
     if (dirBtn) { dirBtn.textContent = sortState.dir > 0 ? '↑' : '↓'; dirBtn.hidden = sortState.key === 'default'; }
   }
-  function initSortUi() {
-    document.querySelectorAll('.wl-head [data-sort]').forEach((b) => b.addEventListener('click', () => {
-      // clicking the active column a third time goes back to the default order
-      if (b.dataset.sort === sortState.key && sortState.dir !== SORTS[sortState.key].dir) return setSort('default', 1);
-      setSort(b.dataset.sort);
-    }));
+  function initSortUi() {   // the column heads are wired by renderOverviewList, which draws them
     const sel = document.getElementById('wl-sort-select');
     if (sel) {
       sel.innerHTML = Object.entries(SORTS).map(([k, d]) => `<option value="${k}">${escapeHtml(d.label)}</option>`).join('');
@@ -2657,25 +2727,19 @@
 
   // ---------- render: key numbers ----------
 
+  // Overview header strip: the three indices in one line (the Market page has the detail), then "Your money".
   function renderKpis(data) {
     const idx = data.pokeca_chart_index || {};
     const p = idx.psa10 || {}, r = idx.raw_bihin || {};
-    const st = plannerState();
-    const spent = state.holdings.reduce((a, h) => a + holdingCost(h), 0);
-    const chg = (x) => `<span class="${dirClass(x.day_change_pct)}">${fmtPct(x.day_change_pct)} day</span> · <span class="${dirClass(x.month_change_pct)}">${fmtPct(x.month_change_pct)} month</span>`;
     const ci = customIndexStats();
-    const ciD = !ci ? 'no readings yet'
-      : ci.ser.length === 1 ? `base ${escapeHtml(ci.ci.meta.base_date)} = 100 · first reading`
-      : [ci.day != null ? `<span class="${dirClass(ci.day)}">${fmtPct(ci.day)} day</span>` : 'day: —',
-         ci.month != null ? `<span class="${dirClass(ci.month)}">${fmtPct(ci.month)} month</span>` : `since ${escapeHtml(ci.ci.meta.base_date)}: <span class="${dirClass(ci.last.level - 100)}">${fmtPct(ci.last.level - 100)}</span>`].join(' · ');
-    const tiles = [
-      { href: '#/market', k: 'PSA10 index', v: fmtYen(p.latest_index_value_jpy), d: chg(p) },
-      { href: '#/market', k: 'Raw A-rank index', v: fmtYen(r.latest_index_value_jpy), d: chg(r) },
-      { href: '#/market', k: 'My-tier index', v: ci ? ci.last.level.toFixed(2) : '—', d: ciD },
-      { href: '#/planner', k: 'Budget left', v: fmtYen(st.budget - spent), d: `of ${fmtYen(st.budget)} · ${fmtYen(spent)} spent` },
-    ];
-    document.getElementById('kpis').innerHTML = tiles.map((t) =>
-      `<a class="kpi" href="${t.href}"><span class="lbl">${escapeHtml(t.k)}</span><span class="kpi-v display">${escapeHtml(t.v)}</span><span class="kpi-d">${t.d}</span></a>`).join('');
+    const ch = (v, w) => (v != null ? `<span class="tk-d ${dirClass(v)}">${fmtPct(v)}<small>${w}</small></span>` : '');
+    const item = (k, v, d, tip) => `<a class="tk" href="#/market" title="${escapeAttr(tip)}"><span class="tk-k">${k}</span><span class="tk-v display">${escapeHtml(v)}</span>${d}</a>`;
+    const ciMonth = ci && ci.ser.length > 1 ? (ci.month != null ? ci.month : ci.last.level - 100) : null;
+    document.getElementById('kpis').innerHTML =
+      item('PSA10 index', fmtYen(p.latest_index_value_jpy), ch(p.day_change_pct, '1D') + ch(p.month_change_pct, '1M'), 'pokeca-chart PSA10 index: day and month change') +
+      item('Raw A index', fmtYen(r.latest_index_value_jpy), ch(r.day_change_pct, '1D') + ch(r.month_change_pct, '1M'), 'pokeca-chart raw A-rank index: day and month change') +
+      item('My-tier index', ci ? ci.last.level.toFixed(2) : '—', ci ? ch(ci.day, '1D') + ch(ciMonth, ci.month != null ? '1M' : 'since ' + ci.ci.meta.base_date) : '', 'Your own index of the cards in your price tier (base 100)');
+    renderMoney();
   }
 
   // ---------- render: portfolio (cards you've actually bought) ----------
@@ -2802,10 +2866,6 @@
     const q = { template: 'grading-info.yml', title: `Grading: ${copies.length} card${copies.length === 1 ? '' : 's'} sent ${date}`,
       id: copies.map((c) => c.id).join(', '), sent: date, service: GRADE_TIERS[tierKey].label, status: 'Sending it to PSA' };
     return `${REPO_URL}/issues/new?${new URLSearchParams(q)}`;
-  }
-  function submitLinkHtml() {
-    const all = rawCopies(), ready = all.filter((c) => !c.sent).length, away = all.length - ready;
-    return all.length ? `<a class="btn sub-link" href="#/submit">PSA submission planner · ${ready} raw to send${away ? ` · ${away} at PSA` : ''} ›</a>` : '';
   }
   function renderSubmit() {
     const el = document.getElementById('submit-page');
@@ -3330,11 +3390,37 @@
       ${cell('PSA10 lowest ask', ask, pct(ask, basis), 'vs your DIY cost', `PSA10 lowest ask ${ask != null ? fmtYen(ask) : '—'} against your DIY cost ${fmtYen(basis)}`)}
     </div>`;
   }
+  // Holdings sections as tabs: Singles, Sealed, Sold (each only when it has something), and a link to the copies
+  // waiting for or away at PSA (the submission planner).
+  function renderHoldTabs() {
+    const bar = document.getElementById('hold-tabs');
+    if (!bar) return;
+    const n = { singles: state.holdings.length, sealed: (state.sealed || []).length, sold: (state.sold || []).length };
+    const keys = Object.keys(n).filter((k) => n[k]);
+    let cur = store.get('psa10.holdTab', 'singles');
+    if (!keys.includes(cur)) cur = keys[0] || 'singles';
+    const raw = rawCopies(), away = raw.filter((c) => c.sent).length;
+    bar.innerHTML = keys.map((k) => `<button type="button" role="tab" aria-selected="${k === cur}" data-htab-btn="${k}">${capitalize(k)} <span>${n[k]}</span></button>`).join('')
+      + (raw.length ? `<a class="seg-link" href="#/submit" title="PSA submission planner">${away ? `At PSA <span>${away}</span> · ` : ''}To grade <span>${raw.length - away}</span> ›</a>` : '');
+    bar.parentElement.hidden = keys.length < 2 && !raw.length;
+    document.querySelectorAll('[data-htab]').forEach((el) => { el.hidden = keys.length > 1 && el.dataset.htab !== cur; });
+    bar.querySelectorAll('[data-htab-btn]').forEach((b) => b.addEventListener('click', () => { store.set('psa10.holdTab', b.dataset.htabBtn); renderHoldTabs(); }));
+  }
+  // A single's next step on the Holdings page: its sell signal for a slab, the grading plan for a raw copy.
+  function nextStepHtml(h, card) {
+    if (h.condition === 'raw_to_grade') return h.sent ? '<div class="pf-next"><span class="vtag sell-hold">At PSA</span><span>Sent for grading</span></div>'
+      : '<div class="pf-next"><span class="vtag review">Grade</span><a href="#/submit">Plan a PSA submission ›</a></div>';
+    const st = card ? sellState(card) : null;
+    if (!st) return '';
+    const t = sellTiersOf(card);
+    const txt = st.tag !== 'hold' ? st.reasons[0] || '' : t ? `Take profit from ${fmtYen(t.take_profit_from)}, sell from ${fmtYen(t.sell_from)}` : st.target != null ? `Sell target ${fmtYen(st.target)}` : 'No sell tiers yet';
+    return `<div class="pf-next">${sellChip(card)}<span>${escapeHtml(txt)}</span></div>`;
+  }
   function renderPortfolio(holdings, currentCards) {
     renderHoldingsAside(currentCards);
     const bb = document.getElementById('basis-bar');
     if (bb) {
-      bb.innerHTML = state.holdings.length || (state.sealed || []).length ? basisBarHtml() + submitLinkHtml() : '';
+      bb.innerHTML = state.holdings.length || (state.sealed || []).length ? basisBarHtml() : '';
       bb.querySelectorAll('[data-basis]').forEach((b) => b.addEventListener('click', () => { state.holdBasis = b.dataset.basis; store.set('psa10.basis', state.holdBasis); render(); }));
     }
     drawPortfolioChart();
@@ -3342,6 +3428,7 @@
     if (sealedEl) { sealedEl.innerHTML = sealedHtml(currentCards); trimImages(sealedEl); }
     const soldEl = document.getElementById('sold-section');
     if (soldEl) { soldEl.innerHTML = soldHtml(currentCards); trimImages(soldEl); }
+    renderHoldTabs();
     if (!holdings.length) {
       els.portfolioSummary.innerHTML = '';
       els.portfolioList.innerHTML = `<div class="empty-state">No purchases yet. Use <b>✓ Bought it</b> on a card to log one; it shows up here with its profit and loss.</div>`;
@@ -3394,6 +3481,7 @@
           <span class="pf-thumb">${thumbHtml}</span>
           <div class="pf-info">
             <div class="pf-name">${nameHtml}</div>
+            ${nextStepHtml(h, match)}
             <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(soldFormUrl(h.id, parseCardName(h.card_name_ja || '').short, soldPrefill(h, match)))}" target="_blank" rel="noopener">Sold it</a> · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
             ${h.condition === 'raw_to_grade' && h.id && match ? gradeMetaHtml(match, { kind: 'holding', id: h.id, item: h }) : ''}
             ${holdingTimingHtml(h, match)}
@@ -3618,30 +3706,73 @@
     return `${pct >= 0 ? '−' : '+'}${Math.abs(pct).toFixed(0)}%`;
   }
 
+  // Trend column: the 7-day change, with the last check and 30 days underneath.
+  function trendCell(card) {
+    const last = priceChangeLast(card), d7 = priceChangeAgo(card, 7), d30 = priceChangeAgo(card, 30);
+    const pc = (c) => (c ? `<span class="${dirClass(c.pct)}">${c.pct === 0 ? '±0' : fmtPct(c.pct)}</span>` : '—');
+    const tip = [last ? `Since the last check: ${fmtPct(last.pct)} (${fmtYen(last.old)} at ${last.from} JST)` : '', d7 ? `7 days: ${fmtPct(d7.pct)} (${fmtYen(d7.old)} on ${d7.from})` : 'No snapshot from 7 days ago yet',
+      d30 ? `30 days: ${fmtPct(d30.pct)} (${fmtYen(d30.old)} on ${d30.from})` : ''].filter(Boolean).join('\n');
+    return `<span class="wl-chg wl-trend" title="${escapeAttr(tip)}">${d7 ? pc(d7) : '<span class="muted">—</span>'}<small class="chg-sub">30D ${pc(d30)}</small></span>`;
+  }
+  // The overview list in two sections with their own columns: cards you own (vs your cost, sell signal) and the
+  // watchlist (vs your limit, buy zone). A filter shows both or one; the sort applies inside each section.
+  const OV_FILTERS = [['all', 'All'], ['owned', 'Owned'], ['watch', 'Watchlist']];
+  const OV_HEAD = {
+    owned: { title: 'Owned', zone: 'Sell zones', limit: 'Vs cost', limitTip: 'The PSA10 price vs what you paid; for a card bought raw, vs its DIY cost with your raw price, (raw paid + grading) ÷ gem rate.', verdict: 'Signal' },
+    watch: { title: 'Watchlist', zone: 'Buy zones', limit: 'Limit', limitTip: 'Your limit and how far the lowest ask is from it.', verdict: 'Verdict' },
+  };
+  function wlHeadHtml(k) {
+    const h = OV_HEAD[k];
+    const b = (key, label, cls, tip) => `<button type="button" class="${cls || ''}" data-sort="${key}"${tip ? ` title="${escapeAttr(tip)}"` : ''}>${label}</button>`;
+    return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chg7', '7D', 'r', '7-day change, 30 days underneath; hover a cell for the change since the last check')}${b('verdict', h.verdict, '', 'Activity (PSA10 sales a day) underneath; sort by it with the Sort menu')}</div>`;
+  }
+  function wlRowHtml(card) {
+    const { short, code, pack } = parseCardName(card.card_name_ja);
+    const owned = holdingsFor(card).length;
+    return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) || sellHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
+        ${slabHtml(card, 'xs')}
+        <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
+        <span class="wl-price display">${fmtYen(getRep(card))}${owned ? rawAskSub(card) : ''}</span>
+        ${zoneBarHtml(card)}
+        ${limitGapCell(card, 'wl-chg wl-lim')}${trendCell(card)}
+        <span class="wl-tag"><span>${owned ? sellChip(card) : tagChip(card)}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${!owned && (mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}</span><span class="wl-heat">${heatChip(card)}</span></span>
+      </a>`;
+  }
   function renderOverviewList(cards) {
     const el = document.getElementById('watchlist');
     const list = sortedMarketCards(cards);
-    if (!list.length) { el.innerHTML = `<div class="empty-state">No cards with live market data in this snapshot yet.</div>`; return; }
-    if (!state.selectedUrl || !list.some((c) => c.url === state.selectedUrl)) state.selectedUrl = list[0].url;
-    el.innerHTML = list.map((card) => {
-      const { short, code, pack } = parseCardName(card.card_name_ja);
-      const owned = holdingsFor(card).length;
-      return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) || sellHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
-        ${slabHtml(card, 'xs')}
-        <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
-        <span class="wl-price display">${fmtYen(getRep(card))}${rawAskSub(card)}</span>
-        ${zoneBarHtml(card)}
-        ${limitGapCell(card, 'wl-chg')}${changeLastCell(card, 'wl-chg')}${changeCell(card, 7, 'wl-chg')}${changeCell(card, 30, 'wl-chg wl-c30')}
-        <span class="wl-tag">${owned ? sellChip(card) : tagChip(card)}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${!owned && (mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}${!owned && (tierReview(card) || {}).due ? '<span class="due-chip" title="Buy tiers are due for a review">Review</span>' : ''}</span>
-        <span class="wl-heat">${heatChip(card)}</span>
-      </a>`;
-    }).join('');
+    const bar = document.getElementById('wl-filter');
+    if (!list.length) { el.innerHTML = `<div class="empty-state">No cards with live market data in this snapshot yet.</div>`; if (bar) bar.innerHTML = ''; return; }
+    const groups = { owned: list.filter((c) => holdingsFor(c).length), watch: list.filter((c) => !holdingsFor(c).length) };
+    let f = store.get('psa10.ovFilter', 'all');
+    if (!OV_FILTERS.some(([k]) => k === f) || (f !== 'all' && !groups[f].length)) f = 'all';
+    if (bar) {
+      bar.innerHTML = OV_FILTERS.map(([k, l]) => `<button type="button" role="tab" aria-selected="${k === f}" data-ovf="${k}"${k !== 'all' && !groups[k].length ? ' disabled' : ''}>${l} <span>${k === 'all' ? list.length : groups[k].length}</span></button>`).join('');
+      bar.querySelectorAll('[data-ovf]').forEach((b) => b.addEventListener('click', () => { store.set('psa10.ovFilter', b.dataset.ovf); renderOverviewList(cards); renderDrawer(); }));
+    }
+    const keys = ['owned', 'watch'].filter((k) => groups[k].length && (f === 'all' || f === k));
+    const shown = keys.flatMap((k) => groups[k]);
+    if (!state.selectedUrl || !shown.some((c) => c.url === state.selectedUrl)) state.selectedUrl = shown[0].url;
+    const note = (k) => {
+      if (k === 'owned') { const n = groups.owned.filter((c) => (sellState(c) || {}).tag !== 'hold').length; return n ? `${n} with a sell signal` : 'No sell signals'; }
+      const n = groups.watch.filter((c) => limitHit(c) || ['buy', 'definitely_buy'].includes(displayTagFor(c))).length;
+      return n ? `${n} at a buy price` : 'None at a buy price';
+    };
+    el.innerHTML = keys.map((k) => `<section class="panel wl-sec wl-${k}" aria-label="${OV_HEAD[k].title}">
+        <div class="wl-sec-h"><h2 class="section-title">${OV_HEAD[k].title} <span class="muted">${groups[k].length}</span></h2><span class="wl-sec-note">${note(k)}</span></div>
+        ${wlHeadHtml(k)}${groups[k].map(wlRowHtml).join('')}</section>`).join('');
     el.querySelectorAll('.wl-row').forEach((a) => a.addEventListener('click', (e) => {
       if (!DESKTOP.matches) return; // phones follow the link to the card page
       e.preventDefault();
       const card = cards.find((c) => c.url === a.dataset.url);
       if (card) openCard(card);
     }));
+    el.querySelectorAll('.wl-head [data-sort]').forEach((b) => b.addEventListener('click', () => {
+      // clicking the active column a third time goes back to the default order
+      if (b.dataset.sort === sortState.key && sortState.dir !== SORTS[sortState.key].dir) return setSort('default', 1);
+      setSort(b.dataset.sort);
+    }));
+    syncSortUi();
   }
 
   function renderDrawer() {
@@ -3941,15 +4072,22 @@
           ${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${k === cur}">${l}</button>`).join('')}
         </div>
         <div class="cd-panel" data-panel="overview"${cur === 'overview' ? '' : ' hidden'}>
-          ${gaugeHtml}
-          ${own ? positionHtml(card) + sellRowHtml(card) : tierReviewHtml(card) + tierCheckHtml(card) + limitRowHtml + mercariRowHtml(card)}
+          <section class="cd-decide" aria-label="Decision">
+            <div class="cd-decide-h"><span class="lbl">Decision</span>${own ? sellChip(card) : tagChip(card)}</div>
+            ${verdictHtml}
+            ${gaugeHtml}
+            ${own ? sellRowHtml(card) : limitRowHtml + mercariRowHtml(card)}
+          </section>
+          ${own ? positionHtml(card) : ''}
           ${gradePanelHtml(card)}
           ${insightsHtml(card)}
-          ${vsMarketHtml(card)}
-          ${hypeHtml(card)}
-          ${verdictHtml}
+          <section class="cd-facts" aria-label="Facts"><span class="lbl">Facts</span>${statsHtml}</section>
           ${card.quick_note ? `<p class="cd-note">${escapeHtml(card.quick_note)}</p>` : ''}
-          ${statsHtml}
+          <div class="cd-folds">
+            ${own ? '' : foldHtml('Buy tiers', (tierReview(card) || {}).due ? 'Review due' : 'When they were set, and a check against the market', tierReviewHtml(card) + tierCheckHtml(card), (tierReview(card) || {}).due)}
+            ${foldHtml('Vs. the market', 'This card against the indices', vsMarketHtml(card))}
+            ${foldHtml('Hype exposure', 'How hard it swings when the market moves', hypeHtml(card))}
+          </div>
         </div>
         ${storyOf(card) ? `<div class="cd-panel" data-panel="story"${cur === 'story' ? '' : ' hidden'}>${storyHtml(card)}</div>` : ''}
         <div class="cd-panel" data-panel="history"${cur === 'history' ? '' : ' hidden'}><div class="history-block"><div class="loading-inline">Loading full history…</div></div></div>
@@ -3960,6 +4098,11 @@
       </div>`;
   }
 
+
+  // Card page: a section folded away under a one-line summary (open when it needs attention).
+  function foldHtml(title, sub, html, open) {
+    return html ? `<details class="cd-fold"${open ? ' open' : ''}><summary><b>${escapeHtml(title)}</b><small>${escapeHtml(sub)}</small><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary><div class="cd-fold-b">${html}</div></details>` : '';
+  }
 
   // Overview side panel: only what's needed to decide "act or wait"; the card page has the rest.
   function drawerHtml(card, o) {

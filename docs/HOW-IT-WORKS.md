@@ -185,7 +185,7 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `history.json` *generated* | `build_history.py` (on every publish) | site: price history, 7D/30D, heat trend, tier review, slab premium line, value chart, holding timing, supply & demand charts; widget; `predict.py`, `outliers.py`, `review_due.py` | per snapshot: `d` time, `m` mode, `i` pokeca index, `p {url: [price, confirmed]}`, `h {url: [PSA10/day, raw/day]}`, `r {url: [PSA10 ask, raw ask, PSA10 sales median, raw sales median, raw A-rank price]}`, `f {url: favorites}` (once a day, when changed), `q {url: [cheap listings, listings read]}` (fresh listing reads), `n {url: [population, gem rate]}` (fresh readings, when changed); plus `tiers {url: {since, i}}` and `tier_log {url: [[since, db, bu, ceil], …]}`. Entries older than 30 days keep one check per JST day |
 | `sales.json` *generated* | `build_history.py` | History tab (loaded when opened) | every PSA10 one-copy sale the checks saw, once each: `{url: [[hour, price], …]}` |
 | `calls.json` *generated* | `build_calls.py` (via `build_history.py`) | Track record, Scored calls | `summary` (closed-window score, early decisions, baseline, return vs the market, Brier scores), `calls[]`, `predictions[]`, `model_odds[]` |
-| `custom_index.json` | `add_custom_index.py` | Market page, KPI tile, correction rule, tier review, widget | `meta` (constituents, base prices) + `series[]` of daily `{d, level, prices, pokeca_psa10}` |
+| `custom_index.json` | `add_custom_index.py` | Market page, overview index strip, correction rule, tier review, widget | `meta` (constituents, base prices) + `series[]` of daily `{d, level, prices, pokeca_psa10}` |
 | `events.json` | `events.py` | event rule, release calendar, widget | `window_days`, `events[] {d, name, major, scope}` |
 | `limits.json` | `set_limit.py` (Action) | site, widget, `mercari.py`, `predict.py` | `{"limits": {url: {price, set, issue}}}` |
 | `sell_targets.json` | `set_limit.py` (Action) | sell signals | `{"targets": {url: {price, set, issue}}}` |
@@ -347,9 +347,10 @@ Two details worth knowing:
 
 `index.html` holds almost no content, only empty containers that `app.js` fills.
 
-- **`<aside class="sidebar">`**: logo, `<nav id="nav">` with one link per main view (Overview,
-  Collection, Scout, Stories, You vs model, Watching, Holdings, Budget planner, Track record,
-  Market & notes, Tables), and the snapshot picker `#snapshot-select` plus "+ Add card". Each nav
+- **`<aside class="sidebar">`**: logo, `<nav id="nav">` with one link per main view in three
+  `.nav-group`s: Buy (Overview, Watching, Scout, Budget planner), Own (Holdings, Collection,
+  Submissions = `#/submit`) and Learn (Market & notes, Track record, You vs model, Stories, Tables),
+  and the snapshot picker `#snapshot-select` plus "+ Add card". Each nav
   link has `data-view="..."` (used to highlight the current one) and an empty
   `<em data-count="...">` badge filled by `updateCounts()`.
 - **`<header class="mobile-bar">`**: the phone header with its own picker
@@ -361,7 +362,7 @@ Two details worth knowing:
 - **`<nav class="tabbar">`**: the phone bottom bar (Overview, Collection, Holdings, Planner, More).
   The **More** view lists Scout, Stories, You vs model, Watching, Track record, Market & notes, Tables
   and + Add card.
-- At the end: `<script src="assets/app.js?v=20261009j">`. The `?v=` part is a cache
+- At the end: `<script src="assets/app.js?v=20261009v11">`. The `?v=` part is a cache
   buster, see section 13.
 
 When you look for where something appears, find its container `id` here (for example
@@ -397,7 +398,7 @@ In order:
 | purchases | `holdingCost`, `heldPrice`, `holdingsFor`, `boughtFormUrl`, `openBoughtDialog`, `removeFormUrl` | the Bought it dialog and links |
 | hype exposure | `hypeOf`, `hypeHtml` | the Hype exposure panel |
 | today's call | `liveVerdict` | the verdict headline computed from the shown snapshot |
-| Mercari | `mercariOf`, `mercariRowHtml`, `computeSignals`, `renderSignals` | Mercari listings and the Buy-signals strip |
+| Mercari | `mercariOf`, `mercariRowHtml`, `computeSignals`, `inboxItems`, `closestBuy`, `renderInbox` | Mercari listings and the Needs you list |
 | render: market strip | `volTrendOf`, `renderMarketStrip` | pokeca-chart cells on the Market page |
 | render: My-tier index | `customIndexStats`, `renderCustomIndex`, `drawIndexChart` | Market page index chart |
 | tier review status + card vs market | `tierReview`, `tierReviewHtml`, `cardPriceAt`, `marketMove`, `vsMarketHtml` | "Review due" and "Vs. the market" |
@@ -407,18 +408,18 @@ In order:
 | picture viewer | `openLightbox`, `closeLightbox` | tap a picture to see it big |
 | Scout | `scoutList`, `scoutPicks`, `scoutCardHtml`, `renderScout` | Scout page |
 | slab premium | `premiumOf`, `snkrPremium`, `premiumHtml`, `insightsHtml` | DIY tab premium panel |
-| render: banners | `computeAutoFlags`, `renderBanners` | alerts on the overview |
+| render: market today | `computeAutoFlags`, `todayItems`, `renderToday` | Market today chips on the overview |
 | app shell: views + routing | `VIEWS`, `cardId`, `hasMarket`, `parseRoute`, `applyRoute`, `viewSubtitle`, `openCard`, `updateCounts` | navigation |
 | page transition | `heroTransitionFor`, `onHashChange` | collection ⇄ card page animation |
 | card photos | `measureTrim`, `applyTrim`, `trimImages` | making cards fill their frames |
 | render | `render()`, `renderLazy`, `scheduleLazy` | redraws everything |
 | sorting | `SORTS`, `sortCardsBy`, `setSort`, `TABLE_SORTS`, `setTableSort` | sortable columns |
-| render: key numbers | `renderKpis` | KPI tiles on the overview |
+| render: key numbers | `renderKpis`, `renderMoney` | index strip and Your money on the overview |
 | should I grade this? | `GRADE_TIERS`, `gradeCopies`, `gradeCalc`, `gradeLineHtml`, `gradePanelHtml` | grading calculator for raw copies |
-| PSA submission planner | `rawCopies`, `submitCalc`, `submitFormUrl`, `submitLinkHtml`, `renderSubmit` | #/submit |
+| PSA submission planner | `rawCopies`, `submitCalc`, `submitFormUrl`, `renderSubmit` | #/submit |
 | sealed product | `pullValue`, `sealedValue`, `sealedHtml`, `holdingsTotals`, `renderHoldingsAside` | Sealed section and Holdings totals |
 | sold items | `soldFormUrl`, `soldPrefill`, `soldTotals`, `soldHtml` | Sold section |
-| portfolio value over time | `basisV`, `markPsa`, `markRaw`, `portfolioSeries`, `drawPortfolioChart`, `rawHoldingCols`, `renderPortfolio` | Holdings chart (with the My-tier benchmark) and singles list |
+| portfolio value over time | `basisV`, `markPsa`, `markRaw`, `portfolioSeries`, `drawPortfolioChart`, `rawHoldingCols`, `renderHoldTabs`, `nextStepHtml`, `renderPortfolio` | Holdings chart (with the My-tier benchmark), the Singles / Sealed / Sold tabs (`psa10.holdTab`) with a link to the submission planner, and the singles list with each one's next step (its sell signal, or grade / at PSA for a raw copy) |
 | how your bought cards move | `histPoints`, `tiersOn`, `holdingTiming`, `holdingTimingHtml`, `timingSummary` | vs the market since purchase, entry timing |
 | overview list + drawer | `zoneBarHtml`, `renderOverviewList`, `renderDrawer`, `drawerHtml`, `cardNavHtml`, `renderCardPage` | Overview and card page |
 | trading activity ("heat") | `saleAgeDays`, `salesPerDay`, `heatOf`, `heatChip`, `renderHeat` | Activity labels |
@@ -466,7 +467,7 @@ In order:
 ```js
 function render() {
   renderMarketStrip(data); renderCustomIndex(); renderEvents(); renderHeat();
-  renderKpis(data); renderSignals(cards); renderBanners(data, state.previousData);
+  renderKpis(data); renderToday(data, state.previousData); renderInbox(cards);
   renderPortfolio(...); renderOverviewList(cards); renderDrawer(); renderCollection(cards);
   renderWatchPanel(...); renderPlanner(cards);
   lazyPending = { record, scout, predict, stories, tables };   // built later
@@ -553,7 +554,7 @@ check rewrites it (`review_due.py --text`, FULL-CHECK step 8g).
 - `activeEvents()` lists dated, major events from `events.json` that are 0–3 days away
   (`window_days`). `eventApplies()` checks the scope: `"all"` or a list of set codes
   matched against the card's code.
-- Both feed `displayTagFor` and produce banners (`renderBanners`) and card notes
+- Both feed `displayTagFor` and produce Market today chips (`renderToday`) and card notes
   (`heldByEvent`, `heldByCorrection`). The evaluation skill applies the same rules,
   so the site and the written verdicts agree. `scripts/event_study.py` measures on the
   tracker's own checks whether prices really dip around releases.
@@ -604,20 +605,31 @@ forecasts match what the site showed. `limitOddsHtml` also shows the evaluation'
 odds for a nearby price, as a cross-check. The same odds appear in the limit editor while you type,
 in the Tier check, the drawer, the budget duel, the combination finder and You vs the model.
 
-### Buy signals strip
+### Needs you (buy signals, sell signals, reviews)
 
 `computeSignals(cards)` collects, in order: a Mercari listing or ending auction at or under your
 limit (rank −1), a lowest ask at or below your limit (0), Definitely-buy (1) and Buy (2). Cards you
-own never give limit signals. `renderSignals` shows them. Signals not seen on your previous visit get
-a **NEW** label (their keys are remembered in `psa10.seenSignals`, and only while viewing the latest
-snapshot).
+own never give limit signals. `inboxItems` puts those first, then every owned card whose `sellState`
+isn't Hold (strongest first), then watched cards whose `tierReview` is due. `renderInbox` shows them;
+with no buy signal, `closestBuy` names the card with the smallest gap to your limit (or, without a
+limit, to its Buy line). Buy signals not seen on your previous visit get a **NEW** label (their keys
+are remembered in `psa10.seenSignals`, and only while viewing the latest snapshot).
 
-### Banners ("Automatically detected…")
+### Market today chips ("Automatically detected…")
 
-`renderBanners` stacks the event rule banner (or a "Coming up" note within 14 days),
-the correction rule banner, any hand-written `banners` from the snapshot JSON, and
-`computeAutoFlags()`. Those flags compare with the previous snapshot: depth down
-30%+, a zone crossing, or favorites ±5%.
+`todayItems` makes one chip each for the event rule (or a "Coming up" note within 14 days), the
+correction rule, the rally rule, any hand-written `banners` from the snapshot JSON, and
+`computeAutoFlags()`. Those flags compare with the previous snapshot: depth down 30%+, a zone
+crossing, or favorites ±5%. `renderToday` draws the chips; clicking one shows its full text
+underneath (`state.todayOpen`, one at a time).
+
+### Overview list: Owned and Watchlist
+
+`renderOverviewList` sorts the cards with a market once (`sortedMarketCards`, the shared sort) and
+splits them by `holdingsFor`: **Owned** (columns: price with raw A underneath, sell zones, vs cost,
+7D with 30D underneath, sell signal with activity) and **Watchlist** (price, buy zones, limit and
+the gap to it, 7D, verdict with activity). The All / Owned / Watchlist tabs are remembered in
+`psa10.ovFilter`; each section draws its own column heads (`wlHeadHtml`), which sort both sections.
 
 ### Tier review, tier check and "Vs. the market"
 
@@ -685,10 +697,12 @@ the cheap listings would cover.
 
 ### Overview list and sorting
 
-`renderOverviewList` draws one `<a class="wl-row">` per card with a PSA10 market: slab, name (with
-Insight and High hype chips), price with the raw A-rank price under it, zone bar, Limit, Last, 7D,
-30D, verdict (or sell chip, plus Limit / Mercari / Review chips) and Activity. It uses
-`display: grid` in CSS, so each `<span>` is a column.
+`renderOverviewList` draws one `<a class="wl-row">` (`wlRowHtml`) per card with a PSA10 market, in
+the Owned or the Watchlist section: slab, name (with Insight and High hype chips), price (with the
+raw A-rank price under it for a card you own), zone bar, Limit / Vs cost, 7D with 30D under it
+(`trendCell`; the change since the last check is in its tooltip and the Sort menu), and the verdict
+(or sell chip, plus Limit / Mercari chips) with the activity chip under it. Tier reviews moved to
+Needs you. It uses `display: grid` in CSS, so each `<span>` is a column.
 
 The **Limit** column depends on the card: for a card you watch it's your limit with the distance to
 the lowest ask (`limitGap`); for a card you own it's the PSA10 price against your cost basis
@@ -714,11 +728,13 @@ rules in `style.css`.
 
 - **Card page:** the hero (slab picture, price, off-peak, change since the last check, tags, actions:
   Bought it / Bought another, Sold it, SNKRDUNK, Remove card) and up to six tabs:
-  - *Overview.* For a card you watch: gauge, tier review, tier check, limit row with odds, Mercari
-    row, then "What stands out", vs. the market, hype exposure, the verdict box and the stats. For a
-    card you own: the sell gauge, your position (`positionHtml`: paid, worth, after selling costs,
-    break-even), the sell-target row, the grading panel for raw copies, the same analysis panels and
-    the sell verdict (`ownedVerdict`).
+  - *Overview*, decision first. The **Decision** box (`.cd-decide`) holds the verdict with its
+    pill (for a card you own, the sell verdict from `ownedVerdict`), the gauge, and the limit row with
+    its odds and the Mercari row (a card you own: the sell-target row). Then, for a card you own, your
+    position (`positionHtml`: paid, worth, after selling costs, break-even); the grading panel for raw
+    copies; "What stands out"; the **Facts** (the stat tiles). Last come folded sections
+    (`foldHtml`, a `<details>`): *Buy tiers* (tier review and tier check; opens by itself when a
+    review is due; not shown for a card you own), *Vs. the market* and *Hype exposure*.
   - *Story* (when `stories.json` has one), *History* (loads lazily on first open:
     `renderPriceHistoryInto`, see "Price history, sales and supply & demand" below), *Listings*
     (distribution, sales sparkline and list for PSA10 and raw A),
@@ -828,7 +844,7 @@ The Holdings page has five parts, all valued with today's snapshot:
   Chips under each product offer the tracked cards of its set as one-tap "Pulled one of these?".
 - **Sold** (`soldHtml`): each sale with cost, price, fees and profit, plus a yearly summary.
 
-The budget (KPI tile, planner) counts singles at `holdingCost`: price **plus** grading and shipping
+The budget (Your money on the overview, planner) counts singles at `holdingCost`: price **plus** grading and shipping
 for a raw copy.
 
 ### Should I grade this?
@@ -870,7 +886,7 @@ and the Holdings page link here.
 - `plannerState()` reads `psa10.planner` (budget, price mode, ticked cards, pins, left-out cards,
   finder category). `renderPlanner` prices each card at today's lowest ask or at your limit
   (`mode === 'limits'`), subtracts what's been spent (from holdings) and marks cards that still fit.
-  Every change calls `save()`, which stores the new state and re-renders the planner and the KPI tiles.
+  Every change calls `save()`, which stores the new state and re-renders the planner and the overview strip and Your money.
 - **Combination finder** (`#/combos`, `comboSearch`): tries every mix of the cards in play (📌 pinned
   ones always in, ✕ left-out and owned ones skipped) and keeps those spending 90–120% of what's left
   of the budget, with no room for one more card. Categories: best overall, best use of budget, most
@@ -982,7 +998,8 @@ is unreachable, nothing is shown.
   added later (head to head, scored calls, insights, Scout, Stories, You vs the model, combination
   finder, rate my portfolio, owned cards, grading, value over time) each have their own block after it.
 - **Three layouts** via media queries:
-  - ≥1200px: sidebar + overview list + detail drawer;
+  - ≥1200px: sidebar + overview list + detail drawer (the list drops its zone bars when the list
+    itself is narrower than 640px, a container query);
   - 900–1199px (`@media (max-width: 1199px)`): no drawer; rows open the card page;
   - <900px (`@media (max-width: 899px)`): phone layout with the top bar and bottom tab bar.
   Several feature blocks add their own narrower breakpoints (640–800px).
@@ -1141,7 +1158,7 @@ git push                     # the site updates in ~1 minute
 ### Bump the version after changing app.js or style.css
 
 Browsers keep `app.js` and `style.css` for up to 10 minutes. To make everyone get the
-new file immediately, change the `?v=20261009j` in **both** places in `index.html`
+new file immediately, change the `?v=20261009v11` in **both** places in `index.html`
 (the `<link>` for style.css and the `<script>` for app.js) to today's date, adding a letter
 for a second change on the same day (`?v=20261010`, `?v=20261010b`, …). Data files don't need
 this; they're always revalidated.

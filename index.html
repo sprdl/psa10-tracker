@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://cdn.snkrdunk.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=20261009j">
+<link rel="stylesheet" href="assets/style.css?v=20261009v11">
 </head>
 <body>
 <div class="app">
@@ -22,17 +22,24 @@
   <aside class="sidebar" aria-label="Navigation">
     <a class="brand" href="#/overview"><span class="brand-tag">PSA10</span><span class="brand-word">Tracker</span></a>
     <nav class="nav" id="nav" aria-label="Sections">
-      <a href="#/overview" data-view="overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>Overview</span><em data-count="overview"></em></a>
-      <a href="#/collection" data-view="collection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v9H4zM14 4h6v9h-6zM4 17h16"/></svg><span>Collection</span><em data-count="collection"></em></a>
-      <a href="#/scout" data-view="scout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15.5 8.5l-2 5-5 2 2-5z"/></svg><span>Scout</span><em data-count="scout"></em></a>
-      <a href="#/stories" data-view="stories"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21V5M8 7h7"/></svg><span>Stories</span><em data-count="stories"></em></a>
-      <a href="#/predict" data-view="predict"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>You vs model</span><em data-count="predict"></em></a>
-      <a href="#/watching" data-view="watching"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg><span>Watching</span><em data-count="watching"></em></a>
-      <a href="#/holdings" data-view="holdings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v12H3zM3 7l3-4h12l3 4M16 13h2"/></svg><span>Holdings</span><em data-count="holdings"></em></a>
-      <a href="#/planner" data-view="planner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6M18 15v6M15 18h6"/></svg><span>Budget planner</span><em data-count="planner"></em></a>
-      <a href="#/record" data-view="record"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg><span>Track record</span><em data-count="record"></em></a>
-      <a href="#/market" data-view="market"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 4 8-8M15 8h5v5"/></svg><span>Market &amp; notes</span><em data-count="market"></em></a>
-      <a href="#/tables" data-view="tables"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3zM3 10h18M3 15h18M9 4v16"/></svg><span>Tables</span><em data-count="tables"></em></a>
+      <div class="nav-group" role="group" aria-label="Buy"><span class="nav-h">Buy</span>
+        <a href="#/overview" data-view="overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>Overview</span><em data-count="overview"></em></a>
+        <a href="#/watching" data-view="watching"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg><span>Watching</span><em data-count="watching"></em></a>
+        <a href="#/scout" data-view="scout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15.5 8.5l-2 5-5 2 2-5z"/></svg><span>Scout</span><em data-count="scout"></em></a>
+        <a href="#/planner" data-view="planner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6M18 15v6M15 18h6"/></svg><span>Budget planner</span><em data-count="planner"></em></a>
+      </div>
+      <div class="nav-group" role="group" aria-label="Own"><span class="nav-h">Own</span>
+        <a href="#/holdings" data-view="holdings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v12H3zM3 7l3-4h12l3 4M16 13h2"/></svg><span>Holdings</span><em data-count="holdings"></em></a>
+        <a href="#/collection" data-view="collection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v9H4zM14 4h6v9h-6zM4 17h16"/></svg><span>Collection</span><em data-count="collection"></em></a>
+        <a href="#/submit" data-view="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v18H7zM7 7h10M10 11h4M10 15h4"/></svg><span>Submissions</span><em data-count="submit"></em></a>
+      </div>
+      <div class="nav-group" role="group" aria-label="Learn"><span class="nav-h">Learn</span>
+        <a href="#/market" data-view="market"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 4 8-8M15 8h5v5"/></svg><span>Market &amp; notes</span><em data-count="market"></em></a>
+        <a href="#/record" data-view="record"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg><span>Track record</span><em data-count="record"></em></a>
+        <a href="#/predict" data-view="predict"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>You vs model</span><em data-count="predict"></em></a>
+        <a href="#/stories" data-view="stories"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM4 21V5M8 7h7"/></svg><span>Stories</span><em data-count="stories"></em></a>
+        <a href="#/tables" data-view="tables"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v16H3zM3 10h18M3 15h18M9 4v16"/></svg><span>Tables</span><em data-count="tables"></em></a>
+      </div>
     </nav>
     <div class="side-foot">
       <label class="lbl" for="snapshot-select">Snapshot</label>
@@ -59,13 +66,18 @@
     </header>
 
     <section class="view" data-view="overview">
-      <div id="kpis" class="kpis"></div>
-      <div id="signals" class="signals"></div>
-      <div id="banners" class="banners"></div>
+      <div id="kpis" class="ticker" aria-label="Market indices"></div>
+      <div id="today" class="today"></div>
+      <div class="ov-top">
+        <section id="inbox" class="panel inbox" aria-label="Needs you"></section>
+        <section id="money" class="panel money" aria-label="Your money"></section>
+      </div>
       <div class="split">
-        <div class="panel watchlist">
-          <div class="wl-sortbar"><label for="wl-sort-select">Sort</label><select id="wl-sort-select"></select><button type="button" id="wl-sort-dir" aria-label="Reverse order">↓</button></div>
-          <div class="wl-head"><span></span><button type="button" data-sort="name">Card</button><button type="button" class="r" data-sort="price">Price</button><button type="button" class="wl-zone" data-sort="zone" title="Sort by distance to the Buy line">Zones</button><button type="button" class="r" data-sort="limit" title="Cards you watch: your limit and how far the lowest ask is from it. Cards you own: the PSA10 price vs what you paid; for a card bought raw, vs its DIY cost with your raw price, (raw paid + grading) ÷ gem rate.">Limit</button><button type="button" class="r" data-sort="chgLast" title="Change since the previous price check">Last</button><button type="button" class="r" data-sort="chg7">7D</button><button type="button" class="r wl-c30" data-sort="chg30">30D</button><button type="button" data-sort="verdict">Verdict</button><button type="button" data-sort="heat">Activity</button></div>
+        <div class="watchlist">
+          <div class="wl-bar">
+            <div class="seg wl-filter" id="wl-filter" role="tablist" aria-label="Show"></div>
+            <div class="wl-sortbar"><label for="wl-sort-select">Sort by</label><select id="wl-sort-select"></select><button type="button" id="wl-sort-dir" aria-label="Reverse order">↓</button></div>
+          </div>
           <div id="watchlist"><div class="loading">Loading…</div></div>
         </div>
         <aside id="drawer" class="panel drawer" aria-label="Selected card"></aside>
@@ -84,11 +96,13 @@
     <section class="view" data-view="holdings" hidden>
       <div id="basis-bar"></div>
       <div id="pf-history" class="pfh" hidden></div>
-      <h2 class="section-title">Singles</h2>
-      <div id="portfolio-summary" class="pf-summary"></div>
-      <div id="portfolio-list" class="pf-list"></div>
-      <div id="sealed-section" class="sl-wrap"></div>
-      <div id="sold-section" class="sl-wrap"></div>
+      <div class="wl-bar"><div id="hold-tabs" class="seg wl-filter" role="tablist" aria-label="Holdings sections"></div></div>
+      <div class="htab" data-htab="singles">
+        <div id="portfolio-summary" class="pf-summary"></div>
+        <div id="portfolio-list" class="pf-list"></div>
+      </div>
+      <div id="sealed-section" class="sl-wrap htab" data-htab="sealed"></div>
+      <div id="sold-section" class="sl-wrap htab" data-htab="sold"></div>
     </section>
 
     <section class="view" data-view="planner" hidden>
@@ -142,14 +156,13 @@
 
     <section class="view" data-view="more" hidden>
       <nav class="more-list" aria-label="More sections">
-        <a href="#/scout"><span>Scout</span><em data-count="scout"></em></a>
-        <a href="#/stories"><span>Stories</span></a>
-        <a href="#/predict"><span>You vs model</span><em data-count="predict"></em></a>
-        <a href="#/watching"><span>Watching</span><em data-count="watching"></em></a>
-        <a href="#/record"><span>Track record</span><em data-count="record"></em></a>
-        <a href="#/market"><span>Market &amp; notes</span></a>
-        <a href="#/tables"><span>Tables</span></a>
-        <a href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span>+ Add card</span></a>
+        <h2 class="more-h">Buy</h2>
+        <div class="more-grp"><a href="#/watching"><span>Watching</span><em data-count="watching"></em></a><a href="#/planner"><span>Budget planner</span></a></div>
+        <h2 class="more-h">Own</h2>
+        <div class="more-grp"><a href="#/collection"><span>Collection</span><em data-count="collection"></em></a><a href="#/submit"><span>Submissions</span><em data-count="submit"></em></a></div>
+        <h2 class="more-h">Learn</h2>
+        <div class="more-grp"><a href="#/market"><span>Market &amp; notes</span></a><a href="#/record"><span>Track record</span><em data-count="record"></em></a><a href="#/predict"><span>You vs model</span><em data-count="predict"></em></a><a href="#/stories"><span>Stories</span></a><a href="#/tables"><span>Tables</span></a></div>
+        <a class="more-add" href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span>+ Add card</span></a>
       </nav>
       <p id="card-requests-m" class="card-requests" hidden></p>
     </section>
@@ -181,12 +194,11 @@
 
   <nav class="tabbar" aria-label="Sections">
     <a href="#/overview" data-view="overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>Overview</span></a>
-    <a href="#/collection" data-view="collection"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v9H4zM14 4h6v9h-6zM4 17h16"/></svg><span>Collection</span></a>
     <a href="#/holdings" data-view="holdings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v12H3zM3 7l3-4h12l3 4M16 13h2"/></svg><span>Holdings</span></a>
-    <a href="#/planner" data-view="planner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6M18 15v6M15 18h6"/></svg><span>Planner</span></a>
+    <a href="#/scout" data-view="scout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15.5 8.5l-2 5-5 2 2-5z"/></svg><span>Scout</span></a>
     <a href="#/more" data-view="more"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>More</span></a>
   </nav>
 </div>
-<script src="assets/app.js?v=20261009j"></script>
+<script src="assets/app.js?v=20261009v11"></script>
 </body>
 </html>

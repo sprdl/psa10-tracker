@@ -100,20 +100,32 @@ was written at.
 Open the Pages URL on your computer or phone (bookmark it or add it to your home screen). The
 snapshot dropdown (bottom of the sidebar, top bar on phones) switches between every run you've pushed.
 
-The app has one section per job, reached from the sidebar on a computer and the bottom tab bar on a
-phone (Overview, Collection, Holdings, Planner and **More**, which holds Scout, Stories, You vs model,
-Watching, Track record, Market & notes and Tables). Every section has its own address
-(`#/overview`, `#/collection`, `#/card/<snkrdunk id>` …), so links and the back button work.
+The app has one section per job. On a computer the sidebar groups them by what you're doing:
+**Buy** (Overview, Watching, Scout, Budget planner), **Own** (Holdings, Collection, Submissions) and
+**Learn** (Market & notes, Track record, You vs model, Stories, Tables). On a phone the bottom tab bar
+has Overview, Holdings, Scout and **More**, which lists the rest in the same three groups. Every
+section has its own address (`#/overview`, `#/collection`, `#/card/<snkrdunk id>` …), so links and
+the back button work.
 
-- **Overview:** index, My-tier and budget tiles, buy signals, alerts, and the list of cards with a
-  PSA10 market (limit hits and Buy zones first, sortable by every column). The Limit column shows your
-  limit for cards you watch and your gain for cards you own. On a wide screen, clicking a card opens a
-  short summary in the side panel; on narrower screens and phones it opens the card page.
+- **Overview** (top to bottom):
+  - a one-line strip with the three indices (PSA10, raw A, My-tier; day and month change);
+  - **Market today**: one chip per rule or note that is on (event coming up, correction or rally
+    rule, your own `banners`, changes since the last check); tap a chip for its full text;
+  - **Needs you**: everything that asks for a decision today (buy signals, sell signals on cards you
+    own, buy tiers due for a review). With no buy signal it names the card closest to one;
+  - **Your money**: holdings worth, gain on what you spent, the gap to the same money in the My-tier
+    index, and the budget left;
+  - the cards with a PSA10 market in two sections: **Owned** (price vs your cost, sell zones and
+    signal) and **Watchlist** (price vs your limit, buy zones and verdict). Tabs show both or one,
+    and the Sort menu or a column head sorts inside each section. On a wide screen, clicking a card
+    opens a short summary in the side panel; on narrower screens and phones it opens the card page.
 - **Collection:** the same cards as a display case of PSA slabs, with **Only cards I own** and
   **⇄ Compare two cards** (head to head: side-by-side numbers and a price race).
-- **Card page:** price, off-peak, change since the last check, the price gauge with your limit, a
-  verdict computed from today's price with the written analysis folded below it, "What stands out",
-  vs. the market, hype exposure and stats. Tabs show the **Story** behind the artwork, the full price
+- **Card page:** price, off-peak and change since the last check next to the slab, then the
+  **Decision** box first (today's verdict, the written analysis folded below it, the price gauge,
+  and your limit with its odds, or your sell target for a card you own), "What stands out" and the
+  facts. Buy tiers, vs. the market and hype exposure are folded underneath (the buy tiers open by
+  themselves when a review is due). Tabs show the **Story** behind the artwork, the full price
   **History** (with every sale the checks saw and their 7-day median, plus supply and demand over time:
   PSA10 population, favorites, cheap listings and how many days of sales they cover), the **Listings**
   (spread, 15% cutoff, recent sales for PSA10 and raw A), the **DIY**
@@ -129,10 +141,10 @@ Watching, Track record, Market & notes and Tables). Every section has its own ad
   breadth (how many of its cards rose over 7 days, the median card, and how much of the move the top 3 made),
   trading activity per card, the release calendar and the check's methodology notes.
 
-Cards without an evaluation are labeled "tiers not yet established" rather than guessing. Alerts on
-the overview show your own `banners` from the JSON, the event and correction rules, plus flags the app
-computes by comparing with the previous snapshot (depth drops, favorite-count swings, a price crossing
-a tier boundary).
+Cards without an evaluation are labeled "tiers not yet established" rather than guessing. The
+Market today chips on the overview show your own `banners` from the JSON, the event, correction and
+rally rules, plus flags the app computes by comparing with the previous snapshot (depth drops,
+favorite-count swings, a price crossing a tier boundary).
 
 ## My limits and buy signals
 
@@ -141,9 +153,9 @@ price you're willing to pay (the editor shows the chance a listing gets there in
 then fine-tune it by dragging the gold handle on the bar. When the lowest PSA10 ask is at or below
 your limit, the card gets a gold outline and moves to the top.
 
-The **Buy signals** strip at the top lists every card that's at your limit, in a Buy /
-Definitely-buy zone, or has a Mercari listing or ending auction at or under your limit. Items new
-since your last visit are marked NEW, and tapping one opens that card. A card you own never gives a
+**Needs you** on the overview lists every card that's at your limit, in a Buy / Definitely-buy
+zone, or has a Mercari listing or ending auction at or under your limit, ahead of sell signals and
+tier reviews. Buy signals new since your last visit are marked NEW, and tapping one opens that card. A card you own never gives a
 limit signal; its sell target takes over.
 
 A new limit is kept in the browser you set it in first ("Only on this device"); **Save to all
@@ -202,7 +214,8 @@ nothing runs on your Mac.
 The Holdings page shows what you spent, what it's worth now, the +/− and realized profit at the top;
 a switch values everything at the **lowest ask**, at **recent sales** (the median of recent one-copy sales, closer
 to what a sale would fetch) or **after SNKRDUNK's selling costs** (9.5% fee, ¥200/¥300 fixed fee, ¥1,000
-shipping). Below:
+shipping). Below the chart, tabs switch between **Singles**, **Sealed** and **Sold**, with a link to the
+copies to grade and at PSA (the submission planner):
 
 - **Value over time:** worth against money spent since your first purchase, by Total / Singles /
   Sealed / Pulls, with a benchmark line: the same money put into the My-tier index on each purchase day.
@@ -211,7 +224,8 @@ shipping). Below:
   cost, (price paid + grading & shipping) ÷ gem rate. Under each card: how it moved since you bought it
   against the My-tier index ("−2.6 pts vs the market"), where your price sat in its 30-day range ("Entry:
   36%", 0% = the low), and for a slab the zone it was in that day. Two tiles average them over all singles.
-- **PSA submission planner** (the link under the switch, or from a card's Grade it? panel): tick the raw
+  Each single also shows its next step: its sell signal and tiers for a slab, "Grade" or "At PSA" for a raw copy.
+- **PSA submission planner** (Submissions in the sidebar, the link next to the tabs, or a card's Grade it? panel): tick the raw
   cards to send together; it picks the service by the most valuable card's declared value (Standard takes up
   to ¥150,000), adds up grading and one order's shipping, shows the return date, the expected number of 10s and
   the expected gain over selling raw, and **Mark as sent** records them all with one form.
