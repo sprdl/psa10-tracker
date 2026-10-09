@@ -225,15 +225,17 @@ limit), then cards you own (biggest gain first). Reversing flips the order insid
 `data/portfolio_history.json` only receives prices actually read that day (a failed read's carried-over last-good
 price stays out); a second run on the same day adds to that day's entry instead of replacing it.
 
-## How Holdings counts a raw card and an unpriced product
+## How Holdings counts a single, a raw card and an unpriced product
 
-A raw copy you bought to grade (`condition: raw_to_grade`) is always counted at its **DIY cost with the price you
-paid**: (price paid + its grading & shipping) ÷ gem rate (the holding's own `gem_rate_pct`, else the card's
-population gem rate; without either, price + grading undivided) — in the header totals, the singles list and the
-value chart (`rawCopyBasis` in `assets/app.js`). Slabs count at today's PSA10 price. A sealed product with no price
-yet (e.g. not released) counts at what you paid, in the header, the Sealed section and the chart. The Sold form's
-suggested price is the PSA10 price for a slab and the raw A-rank price for a raw copy. "Remove card" is disabled
-for a card you hold or pulled, on the page and in `scripts/remove_card.py`.
+On the Holdings page (header totals, singles summary, value chart) a single is **worth what the card is today in the form
+you hold it**: a slab at today's PSA10 price, a raw card (`condition: raw_to_grade`) at the raw A-rank price (the
+Overview's rule: median of the last 5 sales in 30 days, never below the lowest ask). The DIY cost is not a value; it is
+only shown next to the raw A-rank and PSA10 prices of a raw single. **Total cost / spent** counts what you paid for each
+card, **without grading and shipping** (`holdingPaid`); the grading fee stays in `holdingCost`, which the budget planner and
+the sold records use. P&L = value − paid. A sealed product with no price yet (e.g. not released) counts at what you
+paid, in the header, the Sealed section and the chart. The Sold form's suggested price is the PSA10 price for a slab and
+the raw A-rank price for a raw copy. "Remove card" is disabled for a card you hold or pulled, on the page and in
+`scripts/remove_card.py`.
 
 ## Holdings values: lowest ask or after selling costs
 

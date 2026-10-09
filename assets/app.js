@@ -2729,7 +2729,7 @@
     let spent = 0, worth = 0, unpriced = 0, unopened = 0;
     for (const h of state.holdings) {
       const c = cards.find((x) => x.url === h.card_url), v = holdingValue(h, c);
-      spent += holdingCost(h);
+      spent += holdingPaid(h);
       if (v != null) worth += basisV(v); else unpriced++;
     }
     for (const sd of state.sealed || []) {
@@ -2833,7 +2833,7 @@
     const dayT = (d) => Date.parse((d || '').slice(0, 10) + 'T12:00:00+09:00');
     const cards = (state.currentData && state.currentData.cards) || [];
     const tracked = new Set(cards.map((c) => c.url));
-    const phist = (state.portHist || []).map((x) => ({ t: dayT(x.d), p: x.p || {} })).sort((a, b) => a.t - b.t);
+    const phist = (state.portHist || []).map((x) => ({ t: Date.parse(x.d.slice(0, 10) + 'T00:00:00+09:00'), p: x.p || {} }))   // a day's reading counts from the start of that day, so today's last point equals today's price.sort((a, b) => a.t - b.t);
     const lastAt = (arr, T, pick) => { let v = null; for (const x of arr) { if (x.t > T) break; const y = pick(x); if (y != null) v = y; } return v; };
     const psaAt = (url, T) => lastAt(snaps, T, (x) => (x.p[url] ? x.p[url][0] : null));
     const rawAt = (url, T) => lastAt(snaps, T, (x) => (x.r[url] && (x.r[url][4] || x.r[url][1])) || null); // [4] = raw A-rank price (rawPrice rule), [1] = ask in older entries
@@ -2841,7 +2841,7 @@
     const now = snaps.length ? snaps[snaps.length - 1].t : Date.now();
     // purchases
     const buys = [];
-    for (const h of state.holdings) buys.push({ t: dayT(h.purchase_date), cost: holdingCost(h), cat: 'singles', name: parseCardName(h.card_name_ja || '').short, id: h.id });
+    for (const h of state.holdings) buys.push({ t: dayT(h.purchase_date), cost: holdingPaid(h), cat: 'singles', name: parseCardName(h.card_name_ja || '').short, id: h.id });
     for (const sd of state.sealed || []) buys.push({ t: dayT(sd.date), cost: sd.price_jpy || 0, cat: (sd.pulls || []).length ? 'pulls' : 'sealed', name: sealedName(sd), id: sd.id });
     for (const r of state.sold || []) buys.push({ t: dayT(r.bought), cost: r.cost_jpy || 0, cat: r.kind === 'single' ? 'singles' : 'sealed', name: (r.kind === 'single' ? parseCardName(r.name || '').short : r.name) + ' (sold)', id: r.id });
     if (!buys.length || !snaps.length) return null;
@@ -2853,10 +2853,10 @@
     // what each item is worth at T, or null when it is left out for good (no price now)
     const items = [];
     for (const h of state.holdings) {
-      const t = dayT(h.purchase_date), url = h.card_url, cost = holdingCost(h), trk = tracked.has(url);
-      if (h.condition === 'raw_to_grade') {   // raw copies: always their DIY cost with the price paid
-        const dv = basisV(rawCopyBasis(h, trk ? cards.find((c) => c.url === url) : null).v);
-        items.push({ cat: 'singles', t, cost, at: () => dv });
+      const t = dayT(h.purchase_date), url = h.card_url, cost = holdingPaid(h), trk = tracked.has(url);
+      if (h.condition === 'raw_to_grade') {   // raw copies: worth the raw A-rank price, at each date
+        const nowRaw = holdingValue(h, trk ? cards.find((c) => c.url === url) : null);
+        items.push({ cat: 'singles', t, cost, at: nowRaw == null ? () => 0 : (T) => { const v = trk ? rawAt(url, T) : heldAt(url, T); return v != null ? basisV(v) : cost; } });
         continue;
       }
       const nowV = trk ? getRep(cards.find((c) => c.url === url)) : null;
@@ -3015,7 +3015,7 @@
     const rows = holdings.map((h) => {
       const match = currentCards.find((c) => c.url === h.card_url);
       const currentPrice = basisV(holdingValue(h, match));
-      const cost = holdingCost(h);
+      const cost = holdingPaid(h);
       const pnl = currentPrice != null ? currentPrice - cost : null;
       const pnlPct = currentPrice != null && cost ? (pnl / cost) * 100 : null;
       if (currentPrice != null) {
@@ -3030,8 +3030,8 @@
       const totalPnl = totalValue - totalCost;
       const totalPnlPct = totalCost ? (totalPnl / totalCost) * 100 : null;
       els.portfolioSummary.innerHTML = `
-        <div class="pf-stat"><div class="lbl">Total cost</div><div class="val">${fmtYen(totalCost)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">cash paid, raw cards incl. grading</div>` : ''}</div>
-        <div class="pf-stat"><div class="lbl">Current value</div><div class="val">${fmtYen(totalValue)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">raw singles counted at their DIY cost</div>` : ''}</div>
+        <div class="pf-stat"><div class="lbl">Total cost</div><div class="val">${fmtYen(totalCost)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">purchase prices, grading not included</div>` : ''}</div>
+        <div class="pf-stat"><div class="lbl">Current value</div><div class="val">${fmtYen(totalValue)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">slabs at the PSA10 price, raw cards at the raw A-rank price</div>` : ''}</div>
         <div class="pf-stat"><div class="lbl">Unrealized P&amp;L</div><div class="val ${totalPnl >= 0 ? 'pos' : 'neg'}">${totalPnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(totalPnl))}${totalPnlPct != null ? ' (' + fmtPct(totalPnlPct) + ')' : ''}</div></div>
         ${matchedCount < holdings.length ? `<div class="pf-stat"><div class="lbl">Untracked</div><div class="val muted">${holdings.length - matchedCount} card${holdings.length - matchedCount === 1 ? '' : 's'}</div></div>` : ''}
       `;
@@ -3213,12 +3213,15 @@
     const gem = h.gem_rate_pct != null ? h.gem_rate_pct : (card && card.psa10_gem_rate_pct) || null;
     return gem ? { v: (price + fee) / (gem / 100), price, fee, gem, diy: true } : { v: price + fee, price, fee, gem: null, diy: false };
   }
-  // What a single is counted at on the Holdings page and in the value chart: raw copies at their DIY cost, slabs at
-  // today's PSA10 price (null when an untracked slab has no price).
+  // What a single is worth on the Holdings page and in the value chart: what the card is today, in the form you hold it.
+  // A slab at the PSA10 price, a raw card at the raw A-rank price (not the PSA10 price, not the DIY cost). null when
+  // there is no price (an untracked slab, or a raw card without a raw price).
   function holdingValue(h, card) {
-    if (h.condition === 'raw_to_grade') return rawCopyBasis(h, card).v;
+    if (h.condition === 'raw_to_grade') return card ? rawPriceV(card) : heldPrice(h.card_url);
     return card ? getRep(card) : null;
   }
+  // What you paid for a single, without grading or shipping (grading is a separate cost, see holdingCost).
+  function holdingPaid(h) { return h.purchase_price_jpy || 0; }
   // The Overview's Limit column for a card you own: the PSA10 price now against your cost basis.
   //  - bought as a PSA10: the price you paid;
   //  - bought raw (to grade): its DIY cost with the price you paid (rawCopyBasis).
