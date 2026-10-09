@@ -361,7 +361,7 @@ Two details worth knowing:
 - **`<nav class="tabbar">`**: the phone bottom bar (Overview, Collection, Holdings, Planner, More).
   The **More** view lists Scout, Stories, You vs model, Watching, Track record, Market & notes, Tables
   and + Add card.
-- At the end: `<script src="assets/app.js?v=20261009i">`. The `?v=` part is a cache
+- At the end: `<script src="assets/app.js?v=20261009j">`. The `?v=` part is a cache
   buster, see section 13.
 
 When you look for where something appears, find its container `id` here (for example
@@ -855,7 +855,7 @@ on its own. Tick the cards to send together (by default every priced card that i
   service shows a note to check its cap on PSA's order screen. A manual choice warns when a card is over the cap.
 - **Cost:** grading fee × cards + shipping, insurance and handling **once per order** (an editable estimate,
   ¥2,450 from a 1-card Standard order; the per-order amount for several cards isn't known yet).
-- **Back around:** the send date + the service's business days. **Expected 10s** and **grading vs selling raw**
+- **Back around:** the send date + the service's business days. The date is typed and shown as `YYYY/MM/DD` (a plain text field: browsers show date pickers in their own locale's format); it is stored and sent to the form as `YYYY-MM-DD`. **Expected 10s** and **grading vs selling raw**
   (expected, after selling costs and the order's cost).
 - **Mark N as sent** opens one `grading-info` form for all ticked cards (`id` = "p73, p74, u52", the date, the
   service and "Sending it to PSA"); `log_purchase.py` applies it to each (with several ids an empty chance keeps
@@ -1141,7 +1141,7 @@ git push                     # the site updates in ~1 minute
 ### Bump the version after changing app.js or style.css
 
 Browsers keep `app.js` and `style.css` for up to 10 minutes. To make everyone get the
-new file immediately, change the `?v=20261009i` in **both** places in `index.html`
+new file immediately, change the `?v=20261009j` in **both** places in `index.html`
 (the `<link>` for style.css and the `<script>` for app.js) to today's date, adding a letter
 for a second change on the same day (`?v=20261010`, `?v=20261010b`, …). Data files don't need
 this; they're always revalidated.

@@ -2823,6 +2823,7 @@
     const autoKey = !maxDecl || maxDecl <= GRADE_TIERS.standard.cap ? 'standard' : 'priority';
     const tierKey = st.tier === 'auto' ? autoKey : st.tier, tier = GRADE_TIERS[tierKey];
     const date = st.date || todayJST();
+    const slash = (d) => String(d).replace(/-/g, '/');   // shown as YYYY/MM/DD; stored and sent to the form as YYYY-MM-DD
     const calc = picked.map((c) => Object.assign({}, c, { k: submitCalc(c, tierKey) }));
     const priced = calc.filter((c) => !c.k.missing);
     const cost = picked.length ? picked.length * tier.fee + st.ship : 0;
@@ -2833,13 +2834,13 @@
     const tierBtn = (k, l) => `<button type="button" data-tier="${k}" class="${st.tier === k ? 'on' : ''}">${l}</button>`;
     const top = `<div class="pl-top">
         <div class="pl-mode" role="group" aria-label="PSA service">${tierBtn('auto', `Auto (${GRADE_TIERS[autoKey].label})`)}${Object.entries(GRADE_TIERS).map(([k, t]) => tierBtn(k, t.label)).join('')}</div>
-        <label class="sub-field">Sent on <input type="date" class="sub-date" value="${escapeAttr(date)}"></label>
+        <label class="sub-field">Sent on <input type="text" class="sub-date" inputmode="numeric" placeholder="YYYY/MM/DD" maxlength="10" pattern="[0-9]{4}/[0-9]{2}/[0-9]{2}" value="${escapeAttr(slash(date))}"></label>
         <label class="sub-field">Shipping, insurance &amp; handling per order ¥<input type="number" class="sub-ship" inputmode="numeric" min="0" step="10" value="${st.ship}"></label>
       </div>`;
     const summary = `<div class="pl-summary">
         <div class="pl-stat"><div class="lbl">Cards</div><div class="val">${picked.length}</div><div class="tr-hint">of ${todo.length} raw cop${todo.length === 1 ? 'y' : 'ies'} not sent</div></div>
         <div class="pl-stat"><div class="lbl">${escapeHtml(tier.label)} service</div><div class="val">${fmtYen(cost)}</div><div class="tr-hint">${picked.length} × ${fmtYen(tier.fee)} + ${fmtYen(st.ship)} per order${picked.length ? ` · ${fmtYen(cost / picked.length)} a card` : ''}</div></div>
-        <div class="pl-stat"><div class="lbl">Back around</div><div class="val">${back ? escapeHtml(back.slice(5).replace('-', '/')) : '—'}</div><div class="tr-hint">${tier.days} business days from ${escapeHtml(date)}</div></div>
+        <div class="pl-stat"><div class="lbl">Back around</div><div class="val">${back ? escapeHtml(back.slice(5).replace('-', '/')) : '—'}</div><div class="tr-hint">${tier.days} business days from ${escapeHtml(slash(date))}</div></div>
         <div class="pl-stat"><div class="lbl">Expected 10s</div><div class="val">${priced.length ? tens.toFixed(1) : '—'}</div><div class="tr-hint">${priced.length ? `of ${priced.length} priced card${priced.length === 1 ? '' : 's'}` : 'no priced card ticked'}</div></div>
         <div class="pl-stat"><div class="lbl">Grading vs selling raw</div><div class="val ${priced.length ? (gain >= 0 ? 'pos' : 'neg') : ''}">${priced.length ? signedYen(gain) : '—'}</div><div class="tr-hint">expected, after selling costs and this order's cost</div></div>
       </div>`;
@@ -2867,7 +2868,7 @@
       return `<div class="pf-row"><div class="pf-info"><div class="pf-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.id)}</span></div>
         <div class="pf-meta">${c.item.sent ? `Sent ${escapeHtml(c.item.sent)} · ${escapeHtml(t.label)}${GRADE_TIERS[c.item.tier] ? '' : ' (assumed)'} · back around <b>${escapeHtml(addBusinessDays(c.item.sent, t.days))}</b>` : 'At PSA, no send date saved'} · <a class="pf-remove" href="${escapeAttr(gradingFormUrl({ id: c.id, item: c.item }, nm.short))}" target="_blank" rel="noopener">Grading info</a></div></div></div>`;
     }).join('')}</div>` : '';
-    const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeAttr(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(date)} ↗</a>` : '';
+    const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeAttr(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(slash(date))} ↗</a>` : '';
     el.innerHTML = top + summary + warn + `<div class="sub-acts">${sendBtn}<span class="muted">${picked.length ? 'opens one GitHub form for all ticked cards; submit it after you post them' : 'tick the cards to send'}</span></div>`
       + (todo.length ? `<div class="pl-list">${base.map(row).join('')}</div>` : '<div class="empty-state">Every raw copy is at PSA.</div>') + awayHtml
       + `<p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), and Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are business days from the send date. Ticks, service and shipping are saved in this browser.</p>`;
@@ -2878,7 +2879,12 @@
       if (cb.checked) sel.add(cb.dataset.sub); else sel.delete(cb.dataset.sub);
       save({ sel: [...sel] });
     }));
-    const sd = el.querySelector('.sub-date'); if (sd) sd.addEventListener('change', () => save({ date: sd.value || null }));
+    const sd = el.querySelector('.sub-date');
+    if (sd) sd.addEventListener('change', () => {
+      const m = sd.value.trim().match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+      const iso = m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : null;
+      save({ date: iso && !isNaN(Date.parse(iso + 'T12:00:00Z')) && new Date(iso + 'T12:00:00Z').toISOString().slice(0, 10) === iso ? iso : null });   // anything else: back to today
+    });
     const sh = el.querySelector('.sub-ship'); if (sh) sh.addEventListener('change', () => { const v = Number(sh.value); save({ ship: v >= 0 ? Math.round(v) : PSA_STD.ship + PSA_STD.handling }); });
     return { title: 'PSA submission planner', sub: `${todo.length} raw cop${todo.length === 1 ? 'y' : 'ies'} to send · ${away.length} at PSA` };
   }
