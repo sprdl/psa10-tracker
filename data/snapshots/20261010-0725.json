@@ -2212,27 +2212,11 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch — sales climbing to ¥70k, Buy from ¥66k",
-          "reasoning": "Sales rose from ~¥60k to ~¥70k this week and the lowest ask is ¥75k, in step with the market bounce. Buy ≤¥66k is about 35% likely within 30 days and Definitely-buy ≤¥56k about 25% within 90 days. High hype exposure and a correction rule that's still on (My-tier −10% over 30 days) argue for waiting for a pullback rather than chasing.",
-          "predictions": [
-            {
-              "text": "A listing at ≤¥66k (Buy) within 30 days",
-              "p": 0.34,
-              "type": "touch_below",
-              "price": 66000,
-              "by": "2026-11-07"
-            },
-            {
-              "text": "A listing at ≤¥56k (Definitely buy) within 90 days",
-              "p": 0.25,
-              "type": "touch_below",
-              "price": 56000,
-              "by": "2027-01-06"
-            }
-          ],
-          "written": "2026-10-08T07:32:31+09:00"
+          "label": "Watch — sales ¥73k, ask ¥76k, Buy from ¥66k",
+          "reasoning": "The lowest ask is ¥76,000, up about 4% from ¥72,800 two days ago and 8.6% above the ¥70,000 the old verdict was written at. The last 20 sales ran ¥66.3k–77.8k, and the latest ones cluster at ¥73k, so buyers are paying roughly the ask. Depth is decent (19 of 20 listings within 15% of the ask, ¥76k–85k), but there is no cluster near the Buy line of ¥66k. The My-tier index rose 5.0% today, which is lifting this card with the market. It would move to Buy if a listing appeared at ≤¥66k, or if the market rally stalled and sales slipped back below ¥70k.",
+          "written": "2026-10-10T07:25:49+09:00"
         },
-        "verdict_price_ref": 70000
+        "verdict_price_ref": 76000
       },
       "psa10_population": 17949,
       "psa10_gem_rate_pct": 83.8,
@@ -3403,27 +3387,11 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch — sales ¥25.5–26.3k, Buy from ¥24.5k",
-          "reasoning": "Sales held ¥25–26k through the bounce while asks rose to ¥27.5k on thin depth (6 of 20 within 15%). Buy ≤¥24.5k is about 35–40% likely within 30 days, Definitely-buy ≤¥21k about 28% within 90 days; very high hype exposure (it carries a 12-month gain and trades a lot) means it would drop hard if the rally fades.",
-          "predictions": [
-            {
-              "text": "A listing at ≤¥24.5k (Buy) within 30 days",
-              "p": 0.36,
-              "type": "touch_below",
-              "price": 24500,
-              "by": "2026-11-07"
-            },
-            {
-              "text": "A listing at ≤¥21k (Definitely buy) within 90 days",
-              "p": 0.28,
-              "type": "touch_below",
-              "price": 21000,
-              "by": "2027-01-06"
-            }
-          ],
-          "written": "2026-10-08T07:32:31+09:00"
+          "label": "Watch — sales ¥26–28.5k, ask ¥27.4k, Buy from ¥24.5k",
+          "reasoning": "The lowest ask is ¥27,400, 5.4% above the ¥26,000 the old verdict was written at, and still above the ¥24,500 Buy line and the ¥28,500 ceiling is only 4% away. The last 20 sales ran ¥25.5k–28.5k and the latest ones sit at ¥27.5k–28.5k, so the sales range has moved up with the market. Depth is thin: only 8 of 20 listings are within 15% of the ask, and the rest start at ¥31.5k. The My-tier index rose 5.0% today. It would become a Buy if a listing appeared at ≤¥24.5k, and it would turn to Don't buy above ¥28.5k.",
+          "written": "2026-10-10T07:25:49+09:00"
         },
-        "verdict_price_ref": 26000
+        "verdict_price_ref": 27400
       },
       "psa10_population": 39174,
       "psa10_gem_rate_pct": 86.6,
