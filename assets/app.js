@@ -2624,6 +2624,14 @@
     const need = g.pBE == null ? 'A PSA10 would not even beat the raw copy.' : `It pays off at a ${Math.ceil(g.pBE * 100)}%+ chance of a 10.`;
     return `<div class="grade-line"><span class="vtag gr-${g.verdict}">${GRADE_LABELS[g.verdict]}</span> ${net}Graded: ${fmtYen(g.ev - g.fee)} expected vs ${fmtYen(g.nraw)} selling it raw (${g.gain >= 0 ? '+' : '−'}${fmtYen(Math.abs(g.gain))})</span> with ${chance} and ${fmtYen(g.fee)} grading costs. ${need}${g.capWarn ? ` A PSA10 here is above PSA Standard's ¥${PSA_STD.cap.toLocaleString()} declared-value limit, so it needs a higher tier.` : ''} ${link}</div>`;
   }
+  // For a raw single on the Holdings page: just when it was sent / is due back, and the grading-info link.
+  function gradeMetaHtml(card, c) {
+    const name = parseCardName(card.card_name_ja).short, it = c.item;
+    const tierKey = GRADE_TIERS[it.tier] ? it.tier : 'standard', tier = GRADE_TIERS[tierKey];
+    const link = `<a class="pf-remove" href="${escapeAttr(gradingFormUrl(c, name))}" target="_blank" rel="noopener">${it.sent || it.gem_rate_pct != null || it.tier ? 'Edit grading info' : 'Grading info'}</a>`;
+    const ret = it.sent ? `Sent ${escapeHtml(it.sent)} · ${tier.label}${GRADE_TIERS[it.tier] ? '' : ' (assumed)'} · back around <b>${escapeHtml(addBusinessDays(it.sent, tier.days))}</b> (${tier.days} business days) · ` : 'Not sent yet · ';
+    return `<div class="grade-line muted">${ret}${link}</div>`;
+  }
   // The card page: one block per raw copy of this card.
   function gradePanelHtml(card) {
     const copies = gradeCopies(card);
@@ -2968,6 +2976,21 @@
     if (window.ResizeObserver && !box._ro) { let lw = box.clientWidth; box._ro = new ResizeObserver(() => { const w = box.clientWidth; if (w && Math.abs(w - lw) > 2) { lw = w; drawPortfolioChart(); } }); box._ro.observe(box); }
   }
 
+  // A single bought raw: how the raw A-rank price moved against what you paid, how the PSA10 ask moved against your
+  // DIY cost (with the price you paid), and that DIY cost. Percent = now ÷ reference − 1.
+  function rawHoldingCols(h, card) {
+    const paid = h.purchase_price_jpy || 0, basis = rawCopyBasis(h, card).v;
+    const raw = card ? rawPriceV(card) : heldPrice(h.card_url);
+    const ask = card ? lowestAsk(card) : null;
+    const pct = (now, ref) => (now != null && ref ? (now / ref - 1) * 100 : null);
+    const cell = (label, price, p, ref, tip) => `<div class="pf-tri" title="${escapeAttr(tip)}"><span class="k">${label}</span><b>${price != null ? fmtYen(price) : '—'}</b>${p != null ? `<span class="${p >= 0 ? 'pos' : 'neg'}">${p === 0 ? '±0%' : fmtPct(p)}</span>` : '<span class="muted"></span>'}<small>${ref}</small></div>`;
+    const rp = card ? rawPrice(card) : null;
+    return `<div class="pf-current pf-trio">
+      ${cell('Raw A-rank', raw, pct(raw, paid), 'vs ' + fmtYen(paid) + ' paid', (rp ? rawPriceNote(rp) : 'Raw A-rank price') + `; you paid ${fmtYen(paid)} for the raw card`)}
+      ${cell('PSA10 lowest ask', ask, pct(ask, basis), 'vs your DIY cost', `PSA10 lowest ask ${ask != null ? fmtYen(ask) : '—'} against your DIY cost ${fmtYen(basis)}`)}
+      <div class="pf-tri" title="(price paid + grading & shipping) ÷ gem rate"><span class="k">My DIY cost</span><b>${fmtYen(basis)}</b><span class="muted"></span><small>(${fmtYen(paid)} + ${fmtYen(rawCopyBasis(h, card).fee)}) ÷ ${rawCopyBasis(h, card).gem != null ? Math.round(rawCopyBasis(h, card).gem * 10) / 10 + '%' : '—'}</small></div>
+    </div>`;
+  }
   function renderPortfolio(holdings, currentCards) {
     renderHoldingsAside(currentCards);
     const bb = document.getElementById('basis-bar');
@@ -3031,12 +3054,12 @@
           <div class="pf-info">
             <div class="pf-name">${nameHtml}</div>
             <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(soldFormUrl(h.id, parseCardName(h.card_name_ja || '').short, soldPrefill(h, match)))}" target="_blank" rel="noopener">Sold it</a> · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
-            ${h.condition === 'raw_to_grade' && h.id && match ? gradeLineHtml(match, { kind: 'holding', id: h.id, item: h, sunk: true }) : ''}
+            ${h.condition === 'raw_to_grade' && h.id && match ? gradeMetaHtml(match, { kind: 'holding', id: h.id, item: h }) : ''}
           </div>
-          <div class="pf-current">
+          ${h.condition === 'raw_to_grade' ? rawHoldingCols(h, match) : `<div class="pf-current">
             <div class="val">${currentPrice != null ? fmtYen(currentPrice) : '—'}</div>
             <div class="pf-pnl">${pnlHtml}</div>
-          </div>
+          </div>`}
         </div>`;
     }).join('');
   }

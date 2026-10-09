@@ -202,6 +202,15 @@ back. The Holdings page lists sales with a yearly summary; the value-over-time c
 history and, from the sale date on, counts the money received (so its result is total profit, unrealized plus
 realized, while the header's +/− only covers what you still own).
 
+## Raw singles on the Holdings page
+
+A single bought raw shows three figures instead of one value: the **raw A-rank price** (the Overview's rule: median of the
+last 5 sales in 30 days, never below the lowest ask) with its % against the price you paid; the **PSA10 lowest ask**
+with its % against **your DIY cost**; and **your DIY cost** itself, (price paid + grading & shipping) ÷ gem rate. Slabs
+keep one value with the profit against the purchase price. The row also shows when it was sent to PSA and when it is due
+back (the "Grading info" form); the "expected value once graded" text only remains on pulls. The header totals still
+count a raw single at its DIY cost (`rawHoldingCols`, `rawCopyBasis` in `assets/app.js`).
+
 ## Owned raw cards on the card page and the side panel
 
 For a card you hold raw, the position (gain, result after selling costs, break-even, the sell gauge's marker, the
