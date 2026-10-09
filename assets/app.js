@@ -3341,9 +3341,13 @@
 
   // ---------- render: display case ----------
 
+  // A card you own: bought as a single (Holdings) or pulled from a sealed product (the Sealed section).
+  function pulledCard(card) { return (state.sealed || []).some((sd) => (sd.pulls || []).some((p) => p.card_url === card.url)); }
+  function ownsCard(card) { return holdingsFor(card).length > 0 || pulledCard(card); }
   function renderCollection(cards) {
     const el = document.getElementById('collection');
-    const list = sortedMarketCards(cards);
+    const ownedOnly = store.get('psa10.ownedOnly', false) === true;
+    const list = sortedMarketCards(cards).filter((c) => !ownedOnly || ownsCard(c));
     const reqEl = document.getElementById('card-requests');
     el.innerHTML = list.map((card) => {
       const { short, code } = parseCardName(card.card_name_ja);
@@ -3358,14 +3362,14 @@
           <span class="tile-chips">${heatChip(card)}${owned ? sellChip(card) : tagChip(card)}</span>
           ${owned ? (bg ? `<span class="tile-pl ${bg.pct >= 0 ? 'pos' : 'neg'}" title="${escapeAttr(boughtGapTitle(bg))}">${bg.pct === 0 ? '±0%' : fmtPct(bg.pct)} vs paid</span>` : '')
             : lim != null ? `<span class="tile-limit">Limit ${fmtYen(lim)}</span>` : ''}
-          ${owned ? '<span class="tile-owned">Owned</span>' : ''}
+          ${owned ? '<span class="tile-owned">Owned</span>' : pulledCard(card) ? '<span class="tile-owned">Pulled</span>' : ''}
         </span>
         <span class="tile-name jp">${escapeHtml(short)}</span>
         <span class="tile-price"><b class="display">${fmtYen(getRep(card))}</b><span class="tile-chg"><small>7d</small>${changeCell(card, 7, 'tc')}<small>30d</small>${changeCell(card, 30, 'tc')}</span></span>
         ${zoneBarHtml(card, 'thin')}
         <span class="tile-meta">${escapeHtml(code)} · ${bg ? `Paid ${fmtYen(bg.paid)}` : `Pop ${pop}`}</span>
       </a>`;
-    }).join('') + (state.cmpMode ? '' : `<a class="tile tile-add" href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span class="display">+</span>Add a card to track${reqEl && !reqEl.hidden ? `<small>${escapeHtml(reqEl.textContent)}</small>` : ''}</a>${removedListHtml()}`);
+    }).join('') + (list.length ? '' : `<div class="empty-state">${ownedOnly ? 'No cards you own have a PSA10 market yet.' : 'No cards with live market data yet.'}</div>`) + (state.cmpMode || ownedOnly ? '' : `<a class="tile tile-add" href="https://github.com/sprdl/psa10-tracker/issues/new?template=add-card.yml" target="_blank" rel="noopener"><span class="display">+</span>Add a card to track${reqEl && !reqEl.hidden ? `<small>${escapeHtml(reqEl.textContent)}</small>` : ''}</a>${removedListHtml()}`);
     if (state.cmpMode) {
       el.querySelectorAll('a.tile[data-url]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); togglePick(a.dataset.url); }));
     }
@@ -4989,13 +4993,20 @@
     state.cmpPick = picked.map((c) => c.url);
     const n = picked.length;
     bar.classList.toggle('on', state.cmpMode);
-    bar.innerHTML = state.cmpMode
+    const ownedOnly = store.get('psa10.ownedOnly', false) === true;
+    const nOwned = ((state.currentData && state.currentData.cards) || []).filter((c) => hasMarket(c) && ownsCard(c)).length;
+    const ownedToggle = `<label class="own-filter"><input type="checkbox" data-own-filter${ownedOnly ? ' checked' : ''}> Only cards I own <span class="muted">(${nOwned})</span></label>`;
+    bar.innerHTML = ownedToggle + (state.cmpMode
       ? `<span class="cmp-hint">${n === 2
           ? `<b style="color:${CMP_COLORS[0]}">${escapeHtml(parseCardName(picked[0].card_name_ja).short)}</b> vs <b style="color:${CMP_COLORS[1]}">${escapeHtml(parseCardName(picked[1].card_name_ja).short)}</b>`
           : n === 1 ? 'Pick one more card' : 'Tap two cards to compare them'}</span>
          <button type="button" class="btn" data-cmp="cancel">Cancel</button>
          <button type="button" class="btn btn-primary" data-cmp="go"${n === 2 ? '' : ' disabled'}>Head to head</button>`
-      : `<button type="button" class="btn" data-cmp="start">⇄ Compare two cards</button>`;
+      : `<button type="button" class="btn" data-cmp="start">⇄ Compare two cards</button>`);
+    bar.querySelector('[data-own-filter]').addEventListener('change', (e) => {
+      store.set('psa10.ownedOnly', e.target.checked);
+      renderCollection((state.currentData && state.currentData.cards) || []);
+    });
     bar.querySelectorAll('[data-cmp]').forEach((b) => b.addEventListener('click', () => {
       const act = b.dataset.cmp;
       if (act === 'start') { state.cmpMode = true; state.cmpPick = []; }
