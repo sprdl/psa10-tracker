@@ -3030,8 +3030,8 @@
       const totalPnl = totalValue - totalCost;
       const totalPnlPct = totalCost ? (totalPnl / totalCost) * 100 : null;
       els.portfolioSummary.innerHTML = `
-        <div class="pf-stat"><div class="lbl">Total cost</div><div class="val">${fmtYen(totalCost)}</div></div>
-        <div class="pf-stat"><div class="lbl">Current value</div><div class="val">${fmtYen(totalValue)}</div></div>
+        <div class="pf-stat"><div class="lbl">Total cost</div><div class="val">${fmtYen(totalCost)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">cash paid, raw cards incl. grading</div>` : ''}</div>
+        <div class="pf-stat"><div class="lbl">Current value</div><div class="val">${fmtYen(totalValue)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">raw singles counted at their DIY cost</div>` : ''}</div>
         <div class="pf-stat"><div class="lbl">Unrealized P&amp;L</div><div class="val ${totalPnl >= 0 ? 'pos' : 'neg'}">${totalPnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(totalPnl))}${totalPnlPct != null ? ' (' + fmtPct(totalPnlPct) + ')' : ''}</div></div>
         ${matchedCount < holdings.length ? `<div class="pf-stat"><div class="lbl">Untracked</div><div class="val muted">${holdings.length - matchedCount} card${holdings.length - matchedCount === 1 ? '' : 's'}</div></div>` : ''}
       `;
