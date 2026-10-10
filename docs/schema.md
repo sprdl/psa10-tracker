@@ -98,7 +98,7 @@ gauge positions, tier zone math — all computed client-side from these inputs, 
       // ...all the raw fields above, plus:
       "analysis": {
         "representative_price": 29000,     // only if it should override lowest_price
-        "price_source": "sales_confirmed", // "sales_confirmed" | "ask_depth" | "ask_unconfirmed"
+        "price_source": "sales_confirmed", // "sales_confirmed" | "ask_depth" | "ask_unconfirmed" (apply_analysis.py also accepts the older "unconfirmed")
 
         "peak": {                          // omit entirely if no real price history exists yet
           "price": 47000,
@@ -405,3 +405,4 @@ in each row has the details in its docstring.
 | `mercari.json` (`mercari.py`) | `{"cards": {url: {"checked", "seen", "matched", "items": [{id, url, price, eff, fee, auction, ends, anshin, grade, num}], "error"}}}` |
 | `tracked_cards.json` (`card_requests.py`) | `{"cards": [{"snkrdunk_id", "card_name_ja", "url", "image_url", "altema_url", "altema_mode", "note"}]}` |
 | `removed_cards.json` (`remove_card.py`) | `{"removed": {snkrdunk_id: {"name", "at", "issue"}}}` |
+| `eval_queue.json` (`eval_queue.py`) | `{"about", "queue": {card url: {"name", "why", "since"}}}`: added/restored cards awaiting their first evaluation; `apply_analysis.py` removes a card when a buy verdict is applied |

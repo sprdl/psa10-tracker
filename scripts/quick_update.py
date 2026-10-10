@@ -33,9 +33,12 @@ really measured, so the site never presents old numbers as new:
 The result is marked "check_mode": "quick" and handed to add_snapshot.py, which
 carries the analysis (tiers/peak/verdict) forward, saves, commits and pushes.
 
-Cards the quick run didn't cover are kept as they were (and reported). Cards the
-quick run covered that aren't in the tracker yet are skipped — add new cards with a
-full check, which knows their names.
+Cards the quick run didn't cover are kept as they were (and reported). A card the quick
+run covered that isn't in the latest snapshot but is in data/tracked_cards.json (just added
+by an Add card request, scripts/card_requests.py add) is published as a new card with what
+the quick run measured; its depth, population and photo come with the next full check, and
+the evaluation the run must do next reads what it still needs (EVALUATE NOW, eval_queue.py).
+Ids that are in neither are skipped.
 """
 
 import copy
@@ -189,6 +192,24 @@ def main():
     out.pop("psa_tier_status", None)
     out.pop("banners", None)
 
+    # cards added by a request since the last snapshot: start them from their tracked_cards.json entry
+    in_snap = {snkrdunk_id(c.get("url")) for c in out.get("cards", [])}
+    rp = root / "data" / "removed_cards.json"
+    gone = set((json.loads(rp.read_text(encoding="utf-8")).get("removed") or {}).keys()) if rp.exists() else set()
+    tp = root / "data" / "tracked_cards.json"
+    tracked = {t["snkrdunk_id"]: t for t in (json.loads(tp.read_text(encoding="utf-8")).get("cards", []) if tp.exists() else [])}
+    new_cards = []
+    for sid in raw_cards:
+        t = tracked.get(sid)
+        if sid in in_snap or sid in gone or not t:
+            continue
+        card = {"card_name_ja": t["card_name_ja"], "url": t.get("url") or f"https://snkrdunk.com/apparels/{sid}", "grades": {}}
+        if t.get("image_url"):
+            card["image_url"] = t["image_url"]
+        card["quick_note"] = "new card: first read by a quick check; depth, population and photo come with the next full check"
+        out["cards"].append(card)
+        new_cards.append(t["card_name_ja"])
+
     updated, not_checked, problems = [], [], []
     seen_ids = set()
     for card in out.get("cards", []):
@@ -266,8 +287,10 @@ def main():
         print("  partial problems:")
         for p in problems:
             print(f"    - {p}")
+    if new_cards:
+        print("  NEW card(s) published for the first time: " + ", ".join(new_cards))
     if unknown:
-        print("  skipped (not in the tracker yet — add them with a full check): " + ", ".join(unknown))
+        print("  skipped (not tracked — add them with card_requests.py add first): " + ", ".join(unknown))
 
     if dry:
         print("\nDry run — nothing written.")
@@ -290,6 +313,10 @@ def main():
         sealed_info.print_due(root)
         todo = [f"{lbl}: {n}" for lbl, n in (("Mercari (pricecheck/MERCARI.md)", len(mercari.due(root))),
                                              ("sealed info (FULL-CHECK step 8h)", len(sealed_info.due(root)))) if n]
+        import eval_queue
+        ev = eval_queue.print_due(root, step="quick check Q5")
+        if ev:
+            todo.insert(0, f"evaluate (pokemon-tcg-card-evaluation): {min(eval_queue.PER_RUN, len(ev))}")
         import freshness
         freshness.print_stale(root)
         print("\nFOLLOW-UPS (required before the chat message): " + (" · ".join(todo) if todo else "none"))

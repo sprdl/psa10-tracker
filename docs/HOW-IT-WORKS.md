@@ -204,6 +204,7 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `scout.json` | `scout.py` (full check, about every 2 days) | Scout page | candidate pool, ranked list, daily picks two weeks ahead |
 | `mercari.json` | `mercari.py` (full and quick checks) | Mercari row, Mercari signals | Mercari PSA10 listings for cards whose ask is within 5% of your limit |
 | `tracked_cards.json` | `card_requests.py` | price-check skill | cards added with "+ Add card", beyond the skill's own `pricecheck/references/cards.json` |
+| `eval_queue.json` | `card_requests.py`, `remove_card.py` (restore); emptied by `apply_analysis.py` | `eval_queue.py`, `check_status.py`, both update scripts | cards added or restored that the same price check must evaluate (EVALUATE NOW) |
 | `removed_cards.json` | `remove_card.py` (Action) | site, `plan.py`, `assemble.py`, `add_snapshot.py` | `{"removed": {snkrdunk_id: {name, at}}}` |
 
 **One card inside a snapshot** looks like this, trimmed. The full version is in
@@ -327,7 +328,7 @@ hands off to `add_snapshot.py`, and ends with the same Mercari block as a full c
 | Save to all devices (sell target) | `set-sell-target.yml` (`set-sell-target`) | same | `sell_targets.json` |
 | Save to all devices (You vs model) | `predict.yml` (`predict`) | Action `predictions.yml` → `set_predictions.py` | answers in `predict.json` |
 | Remove card / Restore | `remove-card.yml` / `restore-card.yml` | Action `cards.yml` → `remove_card.py` | `removed_cards.json` |
-| + Add card / + Track it (Scout) | `add-card.yml` (`add-card`) | the **next price check** → `card_requests.py` | added to `tracked_cards.json`, issue closed |
+| + Add card / + Track it (Scout) | `add-card.yml` (`add-card`) | the **next price check**, quick or full → `card_requests.py`, then the evaluation in the same run | added to `tracked_cards.json` and `eval_queue.json`, issue closed; tiers and verdict applied by that run |
 
 Every Action script redeploys the site, then comments on and closes the issue. If a form can't be
 read, it comments the reason and leaves the issue open; editing the issue re-runs it. Only issues
@@ -1116,6 +1117,8 @@ with a docstring explaining its usage. Open the file and read the top.
 | `log_purchase.py`, `set_limit.py`, `set_predictions.py`, `remove_card.py` | run by Actions; `--dry-run event.json` to test locally |
 | `issue_labels.py` | `--check` lists the form labels; `--sync` runs in Actions |
 | `card_requests.py` | handling Add-card issues: `list`, `add`, `set`, `reject` |
+| `eval_queue.py` | the EVALUATE NOW list (new/restored cards first); `add <id> "why"` / `drop <id>` by hand |
+| `eval_context.py` | everything the repo knows about one card for an evaluation (`--odds <prices>` for limit-odds) |
 | `add_holding.py` | bulk-entering purchases from the Mac |
 | `../tests/test_rules.py` | checking that the site, the widget and the scripts still apply the same rules (needs Node) |
 
@@ -1283,7 +1286,7 @@ Open DevTools with **Cmd+Option+I**.
 | A form (purchase, limit, sale…) did nothing | issue not opened by you, missing label and wrong title, or form error | the issue's comments; Actions tab log; run the "Issue labels" workflow by hand |
 | `git push` rejected | a price check or Action pushed first | `git pull --rebase` then `git push` |
 | Push fails with an auth error | the token in the credential file expired | create a new token on GitHub and update the credential file (never paste it into a chat or commit) |
-| A card shows "No tiers" after a check | it was never evaluated, or the URL changed so carry-forward missed it | compare `url` with the previous snapshot; `check_status.py` suggests a full check for unevaluated cards |
+| A card shows "No tiers" after a check | it was never evaluated, or the URL changed so carry-forward missed it | compare `url` with the previous snapshot; `python3 scripts/eval_queue.py` lists what the next check will evaluate (`add <id>` queues one) |
 | Limit or sell target shows "Only on this device" forever | the issue wasn't processed | check the issue; `data/limits.json` / `data/sell_targets.json` |
 | `full_update.py` refuses the run | a planned step left no lines (completeness guard) | run the missing step; `--skip <name>` only if the site really failed |
 | A sealed product has no picture or price | no SNKRDUNK link yet, or no full check since | "Add SNKRDUNK link" on Holdings; the next full check reads it (`sealed_info.py`, `holdings_prices.py`) |

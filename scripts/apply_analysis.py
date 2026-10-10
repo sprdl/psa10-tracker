@@ -43,7 +43,7 @@ from typing import Dict, List, Optional, Tuple
 
 VALID_TAGS = {"definitely_buy", "buy", "watch", "dont_buy", "defer"}
 VALID_SELL_TAGS = {"hold", "take_profit", "sell", "reassess"}
-VALID_SOURCES = {"sales_confirmed", "ask_depth", "unconfirmed"}
+VALID_SOURCES = {"sales_confirmed", "ask_depth", "ask_unconfirmed", "unconfirmed"}  # schema.md: ask_unconfirmed
 TAG_LABELS = {"definitely_buy": "Definitely buy", "buy": "Buy", "watch": "Watch",
               "dont_buy": "Don't buy", "defer": "Defer"}
 
@@ -357,7 +357,10 @@ def main():
     sys.path.insert(0, str(root / "scripts"))
     import build_history
     build_history.build(root)  # representative_price feeds the price-history chart
-    git(root, "add", rel, "data/history.json", "data/calls.json", *[f for f in ("data/predict.json", "data/sales.json") if (root / f).exists()])
+    # a buy verdict (any tag, defer included) is the card's evaluation: it leaves the new-card queue
+    import eval_queue
+    eval_queue.remove([c["url"] for c, n, _ in planned if isinstance(n.get("verdict"), dict)], root)
+    git(root, "add", rel, "data/history.json", "data/calls.json", *[f for f in ("data/predict.json", "data/sales.json", "data/eval_queue.json") if (root / f).exists()])
     names = ", ".join(re.sub(r"[\[(].*$", "", c["card_name_ja"]).strip() for c, _, _ in planned)
     commit = git(root, "commit", "-m", f"analysis: update {names}", check=False)
     if commit.returncode != 0:

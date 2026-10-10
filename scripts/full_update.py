@@ -358,18 +358,10 @@ def main():
 
 
 def eval_due(root=ROOT, now=None):
-    """Cards FULL-CHECK step 8b must evaluate: a PSA10 ask on the tracker and no tiers, with no verdict
-    at all, or a `defer` verdict on a Monday (deferred cards get one fresh look a week)."""
-    snap_path, snap = planmod.latest_snapshot(root)
-    monday = (now or datetime.now(JST)).weekday() == 0
-    out = []
-    for c in (snap or {}).get("cards", []):
-        a = c.get("analysis") or {}
-        ask = ((c.get("grades") or {}).get("psa10") or {}).get("lowest_price")
-        tag = (a.get("verdict") or {}).get("tag")
-        if ask and not a.get("tiers") and (not tag or (tag == "defer" and monday)):
-            out.append((c["url"], ask, c.get("card_name_ja", "")))
-    return out
+    """Cards step 8b must evaluate: the new-card queue first (added or restored by a request, whatever their
+    PSA10 market), then a PSA10 ask with no tiers and no verdict, or `defer` on a Monday. See eval_queue.py."""
+    import eval_queue
+    return [(d["url"], d["ask"], d["name"]) for d in eval_queue.due(root, now)[0]]
 
 
 SELL_REVIEW_DAYS = 30
@@ -461,15 +453,8 @@ def print_story_due():
 def print_eval_due():
     print_story_due()
     print_sell_due()
-    due = eval_due()
-    if not due:
-        print("\nEVALUATE NOW: none (every card with a PSA10 market has tiers).")
-        return
-    print("\nEVALUATE NOW (FULL-CHECK step 8b) — the run is not finished until these have tiers and a verdict:")
-    for i, (url, ask, name) in enumerate(due):
-        print(f"  {'' if i < 3 else '(next run) '}{url}  PSA10 ask ¥{ask:,}  {name}")
-    print("  Run the pokemon-tcg-card-evaluation skill for each (at most 3 per run), including apply_analysis.py.")
-    print("  A new card is exactly what this step is for; 'it has no tiers yet' is the reason to evaluate, not to skip.")
+    import eval_queue
+    eval_queue.print_due(ROOT)
 
 
 if __name__ == "__main__":

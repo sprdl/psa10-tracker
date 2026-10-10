@@ -11,7 +11,8 @@ tracked-card list (data/tracked_cards.json).
                                     [--image URL] [--altema URL] [--note TEXT] [--dry-run]
         Adds the requested card to data/tracked_cards.json, commits, pushes, then
         comments on and closes the issue. A card that's already tracked just gets
-        the issue closed with a note.
+        the issue closed with a note. An added or restored card is queued for its first
+        evaluation in the same run (data/eval_queue.json, scripts/eval_queue.py).
 
     python3 scripts/card_requests.py set <snkrdunk_id> key=value [key=value ...] [--dry-run]
         Update fields of a card in data/tracked_cards.json (image_url, altema_url,
@@ -193,6 +194,10 @@ def cmd_add(args):
     if dry:
         print("(dry run — nothing written, issue left open)")
         return
+    if restored or not already:   # first evaluation happens in this same price check (scripts/eval_queue.py)
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import eval_queue
+        eval_queue.add(sid, name, f"{'restored' if restored else 'added'} from #{num}", ROOT)
     if restored:
         rp.write_text(json.dumps(rem, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         if sid not in {c["snkrdunk_id"] for c in tracked["cards"]} and sid not in base_ids():
@@ -200,10 +205,10 @@ def cmd_add(args):
                                      "image_url": flag(args, "--image", ""), "altema_url": flag(args, "--altema", ""),
                                      "altema_mode": mode, "note": f"restored from issue #{num}", "added": datetime.now(JST).strftime("%Y-%m-%d")})
             save_tracked(tracked)
-        commit_and_push(f"restore {name} (requested in #{num})", extra=["data/removed_cards.json"])
+        commit_and_push(f"restore {name} (requested in #{num})", extra=["data/removed_cards.json", "data/eval_queue.json"])
     elif not already:
         save_tracked(tracked)
-        commit_and_push(f"track {name} (requested in #{num})")
+        commit_and_push(f"track {name} (requested in #{num})", extra=["data/eval_queue.json"])
     api("POST", f"/issues/{num}/comments", {"body": msg})
     api("PATCH", f"/issues/{num}", {"state": "closed", "state_reason": "completed"})
     print(f"Closed issue #{num}.")

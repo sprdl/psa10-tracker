@@ -1,0 +1,4 @@
+{
+ "about": "Cards added or restored by an Add card request, waiting for their first evaluation in the same price check (scripts/eval_queue.py). apply_analysis.py removes a card once a buy verdict is applied.",
+ "queue": {}
+}

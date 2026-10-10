@@ -70,7 +70,9 @@ def apply(issue, labels, store):
         if sid not in rem:
             raise FormError(f"{name} ({sid}) isn't removed, so there's nothing to restore.")
         del rem[sid]
-        return (f"Restored **{name}** ({sid}). It's back on the site now and in the next price check.",
+        import eval_queue   # its old tiers may be stale: the next price check re-evaluates it
+        eval_queue.add(sid, name, f"restored from #{issue['number']}", ROOT)
+        return (f"Restored **{name}** ({sid}). It's back on the site now, and the next price check re-evaluates it.",
                 f"cards: restore {sid} {name} (#{issue['number']})")
     if sid in owned_ids():
         raise FormError(f"You've logged {name} as bought or pulled. Remove that first if you really want to stop tracking it.")
@@ -123,7 +125,7 @@ def main():
             finish(issue, f"Couldn't do this: {e}", False, dry)
             return
         save(store)
-        git("add", "data/removed_cards.json")
+        git("add", "data/removed_cards.json", *(["data/eval_queue.json"] if (ROOT / "data" / "eval_queue.json").exists() else []))
         if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
             break
         git("commit", "-q", "-m", commit_msg)
