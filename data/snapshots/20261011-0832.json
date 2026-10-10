@@ -2207,28 +2207,21 @@
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2450,
         "verdict": {
-          "tag": "watch",
-          "label": "Watch — asks jumped to ¥59.8k today; Buy from ¥55k",
-          "reasoning": "Listings stepped up from ~¥50k to ¥59.8k with the market rally (15 of 20 within 15%), while sales were still ¥49–52k a day ago; the slab is now near its DIY cost (~¥58k: raw ¥37k). Tiers rise with the market: Buy ≤¥55k is about 35–40% likely within 30 days, Definitely-buy ≤¥47k about 25% within 90 days. The My-tier index is still −10% over 30 days (correction rule), so only ¥47k counts as a buy today.",
+          "tag": "buy",
+          "label": "Buy — at the top of the buy zone, ¥5k above the old reference",
+          "reasoning": "The lowest PSA10 ask fell to ¥54,999 from ¥59,800 at the 10/08 verdict (−8%), so the price is now at the ¥55,000 Buy line of the ¥47,000 / ¥55,000 / ¥63,000 tiers. Recent one-copy sales run ¥49,000–¥59,990 over 30 days, median ¥55,000, about 4 sales a day, so the market is active and the listing depth is healthy (13 listings within 15%). The PSA10 premium over raw is 2.21x against a 6-month norm of 1.82x (+22%), which is rich, and the raw A-rank price of ¥36,999 with the ¥12,430 grading cost gives a DIY replacement of about ¥58,400, so the ask is slightly below DIY. The My-tier index is up 25% in 7 days (rally flag on), which is a reason to expect limit orders to fill less often. The Definitely-buy line of ¥47,000 is about 21% likely to be touched within 30 days on the limit-odds model. Your ¥37,000 limit is far below the market, so it will not fill soon. What would change the call: a PSA10 ask under ¥47,000, or a premium that falls back toward its norm.",
           "predictions": [
             {
-              "text": "A listing at ≤¥55k (Buy) within 30 days",
-              "p": 0.37,
-              "type": "touch_below",
-              "price": 55000,
-              "by": "2026-11-07"
-            },
-            {
-              "text": "A listing at ≤¥47k (Definitely buy) within 90 days",
-              "p": 0.24,
+              "text": "Lowest PSA10 ask touches ¥47,000 or below by 2026-11-10",
+              "p": 0.21,
               "type": "touch_below",
               "price": 47000,
-              "by": "2027-01-06"
+              "by": "2026-11-10"
             }
           ],
-          "written": "2026-10-08T07:32:31+09:00"
+          "written": "2026-10-11T08:33:23+09:00"
         },
-        "verdict_price_ref": 59800
+        "verdict_price_ref": 54999
       },
       "psa10_population": 15191,
       "psa10_gem_rate_pct": 84.6,

@@ -10,7 +10,7 @@
    "right": 10,
    "wrong": 1,
    "neutral": 0,
-   "pending": 29
+   "pending": 30
   },
   "calls_scored": 0,
   "closed": {
@@ -40,7 +40,7 @@
    "right": 10,
    "wrong": 1
   },
-  "pending": 29,
+  "pending": 30,
   "next_close": "2026-10-15T16:26:00+09:00",
   "baseline": {
    "buy": {
@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 111,
+  "odds_open": 112,
   "odds_early_yes": 5,
   "model_odds": {
    "logged": 128,
@@ -88,6 +88,30 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/224087",
+   "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
+   "tag": "buy",
+   "label": "Buy — at the top of the buy zone, ¥5k above the old reference",
+   "latest_label": "Buy — at the top of the buy zone, ¥5k above the old reference",
+   "reaffirmed": 0,
+   "made": "2026-10-11T08:32:58+09:00",
+   "price": 54999,
+   "window_end": "2026-11-10T08:32:58+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
+  },
   {
    "url": "https://snkrdunk.com/apparels/408333",
    "name": "ピカチュウex SAR [SV8 132/106](拡張パック「超電ブレイカー」)",
@@ -1472,6 +1496,21 @@
    "now": 148000,
    "final": false,
    "gap_pct": -10.1
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/224087",
+   "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
+   "text": "Lowest PSA10 ask touches ¥47,000 or below by 2026-11-10",
+   "p": 0.21,
+   "type": "touch_below",
+   "price": 47000,
+   "by": "2026-11-10",
+   "made": "2026-10-11T08:32:58+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 54999,
+   "final": false,
+   "gap_pct": -14.5
   },
   {
    "url": "https://snkrdunk.com/apparels/91189",
