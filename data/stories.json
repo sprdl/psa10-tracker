@@ -1,6 +1,6 @@
 {
  "about": "Stories behind the tracked cards' artwork: illustrator, what the art shows, its connections, set context and trivia. Researched from the official card database, Bulbapedia, PokeBeach, Famitsu and card media (sources per card). Shown on each card's Story tab and the Stories page.",
- "updated": "2026-10-05T15:09:44+09:00",
+ "updated": "2026-10-11T08:33:50+09:00",
  "cards": {
   "https://snkrdunk.com/apparels/138599": {
    "illustrator": "Souichirou Gunjima",
@@ -706,6 +706,25 @@
    ],
    "confidence": "low",
    "written": "2026-10-05T15:09:44+09:00"
+  },
+  "https://snkrdunk.com/apparels/91189": {
+   "illustrator": "HYOGONOSUKE",
+   "illustrator_ja": null,
+   "art": "The sources checked this run do not describe the artwork of this Tyranitar V SA. The illustrator credit comes from the official database entry as quoted by a shop guide.",
+   "story": null,
+   "set": "Printed in the 拡張パック 一撃マスター (S5I), where it is a Special Full Art print.",
+   "trivia": [
+    "The official database lists the illustrator as HYOGONOSUKE."
+   ],
+   "english": null,
+   "sources": [
+    {
+     "title": "Samurai Sword Tokyo: Tyranitar V SR SA S5I 077/070 PSA 10 guide",
+     "url": "https://samuraiswordtokyo.com/zh-hant/blogs/news/tyranitar-v-sr-sa-s5i-077-070-psa-10-guide"
+    }
+   ],
+   "confidence": "medium",
+   "written": "2026-10-11T08:33:50+09:00"
   }
  }
 }
