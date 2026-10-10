@@ -10,7 +10,7 @@
    "right": 8,
    "wrong": 1,
    "neutral": 0,
-   "pending": 24
+   "pending": 25
   },
   "calls_scored": 0,
   "closed": {
@@ -40,7 +40,7 @@
    "right": 8,
    "wrong": 1
   },
-  "pending": 24,
+  "pending": 25,
   "next_close": "2026-10-15T16:26:00+09:00",
   "baseline": {
    "buy": {
@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 97,
+  "odds_open": 99,
   "odds_early_yes": 4,
   "model_odds": {
    "logged": 107,
@@ -88,6 +88,30 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/91178",
+   "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+   "tag": "dont_buy",
+   "label": "Don't buy",
+   "latest_label": "Don't buy",
+   "reaffirmed": 0,
+   "made": "2026-10-10T10:21:37+09:00",
+   "price": 378000,
+   "window_end": "2026-11-09T10:21:37+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.062,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
+  },
   {
    "url": "https://snkrdunk.com/apparels/882279",
    "name": "ピカチュウex SAR [M6a 126/103](拡張パック「30th CELEBRATION」)",
@@ -1276,6 +1300,21 @@
    "gap_pct": -7.5
   },
   {
+   "url": "https://snkrdunk.com/apparels/91178",
+   "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+   "text": "Lowest PSA10 ask touches ¥335,000 or below within 30 days",
+   "p": 0.3,
+   "type": "touch_below",
+   "price": 335000,
+   "by": "2026-11-09",
+   "made": "2026-10-10T10:21:37+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 378000,
+   "final": false,
+   "gap_pct": -11.4
+  },
+  {
    "url": "https://snkrdunk.com/apparels/387059",
    "name": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
    "text": "Reaches Buy (≤¥38k) within 3 months",
@@ -2219,6 +2258,21 @@
    "now": 26500,
    "final": false,
    "gap_pct": -20.8
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/91178",
+   "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+   "text": "Lowest PSA10 ask touches ¥295,000 or below within 90 days",
+   "p": 0.23,
+   "type": "touch_below",
+   "price": 295000,
+   "by": "2027-01-08",
+   "made": "2026-10-10T10:21:37+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 378000,
+   "final": false,
+   "gap_pct": -22.0
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",

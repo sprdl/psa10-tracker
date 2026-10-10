@@ -2716,6 +2716,42 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 395000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 457667,
+          "when": "August 2026",
+          "source": "SNKRDUNK peak-month median, 1枚"
+        },
+        "tiers": {
+          "definitely_buy": 265000,
+          "buy_upper": 295000,
+          "ceiling": 335000
+        },
+        "verdict": {
+          "tag": "dont_buy",
+          "label": "Don't buy",
+          "reasoning": "The lowest PSA10 ask is ¥378,000 and completed sales sit around ¥385-400k, about 13% above the ¥335k ceiling and roughly 86% of the August peak median (¥457.7k). The price jumped about 35% in a week with the My-tier rally flag on, versus a Q4-2025 organic range of ¥238-247k and a Feb-2026 pre-hype level near ¥270k. Tiers stay anchored on those pre-hype levels (earlier 250k/285k/330k nudged up slightly for the re-rated market), not on the peak. Your ¥150k limit is far below the ask; the model gives under 10% odds of even ¥250k within 90 days. At this price the card alone also exceeds the ¥250k budget. Wait for a listing at or below ¥335k; the model puts that at about 36% within 90 days.",
+          "predictions": [
+            {
+              "text": "Lowest PSA10 ask touches ¥335,000 or below within 30 days",
+              "p": 0.3,
+              "type": "touch_below",
+              "price": 335000,
+              "by": "2026-11-09"
+            },
+            {
+              "text": "Lowest PSA10 ask touches ¥295,000 or below within 90 days",
+              "p": 0.23,
+              "type": "touch_below",
+              "price": 295000,
+              "by": "2027-01-08"
+            }
+          ],
+          "written": "2026-10-10T10:24:18+09:00"
+        }
       }
     },
     {
