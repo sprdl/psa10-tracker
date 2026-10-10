@@ -1,0 +1,229 @@
+{
+ "about": "PSA grading backlog and the reopening of the Value tiers. Readings are PSA's own figures (millions of units, published every other Tuesday on its Backlog Tracker page and in its update notes; copied from screenshots, never fetched automatically). threshold_m is the line PSA's tracker shows for 'Value Tiers Open'. 'projection' is plain arithmetic on the readings (scripts/psa_backlog.py), three scenarios for the next drops, not a forecast: PSA has to assess and announce after the backlog is under the line, and the Value tiers' prices, caps and turnaround may differ when they return. value_prices is PSA Japan's price chart that applied from 2026-02-10 (before the pause); PSA Japan corrected in the comments that Value Max's declared-value cap is 150,000 yen, not 80,000. Edit with scripts/psa_backlog.py.",
+ "threshold_m": 5.0,
+ "source": "PSA Backlog Tracker and update notes, screenshots from Philipp 2026-10-10",
+ "updated_jst": "2026-10-10 09:41",
+ "readings": [
+  {
+   "d": "2026-08-25",
+   "m": 10.9,
+   "note": "Plano, Texas hub operational (five hubs)"
+  },
+  {
+   "d": "2026-09-08",
+   "m": 9.9,
+   "note": "PSA: could evaluate reopening a service tier this month if the pace holds"
+  },
+  {
+   "d": "2026-09-22",
+   "m": 9.0,
+   "note": "Frankfurt facility open; Standard tier launched 2026-09-14, queued behind earlier Value and Bulk orders"
+  },
+  {
+   "d": "2026-10-06",
+   "m": 8.2,
+   "note": "Six hubs; PSA: on path to assess reopening additional service tiers in the coming months"
+  }
+ ],
+ "tiers": [
+  {
+   "name": "Value tiers (Bulk, Value, Value Plus, Value Max)",
+   "status": "paused",
+   "since": "2026-06-03",
+   "note": "Paused per PSA Japan. The tracker shows them as open below 5M units. Value and Bulk orders sent before the pause keep priority over new Standard orders."
+  },
+  {
+   "name": "Standard",
+   "status": "open",
+   "since": "2026-09-14",
+   "fee": 9980,
+   "cap": 150000,
+   "days": 100,
+   "note": "Launched 2026-09-14 per PSA's update (earlier notes here said 09-10). Turnaround is the quoted ~100 business days, which may run longer while earlier Value and Bulk orders are ahead of it."
+  }
+ ],
+ "value_prices": {
+  "as_of": "2026-02-10",
+  "note": "PSA Japan chart, tax included, per card. Before the pause; may change when the tiers return.",
+  "rows": [
+   {
+    "name": "Value Bulk (20+ cards)",
+    "cap": 80000,
+    "fee": 3980,
+    "days": 120,
+    "was_fee": 2980,
+    "was_days": 90
+   },
+   {
+    "name": "Value",
+    "cap": 80000,
+    "fee": 4980,
+    "days": 90,
+    "was_fee": 3980,
+    "was_days": 45
+   },
+   {
+    "name": "Value Plus",
+    "cap": 80000,
+    "fee": 7980,
+    "days": 60,
+    "was_fee": 6980,
+    "was_days": 20
+   },
+   {
+    "name": "Value Max",
+    "cap": 150000,
+    "fee": 8980,
+    "days": 40,
+    "new": true
+   },
+   {
+    "name": "Regular",
+    "cap": 250000,
+    "fee": 11980,
+    "days": 30,
+    "was_fee": 9980,
+    "was_days": 10
+   }
+  ]
+ },
+ "projection": {
+  "as_of": "2026-10-06",
+  "backlog_m": 8.2,
+  "gap_m": 3.2,
+  "next_update": "2026-10-20",
+  "drops_m": [
+   1.0,
+   0.9,
+   0.8
+  ],
+  "avg_drop_m": 0.9,
+  "last_drop_m": 0.8,
+  "drop_step_m": 0.1,
+  "scenarios": [
+   {
+    "key": "avg",
+    "label": "Average pace holds",
+    "rule": "each update drops 0.90M, the average of the last 3 drops",
+    "under_on": "2026-12-01",
+    "floor_m": null,
+    "path": [
+     {
+      "d": "2026-10-20",
+      "m": 7.3
+     },
+     {
+      "d": "2026-11-03",
+      "m": 6.4
+     },
+     {
+      "d": "2026-11-17",
+      "m": 5.5
+     },
+     {
+      "d": "2026-12-01",
+      "m": 4.6
+     },
+     {
+      "d": "2026-12-15",
+      "m": 3.7
+     },
+     {
+      "d": "2026-12-29",
+      "m": 2.8
+     },
+     {
+      "d": "2027-01-12",
+      "m": 1.9
+     },
+     {
+      "d": "2027-01-26",
+      "m": 1.0
+     }
+    ]
+   },
+   {
+    "key": "latest",
+    "label": "Latest pace holds",
+    "rule": "each update drops 0.80M, like the last one",
+    "under_on": "2026-12-15",
+    "floor_m": null,
+    "path": [
+     {
+      "d": "2026-10-20",
+      "m": 7.4
+     },
+     {
+      "d": "2026-11-03",
+      "m": 6.6
+     },
+     {
+      "d": "2026-11-17",
+      "m": 5.8
+     },
+     {
+      "d": "2026-12-01",
+      "m": 5.0
+     },
+     {
+      "d": "2026-12-15",
+      "m": 4.2
+     },
+     {
+      "d": "2026-12-29",
+      "m": 3.4
+     },
+     {
+      "d": "2027-01-12",
+      "m": 2.6
+     },
+     {
+      "d": "2027-01-26",
+      "m": 1.8
+     }
+    ]
+   },
+   {
+    "key": "slow",
+    "label": "Slowdown continues",
+    "rule": "the drop keeps shrinking by 0.10M per update until it reaches zero",
+    "under_on": null,
+    "floor_m": 5.4,
+    "path": [
+     {
+      "d": "2026-10-20",
+      "m": 7.5
+     },
+     {
+      "d": "2026-11-03",
+      "m": 6.9
+     },
+     {
+      "d": "2026-11-17",
+      "m": 6.4
+     },
+     {
+      "d": "2026-12-01",
+      "m": 6.0
+     },
+     {
+      "d": "2026-12-15",
+      "m": 5.7
+     },
+     {
+      "d": "2026-12-29",
+      "m": 5.5
+     },
+     {
+      "d": "2027-01-12",
+      "m": 5.4
+     },
+     {
+      "d": "2027-01-26",
+      "m": 5.4
+     }
+    ]
+   }
+  ]
+ }
+}

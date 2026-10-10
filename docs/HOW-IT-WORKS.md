@@ -187,6 +187,7 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `calls.json` *generated* | `build_calls.py` (via `build_history.py`) | Track record, Scored calls | `summary` (closed-window score, early decisions, baseline, return vs the market, Brier scores), `calls[]`, `predictions[]`, `model_odds[]` |
 | `custom_index.json` | `add_custom_index.py` | Market page, overview index strip, correction rule, tier review, widget | `meta` (constituents, base prices) + `series[]` of daily `{d, level, prices, pokeca_psa10}` |
 | `events.json` | `events.py` | event rule, release calendar, widget | `window_days`, `events[] {d, name, major, scope}` |
+| `psa_backlog.json` | `psa_backlog.py` | Market page panel, Submissions line | `readings[] {d, m, note}` (PSA's backlog in millions of units), `threshold_m` (5.0), `tiers[]`, `value_prices`, `projection` (3 scenarios, written by the script) |
 | `limits.json` | `set_limit.py` (Action) | site, widget, `mercari.py`, `predict.py` | `{"limits": {url: {price, set, issue}}}` |
 | `sell_targets.json` | `set_limit.py` (Action) | sell signals | `{"targets": {url: {price, set, issue}}}` |
 | `holdings.json` | `log_purchase.py` (Action), `add_holding.py` | Holdings, owned views, budget | `holdings[]` (singles), `sealed[]` (with `pulls[]`), `sold[]` |
@@ -389,6 +390,7 @@ In order:
 | removing cards from the tracker | `withoutRemoved`, `reconcileRemovals`, `removeBtnHtml`, `removedListHtml` | Remove card / Undo / Restore |
 | derived-value helpers | `getRep`, `depthInfo`, `rawPrice` (raw A-rank price; `scripts/raw_price.py` is the Python twin), `computeDiyEconomics`, `computeGauge`, `zoneOf`, `liveTagOf`, `displayTagFor` | the core calculations |
 | event rule | `upcomingEvents`, `activeEvents`, `eventFor`, `heldByEvent`, `renderEvents` | release-calendar logic |
+| PSA grading backlog | `psaBacklog`, `renderPsaBacklog`, `psaBacklogLine` | Market page panel and the one-line status on Submissions; display only, the projection comes from the data file |
 | (correction rule) | `correctionState`, `heldByCorrection` | market-correction logic |
 | (rally rule, index breadth) | `rallyState`, `indexBreadth` | rally flag; how broad the My-tier index's move is |
 | my limit prices + buy signals | `store`, `getLimit`, `setLimit`, `reconcileLimits`, `limitFormUrl` | limits |
@@ -972,6 +974,13 @@ For cards whose SNKRDUNK ask is within 5% of your limit, price checks read Merca
   share of cards up over 7 days), the range buttons (3M/1Y/All, remembered in `psa10.ciRange`), the chart and
   the constituents table.
 - `renderHeat`, `renderEvents`, plus the snapshot's `notes`.
+- `renderPsaBacklog` (**PSA grading backlog**): PSA's backlog against the 5M line below which its tracker shows the
+  Value tiers as open, a chart of the readings, three scenarios for the next fortnightly drops and the first update
+  on which each gets under the line, which tiers are open or paused, and PSA Japan's pre-pause price chart next to
+  Standard. The projection is arithmetic on PSA's own figures (average of the last three drops, the latest drop,
+  and the drop shrinking at its recent rate), not a forecast; `scripts/psa_backlog.py` computes it and the site only
+  displays it. The panel warns when the last reading is over 16 days old. `psaBacklogLine` puts a one-line status at
+  the top of the Submissions page.
 - `renderTables`: cards become *columns* and statistics *rows*. Rows with a
   `sortableLabel()` button sort the columns (`TABLE_SORTS`, saved in `psa10.tableSort`).
 
@@ -1073,6 +1082,7 @@ with a docstring explaining its usage. Open the file and read the top.
 | `outliers.py` / `set_insight.py` | finding cards that stand out (cards you own are left out) / saving the written analysis for one |
 | `set_story.py` | listing cards without a story (`--missing`) / saving one |
 | `events.py` | managing the release calendar: `list`, `add`, `date`, `remove`, `window` |
+| `psa_backlog.py` | PSA grading backlog: `add 2026-10-20 7.4` stores a reading, recomputes the projection and pushes; `status`, `recompute` |
 | `event_study.py` | checking whether prices really dip around releases |
 
 **Market data and models**

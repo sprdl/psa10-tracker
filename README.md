@@ -321,6 +321,19 @@ after changing constituents): run `scripts/odds_model_builder.js` list + grab on
 pokeca-chart, then `add_custom_index.py --print-backfill-js` on
 https://pokeca-chart.com/gr/chart-index/ and `add_custom_index.py --backfill result.json`.
 
+## PSA grading backlog
+
+`data/psa_backlog.json` tracks PSA's grading backlog (published every other Tuesday) against the 5M-unit line
+below which PSA's own tracker shows the Value tiers as open. The Market page shows the backlog, a chart, three
+scenarios for when it could get under the line, which tiers are open or paused, and PSA Japan's pre-pause Value
+prices next to Standard; the Submissions page carries a one-line status. The scenarios are arithmetic on PSA's
+figures, not a forecast. Add each new reading by hand (nothing fetches PSA automatically):
+
+```bash
+python3 scripts/psa_backlog.py add 2026-10-20 7.4 --note "PSA update"
+python3 scripts/psa_backlog.py status
+```
+
 ## Release calendar and the event rule
 
 `data/events.json` lists upcoming releases. In the 3 days before a major one (and on

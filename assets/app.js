@@ -25,6 +25,7 @@
     hist: null, // data/history.json — per-card price series + when each card's tiers were last reviewed
     customIndex: null, // data/custom_index.json — My-tier index (scripts/add_custom_index.py)
     events: null, // data/events.json — release calendar for the event rule (scripts/events.py)
+    psaBacklog: null, // data/psa_backlog.json — PSA's grading backlog and when the Value tiers could reopen (scripts/psa_backlog.py)
     sold: [], // data/holdings.json "sold" — what was sold, for what, and the profit
     portHist: [], // data/portfolio_history.json — daily readings of untracked cards / sealed items
     heldPrices: {}, // data/holdings_prices.json — latest SNKRDUNK price per bought untracked card / unopened sealed item
@@ -162,7 +163,7 @@
 
   const OPTIONAL_DATA = {
     holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', portHist: 'data/portfolio_history.json', sellTargets: 'data/sell_targets.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
-    events: 'data/events.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
+    events: 'data/events.json', psaBacklog: 'data/psa_backlog.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
     valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
   };
@@ -255,6 +256,7 @@
     state.calls = b.calls || null;
     state.customIndex = b.customIndex || null;
     state.events = b.events || null;
+    state.psaBacklog = b.psaBacklog || null;
     state.hist = b.hist || null;
     historyIndexPromise = Promise.resolve(state.hist);
     state.syncedLimits = (b.limits && b.limits.limits) || {};
@@ -608,6 +610,72 @@
           <span class="ev-name">${escapeHtml(e.name)}</span>
           <span class="ev-meta">${escapeHtml(eventScope(e))}${e.major === false ? ' · minor' : ''}${on ? ' · <b>rule on</b>' : ''}${e.note ? ' · ' + escapeHtml(e.note) : ''}</span></li>`;
       }).join('')}</ul>`;
+  }
+
+  // ---------- PSA grading backlog (Market page, Submissions line) ----------
+  // data/psa_backlog.json: PSA's own backlog figures, the 5M line below which its tracker shows the Value tiers as
+  // open, and a projection of three scenarios computed by scripts/psa_backlog.py (the site only displays it).
+  function psaBacklog() {
+    const b = state.psaBacklog;
+    return b && Array.isArray(b.readings) && b.readings.length && b.projection && Array.isArray(b.projection.scenarios) ? b : null;
+  }
+  function psaMd(d) { return String(d).slice(5).replace('-', '/'); }
+  function psaUnder(s, thr) { return s.under_on ? `under ${thr}M on the ${psaMd(s.under_on)} update` : `not within a year (levels off near ${s.floor_m}M)`; }
+
+  function renderPsaBacklog() {
+    const el = document.getElementById('psa-panel');
+    if (!el) return;
+    const b = psaBacklog();
+    if (!b) { el.hidden = true; return; }
+    el.hidden = false;
+    const p = b.projection, thr = b.threshold_m, rs = b.readings;
+    const age = -daysUntil(p.as_of);
+    const cell = (k, v, sub) => `<div class="ci-stat"><div class="lbl">${k}</div><div class="ci-v">${v}</div>${sub ? `<div class="psa-sub">${sub}</div>` : ''}</div>`;
+    const scaleMax = Math.max(15, Math.ceil(Math.max(...rs.map((r) => r.m))));
+    const bar = `<div class="psa-bar" role="img" aria-label="Backlog ${p.backlog_m} million units; Value tiers open below ${thr} million">
+        <div class="psa-fill" style="width:${(p.backlog_m / scaleMax) * 100}%"><span>Backlog ${p.backlog_m}M</span></div>
+        <div class="psa-line-mark" style="left:${(thr / scaleMax) * 100}%"><span>Value tiers open &lt;${thr}M</span></div>
+      </div>`;
+    const pts = rs.map((r) => ({ x: Date.parse(r.d + 'T12:00:00+09:00'), y: r.m, title: r.d, sub: r.note || '' }));
+    const chart = pts.length >= 2 ? chartSlot({ type: 'line', xMode: 'time', height: 150, color: '#7cb8ff', label: 'PSA grading backlog in millions of units',
+      fmt: (v) => v.toFixed(1) + 'M', fmtTip: (v) => v.toFixed(1) + 'M units', refs: [{ y: thr, label: 'Value tiers open below', cls: 'norm', left: true }], points: pts }) : '';
+    const scen = p.scenarios.map((s) => `<tr><td>${escapeHtml(s.label)}</td><td>${escapeHtml(s.rule)}</td>
+        <td>${s.path.slice(0, 4).map((x) => `${psaMd(x.d)} ${x.m.toFixed(1)}M`).join(' · ')}</td><td><b>${escapeHtml(psaUnder(s, thr))}</b></td></tr>`).join('');
+    const tiers = (b.tiers || []).map((t) => `<li><span class="vtag ${t.status === 'open' ? 'gr-grade' : 'gr-dont'}">${escapeHtml(t.status)}</span> <b>${escapeHtml(t.name)}</b>${t.since ? ` <span class="muted">since ${escapeHtml(t.since)}</span>` : ''}${t.note ? `<div class="psa-sub">${escapeHtml(t.note)}</div>` : ''}</li>`).join('');
+    const std = (b.tiers || []).find((t) => t.fee != null);
+    const vp = b.value_prices || {};
+    const diff = (fee) => { if (!std) return '—'; const d = std.fee - fee; return d > 0 ? `saves ${fmtYen(d)}` : d < 0 ? `${fmtYen(-d)} more` : 'same'; };
+    const priceRows = [std ? `<tr><td><b>${escapeHtml(std.name)}</b> (open now)</td><td>${fmtYen(std.cap)}</td><td>${fmtYen(std.fee)}</td><td>~${std.days} bus. days</td><td>—</td></tr>` : '']
+      .concat((vp.rows || []).map((r) => `<tr><td>${escapeHtml(r.name)}${r.new ? ' <span class="muted">(new)</span>' : ''}</td><td>${fmtYen(r.cap)}</td><td>${fmtYen(r.fee)}</td><td>${r.days} bus. days</td><td>${diff(r.fee)}</td></tr>`)).join('');
+    el.innerHTML = `<h2 class="section-title">PSA grading backlog</h2>
+      <p class="ci-note">PSA's Value tiers are paused. Its own tracker shows them as open once the backlog is under ${thr}M units. The scenarios below are arithmetic on PSA's published figures, not a forecast: PSA still has to assess and announce, so the tiers may open a few weeks after the line is crossed, with prices, caps and turnaround that may differ from the chart below.</p>
+      <div class="ci-stats psa-stats">
+        ${cell('Backlog · ' + psaMd(p.as_of), p.backlog_m.toFixed(1) + 'M')}
+        ${cell('Last update', '−' + p.last_drop_m.toFixed(1) + 'M', 'drops: ' + p.drops_m.map((x) => x.toFixed(1)).join(', ') + 'M')}
+        ${cell('To the line', p.gap_m.toFixed(1) + 'M', `${thr}M tracker line`)}
+        ${cell('Next update', psaMd(p.next_update), 'every other Tuesday')}
+      </div>
+      ${age > 16 ? `<p class="cd-note warn">The last reading is ${age} days old; PSA updates every other Tuesday. Add the new one with scripts/psa_backlog.py.</p>` : ''}
+      ${bar}
+      ${chart}
+      <div class="table-scroll psa-tbl"><table><thead><tr><th>Scenario</th><th>Each update</th><th>Next updates</th><th>Gets under ${thr}M</th></tr></thead><tbody>${scen}</tbody></table></div>
+      <p class="ci-note">The drop per update has shrunk three times in a row, which is why the scenarios differ so much: if the pace holds the line is crossed around December, if the slowdown continues it may not be crossed at all.</p>
+      <ul class="psa-tiers">${tiers}</ul>
+      <details class="ci-members"><summary>Value tier prices before the pause (PSA Japan chart, ${escapeHtml(vp.as_of || '')})</summary>
+        <div class="table-scroll"><table><thead><tr><th>Service</th><th>Declared value up to</th><th>Fee per card</th><th>Turnaround</th><th>vs Standard</th></tr></thead><tbody>${priceRows}</tbody></table></div>
+        <p class="ci-note">${escapeHtml(vp.note || '')} Fees are the grading fee only; shipping, insurance and handling come on top. The declared value is what the card is worth after grading, so it decides which tiers a card can use.</p></details>
+      <p class="ci-note">Source: ${escapeHtml(b.source || '')}. Updated ${escapeHtml(b.updated_jst || '')}. Edited with scripts/psa_backlog.py.</p>`;
+    mountCharts(el);
+  }
+
+  // One line for the top of the Submissions page.
+  function psaBacklogLine() {
+    const b = psaBacklog();
+    if (!b) return '';
+    const p = b.projection, thr = b.threshold_m;
+    const when = p.scenarios.map((s) => s.under_on).filter(Boolean).sort();
+    const range = when.length ? `if the pace holds it is crossed around ${psaMd(when[0])} to ${psaMd(when[when.length - 1])}, a slowdown might not reach it` : 'at the current slowdown it may not be reached';
+    return `<div class="psa-note"><b>PSA backlog ${p.backlog_m.toFixed(1)}M</b> (${psaMd(p.as_of)}) · Value tiers are paused and open below ${thr}M · ${range} · <a href="#/market">details on the Market page</a></div>`;
   }
 
   // True when the card's price is in the Buy zone but the correction rule holds it at Watch.
@@ -2572,6 +2640,7 @@
     renderMarketStrip(data);
     renderCustomIndex();
     renderEvents();
+    renderPsaBacklog();
     renderHeat();
     renderKpis(data);
     renderToday(data, state.previousData);
@@ -2929,7 +2998,7 @@
         <div class="pf-meta">${c.item.sent ? `Sent ${escapeHtml(c.item.sent)} · ${escapeHtml(t.label)}${GRADE_TIERS[c.item.tier] ? '' : ' (assumed)'} · back around <b>${escapeHtml(addBusinessDays(c.item.sent, t.days))}</b>` : 'At PSA, no send date saved'} · <a class="pf-remove" href="${escapeAttr(gradingFormUrl({ id: c.id, item: c.item }, nm.short))}" target="_blank" rel="noopener">Grading info</a></div></div></div>`;
     }).join('')}</div>` : '';
     const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeAttr(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(slash(date))} ↗</a>` : '';
-    el.innerHTML = top + summary + warn + `<div class="sub-acts">${sendBtn}<span class="muted">${picked.length ? 'opens one GitHub form for all ticked cards; submit it after you post them' : 'tick the cards to send'}</span></div>`
+    el.innerHTML = psaBacklogLine() + top + summary + warn +`<div class="sub-acts">${sendBtn}<span class="muted">${picked.length ? 'opens one GitHub form for all ticked cards; submit it after you post them' : 'tick the cards to send'}</span></div>`
       + (todo.length ? `<div class="pl-list">${base.map(row).join('')}</div>` : '<div class="empty-state">Every raw copy is at PSA.</div>') + awayHtml
       + `<p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), and Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are business days from the send date. Ticks, service and shipping are saved in this browser.</p>`;
     trimImages(el);
@@ -6093,7 +6162,7 @@
   // widget twin, and start nothing. Never set in a browser.
   if (window.__PSA10_TEST__) {
     window.__PSA10_TEST__({ state, rawPrice, salesPerDay, heatOf, insightsFor, tierReview, touchOdds, correctionState, rallyState,
-      activeEvents, eventFor, displayTagFor, sellState, limitHit, getRep, lowestAsk, cardAgeMonths, salesMedianOf });
+      activeEvents, eventFor, displayTagFor, sellState, limitHit, getRep, lowestAsk, cardAgeMonths, salesMedianOf, renderPsaBacklog, psaBacklogLine });
     return;
   }
   init();
