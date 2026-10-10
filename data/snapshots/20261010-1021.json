@@ -4564,9 +4564,9 @@
       "month_change_pct": -17.6,
       "year_change_jpy": 6668,
       "year_change_pct": 17.1,
-      "data_range": "2026/10/09",
+      "data_range": "2020/06/01 〜 2026/10/09",
       "volume_trend": "rising",
-      "volume_note": "daily trades: 7d avg 64, 14d avg 63.5 vs prior-30d avg 55.8; 14d peak 102 on 2026/10/09 (data to 2026/10/09)"
+      "volume_note": "daily trades: 7d avg 64, 14d avg 63.5 vs prior-30d avg 55.8; 14d peak 102 on 2026/10/01 (data to 2026/10/09)"
     }
   }
 }
