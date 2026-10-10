@@ -1,20 +1,4 @@
 {
  "about": "Cards added or restored by an Add card request, waiting for their first evaluation in the same price check (scripts/eval_queue.py). apply_analysis.py removes a card once a buy verdict is applied.",
- "queue": {
-  "https://snkrdunk.com/apparels/132279": {
-   "name": "リザードンex SAR[SV3 134/108](拡張パック「黒炎の支配者」)",
-   "why": "added from chat 2026-10-10",
-   "since": "2026-10-10T22:54:50+09:00"
-  },
-  "https://snkrdunk.com/apparels/408333": {
-   "name": "ピカチュウex SAR [SV8 132/106](拡張パック「超電ブレイカー」)",
-   "why": "restored from chat 2026-10-10",
-   "since": "2026-10-10T22:54:50+09:00"
-  },
-  "https://snkrdunk.com/apparels/585221": {
-   "name": "レシラムex BWR [SV11W 174/086](拡張パック「ホワイトフレア」)",
-   "why": "restored from chat 2026-10-10",
-   "since": "2026-10-10T22:54:50+09:00"
-  }
- }
+ "queue": {}
 }

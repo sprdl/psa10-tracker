@@ -4794,7 +4794,50 @@
       },
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/f95e7dfe-3afb-4297-802f-5c36715d9e6e.webp?size=l",
       "quick_note": "new card: first read by a quick check; depth, population and photo come with the next full check",
-      "favorite_count": 1898
+      "favorite_count": 1898,
+      "analysis": {
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2450,
+        "representative_price": 122000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 128400,
+          "when": "September 2026",
+          "source": "pokeca-chart PSA10 price (SNKRDUNK monthly median not read)"
+        },
+        "tiers": {
+          "definitely_buy": 95000,
+          "buy_upper": 104000,
+          "ceiling": 115000
+        },
+        "verdict": {
+          "tag": "dont_buy",
+          "label": "Don't buy: near its high, ~1.9× pre-hype",
+          "reasoning": "PSA10 sales sit at ¥120–130k, back near the September high (~¥128k) and about 1.9× the Q4 2025 level (~¥62–65k); its raw price even rose while the raw market fell 16%. Buy (≤¥104k, around the 10/06 low) is about a 30% chance within 90 days and Definitely-buy (¥95k) about 1-in-5, with the rally flag on. Raw A ~¥68k makes a DIY slab ~¥98k at an 82% gem rate.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥104k (Buy) by 2027-01-10",
+              "p": 0.3,
+              "type": "touch_below",
+              "price": 104000,
+              "by": "2027-01-10"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥95k (Definitely buy) by 2027-01-10",
+              "p": 0.21,
+              "type": "touch_below",
+              "price": 95000,
+              "by": "2027-01-10"
+            }
+          ],
+          "written": "2026-10-10T23:00:16+09:00"
+        },
+        "raw_tiers": {
+          "definitely_buy": 58000,
+          "buy_upper": 64000,
+          "ceiling": 70000
+        }
+      }
     },
     {
       "card_name_ja": "ミュウex SAR [SV4a 347/190](ハイクラスパック「シャイニートレジャーex」)",
@@ -5646,7 +5689,50 @@
       },
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/977e1929-8ed0-4ddb-8f7d-5c2b5d1ceb4e.webp?size=l",
       "quick_note": "new card: first read by a quick check; depth, population and photo come with the next full check",
-      "favorite_count": 2320
+      "favorite_count": 2320,
+      "analysis": {
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2450,
+        "representative_price": 74000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 106800,
+          "when": "May 2026",
+          "source": "pokeca-chart PSA10 monthly price (SNKRDUNK monthly median not read)"
+        },
+        "tiers": {
+          "definitely_buy": 60000,
+          "buy_upper": 66000,
+          "ceiling": 75000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: slab bounced; raw at ≤¥36k is the better route",
+          "reasoning": "PSA10 sales rebounded from about ¥59k (10/05) to ¥73.5–76k with the rally (pre-hype Q4 2025 ~¥50–60k, peak ~¥107k in May), so the slab sits in the Watch zone below the ¥75k ceiling. Buy (≤¥66k) is about a 40% chance within 90 days and Definitely-buy (¥60k, the October low) about 30%. Raw A fell twice as much as the market (sales ~¥33k, lowest ask ¥39,999), and at the 87.9% gem rate a DIY slab costs ¥52–60k, at or under Definitely-buy; it trades actively (~6 PSA10 sales/day). Outside the ¥250k singles budget.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥66k (Buy) by 2026-11-10",
+              "p": 0.37,
+              "type": "touch_below",
+              "price": 66000,
+              "by": "2026-11-10"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥60k (Definitely buy) by 2027-01-10",
+              "p": 0.31,
+              "type": "touch_below",
+              "price": 60000,
+              "by": "2027-01-10"
+            }
+          ],
+          "written": "2026-10-10T23:00:16+09:00"
+        },
+        "raw_tiers": {
+          "definitely_buy": 33000,
+          "buy_upper": 36000,
+          "ceiling": 40000
+        }
+      }
     },
     {
       "card_name_ja": "ピカチュウex SAR [SV8 132/106](拡張パック「超電ブレイカー」)",
@@ -5827,7 +5913,50 @@
       },
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/8c2d34aa-dab1-4c89-b51c-5dd44b8eaca6.webp?size=l",
       "quick_note": "new card: first read by a quick check; depth, population and photo come with the next full check",
-      "favorite_count": 1886
+      "favorite_count": 1886,
+      "analysis": {
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2450,
+        "representative_price": 100000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 140200,
+          "when": "May 2026",
+          "source": "pokeca-chart PSA10 monthly price (SNKRDUNK monthly median not read)"
+        },
+        "tiers": {
+          "definitely_buy": 78000,
+          "buy_upper": 85000,
+          "ceiling": 95000
+        },
+        "verdict": {
+          "tag": "dont_buy",
+          "label": "Don't buy: +38% in a week, above the ceiling",
+          "reasoning": "Sales jumped from the ¥72–74k low (late Sep/early Oct) to about ¥100k (lowest ask ¥102k), above the ¥95k ceiling; pre-hype Q4 2025 was ~¥62–65k and the May peak ~¥140k. Hype exposure is high (89), so it swings hardest when the market turns: Buy (≤¥85k) is about a 35% chance within 90 days and Definitely-buy (¥78k) about 1-in-4. Raw A is ~¥60.5k, so a DIY slab costs ~¥82k at an 88.6% gem rate, above your old ¥70k limit; it is very liquid (~20 PSA10 sales/day).",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥85k (Buy) by 2027-01-10",
+              "p": 0.35,
+              "type": "touch_below",
+              "price": 85000,
+              "by": "2027-01-10"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥78k (Definitely buy) by 2027-01-10",
+              "p": 0.25,
+              "type": "touch_below",
+              "price": 78000,
+              "by": "2027-01-10"
+            }
+          ],
+          "written": "2026-10-10T23:00:16+09:00"
+        },
+        "raw_tiers": {
+          "definitely_buy": 52000,
+          "buy_upper": 58000,
+          "ceiling": 64000
+        }
+      }
     }
   ],
   "pokeca_chart_index": {
