@@ -1,6 +1,6 @@
 {
  "about": "Stories behind the tracked cards' artwork: illustrator, what the art shows, its connections, set context and trivia. Researched from the official card database, Bulbapedia, PokeBeach, Famitsu and card media (sources per card). Shown on each card's Story tab and the Stories page.",
- "updated": "2026-10-11T08:33:50+09:00",
+ "updated": "2026-10-11T08:33:53+09:00",
  "cards": {
   "https://snkrdunk.com/apparels/138599": {
    "illustrator": "Souichirou Gunjima",
@@ -725,6 +725,25 @@
    ],
    "confidence": "medium",
    "written": "2026-10-11T08:33:50+09:00"
+  },
+  "https://snkrdunk.com/apparels/164250": {
+   "illustrator": null,
+   "illustrator_ja": null,
+   "art": "Fans describe this colour-variant Mew ex as cute and picture-book-like. The illustrator is not credited in the sources checked.",
+   "story": null,
+   "set": "Printed in the high-class pack シャイニートレジャーex (SV4a), released 1 December 2023 per torecamap. The set reprints strong cards that were active in official tournaments and brings back colour-variant Pokémon after three years.",
+   "trivia": [
+    "Torecamap says this colour-variant Mew could only be obtained through official events or bugs."
+   ],
+   "english": null,
+   "sources": [
+    {
+     "title": "torecamap: シャイニートレジャーex (SV4a) column",
+     "url": "https://torecamap.co.jp/column/sv4a/"
+    }
+   ],
+   "confidence": "medium",
+   "written": "2026-10-11T08:33:53+09:00"
   }
  }
 }
