@@ -1,12 +1,6 @@
 {
  "_about": "Cards removed from the tracker with the site's Remove card button (scripts/remove_card.py). The site hides them, price checks skip them (pricecheck/plan.py, assemble.py) and add_snapshot.py drops them from new snapshots. Restore with the site's Restore button or an Add card request. Keys are SNKRDUNK ids.",
  "removed": {
-  "91178": {
-   "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
-   "at": "2026-10-03T12:18:24+09:00",
-   "issue": 40,
-   "reason": null
-  },
   "387059": {
    "name": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
    "at": "2026-10-03T12:19:12+09:00",
