@@ -629,7 +629,7 @@
     if (!b) { el.hidden = true; return; }
     el.hidden = false;
     const p = b.projection, thr = b.threshold_m, rs = b.readings;
-    const age = -daysUntil(p.as_of);
+    const age = -daysUntil(p.as_of), lc = b.check && b.check.last_checked;
     const cell = (k, v, sub) => `<div class="ci-stat"><div class="lbl">${k}</div><div class="ci-v">${v}</div>${sub ? `<div class="psa-sub">${sub}</div>` : ''}</div>`;
     const scaleMax = Math.max(15, Math.ceil(Math.max(...rs.map((r) => r.m))));
     const bar = `<div class="psa-bar" role="img" aria-label="Backlog ${p.backlog_m} million units; Value tiers open below ${thr} million">
@@ -653,9 +653,9 @@
         ${cell('Backlog · ' + psaMd(p.as_of), p.backlog_m.toFixed(1) + 'M')}
         ${cell('Last update', '−' + p.last_drop_m.toFixed(1) + 'M', 'drops: ' + p.drops_m.map((x) => x.toFixed(1)).join(', ') + 'M')}
         ${cell('To the line', p.gap_m.toFixed(1) + 'M', `${thr}M tracker line`)}
-        ${cell('Next update', psaMd(p.next_update), 'every other Tuesday')}
+        ${cell('Next update', psaMd(p.next_update), daysUntil(p.next_update) < 0 ? `not on PSA's page yet${lc ? ' · looked ' + psaMd(lc) : ''}` : 'every other Tuesday')}
       </div>
-      ${age > 16 ? `<p class="cd-note warn">The last reading is ${age} days old; PSA updates every other Tuesday. Add the new one with scripts/psa_backlog.py.</p>` : ''}
+      ${age > 16 ? `<p class="cd-note warn">The last reading is ${age} days old; PSA updates every other Tuesday. The full check looks for it from the day after it is expected (step 8i).</p>` : ''}
       ${bar}
       ${chart}
       <div class="table-scroll psa-tbl"><table><thead><tr><th>Scenario</th><th>Each update</th><th>Next updates</th><th>Gets under ${thr}M</th></tr></thead><tbody>${scen}</tbody></table></div>
@@ -664,7 +664,7 @@
       <details class="ci-members"><summary>Value tier prices before the pause (PSA Japan chart, ${escapeHtml(vp.as_of || '')})</summary>
         <div class="table-scroll"><table><thead><tr><th>Service</th><th>Declared value up to</th><th>Fee per card</th><th>Turnaround</th><th>vs Standard</th></tr></thead><tbody>${priceRows}</tbody></table></div>
         <p class="ci-note">${escapeHtml(vp.note || '')} Fees are the grading fee only; shipping, insurance and handling come on top. The declared value is what the card is worth after grading, so it decides which tiers a card can use.</p></details>
-      <p class="ci-note">Source: ${escapeHtml(b.source || '')}. Updated ${escapeHtml(b.updated_jst || '')}. Edited with scripts/psa_backlog.py.</p>`;
+      <p class="ci-note">Source: ${escapeHtml(b.source || '')}. Updated ${escapeHtml(b.updated_jst || '')}${lc ? `; the full check last looked at PSA's page on ${escapeHtml(lc)}` : ''}. The full check looks from the day after an update is expected (${psaMd(p.next_update)} → ${psaMd(new Date(Date.parse(p.next_update + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10))}), every day until it is there. Edited with scripts/psa_backlog.py.</p>`;
     mountCharts(el);
   }
 

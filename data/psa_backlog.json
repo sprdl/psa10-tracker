@@ -1,8 +1,9 @@
 {
- "about": "PSA grading backlog and the reopening of the Value tiers. Readings are PSA's own figures (millions of units, published every other Tuesday on its Backlog Tracker page and in its update notes; copied from screenshots, never fetched automatically). threshold_m is the line PSA's tracker shows for 'Value Tiers Open'. 'projection' is plain arithmetic on the readings (scripts/psa_backlog.py), three scenarios for the next drops, not a forecast: PSA has to assess and announce after the backlog is under the line, and the Value tiers' prices, caps and turnaround may differ when they return. value_prices is PSA Japan's price chart that applied from 2026-02-10 (before the pause); PSA Japan corrected in the comments that Value Max's declared-value cap is 150,000 yen, not 80,000. Edit with scripts/psa_backlog.py.",
+ "about": "PSA grading backlog and the reopening of the Value tiers. Readings are PSA's own figures (millions of units, published every other Tuesday on its Backlog Tracker page and in its update notes; the first four copied from screenshots; later ones read from PSA's page by the full check, step 8i). threshold_m is the line PSA's tracker shows for 'Value Tiers Open'. 'projection' is plain arithmetic on the readings (scripts/psa_backlog.py), three scenarios for the next drops, not a forecast: PSA has to assess and announce after the backlog is under the line, and the Value tiers' prices, caps and turnaround may differ when they return. value_prices is PSA Japan's price chart that applied from 2026-02-10 (before the pause); PSA Japan corrected in the comments that Value Max's declared-value cap is 150,000 yen, not 80,000. Edit with scripts/psa_backlog.py. check = when the full check last looked at PSA's page (it looks from the day after an update is expected, daily until there is a newer one).",
  "threshold_m": 5.0,
  "source": "PSA Backlog Tracker and update notes, screenshots from Philipp 2026-10-10",
  "updated_jst": "2026-10-10 09:41",
+ "check": {"last_checked": null, "result": null},
  "readings": [
   {
    "d": "2026-08-25",

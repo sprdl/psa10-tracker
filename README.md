@@ -327,9 +327,13 @@ https://pokeca-chart.com/gr/chart-index/ and `add_custom_index.py --backfill res
 below which PSA's own tracker shows the Value tiers as open. The Market page shows the backlog, a chart, three
 scenarios for when it could get under the line, which tiers are open or paused, and PSA Japan's pre-pause Value
 prices next to Standard; the Submissions page carries a one-line status. The scenarios are arithmetic on PSA's
-figures, not a forecast. Add each new reading by hand (nothing fetches PSA automatically):
+figures, not a forecast. The full price check (FULL-CHECK.md step 8i) reads PSA's backlog page (one page fetch)
+from the day after an update is expected, on the first full check of the day: first on 2026-10-21, then every day
+until a newer update is there, then again 14 days after that update's date. By hand:
 
 ```bash
+python3 scripts/psa_backlog.py due                  # is a look due today?
+python3 scripts/psa_backlog.py from-page - < update.txt   # save the newest update from pasted text
 python3 scripts/psa_backlog.py add 2026-10-20 7.4 --note "PSA update"
 python3 scripts/psa_backlog.py status
 ```

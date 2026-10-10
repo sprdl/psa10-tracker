@@ -278,6 +278,29 @@ JSON
 
 **8h. Sealed products: name and picture from SNKRDUNK** (full and quick checks, computer linked, only when the update script printed a `SEALED INFO NOW` block). Sealed products are logged from the site with their SNKRDUNK link; the Action that records them never opens SNKRDUNK, so the check reads each new product's page once. One `device_bash` call: `cd "$R" && python3 scripts/sealed_info.py --js`; on a snkrdunk.com tab paste the printed script verbatim into `javascript_tool` (it returns `started N products`), poll with the line in its header until done, then save the `SP`/`SE` lines with `cd "$R" && python3 scripts/sealed_info.py - <<'EOF'` … `EOF`. One line in the chat message ("Sealed: added name and picture for <product>").
 
+**8i. PSA backlog: new update on PSA's page?** (full checks only, computer linked, after step 7 has published; **required when it is due**). PSA posts a backlog update every other Tuesday at https://www.psacard.com/info/backlog-tracker. The tracker's Market page and Submissions page show it (`data/psa_backlog.json`), because PSA reopens the Value tiers once the backlog is under 5M units. `full_update.py` prints `PSA BACKLOG NOW` when a look is due and `PSA BACKLOG: none due (…)` otherwise, and lists "8i PSA backlog" in FOLLOW-UPS. **The schedule is enforced by `scripts/psa_backlog.py due`, not by you; don't look on a run that says none due.** Its rule:
+- An update is expected 14 days after the newest stored one. With 2026-10-06 stored, the update is expected 2026-10-20 and **the first look is on 2026-10-21**, on that day's first full check.
+- If the page has nothing newer, the look repeats on **every day's first full check** (a second full check the same day doesn't repeat it) until a newer update is there.
+- When a newer update is saved, the next one is expected 14 days after *its* heading date, so the cadence returns to every other Tuesday (an update posted late still carries its own date; the next look starts the day after the next expected date).
+
+When it is due:
+1. One `WebFetch` of `https://www.psacard.com/info/backlog-tracker` with this prompt: `Return verbatim, without paraphrasing or summarizing: the heading of the NEWEST dated update (like "October 6, 2026 Update") and the complete first paragraph under it; then the heading of the second newest update and its first sentence.`
+2. Save it, one `device_bash` call, pasting the fetched heading and paragraph verbatim (nothing added):
+```
+R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && python3 scripts/psa_backlog.py from-page - <<'EOF'
+<heading>
+<paragraph>
+EOF
+```
+The script reads the date and the figure itself and checks them against what is stored (the update's own "down from X million" must match the last stored reading; a jump of more than 3M is refused). It prints one of:
+- `SAVED: 7.4M on 2026-10-20 …`: the reading, the projection and the page are updated and pushed (same credential rules as step 7). Report the new figure and the scenario lines it prints.
+- `NO NEW UPDATE …`: it records that you looked (shown on the Market page) and pushes. Nothing else to do; it is due again on the next day's first full check.
+- `CHECK BY HAND …`: nothing saved. Do what it says (read the page's earlier updates and use `python3 scripts/psa_backlog.py add YYYY-MM-DD <millions>` for each missed one, oldest first), or tell the user.
+
+If `WebFetch` fails or returns something that isn't the update text, open the page in the browser on a normal tab (`navigate`, then `get_page_text`) and use that text the same way. **If a Cloudflare or "verify you are human" page appears, stop: don't try to pass it, work around it or use curl** (psacard.com has been blocked to browser automation before; see `pricecheck/references/state.md`). Say so in the chat message and ask the user to paste the newest update's text or a screenshot of it; the same `from-page -` command takes pasted text. One page load per look.
+
+Chat message: one line, e.g. "PSA backlog: 7.4M on 10/20 (−0.8M); the 5M line is crossed around 12/01 to 12/15 on the current pace" (use the scenario lines the script prints), or "PSA backlog: no new update yet (looked 10/21; will look again tomorrow)".
+
 **8c. Write the story for cards that have none** (full checks only, computer linked, after step 7 has published). **Required, not optional**, like 8b: `full_update.py` ends by printing a `WRITE STORIES NOW` block with these cards, and the run is not finished while it lists cards you haven't written a story for (a 2026-10-03 run left a new card without one). Every tracked card gets a Story tab on its card page and a tile on the Stories page from `data/stories.json`: who illustrated it, what the art shows, how it connects to other cards or the games, set context and a few facts. A card added in step 1b arrives without one.
 1. One `device_bash` call: `cd "$R" && python3 scripts/set_story.py --missing`. It lists tracked cards without a story (usually none).
 2. For each listed card (at most 3 per run; name any others in the chat message), research with `WebSearch` / `WebFetch` only. Never use SNKRDUNK or pokeca-chart pages for this. Start with the illustrator: the official card database (pokemon-card.com; the card's page lists イラストレーター; search e.g. `<card name> <number> イラストレーター`), then Bulbapedia or Serebii. Then the art itself and its context: Famitsu's SAR/AR round-ups, PokeBeach reveal posts, Bleeding Cool's "The Cards of Pokémon TCG" series, the official set page, the illustrator's own posts. Worth looking for: connected artworks (panels that join into one picture, day/night pairs, a trainer and Pokémon pairing), the Pokédex lore or game/anime/film moment it depicts, the set's release date and theme, the English counterpart's name and number, the illustrator's other well-known cards.

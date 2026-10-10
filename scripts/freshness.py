@@ -22,7 +22,7 @@ Where each part of the site comes from and how often it should be refreshed (202
 | odds_model.json                       | limit odds, Tier check, predictions       | full check step 5b                 | monthly |
 | value_model.json                      | Upside tab, combination finder            | full check step 5b                 | monthly |
 | events.json                           | release calendar, event rule              | full check step 6b (Mondays)       | weekly |
-| psa_backlog.json                      | Market page PSA backlog panel             | you, from PSA's update (psa_backlog.py add) | every other Tuesday |
+| psa_backlog.json                      | Market page PSA backlog panel             | full check step 8i (WebFetch)      | every other Tuesday |
 | mercari.json                          | Mercari row + alerts                      | full + quick (cards near limit)    | when due |
 | stories / insights / verdicts / tiers | Story tab, analyses, verdict box          | full check steps 7b, 8b–8h         | when due (FOLLOW-UPS) |
 """
@@ -87,7 +87,7 @@ def checks(root=ROOT, now=None):
         out.append(("Scout", sc.get("updated"), 3 * 24 * H, "full check (scout)"))
     pb = _load(root, "psa_backlog.json")
     if pb and pb.get("readings"):   # PSA publishes every other Tuesday; 17 days allows a late update
-        out.append(("PSA backlog (Value tier reopening)", pb["readings"][-1]["d"] + "T00:00:00+09:00", 17 * 24 * H, "PSA's update (psa_backlog.py add)"))
+        out.append(("PSA backlog (Value tier reopening)", pb["readings"][-1]["d"] + "T00:00:00+09:00", 17 * 24 * H, "full check step 8i (psa_backlog.py from-page)"))
     om = _load(root, "odds_model.json") or {}
     out.append(("limit-odds model", om.get("built"), 32 * 24 * H, "full check step 5b"))
     vm = _load(root, "value_model.json") or {}

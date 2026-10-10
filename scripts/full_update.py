@@ -268,6 +268,8 @@ def main():
         review_due.print_text_due(ROOT)
         mercari.print_due(ROOT)
         sealed_info.print_due(ROOT)
+        import psa_backlog
+        psa_backlog.print_due(ROOT)
         print_followups()
         return
     files = [a for i, a in enumerate(args) if not a.startswith("--") and not (i and args[i - 1] == "--skip")]
@@ -350,6 +352,8 @@ def main():
     mercari.print_due(ROOT)
     import sealed_info
     sealed_info.print_due(ROOT)
+    import psa_backlog
+    psa_backlog.print_due(ROOT)
     print_followups()
 
 
@@ -416,7 +420,7 @@ def print_sell_due():
 
 def print_followups():
     """One last line naming every follow-up step still to do, so a truncated output can't hide one."""
-    import mercari, review_due, sealed_info, set_story
+    import mercari, psa_backlog, review_due, sealed_info, set_story
     todo = []
     for step, label, count in (
         ("8b", "evaluate", lambda: min(3, len(eval_due()))),
@@ -426,6 +430,7 @@ def print_followups():
         ("8f", "Mercari (pricecheck/MERCARI.md)", lambda: len(mercari.due(ROOT))),
         ("8g", "refresh verdicts", lambda: min(review_due.TEXT_PER_RUN, len(review_due.compute(ROOT)[1]))),
         ("8h", "sealed info", lambda: len(sealed_info.due(ROOT))),
+        ("8i", "PSA backlog (WebFetch, then psa_backlog.py from-page)", lambda: psa_backlog.due_count(ROOT)),
     ):
         try:
             n = count()

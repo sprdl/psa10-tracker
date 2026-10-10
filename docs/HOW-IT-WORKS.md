@@ -187,7 +187,7 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `calls.json` *generated* | `build_calls.py` (via `build_history.py`) | Track record, Scored calls | `summary` (closed-window score, early decisions, baseline, return vs the market, Brier scores), `calls[]`, `predictions[]`, `model_odds[]` |
 | `custom_index.json` | `add_custom_index.py` | Market page, overview index strip, correction rule, tier review, widget | `meta` (constituents, base prices) + `series[]` of daily `{d, level, prices, pokeca_psa10}` |
 | `events.json` | `events.py` | event rule, release calendar, widget | `window_days`, `events[] {d, name, major, scope}` |
-| `psa_backlog.json` | `psa_backlog.py` | Market page panel, Submissions line | `readings[] {d, m, note}` (PSA's backlog in millions of units), `threshold_m` (5.0), `tiers[]`, `value_prices`, `projection` (3 scenarios, written by the script) |
+| `psa_backlog.json` | `psa_backlog.py` | Market page panel, Submissions line | `readings[] {d, m, note}` (PSA's backlog in millions of units), `check {last_checked, result}`, `threshold_m` (5.0), `tiers[]`, `value_prices`, `projection` (3 scenarios, written by the script) |
 | `limits.json` | `set_limit.py` (Action) | site, widget, `mercari.py`, `predict.py` | `{"limits": {url: {price, set, issue}}}` |
 | `sell_targets.json` | `set_limit.py` (Action) | sell signals | `{"targets": {url: {price, set, issue}}}` |
 | `holdings.json` | `log_purchase.py` (Action), `add_holding.py` | Holdings, owned views, budget | `holdings[]` (singles), `sealed[]` (with `pulls[]`), `sold[]` |
@@ -269,7 +269,8 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
 4. `full_update.py` ends with three blocks: data that has gone stale (`freshness.py --stale`), the
    **FOLLOW-UPS** (step 8 of FULL-CHECK.md: evaluate new cards, write sell tiers for owned cards,
    stories for new cards, re-evaluate cards whose tiers are due, refresh written verdicts the price has
-   moved 5%+ from, read sealed-product names) and the **MERCARI** step (cards whose ask is within 5%
+   moved 5%+ from, read sealed-product names, look at PSA's backlog page when `psa_backlog.py due` says so: from the
+   day after an update is expected, daily until it's there) and the **MERCARI** step (cards whose ask is within 5%
    of your limit, `pricecheck/MERCARI.md`).
 5. Step 7b writes a short analysis for the cards `outliers.py` flags (`set_insight.py`).
 6. Monthly (step 5b): rebuild the odds model, the value model and the hype reference pool in the
@@ -1082,7 +1083,7 @@ with a docstring explaining its usage. Open the file and read the top.
 | `outliers.py` / `set_insight.py` | finding cards that stand out (cards you own are left out) / saving the written analysis for one |
 | `set_story.py` | listing cards without a story (`--missing`) / saving one |
 | `events.py` | managing the release calendar: `list`, `add`, `date`, `remove`, `window` |
-| `psa_backlog.py` | PSA grading backlog: `add 2026-10-20 7.4` stores a reading, recomputes the projection and pushes; `status`, `recompute` |
+| `psa_backlog.py` | PSA grading backlog (full check step 8i): `due` (is a look due today?), `from-page -` (saves the newest update from text copied off PSA's page, with sanity checks), `add 2026-10-20 7.4` (by hand), `status`, `recompute`; `print_due` is called by `full_update.py` |
 | `event_study.py` | checking whether prices really dip around releases |
 
 **Market data and models**
