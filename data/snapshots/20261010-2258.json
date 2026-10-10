@@ -4975,7 +4975,50 @@
       },
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/a27edfee-aa51-420f-80e1-c2cdad08b778.webp?size=l",
       "quick_note": "new card: first read by a quick check; depth, population and photo come with the next full check",
-      "favorite_count": 1648
+      "favorite_count": 1648,
+      "analysis": {
+        "representative_price": 133500,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 154800,
+          "when": "June 2026",
+          "source": "pokeca-chart PSA10 monthly price (SNKRDUNK monthly median not read; pokeca runs slightly below SNKRDUNK prints)"
+        },
+        "tiers": {
+          "definitely_buy": 105000,
+          "buy_upper": 115000,
+          "ceiling": 130000
+        },
+        "verdict": {
+          "tag": "dont_buy",
+          "label": "Don't buy: above the ceiling after a +27% week",
+          "reasoning": "Sales at ¥132–135k sit above the ¥130k ceiling after the slab jumped from about ¥105k in late September (pre-hype Q4 2025 ~¥70–82k, peak ~¥155k in June). The rally flag is on, so a pullback toward Buy (≤¥115k) is about a 1-in-3 chance within 90 days and Definitely-buy (¥105k, the September low) about 1-in-4. Raw A sells at about ¥70k, so a DIY slab costs about ¥98k at the 84% gem rate, which is the cheaper route; any buy is outside the ¥250k singles budget.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥115k (Buy) by 2027-01-10",
+              "p": 0.36,
+              "type": "touch_below",
+              "price": 115000,
+              "by": "2027-01-10"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥105k (Definitely buy) by 2027-01-10",
+              "p": 0.28,
+              "type": "touch_below",
+              "price": 105000,
+              "by": "2027-01-10"
+            }
+          ],
+          "written": "2026-10-10T22:59:39+09:00"
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2450,
+        "raw_tiers": {
+          "definitely_buy": 62000,
+          "buy_upper": 70000,
+          "ceiling": 80000
+        }
+      }
     },
     {
       "card_name_ja": "バンギラスV SR: SA[S5I 077/070](拡張パック「一撃マスター」)",
@@ -5156,7 +5199,50 @@
       },
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/201192bf-fc3b-4e28-900a-5b69920f1e1a.webp?size=l",
       "quick_note": "new card: first read by a quick check; depth, population and photo come with the next full check",
-      "favorite_count": 276
+      "favorite_count": 276,
+      "analysis": {
+        "representative_price": 115000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 103500,
+          "when": "September 2026 (before this week's rally)",
+          "source": "pokeca-chart PSA10 price; SNKRDUNK sales now ¥113–115k exceed it"
+        },
+        "tiers": {
+          "definitely_buy": 85000,
+          "buy_upper": 95000,
+          "ceiling": 108000
+        },
+        "verdict": {
+          "tag": "dont_buy",
+          "label": "Don't buy: about 2× its pre-hype level",
+          "reasoning": "PSA10 sales rose from about ¥84k to ¥115k in two weeks and the lowest ask is ¥127k, roughly twice the Q4 2025 level (~¥58–61k): the zone where cards have tended to give back ~17% over 6 months. Buy (≤¥95k) is a long shot near-term (about 1-in-5 within 90 days) and Definitely-buy (¥85k) closer to 1-in-7; the rally flag is on. The market is thin (2,513 PSA10s, ~1.6 sales/day) and raw A has no sale in 30 days (only a ¥60k ask), so the DIY route (~¥88k at an 82% gem rate) can't be confirmed either.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥108k (ceiling) by 2026-11-10",
+              "p": 0.23,
+              "type": "touch_below",
+              "price": 108000,
+              "by": "2026-11-10"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥95k (Buy) by 2027-01-10",
+              "p": 0.2,
+              "type": "touch_below",
+              "price": 95000,
+              "by": "2027-01-10"
+            }
+          ],
+          "written": "2026-10-10T22:59:39+09:00"
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2450,
+        "raw_tiers": {
+          "definitely_buy": 45000,
+          "buy_upper": 52000,
+          "ceiling": 60000
+        }
+      }
     },
     {
       "card_name_ja": "カイリューV SR: SA[S7R 074/067](拡張パック「蒼空ストリーム」)",
@@ -5336,7 +5422,50 @@
       },
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/d6dfc987-44a6-4f32-9eae-b921005db8b1.webp?size=l",
       "quick_note": "new card: first read by a quick check; depth, population and photo come with the next full check",
-      "favorite_count": 485
+      "favorite_count": 485,
+      "analysis": {
+        "representative_price": 147000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 140100,
+          "when": "August 2026 (before this week's rally)",
+          "source": "pokeca-chart PSA10 price; SNKRDUNK sales now ¥147–150k exceed it"
+        },
+        "tiers": {
+          "definitely_buy": 110000,
+          "buy_upper": 120000,
+          "ceiling": 135000
+        },
+        "verdict": {
+          "tag": "dont_buy",
+          "label": "Don't buy: at a new high after a +50% fortnight",
+          "reasoning": "Sales went from about ¥100k on 9/30 to ¥147–150k now, above the August high (~¥140k) and the ¥135k ceiling; pre-hype Q4 2025 was ~¥84–89k. With the rally flag on, Buy (≤¥120k) is about 1-in-4 within 90 days and Definitely-buy (¥110k) about 1-in-6. A PSA10 near ¥150k also hits PSA Standard's declared-value cap, so the raw route (raw A ~¥75k, no listing, ~¥102k DIY at 85%) may need a dearer tier.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥133k by 2026-11-10",
+              "p": 0.34,
+              "type": "touch_below",
+              "price": 133000,
+              "by": "2026-11-10"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥120k (Buy) by 2027-01-10",
+              "p": 0.26,
+              "type": "touch_below",
+              "price": 120000,
+              "by": "2027-01-10"
+            }
+          ],
+          "written": "2026-10-10T22:59:39+09:00"
+        },
+        "grading_fee_jpy": 9980,
+        "shipping_insurance_jpy": 2450,
+        "raw_tiers": {
+          "definitely_buy": 60000,
+          "buy_upper": 68000,
+          "ceiling": 78000
+        }
+      }
     },
     {
       "card_name_ja": "リザードンex SAR[SV3 134/108](拡張パック「黒炎の支配者」)",

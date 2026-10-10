@@ -1,21 +1,6 @@
 {
  "about": "Cards added or restored by an Add card request, waiting for their first evaluation in the same price check (scripts/eval_queue.py). apply_analysis.py removes a card once a buy verdict is applied.",
  "queue": {
-  "https://snkrdunk.com/apparels/164250": {
-   "name": "ミュウex SAR [SV4a 347/190](ハイクラスパック「シャイニートレジャーex」)",
-   "why": "added from chat 2026-10-10",
-   "since": "2026-10-10T22:54:50+09:00"
-  },
-  "https://snkrdunk.com/apparels/91189": {
-   "name": "バンギラスV SR: SA[S5I 077/070](拡張パック「一撃マスター」)",
-   "why": "added from chat 2026-10-10",
-   "since": "2026-10-10T22:54:50+09:00"
-  },
-  "https://snkrdunk.com/apparels/91166": {
-   "name": "カイリューV SR: SA[S7R 074/067](拡張パック「蒼空ストリーム」)",
-   "why": "added from chat 2026-10-10",
-   "since": "2026-10-10T22:54:50+09:00"
-  },
   "https://snkrdunk.com/apparels/132279": {
    "name": "リザードンex SAR[SV3 134/108](拡張パック「黒炎の支配者」)",
    "why": "added from chat 2026-10-10",
