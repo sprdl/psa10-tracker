@@ -57,6 +57,22 @@ class Schedule(unittest.TestCase):
         self.assertTrue(self.due(d, 2026, 11, 11))
 
 
+class Vpn(unittest.TestCase):
+    def test_reminder_only_when_due(self):
+        import io, contextlib
+        for day, want in ((20, False), (21, True)):
+            tmp = Path(tempfile.mkdtemp()); (tmp / "data").mkdir()
+            d = clone(); pb.save(pb.recompute(d), tmp)
+            real = pb.today; pb.today = lambda day=day: date(2026, 10, day)
+            buf = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(buf):
+                    pb.print_due(tmp)
+            finally:
+                pb.today = real; shutil.rmtree(tmp)
+            self.assertEqual("VPN REMINDER" in buf.getvalue(), want, day)
+
+
 class Parser(unittest.TestCase):
     CASES = [
         ("October 6, 2026 Update\nOur active grading backlog is now 8.2 million units, down from 9 million reported September 22.", (date(2026, 10, 6), 8.2, 9.0)),
@@ -98,7 +114,7 @@ class Saving(unittest.TestCase):
     def test_nothing_new_records_the_look(self):
         rc, out, d = self.run_page(self.CASE_OLD)
         self.assertEqual(rc, 0); self.assertIn("NO NEW UPDATE", out)
-        self.assertEqual(len(d["readings"]), 4); self.assertEqual(d["check"]["last_checked"], pb.today().isoformat())
+        self.assertEqual(len(d["readings"]), 7); self.assertEqual(d["check"]["last_checked"], pb.today().isoformat())
 
     CASE_OLD = "October 6, 2026 Update\nOur active grading backlog is now 8.2 million units, down from 9 million reported September 22."
     CASE_NEW = "October 20, 2026 Update\nOur active grading backlog is now 7.4 million units, down from 8.2 million reported October 6."
@@ -114,7 +130,7 @@ class Saving(unittest.TestCase):
                      "November 3, 2026 Update\nOur active grading backlog is now 2.0 million units.",                           # a jump of more than 3M
                      "no heading here"):
             rc, out, d = self.run_page(text)
-            self.assertEqual(rc, 2); self.assertIn("CHECK BY HAND", out); self.assertEqual(len(d["readings"]), 4)
+            self.assertEqual(rc, 2); self.assertIn("CHECK BY HAND", out); self.assertEqual(len(d["readings"]), 7)
 
 
 if __name__ == "__main__":

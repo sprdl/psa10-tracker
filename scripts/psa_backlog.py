@@ -49,6 +49,10 @@ def save(d, root=ROOT):
     file_for(root).write_text(json.dumps(d, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
+VPN_NOTE = ("  VPN REMINDER: tell Philipp to turn his VPN off before the PSA page is read (psacard.com's Cloudflare check "
+            "blocked the browser when a VPN was on). It can go back on after step 8i.")
+
+
 def today():
     return datetime.now(JST).date()
 
@@ -153,6 +157,7 @@ def print_due(root=ROOT):
         return False
     print(f"\nPSA BACKLOG NOW (FULL-CHECK step 8i) — {why}.")
     print(f"  Read {URL} (WebFetch first), then save the newest update: python3 scripts/psa_backlog.py from-page -")
+    print(VPN_NOTE)
     return True
 
 
@@ -247,7 +252,10 @@ def main():
         describe(d); return
     if args.cmd == "due":
         ok, why = due_state(d)
-        print(("DUE: " if ok else "none due: ") + why); return
+        print(("DUE: " if ok else "none due: ") + why)
+        if ok:
+            print(VPN_NOTE)
+        return
     if args.cmd == "from-page":
         text = sys.stdin.read() if args.file == "-" else Path(args.file).read_text(encoding="utf-8")
         sys.exit(from_page(text, ROOT, args.no_push))
