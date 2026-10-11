@@ -200,6 +200,16 @@
       "altema_mode": "daily",
       "note": "restored in chat 2026-10-10 (listed here so quick checks publish it)",
       "added": "2026-10-10"
+    },
+    {
+      "snkrdunk_id": "146897",
+      "card_name_ja": "ピカチュウ : プロモ [SVP EN 085](「ゴッホ展」 プロモーションカード「SVP EN」) 【英語版】",
+      "url": "https://snkrdunk.com/apparels/146897",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/64513949-279c-493a-995e-ee87c91dbbb9.webp?size=l",
+      "altema_url": "",
+      "altema_mode": "daily",
+      "note": "added from issue #83",
+      "added": "2026-10-11"
     }
   ]
 }
