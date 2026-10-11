@@ -1192,7 +1192,7 @@
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-bought]');
     if (!b) return;
-    const card = ((state.currentData && state.currentData.cards) || []).find((c) => cardId(c) === b.dataset.bought);
+    const card = findCardById(b.dataset.bought);
     if (!card) return;   // falls through to the plain GitHub form link
     e.preventDefault();
     openBoughtDialog(card);
@@ -2033,7 +2033,7 @@
   }
   function renderStories() {
     const el = document.getElementById('stories-page'); if (!el) return;
-    const cards = ((state.currentData && state.currentData.cards) || []).filter(storyOf);
+    const cards = ((state.currentData && state.currentData.cards) || []).concat(state.grailCards || []).filter(storyOf);
     if (!cards.length) { el.innerHTML = '<div class="empty-state">No stories yet.</div>'; return; }
     const byArtist = {};
     cards.forEach((c) => { const a = storyOf(c).illustrator || 'unknown'; (byArtist[a] = byArtist[a] || []).push(c); });
@@ -2101,7 +2101,7 @@
     return { rows, weeks, you: mean(rows.map((r) => r.bu)), model: mean(rows.map((r) => r.bm)),
       wonYou: fin.filter((w) => w.you < w.model - 1e-9).length, wonModel: fin.filter((w) => w.model < w.you - 1e-9).length };
   }
-  function predCardOf(q) { return ((state.currentData && state.currentData.cards) || []).find((c) => c.url === q.url) || { card_name_ja: q.name, url: q.url }; }
+  function predCardOf(q) { return cardByUrl(q.url) || { card_name_ja: q.name, url: q.url }; }
   function predQuestionHtml(wk, q, i) {
     const card = predCardOf(q), nm = parseCardName(q.name).short, ask = lowestAsk(card) || q.ask;
     const r = (wk.results || {})[q.id], a = predAnswer(wk, q.id), open = predOpen(wk, q);
@@ -2473,6 +2473,8 @@
 
   function cardId(card) { return (card.url || '').replace(/\/+$/, '').split('/').pop(); }
   function findCardById(id) { return ((state.currentData && state.currentData.cards) || []).concat(state.grailCards || []).find((c) => cardId(c) === id) || null; }
+  // Any card in the shown snapshot by URL, grails included (they're split off currentData; see setShownData).
+  function cardByUrl(url) { return ((state.currentData && state.currentData.cards) || []).concat(state.grailCards || []).find((c) => c.url === url) || null; }
   function prevCardOf(card) { return ((state.previousData && state.previousData.cards) || []).concat(state.grailPrev || []).find((c) => c.url === card.url) || null; }
   function hasMarket(card) { const p = card.grades && card.grades.psa10; return !!(p && p.lowest_price != null); }
 
@@ -5285,7 +5287,7 @@
     }
     const right = done.filter((k) => k.status === 'right'), wrong = done.filter((k) => k.status === 'wrong');
     const pending = all.filter((k) => k.status === 'pending').length;
-    const cardOf = (url) => ((state.currentData && state.currentData.cards) || []).find((c) => c.url === url) || null;
+    const cardOf = cardByUrl;
     const row = (k) => {
       const card = cardOf(k.url);
       const { short, code } = parseCardName(k.name);
