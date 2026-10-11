@@ -6451,7 +6451,17 @@
       },
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/64513949-279c-493a-995e-ee87c91dbbb9.webp?size=l",
       "quick_note": "new card: first read by a quick check; depth, population and photo come with the next full check",
-      "favorite_count": 3220
+      "favorite_count": 3220,
+      "analysis": {
+        "representative_price": 425000,
+        "price_source": "sales_confirmed",
+        "verdict": {
+          "tag": "defer",
+          "label": "Defer — no PSA10 population yet, and above budget",
+          "reasoning": "The PSA10 ask is ¥425,000 with 30-day sales at ¥416k–¥500k (median ¥450k, about 5 a day), so the market is active. But there is no population or altema page yet, the release date is unconfirmed, and a card this new drifts about −20% a month against the market, so no tiers can be set responsibly. It is also well above the ¥250k singles budget and above PSA Standard declared-value cap of ¥150,000, so the raw-to-grade route does not apply (raw A-rank ¥159,999). Full-art status was not confirmed from the sources. Re-evaluate once a population and about three weeks of PSA10 sales exist.",
+          "written": "2026-10-11T09:49:48+09:00"
+        }
+      }
     }
   ],
   "pokeca_chart_index": {
