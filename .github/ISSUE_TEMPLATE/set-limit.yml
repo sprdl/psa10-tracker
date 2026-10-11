@@ -15,7 +15,7 @@ body:
     id: limit
     attributes:
       label: Limit price (¥)
-      description: The most you'd pay for a PSA10 listing, e.g. 60000. Use 0 to remove the limit.
+      description: The most you'd pay for a PSA10 listing, e.g. 60000. Use 0 to remove the limit. Filled in by the site; GitHub keeps re-applying that value, so to change it, close this tab and enter the new price on the site first.
       placeholder: "60000"
     validations:
       required: true

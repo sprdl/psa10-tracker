@@ -1197,6 +1197,42 @@
     e.preventDefault();
     openBoughtDialog(card);
   });
+  // Limit / grail target: GitHub re-applies the prefilled limit over anything typed into the form, so the new price is
+  // asked here first; it's saved on this device right away and the form opens with exactly that value (0 = remove).
+  function openLimitDialog(card) {
+    let dlg = document.getElementById('limit-dlg');
+    if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'limit-dlg'; dlg.className = 'bd'; document.body.appendChild(dlg); }
+    const cur = getLimit(card), ask = lowestAsk(card), { short, code } = parseCardName(card.card_name_ja);
+    dlg.innerHTML = `<form method="dialog" class="bd-form">
+      <div class="bd-head"><span class="pf-thumb bd-thumb">${card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="">` : ''}</span>
+        <div><div class="bd-title">${cur != null ? 'Change your limit' : 'Set a limit'}</div><div class="bd-sub">${escapeHtml(short)} · ${escapeHtml(code)}</div></div></div>
+      <label class="bd-row"><span>Limit (¥)</span><input name="limit" type="number" inputmode="numeric" min="0" step="${LIMIT_STEP}" required value="${cur != null ? cur : ''}" placeholder="e.g. 300000"></label>
+      <div class="bd-hint">${cur != null ? `Now ${fmtYen(cur)}. ` : ''}${ask != null ? `Today's lowest PSA10 ask is ${fmtYen(ask)}. ` : ''}Enter 0 to remove the limit.</div>
+      <div class="bd-hint">Next, GitHub opens with this price filled in: just press <b>Create</b>. Every device shows it about a minute later.</div>
+      <div class="bd-acts"><button type="button" class="btn" value="cancel">Cancel</button><button type="submit" class="btn btn-primary" value="ok">Continue to GitHub ↗</button></div>
+    </form>`;
+    const f = dlg.querySelector('form');
+    dlg.querySelector('button[value=cancel]').addEventListener('click', () => dlg.close());
+    f.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = Math.round(Number(f.limit.value));
+      if (!(v >= 0) || f.limit.value === '') { f.limit.focus(); return; }
+      setLimit(card, v > 0 ? v : null);
+      window.open(limitFormUrl(card), '_blank', 'noopener');
+      dlg.close();
+      render();
+    });
+    dlg.showModal();
+    setTimeout(() => { f.limit.focus(); f.limit.select(); }, 30);
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-limit-dlg]');
+    if (!b) return;
+    const card = findCardById(b.dataset.limitDlg);
+    if (!card) return;   // falls through to the plain GitHub form link
+    e.preventDefault();
+    openLimitDialog(card);
+  });
   function removeFormUrl(h) {
     const q = new URLSearchParams({ template: 'remove-purchase.yml',
       title: 'Remove purchase: ' + parseCardName(h.card_name_ja || '').short, id: h.id });
@@ -4351,7 +4387,7 @@
     </section>`;
   }
   function grailFoot(g) {
-    return `<div class="gr-foot"><a class="btn" href="#/card/${escapeAttr(cardId(g.card))}">Full analysis</a><a class="btn" href="${escapeAttr(limitFormUrl(g.card))}" target="_blank" rel="noopener" title="Your target is the card's limit: saved to all devices with the Limit form">${g.targetSrc === 'limit' ? 'Change target' : 'Set a target'}</a><a class="btn" href="${escapeAttr(g.card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a></div>`;
+    return `<div class="gr-foot"><a class="btn" href="#/card/${escapeAttr(cardId(g.card))}">Full analysis</a><a class="btn" href="${escapeAttr(limitFormUrl(g.card))}" target="_blank" rel="noopener" data-limit-dlg="${escapeAttr(cardId(g.card))}" title="Your target is the card's limit, saved to all devices">${g.targetSrc === 'limit' ? 'Change target' : 'Set a target'}</a><a class="btn" href="${escapeAttr(g.card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a></div>`;
   }
   function grailMeta(g) {
     return [g.code, g.english ? 'English print' : '', g.pop != null ? `PSA10 pop ${g.pop.toLocaleString('en-US')}${g.gem != null ? ` · ${g.gem}% gem` : ''}` : ''].filter(Boolean).map(escapeHtml).join(' · ');
