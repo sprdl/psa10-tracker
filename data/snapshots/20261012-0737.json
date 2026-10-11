@@ -1999,11 +1999,12 @@
       "analysis": {
         "verdict": {
           "tag": "defer",
-          "label": "Defer — one PSA10 ask, no real PSA10 market yet",
-          "reasoning": "The only PSA10 listing is a single ¥72,000 ask against a raw A-rank near ¥7,000 (about 10x, versus a normal 1.5-3x slab premium), and the one PSA10 sale on record (¥12,980 on 9/18) is not a usable price. The Standard tier (~100 business days) hasn't returned slabs from this 9/16 set yet, so population, gem rate and a PSA10 price range don't exist; tiers would be guesses. Re-evaluate once several PSA10 listings and sales form (watch the 10/16 CELEBRATION card set release).",
-          "written": "2026-10-09T07:24:44+09:00"
+          "label": "Defer — no PSA10 market yet",
+          "reasoning": "Only one PSA10 sale on record (¥12,980 on 2026-09-18), against asks now at ¥65,000–73,000 with a single listing within 15%, so the price is unconfirmed. The set released 2026-09-16; altema shows no population yet, and the September submission wave won't return before about February 2027 (Standard ~100 business days). Raw A-rank is ¥7,500, so a DIY slab at a typical gem rate costs roughly ¥25k; the ask sits well above that floor. The card is one month old, so the age curve still points down (about −20% a month against the market). The 30th CELEBRATION set launches 10/16, which puts the event rule on until then. Re-evaluate once five or more PSA10 sales exist.",
+          "written": "2026-10-12T07:38:05+09:00"
         },
-        "verdict_price_ref": 72000
+        "representative_price": 65000,
+        "price_source": "ask_unconfirmed"
       }
     },
     {
@@ -3275,12 +3276,12 @@
       "analysis": {
         "verdict": {
           "tag": "defer",
-          "label": "Defer: one PSA10 ask (¥150k), no sales or population yet",
-          "reasoning": "The PSA10 market does not exist yet: a single listing at ¥150,000 against a raw A-rank ask of ¥12,300 (20 recent raw prints at ¥12.0–15.8k), no completed PSA10 sale, and no population on altema. The card comes from the 30th CELEBRATION premium deck set, which is still sold at retail via lottery, so supply is not scarce and the first slabs (PSA Standard takes about 100 business days) will not return before roughly Q1 2027. It also competes with the SV8a Umbreon ex SAR you already own, and that overlap has not been verified. I would not set tiers before a few real PSA10 sales exist; the next look is around the 10/16 カードセット release.",
-          "predictions": [],
-          "written": "2026-10-08T07:04:11+09:00"
+          "label": "Defer — thin PSA10 market, no population yet",
+          "reasoning": "One PSA10 sale (¥85,000, yesterday) against a lowest ask of ¥88,000 with one listing within 15%, so the market is too thin to set tiers. altema has no population section yet. Raw A-rank is ¥15,000 (median of 20 one-copy A sales in 30 days), so the current PSA10 is about 5.7× raw, far above the normal 2.2–2.9× slab premium; a DIY slab at a typical gem rate costs roughly ¥30–35k. That premium is either a thin-market print or an early-life outlier, and it is the first thing to check. The card is young and the age curve points down. Re-evaluate once five or more PSA10 sales and a population exist; the event rule applies to its set until 10/16.",
+          "written": "2026-10-12T07:38:05+09:00"
         },
-        "verdict_price_ref": 150000
+        "representative_price": 85000,
+        "price_source": "sales_confirmed"
       }
     },
     {
