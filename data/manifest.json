@@ -404,6 +404,11 @@
       "file": "20261011-1724.json",
       "collected_at_jst": "2026-10-11T17:24:00+09:00",
       "check_mode": "quick"
+    },
+    {
+      "file": "20261011-2148.json",
+      "collected_at_jst": "2026-10-11T21:48:09+09:00",
+      "check_mode": "quick"
     }
   ]
 }
