@@ -6456,10 +6456,36 @@
         "representative_price": 425000,
         "price_source": "sales_confirmed",
         "verdict": {
-          "tag": "defer",
-          "label": "Defer — no PSA10 population yet, and above budget",
-          "reasoning": "The PSA10 ask is ¥425,000 with 30-day sales at ¥416k–¥500k (median ¥450k, about 5 a day), so the market is active. But there is no population or altema page yet, the release date is unconfirmed, and a card this new drifts about −20% a month against the market, so no tiers can be set responsibly. It is also well above the ¥250k singles budget and above PSA Standard declared-value cap of ¥150,000, so the raw-to-grade route does not apply (raw A-rank ¥159,999). Full-art status was not confirmed from the sources. Re-evaluate once a population and about three weeks of PSA10 sales exist.",
-          "written": "2026-10-11T09:49:48+09:00"
+          "tag": "watch",
+          "label": "Watch — fair-ish but not cheap; English print and far above budget",
+          "reasoning": "The ¥425k ask sits between Buy (≤¥390k) and the ¥450k sales median, 20% under the ¥532k May peak but still ~1.7× the Q4 2025 level (¥250–260k) after a run that beat the market; with the rally flag on, a ≤¥390k listing is about a coin flip within 30 days (~40%) and the mid-September panic low (¥355k) suggests ≤¥340k is reachable on a renewed correction (~30% within 90 days). Downside if bought today: a repeat of September's −30% swing (to ~¥350k) is plausible in a market-wide pullback, and as an English print it also carries USD/JPY risk; DIY gives no floor (Standard can't take it, and (¥160k raw + Express) ÷ 42% gem ≈ ¥450k). It alone exceeds the whole ¥250k singles budget, and it's the collection's only non-Japanese card.",
+          "predictions": [
+            {
+              "text": "A PSA10 listing at ≤¥390k (Buy) by 2026-11-10",
+              "p": 0.4,
+              "type": "touch_below",
+              "price": 390000,
+              "by": "2026-11-10"
+            },
+            {
+              "text": "A PSA10 listing at ≤¥340k (Definitely buy) by 2027-01-09",
+              "p": 0.3,
+              "type": "touch_below",
+              "price": 340000,
+              "by": "2027-01-09"
+            }
+          ],
+          "written": "2026-10-11T09:55:20+09:00"
+        },
+        "peak": {
+          "price": 532000,
+          "when": "May 2026",
+          "source": "pokeca-chart monthly median of daily PSA10 prices (matches SNKRDUNK prints for this card; SNKRDUNK daily medians ¥500–535k again in Aug 2026)"
+        },
+        "tiers": {
+          "definitely_buy": 340000,
+          "buy_upper": 390000,
+          "ceiling": 450000
         }
       }
     }
