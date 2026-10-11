@@ -351,6 +351,145 @@
      "extreme": 30500
     }
    }
+  },
+  "2026-10-12": {
+   "created": "2026-10-12T07:37:34+09:00",
+   "close": "2026-10-16T23:59:59+09:00",
+   "answer_by": "2026-10-14T23:59:59+09:00",
+   "questions": [
+    {
+     "url": "https://snkrdunk.com/apparels/730952",
+     "name": "メガゲンガーex MA [M2a 230/193](ハイクラスパック「MEGAドリームex」)",
+     "dir": "below",
+     "target": 6500,
+     "ask": 6999,
+     "lo30": 6680,
+     "hi30": 7499,
+     "model": 0.236,
+     "why": "Buy line",
+     "days": 4.7,
+     "id": "2026-10-12-1"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/146897",
+     "name": "ピカチュウ : プロモ [SVP EN 085](「ゴッホ展」 プロモーションカード「SVP EN」) 【英語版】",
+     "dir": "below",
+     "target": 390000,
+     "ask": 430000,
+     "lo30": 424000,
+     "hi30": 430000,
+     "model": 0.161,
+     "why": "Buy line",
+     "days": 4.7,
+     "id": "2026-10-12-2"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/103079",
+     "name": "リザードンVSTAR SAR[s12a 212/172](ハイクラスパック「VSTARユニバース」)",
+     "dir": "above",
+     "target": 30000,
+     "ask": 28499,
+     "lo30": 23000,
+     "hi30": 28888,
+     "model": 0.433,
+     "why": "about 6% above today",
+     "days": 4.7,
+     "id": "2026-10-12-3"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/724996",
+     "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+     "dir": "above",
+     "target": 71000,
+     "ask": 67449,
+     "lo30": 55700,
+     "hi30": 75999,
+     "model": 0.424,
+     "why": "about 6% above today",
+     "days": 4.7,
+     "id": "2026-10-12-4"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/408333",
+     "name": "ピカチュウex SAR [SV8 132/106](拡張パック「超電ブレイカー」)",
+     "dir": "above",
+     "target": 104000,
+     "ask": 98000,
+     "lo30": 72000,
+     "hi30": 100000,
+     "model": 0.404,
+     "why": "about 6% above today",
+     "days": 4.7,
+     "id": "2026-10-12-5"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/138599",
+     "name": "ピカチュウVMAX CSR[s8b 223/184](ハイクラスパック「VMAXクライマックス」)",
+     "dir": "below",
+     "target": 37000,
+     "ask": 38500,
+     "lo30": 26500,
+     "hi30": 40000,
+     "model": 0.429,
+     "why": "about 5% below today",
+     "days": 4.7,
+     "id": "2026-10-12-6"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/722239",
+     "name": "メガリザードンXex MA [M2a 223/193](ハイクラスパック「MEGAドリームex」)",
+     "dir": "below",
+     "target": 10500,
+     "ask": 11111,
+     "lo30": 10190,
+     "hi30": 13100,
+     "model": 0.36,
+     "why": "about 5% below today",
+     "days": 4.7,
+     "id": "2026-10-12-7"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/881431",
+     "name": "ブラッキーex SAR仕様 [MF 044/040](構築デッキ「30th CELEBRATION プレミアムデッキセット エーフィ・ブラッキー」)",
+     "dir": "below",
+     "target": 84000,
+     "ask": 88000,
+     "lo30": 85000,
+     "hi30": 180000,
+     "model": 0.359,
+     "why": "about 5% below today",
+     "days": 4.7,
+     "id": "2026-10-12-8"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/882279",
+     "name": "ピカチュウex SAR [M6a 126/103](拡張パック「30th CELEBRATION」)",
+     "dir": "below",
+     "target": 62000,
+     "ask": 65000,
+     "lo30": 12980,
+     "hi30": 73000,
+     "model": 0.355,
+     "why": "about 5% below today",
+     "days": 4.7,
+     "id": "2026-10-12-9"
+    },
+    {
+     "url": "https://snkrdunk.com/apparels/455596",
+     "name": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
+     "dir": "below",
+     "target": 76000,
+     "ask": 79500,
+     "lo30": 64000,
+     "hi30": 84500,
+     "model": 0.343,
+     "why": "about 5% below today",
+     "days": 4.7,
+     "id": "2026-10-12-10"
+    }
+   ],
+   "answers": {},
+   "results": {}
   }
  },
  "about": "You vs the model: weekly questions, answers and results. See scripts/predict.py."
