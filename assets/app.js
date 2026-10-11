@@ -30,6 +30,8 @@
     portHist: [], // data/portfolio_history.json — daily readings of untracked cards / sealed items
     heldPrices: {}, // data/holdings_prices.json — latest SNKRDUNK price per bought untracked card / unopened sealed item
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
+    grails: {}, // data/grails.json — SNKRDUNK id → { added, note } for the long-term grails
+    grailCards: [], grailPrev: [], // the grails split off the shown / previous snapshot (setShownData)
     selectedUrl: null, // card shown in the overview's detail drawer (desktop)
     cardTab: 'overview', // last-used tab of the card detail
     cardFrom: 'overview', // view a card page was opened from (for the back link)
@@ -165,7 +167,7 @@
     holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', portHist: 'data/portfolio_history.json', sellTargets: 'data/sell_targets.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', psaBacklog: 'data/psa_backlog.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
-    valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
+    valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', grails: 'data/grails.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
   };
   // The last loaded bundle, for an instant start, lives in IndexedDB: it's ~0.7 MB and grows with every check, and
   // localStorage stops at about 5 MB (Safari). Without IndexedDB (some private modes) it falls back to localStorage,
@@ -290,10 +292,10 @@
 
     state.currentIndex = snaps.length - 1;
     state.removed = (b.removed && b.removed.removed) || {};
+    state.grails = (b.grails && b.grails.grails) || {}; // data/grails.json — long-term grails (Grails page only)
     if (fresh) reconcileRemovals();
     state.rawCur = b.cur; state.rawPrev = b.prev || null;
-    state.currentData = withoutRemoved(b.cur);
-    state.previousData = withoutRemoved(b.prev || null);
+    setShownData();
     render();
   }
 
@@ -343,8 +345,7 @@
       fetchJSON('data/snapshots/' + snaps[idx].file),
       idx > 0 ? fetchJSON('data/snapshots/' + snaps[idx - 1].file) : null,
     ]);
-    state.currentData = withoutRemoved(state.rawCur);
-    state.previousData = withoutRemoved(state.rawPrev);
+    setShownData();
     render();
   }
 
@@ -373,9 +374,22 @@
     store.set(RM_KEY, rm); store.set(RS_KEY, rs);
   }
   function refreshRemoved() {
-    state.currentData = withoutRemoved(state.rawCur);
-    state.previousData = withoutRemoved(state.rawPrev);
+    setShownData();
     render();
+  }
+  // Grails (data/grails.json) are priced by every check like any tracked card, but they live on their own page:
+  // they're split off here, so the Overview, collection, planner, tables and signals never see them.
+  // state.grailCards / state.grailPrev hold them for the Grails page and the card page.
+  function setShownData() {
+    const cur = withoutRemoved(state.rawCur), prev = withoutRemoved(state.rawPrev);
+    const g = state.grails || {};
+    const split = (d) => {
+      if (!d || !d.cards) return [d, []];
+      const gr = d.cards.filter((c) => g[cardId(c)]);
+      return [gr.length ? Object.assign({}, d, { cards: d.cards.filter((c) => !g[cardId(c)]) }) : d, gr];
+    };
+    [state.currentData, state.grailCards] = split(cur);
+    [state.previousData, state.grailPrev] = split(prev);
   }
   function removeCardFormUrl(card) {
     const q = new URLSearchParams({ template: 'remove-card.yml', title: 'Remove card: ' + parseCardName(card.card_name_ja).short,
@@ -2416,14 +2430,14 @@
   // and #/rate/<id>,<id>,… (rate my portfolio).
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
-    planner: 'Budget planner', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
+    planner: 'Budget planner', grails: 'Grails', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
     compare: 'Head to head', duel: 'Budget duel', combos: 'Combination finder', rate: 'Rate my portfolio', scored: 'Scored calls', submit: 'PSA submission planner', scout: 'Scout', predict: 'You vs the model', stories: 'Stories',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
   function cardId(card) { return (card.url || '').replace(/\/+$/, '').split('/').pop(); }
-  function findCardById(id) { return ((state.currentData && state.currentData.cards) || []).find((c) => cardId(c) === id) || null; }
-  function prevCardOf(card) { return ((state.previousData && state.previousData.cards) || []).find((c) => c.url === card.url) || null; }
+  function findCardById(id) { return ((state.currentData && state.currentData.cards) || []).concat(state.grailCards || []).find((c) => cardId(c) === id) || null; }
+  function prevCardOf(card) { return ((state.previousData && state.previousData.cards) || []).concat(state.grailPrev || []).find((c) => c.url === card.url) || null; }
   function hasMarket(card) { const p = card.grades && card.grades.psa10; return !!(p && p.lowest_price != null); }
 
   function parseRoute() {
@@ -2440,7 +2454,7 @@
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
-    if (tab && ['watching', 'planner', 'collection', 'submit', 'record', 'market', 'tables', 'predict', 'stories'].includes(navView)) tab.classList.add('on');
+    if (tab && ['watching', 'planner', 'grails', 'collection', 'submit', 'record', 'market', 'tables', 'predict', 'stories'].includes(navView)) tab.classList.add('on');
 
     const back = document.getElementById('back-link');
     back.hidden = view !== 'card' && !PARENT[view];
@@ -2533,6 +2547,7 @@
       case 'watching': return `${cards.length - market} cards without a PSA10 market yet. They move to the overview once PSA10 listings appear.`;
       case 'holdings': return 'Cards and sealed product you bought, valued at today\'s prices';
       case 'planner': return 'Tick cards to see what a shortlist costs against your budget';
+      case 'grails': return grailsSubtitle();
       case 'record': return 'How past calls and stated odds turned out';
       case 'market': return `pokeca-chart indices · checked ${when}`;
       case 'tables': return 'Every tracked card side by side';
@@ -2563,6 +2578,7 @@
       scout: scoutNewCount(),
       predict: predOpenCount(),
       submit: rawCopies().filter((c) => !c.sent).length || '',
+      grails: grailsCount(),
     };
     document.querySelectorAll('em[data-count]').forEach((em) => { em.textContent = counts[em.dataset.count] || ''; });
   }
@@ -2652,6 +2668,7 @@
     renderCollection(cards);
     renderWatchPanel(cards.filter((c) => !hasMarket(c)), prevCards);
     renderPlanner(cards);
+    renderGrails();
     // Pages that aren't on screen are built when first opened, or in the background once the
     // browser is idle, so the first paint doesn't wait for them.
     lazyPending = { record: renderTrackRecord, scout: renderScout, predict: renderPredict, stories: renderStories, tables: () => renderTables(cards, prevCards) };
@@ -4250,6 +4267,212 @@
     };
     el.querySelectorAll('.cd-tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
     if ((state.cardTab || 'overview') === 'history') showTab('history');
+  }
+
+  // ---------- grails (data/grails.json): the long-term goals, on their own page ----------
+  // Two or three cards you want one day but can't buy yet. Every price check reads them like any tracked card
+  // (tracked_cards.json); setShownData keeps them off every other page. Everything here is computed from the snapshot:
+  // the target is your limit for the card (the usual Limit form), or its Buy tier when there's no limit.
+  // Three layouts while the page is being designed (Showcase / Spotlight / Gallery); the choice is kept per browser.
+  const GRAIL_DRAFTS = [['a', 'A · Showcase'], ['b', 'B · Spotlight'], ['c', 'C · Gallery']];
+  function grailDraft() { const d = store.get('psa10.grails.draft', 'a'); return GRAIL_DRAFTS.some(([k]) => k === d) ? d : 'a'; }
+  function grailsSubtitle() {
+    const n = (state.grailCards || []).length;
+    return n ? `${n} long-term goal${n === 1 ? '' : 's'}, priced by every check · kept off the watchlist` : 'No grails yet: add SNKRDUNK ids to data/grails.json';
+  }
+  // The badge in the menu: how many grails are at your target or in their Buy zone right now (worth a look).
+  function grailsCount() {
+    const n = (state.grailCards || []).filter((c) => { const g = grailInfo(c); return g && (g.atTarget || g.tag === 'buy' || g.tag === 'definitely_buy'); }).length;
+    return n ? '●' + (n > 1 ? n : '') : '';
+  }
+  // What selling the singles you hold would raise after SNKRDUNK's fees (sellNet), today and at your Take-profit lines.
+  // Raw copies count at their raw A-rank price today; at Take profit they count as PSA10s minus the grading still to pay
+  // (copies not sent yet), i.e. assuming they grade 10. Cards without sell tiers count at today's price in both.
+  function grailFunding() {
+    const cards = (state.currentData && state.currentData.cards) || [];
+    let now = 0, tp = 0, gradeLeft = 0, n = 0, missing = 0;
+    for (const h of state.holdings || []) {
+      const c = cards.find((x) => x.url === h.card_url), raw = h.condition === 'raw_to_grade';
+      const v = c ? (raw ? rawPriceV(c) : getRep(c)) : heldPrice(h.card_url);
+      if (v == null) { missing++; continue; }
+      n++;
+      now += sellNet(v);
+      const t = c && sellTiersOf(c);
+      if (t) {
+        tp += sellNet(t.take_profit_from);
+        if (raw && !h.sent) gradeLeft += (h.grading_fee_jpy != null ? h.grading_fee_jpy : PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
+      } else tp += sellNet(v);
+    }
+    return { now: Math.round(now), tp: Math.round(tp - gradeLeft), gradeLeft, n, missing };
+  }
+  function grailInfo(card) {
+    if (!card) return null;
+    const a = card.analysis || {}, t = a.tiers || null, ask = lowestAsk(card), rep = getRep(card);
+    const { short, code, pack } = parseCardName(card.card_name_ja);
+    const lim = getLimit(card);
+    const target = lim != null ? lim : t ? t.buy_upper : null;
+    const ref = Date.parse(refTime());
+    const sales = (((card.grades || {}).psa10 || {}).recent_completed_sales || []).filter((x) => x.price);
+    const s7 = sales.map((x) => ({ p: x.price, d: saleAgeDays(x.when, ref) })).filter((x) => x.d != null && x.d <= 7).map((x) => x.p);
+    const peak = a.peak && a.peak.price ? a.peak : null;
+    const odds = target != null && ask != null ? touchOdds(card, target) : null;
+    return {
+      card, short, code, pack, english: /英語版/.test(card.card_name_ja || ''), ask, rep, tiers: t, peak,
+      tag: displayTagFor(card), target, targetSrc: lim != null ? 'limit' : 'buy',
+      gap: target != null && ask != null ? ask - target : null, gapPct: target && ask != null ? (ask / target - 1) * 100 : null,
+      atTarget: target != null && ask != null && ask <= target,
+      odds, c1: priceChangeLast(card), c7: priceChangeAgo(card, 7), c30: priceChangeAgo(card, 30),
+      offPeak: peak && rep != null ? computeOffPeakPct(peak.price, rep) : null,
+      med7: s7.length >= 3 ? median(s7) : null, n7: s7.length, sales: sales.map((x) => x.price),
+      heat: heatOf(card), pop: card.psa10_population, gem: card.psa10_gem_rate_pct,
+    };
+  }
+  const gChg = (c, lbl) => (c ? `<span class="${dirClass(c.pct)}">${c.pct === 0 ? '±0%' : fmtPct(c.pct)}</span> <small>${lbl}</small>` : `<span class="muted">—</span> <small>${lbl}</small>`);
+  function grailChanges(g) { return `<span class="gr-chg">${gChg(g.c1, 'last check')}${gChg(g.c7, '7d')}${gChg(g.c30, '30d')}</span>`; }
+  function grailTargetLbl(g) { return g.targetSrc === 'limit' ? 'Your target' : 'Buy line'; }
+  function grailOddsTxt(g) {
+    if (g.atTarget) return 'At target now';
+    if (!g.odds || g.odds.reached) return '—';
+    return `${fmtOdds(g.odds.p90)}`;
+  }
+  // Horizontal price track: tier zones as colour bands, today's ask, your target and the peak as markers.
+  function grailTrack(g) {
+    const t = g.tiers;
+    if (!t || g.ask == null) return '';
+    const pts = [g.ask, t.definitely_buy, t.ceiling, g.target, g.peak && g.peak.price].filter((x) => x != null);
+    const lo = Math.min(...pts) * 0.9, hi = Math.max(...pts) * 1.05, x = (v) => Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100));
+    const band = (a, b, cls, lbl) => `<span class="gr-band ${cls}" style="left:${x(a).toFixed(2)}%;width:${(x(b) - x(a)).toFixed(2)}%" title="${escapeAttr(lbl)}"></span>`;
+    const mark = (v, cls, lbl, val) => `<span class="gr-mark ${cls}" style="left:${x(v).toFixed(2)}%"><i></i><b>${lbl}</b><em>${val}</em></span>`;
+    return `<div class="gr-track" role="img" aria-label="${escapeAttr(`Lowest ask ${fmtYen(g.ask)}; tiers: definitely buy ${fmtYen(t.definitely_buy)}, buy ${fmtYen(t.buy_upper)}, ceiling ${fmtYen(t.ceiling)}${g.target != null ? `; ${grailTargetLbl(g).toLowerCase()} ${fmtYen(g.target)}` : ''}`)}">
+      <div class="gr-rail">${band(lo, t.definitely_buy, 'z-db', 'Definitely buy ≤' + fmtYen(t.definitely_buy))}${band(t.definitely_buy, t.buy_upper, 'z-buy', 'Buy ≤' + fmtYen(t.buy_upper))}${band(t.buy_upper, t.ceiling, 'z-watch', 'Watch ≤' + fmtYen(t.ceiling))}${band(t.ceiling, hi, 'z-no', "Don't buy above " + fmtYen(t.ceiling))}</div>
+      <div class="gr-marks">${g.target != null ? mark(g.target, 'm-target', g.targetSrc === 'limit' ? 'Target' : 'Buy', fmtYenShort(g.target)) : ''}${g.peak ? mark(g.peak.price, 'm-peak', 'Peak', fmtYenShort(g.peak.price)) : ''}${mark(g.ask, 'm-now', 'Now', fmtYenShort(g.ask))}</div>
+    </div>`;
+  }
+  // Price ladder: every reference price from the top down, with today's ask slotted in and the distance to each.
+  function grailLadder(g) {
+    const t = g.tiers || {}, rows = [];
+    if (g.peak) rows.push({ v: g.peak.price, l: `Peak · ${g.peak.when || ''}`, cls: 'peak' });
+    if (t.ceiling != null) rows.push({ v: t.ceiling, l: 'Ceiling', cls: 'no' });
+    if (t.buy_upper != null) rows.push({ v: t.buy_upper, l: 'Buy ≤', cls: 'buy' });
+    if (t.definitely_buy != null) rows.push({ v: t.definitely_buy, l: 'Definitely buy ≤', cls: 'db' });
+    if (g.targetSrc === 'limit' && g.target != null) rows.push({ v: g.target, l: 'Your target', cls: 'target' });
+    if (g.ask != null) rows.push({ v: g.ask, l: 'Lowest ask now', cls: 'now' });
+    rows.sort((a, b) => b.v - a.v || (a.cls === 'now' ? -1 : 1));
+    return `<ol class="gr-ladder">${rows.map((r) => {
+      const d = r.cls === 'now' || g.ask == null ? '' : `${r.v >= g.ask ? '+' : '−'}${Math.abs((r.v / g.ask - 1) * 100).toFixed(0)}%`;
+      return `<li class="l-${r.cls}"><span class="gl-l">${escapeHtml(r.l)}</span><span class="gl-v">${fmtYen(r.v)}</span><span class="gl-d">${d}</span></li>`;
+    }).join('')}</ol>`;
+  }
+  // The last 20 one-copy PSA10 sales (oldest → newest) with the Buy line and your target when they fit the scale.
+  function grailSpark(g) {
+    const s = g.sales;
+    if (!s || s.length < 3) return '';
+    const W = 320, H = 84, P = 4, t = g.tiers || {};
+    let lo = Math.min(...s), hi = Math.max(...s);
+    const lines = [];
+    if (t.buy_upper != null && t.buy_upper >= lo * 0.85) { lo = Math.min(lo, t.buy_upper); lines.push([t.buy_upper, 'buy', 'Buy ≤' + fmtYenShort(t.buy_upper)]); }
+    if (g.targetSrc === 'limit' && g.target != null && g.target >= lo * 0.85) { lo = Math.min(lo, g.target); lines.push([g.target, 'target', 'Target ' + fmtYenShort(g.target)]); }
+    lo *= 0.98; hi *= 1.02;
+    const X = (i) => P + (i / (s.length - 1)) * (W - 2 * P), Y = (v) => P + (1 - (v - lo) / (hi - lo)) * (H - 2 * P);
+    const path = s.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' ');
+    return `<figure class="gr-spark"><figcaption><span class="lbl">Last ${s.length} PSA10 sales</span><span class="muted">${fmtYenShort(Math.min(...s))}–${fmtYenShort(Math.max(...s))}</span></figcaption>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${escapeAttr(`Last ${s.length} PSA10 sales from ${fmtYen(s[0])} to ${fmtYen(s[s.length - 1])}`)}">
+        ${lines.map(([v, cls]) => `<line class="sp-${cls}" x1="0" x2="${W}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/>`).join('')}
+        <path d="${path}" vector-effect="non-scaling-stroke"/><circle cx="${X(s.length - 1).toFixed(1)}" cy="${Y(s[s.length - 1]).toFixed(1)}" r="3"/>
+      </svg>${lines.length ? `<div class="gr-spark-k">${lines.map(([, cls, l]) => `<span class="k-${cls}">${escapeHtml(l)}</span>`).join('')}</div>` : ''}</figure>`;
+  }
+  function grailFundingHtml(gs, f, compact) {
+    if (!f.n) return '';
+    const bar = (v, ask) => Math.max(2, Math.min(100, (v / ask) * 100)).toFixed(1);
+    const rows = gs.filter((g) => g.ask).map((g) => {
+      const pn = (f.now / g.ask) * 100, pt = (f.tp / g.ask) * 100;
+      return `<div class="gf-row"><span class="gf-name jp">${escapeHtml(g.short)}</span>
+        <span class="gf-bar" role="img" aria-label="${escapeAttr(`Selling today covers ${pn.toFixed(0)}% of ${fmtYen(g.ask)}; at Take profit ${pt.toFixed(0)}%`)}"><i class="gf-tp" style="width:${bar(f.tp, g.ask)}%"></i><i class="gf-now" style="width:${bar(f.now, g.ask)}%"></i></span>
+        <span class="gf-pct"><b>${pn.toFixed(0)}%</b> today · <b class="${pt >= 100 ? 'pos' : ''}">${pt.toFixed(0)}%</b> at Take profit</span></div>`;
+    }).join('');
+    return `<section class="panel gr-fund ${compact ? 'compact' : ''}" aria-label="Funding from your collection">
+      <div class="gf-head"><h2 class="section-title">Could your collection pay for it?</h2>
+        <dl><div><dt>Sell everything today</dt><dd>${fmtYen(f.now)}</dd></div><div><dt>Everything at Take profit</dt><dd>${fmtYen(f.tp)}</dd></div></dl></div>
+      ${rows}
+      <p class="gf-note">What your ${f.n} single${f.n === 1 ? '' : 's'} would bring after SNKRDUNK's fees (9.5%, ¥300 transfer, ~¥1,000 shipping), against each grail's lowest ask. Raw copies count at their raw A-rank price today; at Take profit they count as PSA10s${f.gradeLeft ? `, minus ${fmtYen(f.gradeLeft)} grading still to pay` : ''}. Sealed product and pulls aren't counted.${f.missing ? ` ${f.missing} without a price left out.` : ''}</p>
+    </section>`;
+  }
+  function grailFoot(g) {
+    return `<div class="gr-foot"><a class="btn" href="#/card/${escapeAttr(cardId(g.card))}">Full analysis</a><a class="btn" href="${escapeAttr(limitFormUrl(g.card))}" target="_blank" rel="noopener" title="Your target is the card's limit: saved to all devices with the Limit form">${g.targetSrc === 'limit' ? 'Change target' : 'Set a target'}</a><a class="btn" href="${escapeAttr(g.card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a></div>`;
+  }
+  function grailToGo(g) {
+    if (g.ask == null || g.target == null) return '<span class="muted">No price</span>';
+    if (g.atTarget) return `<span class="pos">At ${grailTargetLbl(g).toLowerCase()}</span>`;
+    return `${fmtYen(g.gap)}<small>${fmtPct(-((1 - g.target / g.ask) * 100), 0)}</small>`;
+  }
+  function grailMeta(g) {
+    return [g.code, g.english ? 'English print' : '', g.pop != null ? `PSA10 pop ${g.pop.toLocaleString('en-US')}${g.gem != null ? ` · ${g.gem}% gem` : ''}` : ''].filter(Boolean).map(escapeHtml).join(' · ');
+  }
+  // Draft A · Showcase: the two grails side by side, a big slab on a stage, the ask, the track and four numbers.
+  function grailDraftA(gs, f) {
+    return grailFundingHtml(gs, f, true) + `<div class="gra-grid">${gs.map((g) => `<article class="panel gra">
+      <a class="gra-stage" href="#/card/${escapeAttr(cardId(g.card))}" aria-label="${escapeAttr(g.short)}: full analysis">${slabHtml(g.card, 'lg')}</a>
+      <div class="gra-body">
+        <div class="gra-title"><h2 class="jp">${escapeHtml(g.short)}</h2>${tagChip(g.card)}</div>
+        <p class="gr-meta">${grailMeta(g)}</p>
+        <div class="gra-price"><span class="lbl">Lowest PSA10 ask</span><span class="display gra-ask">${fmtYen(g.ask)}</span>${grailChanges(g)}</div>
+        ${grailTrack(g)}
+        <dl class="gr-stats">
+          <div><dt>${grailTargetLbl(g)}</dt><dd>${fmtYen(g.target)}</dd></div>
+          <div><dt>To go</dt><dd>${grailToGo(g)}</dd></div>
+          <div><dt>Chance in 90 days</dt><dd>${grailOddsTxt(g)}</dd></div>
+          <div><dt>Off peak</dt><dd>${g.offPeak != null ? `${g.offPeak >= 0 ? '−' : '+'}${Math.abs(g.offPeak).toFixed(0)}%` : '—'}<small>${g.peak ? fmtYenShort(g.peak.price) : ''}</small></dd></div>
+        </dl>
+        ${grailFoot(g)}
+      </div></article>`).join('')}</div>`;
+  }
+  // Draft B · Spotlight: one wide row per grail: slab left, a big "to go" countdown, the price ladder and recent sales.
+  function grailDraftB(gs, f) {
+    return grailFundingHtml(gs, f, false) + gs.map((g) => `<article class="panel grb">
+      <a class="grb-art" href="#/card/${escapeAttr(cardId(g.card))}" aria-label="${escapeAttr(g.short)}: full analysis">${slabHtml(g.card, 'lg')}</a>
+      <div class="grb-main">
+        <div class="gra-title"><h2 class="jp">${escapeHtml(g.short)}</h2>${tagChip(g.card)}</div>
+        <p class="gr-meta">${grailMeta(g)}</p>
+        <div class="grb-count">
+          <div><span class="lbl">${g.atTarget ? 'At your target' : `To ${grailTargetLbl(g).toLowerCase()}`}</span><span class="display grb-big">${g.atTarget ? fmtYen(g.ask) : fmtYen(g.gap)}</span>
+            <span class="grb-sub">Ask ${fmtYen(g.ask)} → ${fmtYen(g.target)}${g.odds && !g.odds.reached && !g.atTarget ? ` · chance ${fmtOdds(g.odds.p30)} in 30 days, ${fmtOdds(g.odds.p90)} in 90` : ''}</span></div>
+          ${grailChanges(g)}
+        </div>
+        <div class="grb-cols">${grailLadder(g)}<div class="grb-side">${grailSpark(g)}
+          <dl class="gr-stats two"><div><dt>Sales, 7 days</dt><dd>${g.med7 != null ? fmtYen(g.med7) : '—'}<small>${g.n7 ? `median of ${g.n7 >= 20 ? '20+' : g.n7}` : ''}</small></dd></div>
+          <div><dt>Trading</dt><dd>${g.heat && g.heat.psa ? `≈${rateTxt(g.heat.psa)}/day ${heatChip(g.card)}` : '—'}</dd></div></dl></div></div>
+        ${grailFoot(g)}
+      </div></article>`).join('');
+  }
+  // Draft C · Gallery: the card as an exhibit, its own art blurred behind it, and a museum plaque of four numbers.
+  function grailDraftC(gs, f) {
+    return `<div class="grc-grid">${gs.map((g) => `<article class="grc">
+      <a class="grc-frame" href="#/card/${escapeAttr(cardId(g.card))}" aria-label="${escapeAttr(g.short)}: full analysis">
+        ${g.card.image_url ? `<span class="grc-glow" style="background-image:url('${escapeAttr(g.card.image_url)}')" aria-hidden="true"></span>` : ''}
+        ${slabHtml(g.card, 'lg')}</a>
+      <div class="grc-plaque">
+        <div class="grc-name"><h2 class="jp">${escapeHtml(g.short)}</h2>${tagChip(g.card)}</div>
+        <p class="gr-meta">${grailMeta(g)}</p>
+        <dl class="grc-nums">
+          <div><dt>Ask</dt><dd class="display">${fmtYenShort(g.ask)}</dd></div>
+          <div><dt>${g.targetSrc === 'limit' ? 'Target' : 'Buy line'}</dt><dd class="display">${fmtYenShort(g.target)}</dd></div>
+          <div><dt>To go</dt><dd class="display ${g.atTarget ? 'pos' : ''}">${g.atTarget ? '✓' : g.gapPct != null ? '−' + Math.round((1 - g.target / g.ask) * 100) + '%' : '—'}</dd></div>
+          <div><dt>90-day odds</dt><dd class="display">${grailOddsTxt(g)}</dd></div>
+        </dl>
+        <div class="grc-line">${grailChanges(g)}${g.peak ? `<span class="muted">Peak ${fmtYenShort(g.peak.price)} · ${escapeHtml(g.peak.when || '')}</span>` : ''}</div>
+        ${grailFoot(g)}
+      </div></article>`).join('')}</div>` + grailFundingHtml(gs, f, true);
+  }
+  function renderGrails() {
+    const el = document.getElementById('grails-page');
+    if (!el) return;
+    const gs = (state.grailCards || []).map(grailInfo).filter(Boolean);
+    if (!gs.length) { el.innerHTML = '<div class="empty-state">No grails yet. Add a card\'s SNKRDUNK id to data/grails.json (it must also be in tracked_cards.json so the price checks read it).</div>'; return; }
+    const d = grailDraft(), f = grailFunding();
+    el.innerHTML = `<div class="gr-bar"><span class="lbl">Draft</span><div class="seg" role="group" aria-label="Page design draft">${GRAIL_DRAFTS.map(([k, l]) => `<button type="button" data-gdraft="${k}" class="${k === d ? 'on' : ''}" aria-pressed="${k === d}">${l}</button>`).join('')}</div></div>
+      <div class="gr-draft gr-${d}">${d === 'b' ? grailDraftB(gs, f) : d === 'c' ? grailDraftC(gs, f) : grailDraftA(gs, f)}</div>`;
+    el.querySelectorAll('[data-gdraft]').forEach((b) => b.addEventListener('click', () => { store.set('psa10.grails.draft', b.dataset.gdraft); renderGrails(); }));
+    trimImages(el);
   }
 
   // ---------- budget planner (saved in this browser only) ----------

@@ -406,3 +406,11 @@ in each row has the details in its docstring.
 | `tracked_cards.json` (`card_requests.py`) | `{"cards": [{"snkrdunk_id", "card_name_ja", "url", "image_url", "altema_url", "altema_mode", "note"}]}` |
 | `removed_cards.json` (`remove_card.py`) | `{"removed": {snkrdunk_id: {"name", "at", "issue"}}}` |
 | `eval_queue.json` (`eval_queue.py`) | `{"about", "queue": {card url: {"name", "why", "since"}}}`: added/restored cards awaiting their first evaluation; `apply_analysis.py` removes a card when a buy verdict is applied |
+
+
+## data/grails.json (added 2026-10-11)
+
+Long-term grails shown only on the Grails page (Buy › Grails). `{"grails": {"<snkrdunk id>": {"added": "YYYY-MM-DD", "note": "..."}}}`.
+The cards stay in `tracked_cards.json`, so every price check still reads them; `setShownData()` in app.js splits them off
+the shown snapshot (`state.grailCards`), which keeps them out of the Overview, collection, planner, tables and signals.
+The Grails page's target is the card's limit (`limits.json`), else its Buy tier. Edit the file by hand.

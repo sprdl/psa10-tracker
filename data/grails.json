@@ -1,0 +1,7 @@
+{
+ "_about": "Long-term grails: cards you want to own one day but can't buy yet. They stay in tracked_cards.json, so every price check (quick and full) still reads them, but the site shows them only on the Grails page (Buy › Grails) and leaves them out of the Overview, the collection, the budget planner, the tables and the Needs-you signals. The target on the Grails page is the card's limit (data/limits.json, set with the usual Limit form); without one it falls back to the card's Buy tier. Keys are SNKRDUNK ids. Edit by hand: add or delete an entry.",
+ "grails": {
+  "91178": { "added": "2026-10-11", "note": "Gengar VMAX SA (SGG 020/019): favourite Pokémon, the long-term Gengar grail" },
+  "146897": { "added": "2026-10-11", "note": "Van Gogh Museum Pikachu promo (SVP EN 085, English print)" }
+ }
+}

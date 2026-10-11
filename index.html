@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://cdn.snkrdunk.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=20261010b">
+<link rel="stylesheet" href="assets/style.css?v=20261011g">
 </head>
 <body>
 <div class="app">
@@ -27,6 +27,7 @@
         <a href="#/watching" data-view="watching"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg><span>Watching</span><em data-count="watching"></em></a>
         <a href="#/scout" data-view="scout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15.5 8.5l-2 5-5 2 2-5z"/></svg><span>Scout</span><em data-count="scout"></em></a>
         <a href="#/planner" data-view="planner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6M18 15v6M15 18h6"/></svg><span>Budget planner</span><em data-count="planner"></em></a>
+        <a href="#/grails" data-view="grails"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v3a7 7 0 0 1-14 0zM5 6H2a3 3 0 0 0 3 3M19 6h3a3 3 0 0 1-3 3M12 14v4M8 21h8M9 18h6"/></svg><span>Grails</span><em data-count="grails"></em></a>
       </div>
       <div class="nav-group" role="group" aria-label="Own"><span class="nav-h">Own</span>
         <a href="#/holdings" data-view="holdings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18v12H3zM3 7l3-4h12l3 4M16 13h2"/></svg><span>Holdings</span><em data-count="holdings"></em></a>
@@ -109,6 +110,10 @@
       <div id="planner" class="planner"></div>
     </section>
 
+    <section class="view" data-view="grails" hidden>
+      <div id="grails-page" class="planner"></div>
+    </section>
+
     <section class="view" data-view="record" hidden>
       <div id="track" class="planner"></div>
     </section>
@@ -158,7 +163,7 @@
     <section class="view" data-view="more" hidden>
       <nav class="more-list" aria-label="More sections">
         <h2 class="more-h">Buy</h2>
-        <div class="more-grp"><a href="#/watching"><span>Watching</span><em data-count="watching"></em></a><a href="#/planner"><span>Budget planner</span></a></div>
+        <div class="more-grp"><a href="#/watching"><span>Watching</span><em data-count="watching"></em></a><a href="#/planner"><span>Budget planner</span></a><a href="#/grails"><span>Grails</span><em data-count="grails"></em></a></div>
         <h2 class="more-h">Own</h2>
         <div class="more-grp"><a href="#/collection"><span>Collection</span><em data-count="collection"></em></a><a href="#/submit"><span>Submissions</span><em data-count="submit"></em></a></div>
         <h2 class="more-h">Learn</h2>
@@ -200,6 +205,6 @@
     <a href="#/more" data-view="more"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg><span>More</span></a>
   </nav>
 </div>
-<script src="assets/app.js?v=20261011a"></script>
+<script src="assets/app.js?v=20261011g"></script>
 </body>
 </html>
