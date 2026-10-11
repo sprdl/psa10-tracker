@@ -3688,7 +3688,8 @@
   function slabHtml(card, size) {
     const code = parseCardName(card.card_name_ja).code;
     const img = card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : '';
-    return `<span class="slab ${size || ''}"><span class="slab-label"><b>${escapeHtml(code)}</b><b>GEM MT 10</b></span><span class="slab-art ${artClassFor(card)}">${img}</span></span>`;
+    // Just the card (2026-10-11: no PSA case drawn around it). The coloured art band only shows when there's no photo (CSS :has).
+    return `<span class="slab ${size || ''}" title="${escapeAttr(code)}"><span class="slab-art ${artClassFor(card)}">${img}</span></span>`;
   }
 
   // Price change vs the latest snapshot at least `days` old (history.json, same price rule as getRep).
@@ -4273,9 +4274,7 @@
   // Two or three cards you want one day but can't buy yet. Every price check reads them like any tracked card
   // (tracked_cards.json); setShownData keeps them off every other page. Everything here is computed from the snapshot:
   // the target is your limit for the card (the usual Limit form), or its Buy tier when there's no limit.
-  // Three layouts while the page is being designed (Showcase / Spotlight / Gallery); the choice is kept per browser.
-  const GRAIL_DRAFTS = [['a', 'A · Showcase'], ['b', 'B · Spotlight'], ['c', 'C · Gallery']];
-  function grailDraft() { const d = store.get('psa10.grails.draft', 'a'); return GRAIL_DRAFTS.some(([k]) => k === d) ? d : 'a'; }
+  // Layout: Gallery (picked 2026-10-11): each grail as an exhibit, its own art blurred behind it, and a plaque of numbers.
   function grailsSubtitle() {
     const n = (state.grailCards || []).length;
     return n ? `${n} long-term goal${n === 1 ? '' : 's'}, priced by every check · kept off the watchlist` : 'No grails yet: add SNKRDUNK ids to data/grails.json';
@@ -4335,52 +4334,6 @@
     if (!g.odds || g.odds.reached) return '—';
     return `${fmtOdds(g.odds.p90)}`;
   }
-  // Horizontal price track: tier zones as colour bands, today's ask, your target and the peak as markers.
-  function grailTrack(g) {
-    const t = g.tiers;
-    if (!t || g.ask == null) return '';
-    const pts = [g.ask, t.definitely_buy, t.ceiling, g.target, g.peak && g.peak.price].filter((x) => x != null);
-    const lo = Math.min(...pts) * 0.9, hi = Math.max(...pts) * 1.05, x = (v) => Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100));
-    const band = (a, b, cls, lbl) => `<span class="gr-band ${cls}" style="left:${x(a).toFixed(2)}%;width:${(x(b) - x(a)).toFixed(2)}%" title="${escapeAttr(lbl)}"></span>`;
-    const mark = (v, cls, lbl, val) => `<span class="gr-mark ${cls}" style="left:${x(v).toFixed(2)}%"><i></i><b>${lbl}</b><em>${val}</em></span>`;
-    return `<div class="gr-track" role="img" aria-label="${escapeAttr(`Lowest ask ${fmtYen(g.ask)}; tiers: definitely buy ${fmtYen(t.definitely_buy)}, buy ${fmtYen(t.buy_upper)}, ceiling ${fmtYen(t.ceiling)}${g.target != null ? `; ${grailTargetLbl(g).toLowerCase()} ${fmtYen(g.target)}` : ''}`)}">
-      <div class="gr-rail">${band(lo, t.definitely_buy, 'z-db', 'Definitely buy ≤' + fmtYen(t.definitely_buy))}${band(t.definitely_buy, t.buy_upper, 'z-buy', 'Buy ≤' + fmtYen(t.buy_upper))}${band(t.buy_upper, t.ceiling, 'z-watch', 'Watch ≤' + fmtYen(t.ceiling))}${band(t.ceiling, hi, 'z-no', "Don't buy above " + fmtYen(t.ceiling))}</div>
-      <div class="gr-marks">${g.target != null ? mark(g.target, 'm-target', g.targetSrc === 'limit' ? 'Target' : 'Buy', fmtYenShort(g.target)) : ''}${g.peak ? mark(g.peak.price, 'm-peak', 'Peak', fmtYenShort(g.peak.price)) : ''}${mark(g.ask, 'm-now', 'Now', fmtYenShort(g.ask))}</div>
-    </div>`;
-  }
-  // Price ladder: every reference price from the top down, with today's ask slotted in and the distance to each.
-  function grailLadder(g) {
-    const t = g.tiers || {}, rows = [];
-    if (g.peak) rows.push({ v: g.peak.price, l: `Peak · ${g.peak.when || ''}`, cls: 'peak' });
-    if (t.ceiling != null) rows.push({ v: t.ceiling, l: 'Ceiling', cls: 'no' });
-    if (t.buy_upper != null) rows.push({ v: t.buy_upper, l: 'Buy ≤', cls: 'buy' });
-    if (t.definitely_buy != null) rows.push({ v: t.definitely_buy, l: 'Definitely buy ≤', cls: 'db' });
-    if (g.targetSrc === 'limit' && g.target != null) rows.push({ v: g.target, l: 'Your target', cls: 'target' });
-    if (g.ask != null) rows.push({ v: g.ask, l: 'Lowest ask now', cls: 'now' });
-    rows.sort((a, b) => b.v - a.v || (a.cls === 'now' ? -1 : 1));
-    return `<ol class="gr-ladder">${rows.map((r) => {
-      const d = r.cls === 'now' || g.ask == null ? '' : `${r.v >= g.ask ? '+' : '−'}${Math.abs((r.v / g.ask - 1) * 100).toFixed(0)}%`;
-      return `<li class="l-${r.cls}"><span class="gl-l">${escapeHtml(r.l)}</span><span class="gl-v">${fmtYen(r.v)}</span><span class="gl-d">${d}</span></li>`;
-    }).join('')}</ol>`;
-  }
-  // The last 20 one-copy PSA10 sales (oldest → newest) with the Buy line and your target when they fit the scale.
-  function grailSpark(g) {
-    const s = g.sales;
-    if (!s || s.length < 3) return '';
-    const W = 320, H = 84, P = 4, t = g.tiers || {};
-    let lo = Math.min(...s), hi = Math.max(...s);
-    const lines = [];
-    if (t.buy_upper != null && t.buy_upper >= lo * 0.85) { lo = Math.min(lo, t.buy_upper); lines.push([t.buy_upper, 'buy', 'Buy ≤' + fmtYenShort(t.buy_upper)]); }
-    if (g.targetSrc === 'limit' && g.target != null && g.target >= lo * 0.85) { lo = Math.min(lo, g.target); lines.push([g.target, 'target', 'Target ' + fmtYenShort(g.target)]); }
-    lo *= 0.98; hi *= 1.02;
-    const X = (i) => P + (i / (s.length - 1)) * (W - 2 * P), Y = (v) => P + (1 - (v - lo) / (hi - lo)) * (H - 2 * P);
-    const path = s.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' ');
-    return `<figure class="gr-spark"><figcaption><span class="lbl">Last ${s.length} PSA10 sales</span><span class="muted">${fmtYenShort(Math.min(...s))}–${fmtYenShort(Math.max(...s))}</span></figcaption>
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${escapeAttr(`Last ${s.length} PSA10 sales from ${fmtYen(s[0])} to ${fmtYen(s[s.length - 1])}`)}">
-        ${lines.map(([v, cls]) => `<line class="sp-${cls}" x1="0" x2="${W}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/>`).join('')}
-        <path d="${path}" vector-effect="non-scaling-stroke"/><circle cx="${X(s.length - 1).toFixed(1)}" cy="${Y(s[s.length - 1]).toFixed(1)}" r="3"/>
-      </svg>${lines.length ? `<div class="gr-spark-k">${lines.map(([, cls, l]) => `<span class="k-${cls}">${escapeHtml(l)}</span>`).join('')}</div>` : ''}</figure>`;
-  }
   function grailFundingHtml(gs, f, compact) {
     if (!f.n) return '';
     const bar = (v, ask) => Math.max(2, Math.min(100, (v / ask) * 100)).toFixed(1);
@@ -4400,52 +4353,11 @@
   function grailFoot(g) {
     return `<div class="gr-foot"><a class="btn" href="#/card/${escapeAttr(cardId(g.card))}">Full analysis</a><a class="btn" href="${escapeAttr(limitFormUrl(g.card))}" target="_blank" rel="noopener" title="Your target is the card's limit: saved to all devices with the Limit form">${g.targetSrc === 'limit' ? 'Change target' : 'Set a target'}</a><a class="btn" href="${escapeAttr(g.card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a></div>`;
   }
-  function grailToGo(g) {
-    if (g.ask == null || g.target == null) return '<span class="muted">No price</span>';
-    if (g.atTarget) return `<span class="pos">At ${grailTargetLbl(g).toLowerCase()}</span>`;
-    return `${fmtYen(g.gap)}<small>${fmtPct(-((1 - g.target / g.ask) * 100), 0)}</small>`;
-  }
   function grailMeta(g) {
     return [g.code, g.english ? 'English print' : '', g.pop != null ? `PSA10 pop ${g.pop.toLocaleString('en-US')}${g.gem != null ? ` · ${g.gem}% gem` : ''}` : ''].filter(Boolean).map(escapeHtml).join(' · ');
   }
-  // Draft A · Showcase: the two grails side by side, a big slab on a stage, the ask, the track and four numbers.
-  function grailDraftA(gs, f) {
-    return grailFundingHtml(gs, f, true) + `<div class="gra-grid">${gs.map((g) => `<article class="panel gra">
-      <a class="gra-stage" href="#/card/${escapeAttr(cardId(g.card))}" aria-label="${escapeAttr(g.short)}: full analysis">${slabHtml(g.card, 'lg')}</a>
-      <div class="gra-body">
-        <div class="gra-title"><h2 class="jp">${escapeHtml(g.short)}</h2>${tagChip(g.card)}</div>
-        <p class="gr-meta">${grailMeta(g)}</p>
-        <div class="gra-price"><span class="lbl">Lowest PSA10 ask</span><span class="display gra-ask">${fmtYen(g.ask)}</span>${grailChanges(g)}</div>
-        ${grailTrack(g)}
-        <dl class="gr-stats">
-          <div><dt>${grailTargetLbl(g)}</dt><dd>${fmtYen(g.target)}</dd></div>
-          <div><dt>To go</dt><dd>${grailToGo(g)}</dd></div>
-          <div><dt>Chance in 90 days</dt><dd>${grailOddsTxt(g)}</dd></div>
-          <div><dt>Off peak</dt><dd>${g.offPeak != null ? `${g.offPeak >= 0 ? '−' : '+'}${Math.abs(g.offPeak).toFixed(0)}%` : '—'}<small>${g.peak ? fmtYenShort(g.peak.price) : ''}</small></dd></div>
-        </dl>
-        ${grailFoot(g)}
-      </div></article>`).join('')}</div>`;
-  }
-  // Draft B · Spotlight: one wide row per grail: slab left, a big "to go" countdown, the price ladder and recent sales.
-  function grailDraftB(gs, f) {
-    return grailFundingHtml(gs, f, false) + gs.map((g) => `<article class="panel grb">
-      <a class="grb-art" href="#/card/${escapeAttr(cardId(g.card))}" aria-label="${escapeAttr(g.short)}: full analysis">${slabHtml(g.card, 'lg')}</a>
-      <div class="grb-main">
-        <div class="gra-title"><h2 class="jp">${escapeHtml(g.short)}</h2>${tagChip(g.card)}</div>
-        <p class="gr-meta">${grailMeta(g)}</p>
-        <div class="grb-count">
-          <div><span class="lbl">${g.atTarget ? 'At your target' : `To ${grailTargetLbl(g).toLowerCase()}`}</span><span class="display grb-big">${g.atTarget ? fmtYen(g.ask) : fmtYen(g.gap)}</span>
-            <span class="grb-sub">Ask ${fmtYen(g.ask)} → ${fmtYen(g.target)}${g.odds && !g.odds.reached && !g.atTarget ? ` · chance ${fmtOdds(g.odds.p30)} in 30 days, ${fmtOdds(g.odds.p90)} in 90` : ''}</span></div>
-          ${grailChanges(g)}
-        </div>
-        <div class="grb-cols">${grailLadder(g)}<div class="grb-side">${grailSpark(g)}
-          <dl class="gr-stats two"><div><dt>Sales, 7 days</dt><dd>${g.med7 != null ? fmtYen(g.med7) : '—'}<small>${g.n7 ? `median of ${g.n7 >= 20 ? '20+' : g.n7}` : ''}</small></dd></div>
-          <div><dt>Trading</dt><dd>${g.heat && g.heat.psa ? `≈${rateTxt(g.heat.psa)}/day ${heatChip(g.card)}` : '—'}</dd></div></dl></div></div>
-        ${grailFoot(g)}
-      </div></article>`).join('');
-  }
-  // Draft C · Gallery: the card as an exhibit, its own art blurred behind it, and a museum plaque of four numbers.
-  function grailDraftC(gs, f) {
+  // The card as an exhibit, its own art blurred behind it, and a museum plaque of four numbers.
+  function grailGallery(gs, f) {
     return `<div class="grc-grid">${gs.map((g) => `<article class="grc">
       <a class="grc-frame" href="#/card/${escapeAttr(cardId(g.card))}" aria-label="${escapeAttr(g.short)}: full analysis">
         ${g.card.image_url ? `<span class="grc-glow" style="background-image:url('${escapeAttr(g.card.image_url)}')" aria-hidden="true"></span>` : ''}
@@ -4468,10 +4380,7 @@
     if (!el) return;
     const gs = (state.grailCards || []).map(grailInfo).filter(Boolean);
     if (!gs.length) { el.innerHTML = '<div class="empty-state">No grails yet. Add a card\'s SNKRDUNK id to data/grails.json (it must also be in tracked_cards.json so the price checks read it).</div>'; return; }
-    const d = grailDraft(), f = grailFunding();
-    el.innerHTML = `<div class="gr-bar"><span class="lbl">Draft</span><div class="seg" role="group" aria-label="Page design draft">${GRAIL_DRAFTS.map(([k, l]) => `<button type="button" data-gdraft="${k}" class="${k === d ? 'on' : ''}" aria-pressed="${k === d}">${l}</button>`).join('')}</div></div>
-      <div class="gr-draft gr-${d}">${d === 'b' ? grailDraftB(gs, f) : d === 'c' ? grailDraftC(gs, f) : grailDraftA(gs, f)}</div>`;
-    el.querySelectorAll('[data-gdraft]').forEach((b) => b.addEventListener('click', () => { store.set('psa10.grails.draft', b.dataset.gdraft); renderGrails(); }));
+    el.innerHTML = grailGallery(gs, grailFunding());
     trimImages(el);
   }
 
@@ -4493,7 +4402,8 @@
   function renderPlanner(cards) {
     const box = document.getElementById('planner');
     const st = plannerState();
-    const rows = cards.filter((c) => lowestAsk(c) != null).map((card) => {
+    // Cards you own aren't buy candidates: the planner only lists cards you could still buy (2026-10-11).
+    const rows = cards.filter((c) => lowestAsk(c) != null && !ownsCard(c)).map((card) => {
       const today = lowestAsk(card);
       const lim = getLimit(card);
       const useLimit = st.mode === 'limits' && lim != null;
@@ -4959,7 +4869,7 @@
 
     const pinsTxt = res.pool.filter((x) => st.pins.includes(x.card.url)).map((x) => nameOf(x.card));
     const exclTxt = cards.filter((c) => st.excl.includes(c.url)).map(nameOf);
-    const poolRows = cards.filter((c) => lowestAsk(c) != null).sort((a, b) => lowestAsk(b) - lowestAsk(a)).map((c) => {
+    const poolRows = cards.filter((c) => lowestAsk(c) != null && !ownsCard(c)).sort((a, b) => lowestAsk(b) - lowestAsk(a)).map((c) => {
       const pin = st.pins.includes(c.url), off = st.excl.includes(c.url), lim = getLimit(c);
       const owned = state.holdings.some((h) => h.card_url === c.url);
       const price = st.mode === 'limits' && lim != null ? lim : lowestAsk(c);
