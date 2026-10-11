@@ -5899,27 +5899,11 @@
         },
         "verdict": {
           "tag": "dont_buy",
-          "label": "Don't buy: about 2× its pre-hype level",
-          "reasoning": "PSA10 sales rose from about ¥84k to ¥115k in two weeks and the lowest ask is ¥127k, roughly twice the Q4 2025 level (~¥58–61k): the zone where cards have tended to give back ~17% over 6 months. Buy (≤¥95k) is a long shot near-term (about 1-in-5 within 90 days) and Definitely-buy (¥85k) closer to 1-in-7; the rally flag is on. The market is thin (2,513 PSA10s, ~1.6 sales/day) and raw A has no sale in 30 days (only a ¥60k ask), so the DIY route (~¥88k at an 82% gem rate) can't be confirmed either.",
-          "predictions": [
-            {
-              "text": "A PSA10 listing at ≤¥108k (ceiling) by 2026-11-10",
-              "p": 0.23,
-              "type": "touch_below",
-              "price": 108000,
-              "by": "2026-11-10"
-            },
-            {
-              "text": "A PSA10 listing at ≤¥95k (Buy) by 2027-01-10",
-              "p": 0.2,
-              "type": "touch_below",
-              "price": 95000,
-              "by": "2027-01-10"
-            }
-          ],
-          "written": "2026-10-10T22:59:39+09:00"
+          "label": "Don't buy — ask ¥156,000, ¥48k above the ¥108k ceiling",
+          "reasoning": "The lowest ask has risen to ¥156,000 from ¥115,000 on 10/10, while recent one-copy sales run ¥113,000–¥180,000 (median ¥115,000 over the last 7 days), so the ask is about 36% above the trade median and the market is still pricing in the rally. The card is 6 days into tracking with a high hype exposure (score 74), and its slab premium is about 3.0× raw, slightly above its 6-month norm. Nothing in the market supports a Buy here: the nearest tier is the ¥108k ceiling, and the limit-odds model puts a fall to ¥85k at about 1% within 30 days. The call would change if the ask fell back under ¥108k with sales holding at that level.",
+          "written": "2026-10-12T07:38:19+09:00"
         },
-        "verdict_price_ref": 115000
+        "verdict_price_ref": 156000
       }
     },
     {
