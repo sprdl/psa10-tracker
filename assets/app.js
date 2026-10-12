@@ -2493,8 +2493,10 @@
 
   // ---------- Scout: cards you don't track yet that fit your criteria and look cheap ----------
   // data/scout.json is written by full checks (pricecheck/scripts/pokeca_scout.js → scripts/scout.py):
-  // modern secret rares on pokeca-chart at ¥15k–150k, ranked by how far below their pre-hype price
+  // modern secret rares on pokeca-chart at ¥5k–150k, ranked by how far below their pre-hype price
   // (Jul–Dec 2025) they sit, how much of the 2026 bubble they gave back and a compressed slab premium.
+  // Young cards with no pre-hype price use the DIY replacement cost instead (basis "diy"); cards 10–25%
+  // above their pre-hype price are listed separately as "Close to cheap" (sc.near), never picked.
   // The page shows 3–5 of them per JST day, stepping through the ranked list so each day brings
   // different cards (the list itself only changes when a full check runs). "Not for me" hides a card
   // in this browser; "+ Track it" opens the Add card form with its SNKRDUNK page filled in.
@@ -2528,6 +2530,19 @@
     }
     return { picks, list, n: picks.length };
   }
+  function scoutNear() {
+    const sc = state.scout; if (!sc || !sc.near) return [];
+    const hidden = new Set(store.get('psa10.scout.dismissed', []));
+    const tracked = new Set(((state.currentData && state.currentData.cards) || []).map((c) => cardId(c)));
+    const other = store.get('psa10.scout.other', false);
+    return sc.near.filter((r) => { const c = sc.pool[r.slug] || {}; return !hidden.has(r.slug) && !(c.sid && tracked.has(String(c.sid))) && (other || r.kind !== 'other'); });
+  }
+  function scoutRowHtml(r) {
+    const c = state.scout.pool[r.slug] || {}, p = c.price || c.now;
+    const ref = c.pre ? fmtPct((p / c.pre - 1) * 100, 0) + ' pre-hype' : r.basis === 'diy' && c.diy ? fmtPct((p / c.diy - 1) * 100, 0) + ' DIY (young)' : '—';
+    const cheap = (c.pre && p < c.pre) || (r.basis === 'diy' && c.diy && p < c.diy);
+    return `<tr><td class="jp"><a href="https://pokeca-chart.com/gr/${escapeAttr(r.slug)}/" target="_blank" rel="noopener">${escapeHtml(c.nm || r.slug)}</a></td><td>${fmtYen(p)}</td><td class="${cheap ? 'pos' : ''}">${ref}</td><td>${c.peak && c.peak > p ? '−' + ((1 - p / c.peak) * 100).toFixed(0) + '%' : '—'}</td><td>${c.gem != null ? c.gem + '%' : '—'}</td></tr>`;
+  }
   function scoutNewCount() {
     const { n } = scoutPicks();
     return n && store.get('psa10.scout.seen', 0) !== jstDayIndex() ? `${n} new` : '';
@@ -2539,17 +2554,18 @@
   function scoutCardHtml(r, i) {
     const c = state.scout.pool[r.slug] || {};
     const price = c.price || c.now;
-    const disc = c.pre ? (price / c.pre - 1) * 100 : null;
+    const diy = r.basis === 'diy' && c.diy ? c.diy : null;
+    const disc = c.pre ? (price / c.pre - 1) * 100 : null, dDiy = diy ? (price / diy - 1) * 100 : null;
     const off = c.peak && c.peak > price ? (1 - price / c.peak) * 100 : null;
     const ser = (c.ser || '').split(',').filter(Boolean).map((x) => { const [m, v] = x.split(':'); return { x: Date.parse(`20${m.slice(0, 2)}-${m.slice(2)}-15T12:00:00+09:00`), y: +v * 1000, title: `20${m.slice(0, 2)}/${m.slice(2)}` }; });
     const chart = ser.length >= 3 ? chartSlot({ type: 'line', xMode: 'time', height: 110, color: 'var(--accent)', label: 'PSA10 price, monthly',
-      refs: c.pre ? [{ y: c.pre, label: 'pre-hype', cls: 'norm', left: true }] : [], points: ser }) : '';
+      refs: c.pre ? [{ y: c.pre, label: 'pre-hype', cls: 'norm', left: true }] : diy ? [{ y: diy, label: 'DIY cost', cls: 'norm', left: true }] : [], points: ser }) : '';
     const add = `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'add-card.yml', title: 'Add card', url: c.sid ? `https://snkrdunk.com/apparels/${c.sid}` : '', notes: `Found by Scout on ${new Date().toISOString().slice(0, 10)}: ${c.nm || r.slug}` })}`;
     return `<article class="sc-card" style="--i:${i}">
       <button type="button" class="sc-img" data-big="${escapeAttr(SCOUT_IMG(r.slug).replace('-medium.', '-large.'))}" aria-label="Show the picture bigger" title="Tap for a bigger picture"><img src="${escapeAttr(SCOUT_IMG(r.slug))}" alt="${escapeAttr(c.nm || '')}" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.sc-img').classList.add('noimg')"></button>
       <div class="sc-body">
         <div class="sc-head"><b class="jp">${escapeHtml(c.nm || r.slug)}</b><span class="muted jp">${escapeHtml(c.set || '')}${c.rel ? ' · ' + escapeHtml(c.rel.replace('-', '/')) : ''}</span></div>
-        <div class="sc-price"><span class="display">${fmtYen(price)}</span>${disc != null ? `<span class="sc-pill ${disc <= 0 ? 'pos' : ''}">${disc <= 0 ? '−' : '+'}${Math.abs(disc).toFixed(0)}% vs pre-hype</span>` : ''}${off != null && off >= 10 ? `<span class="sc-pill" title="2026 peak ${fmtYen(c.peak)} (${escapeAttr(c.pk || '')})">−${off.toFixed(0)}% off its ${escapeHtml((c.pk || '').replace(/^(\d{4})-(\d{2})$/, (m, y, mo) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo - 1]))} peak</span>` : ''}</div>
+        <div class="sc-price"><span class="display">${fmtYen(price)}</span>${disc != null ? `<span class="sc-pill ${disc <= 0 ? 'pos' : ''}">${disc <= 0 ? '−' : '+'}${Math.abs(disc).toFixed(0)}% vs pre-hype</span>` : ''}${dDiy != null ? `<span class="sc-pill pos" title="DIY cost ${fmtYen(diy)}: pokeca-chart raw price + PSA Standard grading, ÷ gem rate">−${Math.abs(dDiy).toFixed(0)}% vs DIY cost</span><span class="sc-pill warn" title="No pre-hype price yet, so it's compared with the cost of grading a raw copy. Young cards tend to keep drifting down for their first 9 months.">Young card</span>` : ''}${off != null && off >= 10 ? `<span class="sc-pill" title="2026 peak ${fmtYen(c.peak)} (${escapeAttr(c.pk || '')})">−${off.toFixed(0)}% off its ${escapeHtml((c.pk || '').replace(/^(\d{4})-(\d{2})$/, (m, y, mo) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo - 1]))} peak</span>` : ''}</div>
         <ul class="sc-why">${r.reasons.slice(1).filter((w) => !/off its 2026 peak/.test(w)).map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
         ${chart ? `<div class="sc-chart">${chart}</div>` : ''}
         <div class="sc-actions">
@@ -2565,6 +2581,7 @@
     const sc = state.scout;
     if (!sc || !sc.ranked) { el.innerHTML = `<div class="empty-state">No scout data yet. The next full price check reads the candidates.</div>`; return; }
     const { picks, list } = scoutPicks();
+    const near = scoutNear();
     const other = store.get('psa10.scout.other', false);
     const hidden = store.get('psa10.scout.dismissed', []);
     const pool = Object.values(sc.pool || {}), read = pool.filter((c) => c.read).length;
@@ -2576,10 +2593,15 @@
       </div>
       ${picks.length ? `<div class="sc-grid">${picks.map(scoutCardHtml).join('')}</div>` : `<div class="empty-state">Nothing fits right now${hidden.length ? ' (some cards are hidden)' : ''}.</div>`}
       <details class="sc-all"><summary>All ${list.length} candidates, best first</summary>
-        <table class="sc-table"><thead><tr><th>Card</th><th>PSA10</th><th>vs pre-hype</th><th>off peak</th><th>Gem rate</th></tr></thead><tbody>
-        ${list.map((r) => { const c = sc.pool[r.slug] || {}, p = c.price || c.now; return `<tr><td class="jp"><a href="https://pokeca-chart.com/gr/${escapeAttr(r.slug)}/" target="_blank" rel="noopener">${escapeHtml(c.nm || r.slug)}</a></td><td>${fmtYen(p)}</td><td class="${c.pre && p < c.pre ? 'pos' : ''}">${c.pre ? fmtPct((p / c.pre - 1) * 100, 0) : '—'}</td><td>${c.peak && c.peak > p ? '−' + ((1 - p / c.peak) * 100).toFixed(0) + '%' : '—'}</td><td>${c.gem != null ? c.gem + '%' : '—'}</td></tr>`; }).join('')}
+        <table class="sc-table"><thead><tr><th>Card</th><th>PSA10</th><th>vs reference</th><th>off peak</th><th>Gem rate</th></tr></thead><tbody>
+        ${list.map(scoutRowHtml).join('')}
         </tbody></table></details>
-      <p class="tr-note">How it picks: modern secret rares (released 2021 or later) with a PSA10 price of ¥15k–150k on pokeca-chart that you don't track yet, trading at least 3 times a month, at most 10% above their pre-hype price (the Jul–Dec 2025 median, skipping each card's first three months). Ranked by how far below that level they are, how much of the 2026 peak they gave back, and a slab premium below its own norm; cards with a 90%+ gem rate lose a little (easy to grade, keeps getting diluted). Each day brings 3 new cards; a card isn't shown again for 30 days while there are ones you haven't seen. Full checks refresh all ${pool.length} candidates' prices and re-read about 20 card pages (${read} have data so far).${hidden.length ? ` ${hidden.length} card${hidden.length === 1 ? '' : 's'} hidden in this browser · <button type="button" class="linkish" id="sc-reset">show again</button>` : ''}</p>`;
+      ${near.length ? `<details class="sc-all"><summary>Close to cheap: ${near.length} card${near.length === 1 ? '' : 's'} 10–25% above their pre-hype price</summary>
+        <p class="tr-note">Not picks: these pass every other rule but cost more than Scout's 10% allowance over their pre-hype price. They are the ones most likely to qualify if the market cools.</p>
+        <table class="sc-table"><thead><tr><th>Card</th><th>PSA10</th><th>vs reference</th><th>off peak</th><th>Gem rate</th></tr></thead><tbody>
+        ${near.map(scoutRowHtml).join('')}
+        </tbody></table></details>` : ''}
+      <p class="tr-note">How it picks: modern secret rares (released 2021 or later) with a PSA10 price of ¥5k–150k on pokeca-chart that you don't track yet, trading at least 3 times a month, at most 10% above their pre-hype price (the Jul–Dec 2025 median, skipping each card's first three months). Young cards without a pre-hype price are compared with the cost of grading a raw copy yourself instead: only with a 75%+ gem rate, at least 3 months old and at or below that cost (pokeca-chart's raw price runs above SNKRDUNK A-rank, so check the card's numbers), and ranked lower while they're under 9 months old. Ranked by how far below that level they are, how much of the 2026 peak they gave back, and a slab premium below its own norm; cards with a 90%+ gem rate lose a little (easy to grade, keeps getting diluted). Each day brings 3 new cards; a card isn't shown again for 30 days while there are ones you haven't seen. Full checks refresh all ${pool.length} candidates' prices and re-read 20–40 card pages (${read} have data so far).${hidden.length ? ` ${hidden.length} card${hidden.length === 1 ? '' : 's'} hidden in this browser · <button type="button" class="linkish" id="sc-reset">show again</button>` : ''}</p>`;
     el.querySelector('#sc-other').addEventListener('change', (e) => { store.set('psa10.scout.other', e.target.checked); renderScout(); updateCounts(); });
     el.querySelectorAll('.sc-dismiss').forEach((b) => b.addEventListener('click', () => { const h = store.get('psa10.scout.dismissed', []); h.push(b.dataset.slug); store.set('psa10.scout.dismissed', h); renderScout(); updateCounts(); }));
     el.querySelectorAll('.sc-img').forEach((b) => b.addEventListener('click', () => openLightbox(b.dataset.big, b.querySelector('img').alt)));

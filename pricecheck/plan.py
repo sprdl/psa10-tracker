@@ -53,7 +53,8 @@ def load_cards(root=ROOT):
     return cards
 
 
-SCOUT_READS = 20  # scout card pages read per full check (about 2.5 s each)
+SCOUT_READS = 20  # scout card pages read per full check (about 2.5 s each); more as the list grows,
+SCOUT_MAX_READS = 40  # so each card is re-read about every 9 runs (pokeca_scout.js), never more than this
 SCOUT_EVERY_H = 40  # Scout runs when data/scout.json is older than this (about every other day)
 
 
@@ -124,7 +125,7 @@ def build_plan(root=ROOT, now=None):
             slug = pokeca_slug(v.get("name"))
             if slug:
                 tracked_slugs.add(slug)
-    scout = {"skip": sorted(tracked_slugs), "read": {}, "n": SCOUT_READS}
+    scout = {"skip": sorted(tracked_slugs), "read": {}, "n": SCOUT_READS, "max": SCOUT_MAX_READS}
     sp = root / "data" / "scout.json"
     if sp.exists():
         try:

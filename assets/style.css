@@ -1134,6 +1134,7 @@ a.pl-stat.pl-link:hover { border-color: var(--accent); background: var(--hover);
 .sc-price .display { font-size: 28px; line-height: 1; margin-right: 4px; }
 .sc-pill { font: 400 11px var(--sans); padding: 3px 7px; border-radius: 999px; border: 1px solid var(--line-3); color: var(--muted); }
 .sc-pill.pos { color: var(--green); border-color: rgba(69, 212, 131, 0.45); }
+.sc-pill.warn { color: var(--amber); border-color: currentColor; }
 .sc-why { margin: 2px 0 0; padding-left: 16px; font-size: 12px; line-height: 1.5; color: var(--soft); }
 .sc-chart { margin-top: 2px; }
 .sc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }

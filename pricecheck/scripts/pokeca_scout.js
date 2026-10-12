@@ -2,8 +2,9 @@
 // https://pokeca-chart.com/gr/all-card/?sort=newest (step 4, after the My-tier extractor) with SCOUT
 // filled in from `python3 pricecheck/plan.py` ("SCOUT = {...}" line). It reads the card list on the
 // page, keeps modern secret rares (card number above the set size, released 2021 or later, PSA10
-// ¥15k–150k) that aren't tracked or dismissed, then opens up to SCOUT.n of their card pages in hidden
-// same-origin iframes (the ones never read or read longest ago) and reads each price chart's own data
+// ¥5k–150k; the floor was ¥15k until 2026-10-13) that aren't tracked or dismissed, then opens their card
+// pages in hidden same-origin iframes (the ones never read or read longest ago): SCOUT.n of them, or
+// enough to re-read the whole list about every 9 runs (~18 days) as it grows, never more than SCOUT.max and reads each price chart's own data
 // (React props) plus the PSA population and the SNKRDUNK link on the page. No fetch/XHR.
 // Returns at once; poll window.__pj like snkrdunk_full.js. About 2.5 s per card page.
 // Lines (decoded by scripts/scout.py into data/scout.json):
@@ -11,7 +12,7 @@
 //   SC {json}                                 one per card page read (metrics below)
 //   SC! <slug> <uri-encoded error>
 (() => {
-  const SCOUT = { skip: [], read: {}, n: 20 };
+  const SCOUT = { skip: [], read: {}, n: 20, max: 40 };
   if (window.__pj && !window.__pj.done) return `already running ${window.__pj.i}/${window.__pj.n}`;
   const q = window.__pj = { n: 0, i: 0, lines: [], done: false };
   const sleep = window.__wsleep || (window.__wsleep = (() => { // timers from a Web Worker: a hidden tab throttles page timers to 1/s, then 1/min
@@ -38,11 +39,11 @@
     const skip = new Set(SCOUT.skip);
     const cand = Object.entries(seen).filter(([slug, c]) => {
       const mm = c.code.match(/^(\S+)\s+(\d+)\/(\d+)$/);
-      return mm && !/-p$/i.test(mm[1]) && +mm[2] > +mm[3] && c.rel >= '2021-01' && c.price >= 15000 && c.price <= 150000 && !skip.has(slug);
+      return mm && !/-p$/i.test(mm[1]) && +mm[2] > +mm[3] && c.rel >= '2021-01' && c.price >= 5000 && c.price <= 150000 && !skip.has(slug);
     });
     q.lines.push('SCP ' + cand.map(([slug, c]) => `${slug}:${c.price}`).join(','));
     // 2) card pages: never read first, then the longest ago
-    const todo = cand.map(([slug, c]) => ({ slug, c, r: SCOUT.read[slug] || '' })).sort((a, b) => (a.r < b.r ? -1 : a.r > b.r ? 1 : 0)).slice(0, SCOUT.n);
+    const todo = cand.map(([slug, c]) => ({ slug, c, r: SCOUT.read[slug] || '' })).sort((a, b) => (a.r < b.r ? -1 : a.r > b.r ? 1 : 0)).slice(0, Math.min(SCOUT.max || SCOUT.n, Math.max(SCOUT.n, Math.ceil(cand.length / 9))));
     q.n = todo.length;
     for (const { slug, c } of todo) {
       const f = document.createElement('iframe');
