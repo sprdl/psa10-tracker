@@ -139,10 +139,10 @@ def main():
           + (f" (as of {card['population_as_of']})" if card.get("population_as_of") else "")
           + (f"  [{card.get('population_error') or card.get('population_note')}]" if card.get("population_error") or card.get("population_note") else ""))
     if rp and gem:
-        prio = (ask or 0) > STANDARD_CAP
-        fees = PRIORITY_FEES if prio else DIY_FEES
+        tier = "Express" if (ask or 0) > PRIORITY_CAP else "Priority" if (ask or 0) > STANDARD_CAP else "Standard"
+        fees = {"Express": 29980 + 2450, "Priority": PRIORITY_FEES, "Standard": DIY_FEES}[tier]
         diy = (rp + fees) / (gem / 100)
-        print(f"          DIY replacement cost ({yen(rp)} + {yen(fees)} PSA {'Priority' if prio else 'Standard'}) ÷ {gem}% = {yen(diy)}"
+        print(f"          DIY replacement cost ({yen(rp)} + {yen(fees)} PSA {tier}) ÷ {gem}% = {yen(diy)}"
               + (f"; PSA10 ask is {pct(ask, diy)} vs DIY" if ask else "")
               + (f"; self-grade margin {(1 - diy / ask) * 100:.0f}% (the site's Self-grade chip shows at 15%+)" if ask and ask <= PRIORITY_CAP else "")
               + ("  — over Priority's ¥250,000 declared-value cap: only Express (¥29,980) applies" if (ask or 0) > PRIORITY_CAP else ""))
