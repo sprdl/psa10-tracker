@@ -7,8 +7,8 @@
       "url": "https://snkrdunk.com/apparels/138599",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/20230913100335-0.webp?size=l",
       "favorite_count": 811,
-      "psa10_population": 10846,
-      "psa10_gem_rate_pct": 88,
+      "psa10_population": 11185,
+      "psa10_gem_rate_pct": 87.8,
       "grades": {
         "psa10": {
           "lowest_price": 38500,
@@ -248,7 +248,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 28000,
@@ -311,15 +311,17 @@
           "written": "2026-10-08T07:32:31+09:00"
         },
         "verdict_price_ref": 37260
-      }
+      },
+      "psa_total_graded": 12735,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "ピカチュウV CSR[S8b 222/184](ハイクラスパック「VMAXクライマックス」)",
       "url": "https://snkrdunk.com/apparels/96712",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/4b947d82-02ca-4a8e-9aec-7eea59159954.webp?size=l",
       "favorite_count": 804,
-      "psa10_population": 8140,
-      "psa10_gem_rate_pct": 79.9,
+      "psa10_population": 8580,
+      "psa10_gem_rate_pct": 79.7,
       "grades": {
         "psa10": {
           "lowest_price": 34780,
@@ -564,7 +566,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 22000,
@@ -620,15 +622,17 @@
           "written": "2026-10-08T07:32:31+09:00"
         },
         "verdict_price_ref": 44000
-      }
+      },
+      "psa_total_graded": 10760,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "ピカチュウex SAR [SV8 132/106](拡張パック「超電ブレイカー」)",
       "url": "https://snkrdunk.com/apparels/408333",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/8c2d34aa-dab1-4c89-b51c-5dd44b8eaca6.webp?size=l",
       "favorite_count": 1889,
-      "psa10_population": 20026,
-      "psa10_gem_rate_pct": 88.7,
+      "psa10_population": 20476,
+      "psa10_gem_rate_pct": 88.6,
       "grades": {
         "psa10": {
           "lowest_price": 98000,
@@ -878,7 +882,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 78000,
@@ -920,14 +924,16 @@
           "written": "2026-10-10T23:00:16+09:00"
         },
         "verdict_price_ref": 100000
-      }
+      },
+      "psa_total_graded": 23123,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "ブラッキーex SAR [SV8a 217/187](ハイクラスパック「テラスタルフェスex」)",
       "url": "https://snkrdunk.com/apparels/455596",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/79302385-1b7d-4fb5-bd23-b78bd029a9df.webp?size=l",
       "favorite_count": 4104,
-      "psa10_population": 80321,
+      "psa10_population": 82856,
       "psa10_gem_rate_pct": 86.9,
       "grades": {
         "psa10": {
@@ -1188,7 +1194,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 58000,
@@ -1251,7 +1257,9 @@
           "written": "2026-10-08T07:32:31+09:00"
         },
         "verdict_price_ref": 71800
-      }
+      },
+      "psa_total_graded": 95372,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "ゲンガーex SAR [M6a 131/103](拡張パック「30th CELEBRATION」)",
@@ -2187,8 +2195,8 @@
       "url": "https://snkrdunk.com/apparels/224087",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/f5941c92-741f-43c8-a292-ef1e8f876517.webp?size=l",
       "favorite_count": 1213,
-      "psa10_population": 15191,
-      "psa10_gem_rate_pct": 84.6,
+      "psa10_population": 15446,
+      "psa10_gem_rate_pct": 84.5,
       "grades": {
         "psa10": {
           "lowest_price": 56000,
@@ -2422,7 +2430,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 47000,
@@ -2452,15 +2460,17 @@
           "written": "2026-10-11T08:33:23+09:00"
         },
         "verdict_price_ref": 54999
-      }
+      },
+      "psa_total_graded": 18269,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "レシラムex BWR [SV11W 174/086](拡張パック「ホワイトフレア」)",
       "url": "https://snkrdunk.com/apparels/585221",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/f95e7dfe-3afb-4297-802f-5c36715d9e6e.webp?size=l",
       "favorite_count": 1903,
-      "psa10_population": 13363,
-      "psa10_gem_rate_pct": 82.2,
+      "psa10_population": 13910,
+      "psa10_gem_rate_pct": 82.0,
       "grades": {
         "psa10": {
           "lowest_price": 121800,
@@ -2707,7 +2717,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 95000,
@@ -2749,15 +2759,17 @@
           "written": "2026-10-10T23:00:16+09:00"
         },
         "verdict_price_ref": 122000
-      }
+      },
+      "psa_total_graded": 16973,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
       "url": "https://snkrdunk.com/apparels/105553",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/d3c64eb8-2216-456a-8411-6dd0466add9d.webp?size=l",
       "favorite_count": 2239,
-      "psa10_population": 17949,
-      "psa10_gem_rate_pct": 83.8,
+      "psa10_population": 18404,
+      "psa10_gem_rate_pct": 83.7,
       "grades": {
         "psa10": {
           "lowest_price": 77000,
@@ -3003,7 +3015,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 56000,
@@ -3022,7 +3034,9 @@
           "written": "2026-10-10T07:25:49+09:00"
         },
         "verdict_price_ref": 76000
-      }
+      },
+      "psa_total_graded": 21995,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "エーフィex SAR仕様 [MF 043/040](構築デッキ「30th CELEBRATION プレミアムデッキセット エーフィ・ブラッキー」)",
@@ -3320,8 +3334,8 @@
       "url": "https://snkrdunk.com/apparels/91178",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/108b082f-ed3d-4633-81c7-2ea59448ff54.webp?size=l",
       "favorite_count": 1479,
-      "psa10_population": 8102,
-      "psa10_gem_rate_pct": 81.5,
+      "psa10_population": 8206,
+      "psa10_gem_rate_pct": 81.2,
       "grades": {
         "psa10": {
           "lowest_price": 376000,
@@ -3552,7 +3566,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 265000,
@@ -3587,14 +3601,16 @@
           "written": "2026-10-10T10:24:18+09:00"
         },
         "verdict_price_ref": 395000
-      }
+      },
+      "psa_total_graded": 10104,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "メガリザードンXex SAR [M2 110/080](拡張パック「インフェルノX」)",
       "url": "https://snkrdunk.com/apparels/704401",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/13eca26e-6c94-43d7-be39-b9e2e083192e.webp?size=l",
       "favorite_count": 4661,
-      "psa10_population": 51341,
+      "psa10_population": 55308,
       "psa10_gem_rate_pct": 86.8,
       "grades": {
         "psa10": {
@@ -3856,7 +3872,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 95000,
@@ -3917,14 +3933,16 @@
           "written": "2026-10-08T07:32:31+09:00"
         },
         "verdict_price_ref": 139999
-      }
+      },
+      "psa_total_graded": 63727,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
       "url": "https://snkrdunk.com/apparels/724996",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/896d5015-d88c-4882-a045-7c567fa60d6f.webp?size=l",
       "favorite_count": 3173,
-      "psa10_population": 37021,
+      "psa10_population": 42090,
       "psa10_gem_rate_pct": 88.8,
       "grades": {
         "psa10": {
@@ -4184,7 +4202,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 52000,
@@ -4238,14 +4256,16 @@
           "written": "2026-10-08T07:32:31+09:00"
         },
         "verdict_price_ref": 69000
-      }
+      },
+      "psa_total_graded": 47396,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "リザードンVSTAR SAR[s12a 212/172](ハイクラスパック「VSTARユニバース」)",
       "url": "https://snkrdunk.com/apparels/103079",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/8f808e7f-8f06-4ff3-b02e-76ce37c237a7.webp?size=l",
       "favorite_count": 1616,
-      "psa10_population": 39174,
+      "psa10_population": 40230,
       "psa10_gem_rate_pct": 86.6,
       "grades": {
         "psa10": {
@@ -4484,7 +4504,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 21000,
@@ -4503,15 +4523,17 @@
           "written": "2026-10-10T07:25:49+09:00"
         },
         "verdict_price_ref": 27400
-      }
+      },
+      "psa_total_graded": 46471,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "ミュウツーVSTAR SAR[s12a 221/172](ハイクラスパック「VSTARユニバース」)",
       "url": "https://snkrdunk.com/apparels/103080",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/66b4b560-8828-4792-9044-a3e9ebc51f7b.webp?size=l",
       "favorite_count": 1211,
-      "psa10_population": 34343,
-      "psa10_gem_rate_pct": 89,
+      "psa10_population": 35454,
+      "psa10_gem_rate_pct": 89.0,
       "grades": {
         "psa10": {
           "lowest_price": 26666,
@@ -4763,7 +4785,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 20000,
@@ -4798,15 +4820,17 @@
           "written": "2026-10-08T07:32:31+09:00"
         },
         "verdict_price_ref": 27000
-      }
+      },
+      "psa_total_graded": 39819,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "メガリザードンXex MA [M2a 223/193](ハイクラスパック「MEGAドリームex」)",
       "url": "https://snkrdunk.com/apparels/722239",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/7bf60833-bb2f-424b-932a-9d618d4a3e17.webp?size=l",
       "favorite_count": 2957,
-      "psa10_population": 66963,
-      "psa10_gem_rate_pct": 91.2,
+      "psa10_population": 80027,
+      "psa10_gem_rate_pct": 91.1,
       "grades": {
         "psa10": {
           "lowest_price": 11650,
@@ -5059,7 +5083,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 8500,
@@ -5113,15 +5137,17 @@
           "written": "2026-10-08T07:32:31+09:00"
         },
         "verdict_price_ref": 12000
-      }
+      },
+      "psa_total_graded": 87827,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "メガゲンガーex MA [M2a 230/193](ハイクラスパック「MEGAドリームex」)",
       "url": "https://snkrdunk.com/apparels/730952",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/88955e51-aed8-4ece-814d-067af77f658e.webp?size=l",
       "favorite_count": 1349,
-      "psa10_population": 44068,
-      "psa10_gem_rate_pct": 91.1,
+      "psa10_population": 53107,
+      "psa10_gem_rate_pct": 91.0,
       "grades": {
         "psa10": {
           "lowest_price": 6998,
@@ -5384,7 +5410,7 @@
           "listings_as_of": "2026-10-12T07:37:33+09:00"
         }
       },
-      "population_as_of": "2026-10-12T07:37:33+09:00",
+      "population_as_of": "2026-10-12T14:07:24+09:00",
       "analysis": {
         "tiers": {
           "definitely_buy": 5800,
@@ -5438,14 +5464,15 @@
           "written": "2026-10-08T07:32:31+09:00"
         },
         "verdict_price_ref": 7200
-      }
+      },
+      "psa_total_graded": 58345,
+      "population_source": "psa"
     },
     {
       "card_name_ja": "ミュウex SAR [SV4a 347/190](ハイクラスパック「シャイニートレジャーex」)",
       "url": "https://snkrdunk.com/apparels/164250",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/a27edfee-aa51-420f-80e1-c2cdad08b778.webp?size=l",
       "favorite_count": 1650,
-      "population_note": "altema not checked this run (no altema page on file yet)",
       "grades": {
         "psa10": {
           "lowest_price": 132000,
@@ -5723,14 +5750,18 @@
           "written": "2026-10-10T22:59:39+09:00"
         },
         "verdict_price_ref": 133500
-      }
+      },
+      "psa10_population": 27395,
+      "psa10_gem_rate_pct": 84.0,
+      "psa_total_graded": 32617,
+      "population_source": "psa",
+      "population_as_of": "2026-10-12T14:07:24+09:00"
     },
     {
       "card_name_ja": "バンギラスV SR: SA[S5I 077/070](拡張パック「一撃マスター」)",
       "url": "https://snkrdunk.com/apparels/91189",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/201192bf-fc3b-4e28-900a-5b69920f1e1a.webp?size=l",
       "favorite_count": 280,
-      "population_note": "altema not checked this run (no altema page on file yet)",
       "grades": {
         "psa10": {
           "lowest_price": 156000,
@@ -5960,14 +5991,18 @@
           "written": "2026-10-12T07:38:19+09:00"
         },
         "verdict_price_ref": 156000
-      }
+      },
+      "psa10_population": 2514,
+      "psa10_gem_rate_pct": 82.2,
+      "psa_total_graded": 3059,
+      "population_source": "psa",
+      "population_as_of": "2026-10-12T14:07:24+09:00"
     },
     {
       "card_name_ja": "カイリューV SR: SA[S7R 074/067](拡張パック「蒼空ストリーム」)",
       "url": "https://snkrdunk.com/apparels/91166",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/d6dfc987-44a6-4f32-9eae-b921005db8b1.webp?size=l",
       "favorite_count": 487,
-      "population_note": "altema not checked this run (no altema page on file yet)",
       "grades": {
         "psa10": {
           "lowest_price": 148000,
@@ -6206,14 +6241,18 @@
           "written": "2026-10-10T22:59:39+09:00"
         },
         "verdict_price_ref": 147000
-      }
+      },
+      "psa10_population": 4669,
+      "psa10_gem_rate_pct": 85.4,
+      "psa_total_graded": 5465,
+      "population_source": "psa",
+      "population_as_of": "2026-10-12T14:07:24+09:00"
     },
     {
       "card_name_ja": "リザードンex SAR[SV3 134/108](拡張パック「黒炎の支配者」)",
       "url": "https://snkrdunk.com/apparels/132279",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/977e1929-8ed0-4ddb-8f7d-5c2b5d1ceb4e.webp?size=l",
       "favorite_count": 2321,
-      "population_note": "altema not checked this run (no altema page on file yet)",
       "grades": {
         "psa10": {
           "lowest_price": 75500,
@@ -6502,14 +6541,18 @@
           "written": "2026-10-10T23:00:16+09:00"
         },
         "verdict_price_ref": 74000
-      }
+      },
+      "psa10_population": 20597,
+      "psa10_gem_rate_pct": 87.9,
+      "psa_total_graded": 23443,
+      "population_source": "psa",
+      "population_as_of": "2026-10-12T14:07:24+09:00"
     },
     {
       "card_name_ja": "ピカチュウ : プロモ [SVP EN 085](「ゴッホ展」 プロモーションカード「SVP EN」) 【英語版】",
       "url": "https://snkrdunk.com/apparels/146897",
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/64513949-279c-493a-995e-ee87c91dbbb9.webp?size=l",
       "favorite_count": 3223,
-      "population_note": "altema not checked this run (no altema page on file yet)",
       "grades": {
         "psa10": {
           "lowest_price": 430000,
@@ -6793,7 +6836,12 @@
           "written": "2026-10-11T09:55:20+09:00"
         },
         "verdict_price_ref": 425000
-      }
+      },
+      "psa10_population": 50446,
+      "psa10_gem_rate_pct": 42.3,
+      "psa_total_graded": 119217,
+      "population_source": "psa",
+      "population_as_of": "2026-10-12T14:07:24+09:00"
     }
   ],
   "pokeca_chart_index": {
