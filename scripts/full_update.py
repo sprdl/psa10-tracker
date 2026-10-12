@@ -232,6 +232,24 @@ def run(cmd):
     return r.returncode
 
 
+def push_once():
+    """One push for everything the publish step committed (snapshot, My-tier index, premium, holdings prices,
+    scout, photo URLs). Before 2026-10-13 each of them pushed on its own."""
+    ahead = subprocess.run(["git", "rev-list", "--count", "@{u}..HEAD"], cwd=ROOT, text=True, capture_output=True)
+    n = int(ahead.stdout.strip()) if ahead.returncode == 0 and ahead.stdout.strip().isdigit() else None
+    if n == 0:
+        print("\nNothing new to push (no new commits: the snapshot may match the last one).")
+        return
+    print()
+    push = subprocess.run(["git", "push", "-q"], cwd=ROOT, text=True, capture_output=True)
+    if push.returncode != 0:
+        die("git push failed — the snapshot and the other updates are committed locally but NOT published:\n"
+            + (push.stderr or push.stdout).strip()
+            + "\nCheck the remote/auth (an auth error: the token in .psa10-git-credentials may have expired), "
+              "then run `git push` in the repo on the Mac.")
+    print(f"Pushed{f' {n} commit(s)' if n else ''}. GitHub Actions will redeploy the site in a minute or two.")
+
+
 def persist_images(raw, cards_meta, dry):
     for sid, rc in raw["cards"].items():
         img = rc.get("image_url")
@@ -251,8 +269,7 @@ def persist_images(raw, cards_meta, dry):
                     c["image_url"] = img
             p.write_text(json.dumps(d, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
             run(["git", "add", str(p)])
-            run(["git", "commit", "-q", "-m", f"pricecheck: photo URL for {sid}"])
-            run(["git", "push", "-q"])
+            run(["git", "commit", "-q", "-m", f"pricecheck: photo URL for {sid}"])   # pushed by push_once()
 
 
 def main():
@@ -323,25 +340,33 @@ def main():
         return
 
     print()
-    passthrough = [a for a in args if a == "--no-push"]
-    if run([sys.executable, "scripts/add_snapshot.py", str(out_path), *passthrough]) != 0:
+    # Every publish sub-step commits on its own (same commits as before) but doesn't push; one push at
+    # the end sends them all. --no-push: commit nothing beyond what add_snapshot.py does with it.
+    no_push = "--no-push" in args
+    sub_push = False if no_push else "commit"
+    if run([sys.executable, "scripts/add_snapshot.py", str(out_path), "--no-push"]) != 0:
         die("add_snapshot.py failed (see above)")
     if mytier:
         ci = incoming / "custom-index.json"
         ci.write_text(json.dumps(mytier, ensure_ascii=False), encoding="utf-8")
         pv = (raw["index"].get("psa10") or {}).get("latest_index_value_jpy")
         print()
-        run([sys.executable, "scripts/add_custom_index.py", str(ci), *(["--pokeca", str(int(pv))] if pv else []), *passthrough])
+        run([sys.executable, "scripts/add_custom_index.py", str(ci), *(["--pokeca", str(int(pv))] if pv else []),
+             "--no-push" if no_push else "--commit-only"])
     if prem:
         print()
-        premium.save(prem, ROOT, push="--no-push" not in args)
+        premium.save(prem, ROOT, push=sub_push)
     if plan.get("held") or held:   # also prunes items that were opened since the last run
         print()
-        holdings_prices.save(held, ROOT, push="--no-push" not in args)
+        holdings_prices.save(held, ROOT, push=sub_push)
     if sc:
         print()
-        scout.update(*sc, root=ROOT, push="--no-push" not in args)
+        scout.update(*sc, root=ROOT, push=sub_push)
     persist_images(raw, cards_meta, dry)
+    if not no_push:
+        push_once()
+    import runclock
+    runclock.lap("published")
     print_eval_due()
     import review_due
     review_due.print_review_due(ROOT)
@@ -415,15 +440,15 @@ def print_followups():
     import mercari, psa_backlog, review_due, sealed_info, set_story
     todo = []
     for step, label, count in (
-        ("8b", "evaluate", lambda: min(3, len(eval_due()))),
-        ("8b", "sell tiers", lambda: min(3, len(sell_due()))),
-        ("8d", "review buy tiers", lambda: min(review_due.per_run(review_due.compute(ROOT)[0]), len(review_due.compute(ROOT)[0]))),
-        ("8c", "stories", lambda: min(3, len(set_story.missing()))),
+        ("8b", "evaluate (pricecheck/steps/8b-evaluate.md)", lambda: min(3, len(eval_due()))),
+        ("8b", "sell tiers (pricecheck/steps/8b-evaluate.md)", lambda: min(3, len(sell_due()))),
+        ("8d", "review buy tiers (pricecheck/steps/8d-review.md)", lambda: min(review_due.per_run(review_due.compute(ROOT)[0]), len(review_due.compute(ROOT)[0]))),
+        ("8c", "stories (pricecheck/steps/8c-stories.md)", lambda: min(3, len(set_story.missing()))),
         ("8f", "Mercari (pricecheck/MERCARI.md)", lambda: len(mercari.due(ROOT))),
-        ("8g", "refresh verdicts", lambda: min(review_due.TEXT_PER_RUN, len(review_due.compute(ROOT)[1]))),
-        ("8h", "sealed info", lambda: len(sealed_info.due(ROOT))),
-        ("8i", "PSA backlog (WebFetch, then psa_backlog.py from-page)", lambda: psa_backlog.due_count(ROOT)),
-        ("8j", "weekly recap note (scripts/recap.py)", lambda: 1 if __import__("recap").due(ROOT) else 0),
+        ("8g", "refresh verdicts (pricecheck/steps/8g-refresh-verdicts.md)", lambda: min(review_due.TEXT_PER_RUN, len(review_due.compute(ROOT)[1]))),
+        ("8h", "sealed info (pricecheck/steps/8h-sealed.md)", lambda: len(sealed_info.due(ROOT))),
+        ("8i", "PSA backlog (pricecheck/steps/8i-psa-backlog.md)", lambda: psa_backlog.due_count(ROOT)),
+        ("8j", "weekly recap note (pricecheck/steps/8j-recap.md)", lambda: 1 if __import__("recap").due(ROOT) else 0),
     ):
         try:
             n = count()
@@ -436,7 +461,7 @@ def print_followups():
         freshness.print_stale(ROOT)
     except Exception as e:  # noqa: BLE001
         print(f"\nFRESHNESS: skipped ({e})")
-    print("\nFOLLOW-UPS (FULL-CHECK step 8; required): " + (" · ".join(todo) if todo else "none") + "  [8e event study is checked separately]")
+    print("\nFOLLOW-UPS (FULL-CHECK step 8; required; read each step's file first): " + (" · ".join(todo) if todo else "none") + "  [8e event study is checked separately: pricecheck/steps/8e-event-study.md]")
 
 
 def print_story_due():

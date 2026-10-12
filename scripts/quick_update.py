@@ -307,16 +307,19 @@ def main():
     r = subprocess.run([sys.executable, str(root / "scripts" / "add_snapshot.py"), str(built), *passthrough], cwd=root)
     if r.returncode == 0:
         sys.path.insert(0, str(root / "scripts"))
+        import runclock
+        runclock.lap("published")
+        sys.path.insert(0, str(root / "scripts"))
         import mercari
         mercari.print_due(root)
         import sealed_info
         sealed_info.print_due(root)
         todo = [f"{lbl}: {n}" for lbl, n in (("Mercari (pricecheck/MERCARI.md)", len(mercari.due(root))),
-                                             ("sealed info (FULL-CHECK step 8h)", len(sealed_info.due(root)))) if n]
+                                             ("sealed info (pricecheck/steps/8h-sealed.md)", len(sealed_info.due(root)))) if n]
         import eval_queue
         ev = eval_queue.print_due(root, step="quick check Q5")
         if ev:
-            todo.insert(0, f"evaluate (pokemon-tcg-card-evaluation): {min(eval_queue.PER_RUN, len(ev))}")
+            todo.insert(0, f"evaluate (pokemon-tcg-card-evaluation; pricecheck/steps/8b-evaluate.md): {min(eval_queue.PER_RUN, len(ev))}")
         import freshness
         freshness.print_stale(root)
         print("\nFOLLOW-UPS (required before the chat message): " + (" · ".join(todo) if todo else "none"))

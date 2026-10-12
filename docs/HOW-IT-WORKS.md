@@ -157,12 +157,16 @@ data/incoming/                 drop folder for price-check output (gitignored)
 scripts/*.py                   publishing, Action and maintenance scripts (section 11)
 scripts/odds_model_builder.js  in-browser helper to rebuild the odds model and hype pool (monthly)
 scripts/value_model_builder.js in-browser helper to rebuild the value model (monthly)
+pricecheck/start.py            the price check's one setup call: mode, procedure, plan and browser calls
 pricecheck/plan.py             what today's full check reads
+pricecheck/jsrun.py            ready-to-paste browser calls with a hash-checked script cache (see below)
 pricecheck/scripts/*.js        in-page scripts the price checks run in your browser
 pricecheck/scripts/assemble.py turns the decoded reads into a snapshot
-pricecheck/FULL-CHECK.md       the full-check procedure the price-check skill follows
+pricecheck/FULL-CHECK.md       the full-check procedure the price-check skill follows (core steps 0–7)
+pricecheck/QUICK-CHECK.md      the quick-check procedure
+pricecheck/steps/*.md          full-check steps only some runs need (1b, 1c, 5b, 6, 7b, 8b–8j), read on demand
 pricecheck/MERCARI.md          the Mercari step (full and quick checks)
-pricecheck/references/         the skill's card list (cards.json), PSA tier state, manual fallback
+pricecheck/references/         the skill's card list (cards.json), PSA tier state, manual fallback, snapshot shape
 
 .github/workflows/*.yml        deploy + the Actions behind the site's forms (section 10)
 .github/ISSUE_TEMPLATE/*.yml   the 13 issue forms the site opens
@@ -252,6 +256,9 @@ bracket format when adding cards by hand.
 
 The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
 
+0. `pricecheck/start.py` is the one setup call: it runs the status and mode check, lists card
+   requests, starts the run clock (`scripts/runclock.py`, local timings in `data/incoming/`), and prints
+   the procedure plus today's plan and browser calls.
 1. `pricecheck/plan.py` decides what today's run reads: which cards get their listings pages,
    which PSA pop-report set pages are due (young cards daily, mature ones on Mondays), which bought
    items need a price (`HELD`), the slab-premium cards (`PREM`), whether Scout runs (`SCOUT`), and the
@@ -261,12 +268,21 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    sealed items that aren't tracked), `psa_pop.js` (PSA10 population and gem rate from PSA's own pop report, signed in),
    `pokeca_both.js` (both pokeca-chart indices), the My-tier extractor
    (`add_custom_index.py --print-js`), `pokeca_premium.js` (slab premium and the hype reading) and
-   `pokeca_scout.js` (Scout candidates). Each returns compact lines.
+   `pokeca_scout.js` (Scout candidates). Each returns compact lines. The three sites run at the same
+   time in separate tabs; each site still reads its own pages one after another.
+   The scripts reach the page through `pricecheck/jsrun.py` (since 2026-10-13): each site's
+   `localStorage` keeps a copy of the script text (`pc:js:<name>`), and a short RUN call checks that
+   copy's SHA-256 against the repo, fills in today's arguments (built by Python from the plan), checks
+   the SHA-256 of the filled-in script, and only then runs it. A missing or outdated copy runs nothing
+   and asks for the STORE call, which checks its own pasted text before saving. If a site blocks it,
+   `jsrun.py inline <name>` prints the filled-in script to paste directly, as before.
+   `tests/test_jsrun.py` checks in Node that what runs is byte-for-byte the filled-in script.
 3. `python3 scripts/full_update.py -` takes all the lines on stdin. It refuses the run when a planned
    step left no lines (the completeness guard), decodes the lines into the raw JSON shape,
    runs `pricecheck/scripts/assemble.py` against the live snapshot (printing warnings and changes),
    then publishes: `add_snapshot.py`, `add_custom_index.py`, `premium.py` (which also updates
    `hype.json`), `scout.py`, `holdings_prices.py` (which also appends to `portfolio_history.json`).
+   Each of those commits on its own; `full_update.py` pushes them all once at the end.
 4. `full_update.py` ends with three blocks: data that has gone stale (`freshness.py --stale`), the
    **FOLLOW-UPS** (step 8 of FULL-CHECK.md: evaluate new cards, write sell tiers for owned cards,
    stories for new cards, re-evaluate cards whose tiers are due, refresh written verdicts the price has

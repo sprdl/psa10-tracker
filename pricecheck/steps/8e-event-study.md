@@ -1,0 +1,5 @@
+# Step 8e: measure the event rule after a release
+
+Part of the full price check (`pricecheck/FULL-CHECK.md`, which holds the shared rules: credentials, publishing, the chat message). Read this file when a major release in `data/events.json` is 4–10 days in the past and no full check has reported it yet.
+
+**8e. After a release: measure the event rule** (full checks only, computer linked). When a major release in `data/events.json` is 4–10 days in the past and this is the first full check since then that hasn't reported it, run `cd "$R" && python3 scripts/event_study.py` in one `device_bash` call. It compares how far the lowest ask dropped in the 4 days after a check inside the rule window (3 days before → release day) with the same measure on other days, using our own snapshots; pokeca-chart's older history is too coarse for this (30-day averages). Put one line in the chat message: "<release>: median dip after the rule window X% (≥5% dip in Y% of cards) vs Z% on other days; N releases measured so far." Don't change the rule from this alone; once 4–5 releases are in, suggest keeping, loosening or dropping it.

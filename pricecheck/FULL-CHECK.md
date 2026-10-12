@@ -1,9 +1,10 @@
 # Full price check (SNKRDUNK + pokeca-chart.com + PSA pop report)
 
-The full-check procedure of the `pokemon-card-price-check` skill (the skill carries the mode choice and
-the quick check). Everything is in the tracker repo at `$R` on the linked computer:
-`pricecheck/plan.py` decides what today's run reads, the in-page scripts in `pricecheck/scripts/`
-read all cards of a site in one JavaScript call each, and `scripts/full_update.py` decodes their
+The full-check procedure of the `pokemon-card-price-check` skill. `pricecheck/start.py` prints this
+file, followed by today's setup output (plan, browser calls, PSA backlog schedule). Everything is in the
+tracker repo at `$R` on the linked computer: `pricecheck/plan.py` decides what today's run reads,
+`pricecheck/jsrun.py` turns the in-page scripts in `pricecheck/scripts/` into ready-to-paste browser
+calls (each reads all cards of a site in one JavaScript call), and `scripts/full_update.py` decodes their
 compact lines, runs `pricecheck/scripts/assemble.py` against the live snapshot and publishes.
 Your job is to run the pieces in order and pass their output along **verbatim**: never retype,
 reformat or summarise script output into the publish step.
@@ -12,10 +13,13 @@ Each in-page script opens the sites' own pages in hidden same-origin iframes of 
 another (the same pages a person would open, in the user's browser, only when the user asks for a
 check). They make no fetch/XHR requests. Never use curl, requests or any HTTP client.
 
+This file holds the core run (steps 0–7), the shared rules and the chat message. Steps that only some
+runs need are in their own files; read one only when its trigger appears (the index is below step 7).
+
 ## Tool pitfalls (read before the first browser call)
 
-- **Browser JavaScript tool.** The browser tools are often deferred (and again after a context compaction). Before the first call, load them with `ToolSearch` (`select:mcp__remote-devices__Claude_Browser__javascript_tool,...navigate,...tabs_close`) and read the schema. `javascript_tool` takes `action: "javascript_exec"` and `text` (the code). A call with wrong parameter names does not fail: it prints `undefined`. A correct call that returns nothing prints a value or an error, so **if you see `undefined` twice, stop retrying and check the tool's parameters** (the old "extra no-op call" trick only applies to a correct call). The code is a REPL expression: no `return` at top level; wrap async work as `await (async () => {...})()`.
-- **Pasting scripts.** Always use the script text printed by `--print-js` / `cat`, never a shortened stand-in.
+- **Browser JavaScript tool.** The browser tools are often deferred (and again after a context compaction). Before the first call, load them with `ToolSearch` (`select:mcp__remote-devices__Claude_Browser__javascript_tool,...navigate,...tabs_create,...tabs_context,...tabs_close`, all in one call: the run uses three tabs) and read the schema. `javascript_tool` takes `action: "javascript_exec"` and `text` (the code). A call with wrong parameter names does not fail: it prints `undefined`. A correct call that returns nothing prints a value or an error, so **if you see `undefined` twice, stop retrying and check the tool's parameters** (the old "extra no-op call" trick only applies to a correct call). The code is a REPL expression: no `return` at top level; wrap async work as `await (async () => {...})()`.
+- **Pasting browser calls.** Paste the RUN / STORE / POLL calls exactly as `jsrun.py` printed them, never a shortened stand-in or a hand-edited argument. They carry today's arguments and the scripts' SHA-256 hashes, so a call that was altered refuses to run instead of reading wrong data.
 - **JSON for `apply_analysis.py` / `set_story.py`.** Build it with `python3 -c`/`json.dumps` or write it to a file and run `python3 -m json.tool file` before applying; hand-written JSON lost a closing brace on 2026-10-04 (nothing was saved; the script rejects bad JSON). Also include `predictions` whenever the reasoning states odds (price + deadline), or the warning "reasoning states odds but verdict.predictions is missing" appears.
 
 ## 0. Allow deletes in the repo folder (before anything else)
@@ -29,23 +33,27 @@ subfolder and not the nested parent folder) and a one-line reason ("let git clea
 files during the price check"). If it is declined, carry on; afterwards clear leftovers with
 `find .git -name '*.lock' -delete` only if deletion was granted, otherwise tell the user.
 
-## 1. Setup (one `device_bash` call)
+## 1. Setup (done: `pricecheck/start.py`)
 
-```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && git pull --ff-only --quiet; python3 pricecheck/plan.py; for f in snkrdunk_full snkrdunk_held psa_pop pokeca_both pokeca_premium pokeca_scout; do echo "=== $f"; grep -v '^//' pricecheck/scripts/$f.js; done; echo "=== mytier"; python3 scripts/add_custom_index.py --print-js; python3 scripts/psa_backlog.py due
-```
+The skill's one setup call already ran `git pull`, the mode check and card requests, started the run
+clock, and printed this file plus today's setup output:
+- `plan.py`: the JST date and weekday (Mondays add steps 6 and 6b), the odds model's build date
+  (`REBUILD DUE` adds step 5b), a summary, and the plan lines `PLAN`, `PSAPOP`, `PREM`, `HELD`, `SCOUT`
+  (and `PSAPOP MISSING` when step 1c has work). The rules behind them are in `plan.py`'s docstring;
+  `full_update.py` applies the same plan again when it publishes. You don't paste these lines anywhere
+  any more: `jsrun.py` has already put them into the RUN calls.
+- `jsrun.py full`: one block per in-page script with its RUN call (and POLL call), labelled with the
+  site and tab it belongs on.
+- `psa_backlog.py due`: the last line, `DUE: …` or `none due: …` (step 8i).
 
-`plan.py` prints the JST date and weekday (Mondays add steps 6 and 6b), the odds model's build date
-(`REBUILD DUE` adds step 5b), a summary, and lines to paste into the scripts: `PLAN = [...]`
-(which cards get the product page only, or the product page plus both listings pages, and which need
-their photo URL) and `PSAPOP = [...]` (the cards whose population and gem rate are read from PSA's own
-pop report today, one set page per set; the only population source since altema was dropped on 2026-10-12). The rules behind them are in
-`plan.py`'s docstring; `full_update.py` applies the same plan again when it publishes, so don't
-hand-edit the lists.
+If you need to re-run setup (after step 1b added a card, or after a context compaction lost the
+calls): `cd "$R" && python3 pricecheck/plan.py && python3 pricecheck/jsrun.py full`.
 
 **PSA look due today? Remind about the VPN, in the first message of the run.** The last line of that output is `DUE: …` or `none due: …` (the PSA backlog schedule, step 8i). On `DUE`, the first thing Philipp reads (your opening line, before any browser work) must say that today's run has to read PSA's page and ask him to **turn his VPN off** (psacard.com's Cloudflare check blocked the browser on 2026-10-10's earlier attempt, probably because of the VPN), and that it can go back on after step 8i. Say it again just before step 8i if you have no sign that it's off. On `none due`, don't mention the VPN.
 
-Get a tab id (`tabs_context_mcp` with createIfEmpty, or a standalone `navigate`).
+**Open card requests** (`card_requests.py list` printed any): follow `pricecheck/steps/1b-add-cards.md`
+before the browser reads. **`PSAPOP MISSING`** printed: follow `pricecheck/steps/1c-psa-pop-pages.md`
+(up to 3 cards per run).
 
 **Browser:** use the built-in browser (`mcp__remote-devices__Claude_Browser__*`) when it's available,
 Claude in Chrome otherwise. A Chrome tab Claude works in is usually a background (hidden) tab, and
@@ -55,82 +63,83 @@ Chrome throttles a hidden page's timers to once a second and, after 5 minutes, t
 polling call uses it too and adds `(tab hidden)` to `running i/N`. If two polls in a row show no
 progress, stop and report it rather than polling on.
 
-**1b. Add requested cards** (only if the mode check listed open requests; the quick check runs this same step as Q0). For each request:
-- `snkrdunk_id` is null: run `python3 scripts/card_requests.py reject <number> "no SNKRDUNK product URL found — open the card on snkrdunk.com and paste its address"`.
-- Otherwise, `navigate` the tab to its URL, then run `pricecheck/scripts/snkrdunk_base.js` and `pricecheck/scripts/grade_tiles.js` there (`cat` them via `device_bash`), and read the photo with one more `javascript_tool` call: `[...document.images].map(i=>i.currentSrc||i.src).find(s=>s.includes('upload_bg_removed'))||''`.
-  - If the base result has no `title` or errors (the page doesn't exist), reject with the reason.
-  - Otherwise, in one `device_bash` call from the repo: `python3 scripts/card_requests.py add <number> --name "<base.title>" --image "<photo URL, if found>"` (add `--psa-url … --psa-no … --psa-name …` if you already found its PSA pop page, step 1c). This writes the entry, **queues the card for its evaluation** (`data/eval_queue.json`), commits, pushes, and closes the issue with a confirmation. The same credential rules as step 7 apply. A request for a card that was removed earlier restores it and queues it too (its old tiers may be stale).
+## Browser calls: how the script cache works
 
-  After the requests are handled, run `python3 pricecheck/plan.py` again: the new card is now in `data/tracked_cards.json`, so the plan includes it. **Adding a card commits you to evaluating it in this same run** (step 8b): the run isn't finished, and you don't offer it as an optional next step, until the evaluation is applied or you can name a concrete reason it couldn't be.
-- For a new card that already sells as a PSA10: find its PSA pop page as in step 1c and save it (`card_requests.py set <snkrdunk_id> psa_pop_url=… psa_pop_no=… psa_pop_name=…`). A brand-new print PSA doesn't list yet stays without population until it does.
+The scripts' text is kept in each site's own browser storage (`localStorage`, key `pc:js:<name>`), so
+a run pastes short RUN calls instead of the scripts. Every RUN call checks the cached text's SHA-256
+against the repo version, fills in today's arguments, checks the SHA-256 of the filled-in script
+against the one `jsrun.py` computed, and only then runs it. What runs is therefore byte-for-byte the
+script the old procedure pasted, or nothing runs. Responses:
+- `started …` or result lines: it ran. Carry on.
+- `NEED_SCRIPT <name> (…)`: nothing ran (first use on this site, a new script version, or cleared site
+  data). One `device_bash` call: `cd "$R" && python3 pricecheck/jsrun.py store <name>`, paste the STORE
+  call it prints into `javascript_tool` on the same tab (it answers `stored <name> …`), then paste the
+  same RUN call again. `STORE REFUSED` means the pasted text didn't match the repo's hash: paste the
+  STORE call again, verbatim.
+- `EVAL_BLOCKED`, `STORE FAILED` or `NEED_SCRIPT … (site storage unavailable …)`: the site doesn't allow
+  this. Paste `python3 pricecheck/jsrun.py inline <name>` instead: the filled-in script itself, which is
+  the old way and gives the same result. Mention it in the chat message so the cache can be looked at.
+- `RUNNER ERROR …`: the call was altered or the repo changed under it. Re-print the calls
+  (`python3 pricecheck/jsrun.py full`) and use the new ones; never edit a call by hand.
+- `SCRIPT ERROR …`: the script itself failed; treat it like a failed script (step 7, "If a whole script fails").
 
-**1c. Find missing PSA pop pages** (every full check). If `plan.py` printed a `PSAPOP MISSING` line, those cards have regular PSA10 sales (a PSA10 ask and a verdict other than Defer) but no PSA pop page on file, so they have no population or gem rate (no DIY tab, no gem rate for evaluations). On Mondays the list also includes Defer cards that already have a PSA10 ask, to catch the week PSA starts listing them; if PSA has no row for one yet, leave it and say so once. For up to 3 per run: in the browser (signed in to psacard.com), open `https://www.psacard.com/pop/tcg-cards/156940`, pick the set's release year, set the year page's "Show" menu to 250 and page through it to find the set ("Pokemon Japanese <code>-<English set name>", e.g. "Pokemon Japanese Sv8a-Terastal Fest EX"; older sets read "Pokemon Japanese Sword & Shield <name>"; English promos "Pokemon Svp EN-SV Black Star Promo"). Open the set page, find the card's row (card number as PSA writes it, e.g. "090"; the English name), then save it with `python3 scripts/card_requests.py set <snkrdunk_id> psa_pop_url=/pop/tcg-cards/<year>/<slug>/<id> psa_pop_no=<number> psa_pop_name="<English name fragment>"` and run `python3 pricecheck/plan.py` again so today's `PSAPOP` includes it. Also say "PSA pop page added: <name>" in the chat message.
+## 2–4. Browser reads: the three sites at the same time, one tab each
 
+Each site's script reads that site's pages one after another, at the same pace as before. The three
+sites just run in parallel, in separate tabs, so the wait is the slowest site rather than the sum. All
+reads happen in hidden iframes (the My-tier extractor scrolls its own tab, which is why it runs in the
+tab you are working in) and wait on the Worker timer, so a background tab is fine. Rules:
+- Use one tab per site, and pass that tab's id in every `javascript_tool` call: **S** = snkrdunk.com,
+  **P** = psacard.com, **K** = pokeca-chart.com. Create them with `tabs_create` (or `tabs_context` with
+  createIfEmpty for the first). Never run a call on another site's tab: a POLL that answers
+  `NOT STARTED` means you're on the wrong tab.
+- Only one script per tab at a time: don't start the next RUN on a tab until its POLL has returned lines.
+- Keep every returned line exactly as returned (the scripts' header comments document the codes);
+  collect them for step 7.
 
-## 2. SNKRDUNK, all cards in one run
+Order:
+1. **Tab S, start SNKRDUNK (step 2).** `navigate` tab S to `https://snkrdunk.com/apparels/<first id in PLAN>`
+   and paste the `snkrdunk_full` RUN call. It returns `started N cards` and keeps working (about 10 s per
+   card with listings, 3 s without). Don't wait for it.
+2. **Tab P, start the PSA pop report (step 3)**, only when the setup printed a `psa_pop` block (skip if
+   `PSAPOP = []`). `navigate` tab P to `https://www.psacard.com/pop/tcg-cards/156940` and paste the
+   `psa_pop` RUN call (`started …`; about 5–8 s per set page).
+3. **Tab K, pokeca-chart (step 4)**, while the other two run:
+   1. `navigate` to `https://pokeca-chart.com/gr/chart-index/`, paste the `pokeca_both` RUN call. It
+      returns two lines, `IDX psa10 {…}` and `IDX raw {…}`.
+   2. `navigate` to `https://pokeca-chart.com/gr/all-card/?sort=newest`, paste the `mytier` RUN call. It
+      returns one line, `MYTIER {…}`. If it returns `MYTIER! <error>`, leave that line out and mention
+      it (the My-tier index is skipped this run).
+   3. Paste the `pokeca_premium` RUN call and POLL until it returns its `PREM …` lines (about 2 s per
+      card). They carry each card's slab premium (PSA10 ÷ raw 美品) and its 6-month norm;
+      `full_update.py` saves them to `data/premium.json`. A `PREM <id> !…` line (the card has no
+      pokeca-chart page) is expected for a few cards; pass it along like the others.
+   4. Scout runs about every other day: when the setup printed `SCOUT = null`, skip this; otherwise it's
+      required (don't `--skip scout` to save time; `scripts/freshness.py` flags a stale Scout page).
+      `navigate` to `https://pokeca-chart.com/gr/all-card/?sort=newest` again if the tab is elsewhere,
+      paste the `pokeca_scout` RUN call and POLL (about 1 minute: the list, then up to 20 card pages).
+      One `SCP …` line lists today's candidates, then one `SC {…}` (or `SC! …`) line per card page read.
+      `full_update.py` saves them to `data/scout.json`, which feeds the site's Scout page (cards you
+      don't track yet that fit your criteria and look cheap).
+4. **Tab S, collect SNKRDUNK.** POLL tab S with the `snkrdunk_full` POLL call until it returns lines
+   (one per card). Then, only if the setup printed a `snkrdunk_held` block (step 2b: `HELD` lists what the
+   Holdings page needs a price for but the tracked cards don't cover: bought raw cards and raw/at-PSA
+   pulls that aren't tracked (raw A-rank ask plus the last 30 days of one-copy A sales, turned into the
+   raw A-rank price by `scripts/raw_price.py`), and sealed products with no pull logged (lowest ask)), paste
+   the `snkrdunk_held` RUN call on tab S and POLL it for its `H` / `HE` lines (about 5 s per item). A
+   sealed product with a pull is opened and no longer listed; its stored price is deleted by the
+   publish step. Full checks only, never the quick check.
+5. **Tab P, collect the PSA pop report.** POLL tab P until it returns its `POP …` lines.
+   Gem rate = PSA 10s ÷ total graded on the card's row. If the lines say `PSA sign-in page`, ask the
+   user to sign in to psacard.com in the browser pane and re-run; if they say `Cloudflare check`, ask the user
+   to turn the VPN off. Never type credentials and never try to pass a "verify you are human" check. If PSA
+   can't be read this run, re-run `full_update.py` with `--skip psapop` and say why: the previous population
+   is carried forward. Same precautions as SNKRDUNK: the user's own browser, only when a check is asked for,
+   one page load per set. (PSA's pop report is the only source of PSA10 population and gem rate since
+   2026-10-12; it needs a signed-in PSA account, and the browser pane keeps the login.)
+6. Close tabs P and K (`tabs_close`) once their lines are collected.
 
-`navigate` the tab to `https://snkrdunk.com/apparels/<first id in PLAN>`. One `javascript_tool` call:
-the `snkrdunk_full` script verbatim, with its `const PLAN = [...]` line replaced by the `PLAN` line
-from step 1. It returns `started N cards` at once and keeps working in the page (about 10 s per
-card with listings, 3 s without). Collect the lines by calling `javascript_tool` with this until it
-returns lines instead of `running i/N` (each call waits up to ~37 s):
-
-```js
-await (async()=>{for(let i=0;i<75&&!window.__pj.done;i++)await (window.__wsleep||(m=>new Promise(r=>setTimeout(r,m))))(500);const q=window.__pj;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}${document.hidden?' (tab hidden)':''}`})()
-```
-
-Keep the lines exactly as returned (one per card; the script's header comment documents the codes).
-On Mondays you can do step 6/6b's web searches while it runs.
-
-## 2b. Bought cards and unopened sealed items
-
-Skip if `HELD = []`. `HELD` lists what the Holdings page needs a price for but the tracked cards don't
-cover: bought raw cards and raw/at-PSA pulls that aren't tracked (raw A-rank ask plus the last 30 days of
-one-copy A sales, turned into the raw A-rank price by `scripts/raw_price.py`), and sealed
-products with no pull logged (lowest ask). A sealed product with a pull is opened and no longer
-listed; its stored price is deleted by the publish step. Full checks only, never the quick check.
-Same tab, run the `snkrdunk_held` script verbatim with its `const HELD = [...]` line replaced by the
-`HELD` line from step 1, and collect its `H` / `HE` lines with the polling call of step 2 but
-`window.__hq` instead of `window.__pj` (about 5 s per item). Keep the lines exactly as returned.
-
-## 3. Population: PSA's pop report
-
-**PSA pop report** (since 2026-10-12 the only source of PSA10 population and gem rate; altema was dropped). Skip if
-`PSAPOP = []`. The pop report needs a signed-in PSA account (the browser pane keeps the login; the
-user signed in on 2026-10-12). `navigate` the tab to `https://www.psacard.com/pop/tcg-cards/156940`, run
-the `psa_pop` script verbatim with its `const PSAPOP = [...]` line replaced by the one from step 1, and
-collect its `POP …` lines with the polling call in the script's header (`window.__pp`; about 5–8 s per set
-page). Gem rate = PSA 10s ÷ total graded on the card's row. If the lines say `PSA sign-in page`, ask the
-user to sign in to psacard.com in the browser pane and re-run; if they say `Cloudflare check`, ask the user
-to turn the VPN off. Never type credentials and never try to pass a "verify you are human" check. If PSA
-can't be read this run, re-run `full_update.py` with `--skip psapop` and say why: the previous population
-is carried forward. Same precautions as SNKRDUNK: the user's own browser, only when a check is asked for,
-one page load per set.
-
-Put the `POP` lines into the publish step together with the others.
-
-## 4. Market indices
-
-1. `navigate` the tab to `https://pokeca-chart.com/gr/chart-index/` and run the `pokeca_both` script
-   verbatim. It returns two lines, `IDX psa10 {…}` and `IDX raw {…}`.
-2. `navigate` to `https://pokeca-chart.com/gr/all-card/?sort=newest` and run the `mytier` extractor
-   from step 1 verbatim. Its JSON result becomes one line: `MYTIER <the JSON>`. If it returns an
-   error, leave the line out and mention it (the My-tier index is skipped this run).
-
-3. Still on pokeca-chart, run the `pokeca_premium` script verbatim with its `const PREM = [...]`
-   line replaced by the `PREM` line from step 1, and collect its `PREM …` lines with the same polling
-   call as in step 2 (about 2 s per card). They carry each card's slab premium (PSA10 ÷ raw 美品) and
-   its 6-month norm; `full_update.py` saves them to `data/premium.json`. A `PREM <id> !…` line (the
-   card has no pokeca-chart page) is expected for a few cards; pass it along like the others.
-
-4. Scout runs about every other day: when step 1 printed `SCOUT = null`, skip this; otherwise it's
-   required (don't `--skip scout` to save time; `scripts/freshness.py` flags a stale Scout page).
-   Back on `https://pokeca-chart.com/gr/all-card/?sort=newest` (navigate there again if step 3 left
-   the tab elsewhere), run the `pokeca_scout` script verbatim with its `const SCOUT = {...}` line
-   replaced by the `SCOUT` line from step 1, and collect its lines with the same polling call (about
-   1 minute: the list, then up to 20 card pages). One `SCP …` line lists today's candidates, then one
-   `SC {…}` (or `SC! …`) line per card page read. `full_update.py` saves them to `data/scout.json`,
-   which feeds the site's Scout page (cards you don't track yet that fit your criteria and look cheap).
+On Mondays you can do step 6/6b's web searches (`pricecheck/steps/6-monday.md`) while the reads run.
 
 Each `IDX` line carries `volume_trend_suggested` (spiking if any day in the last 14 exceeds 2x the
 prior-30-day average; rising/falling if the 7-day average is ±15% or the 14-day average ±10% vs the prior
@@ -138,30 +147,10 @@ prior-30-day average; rising/falling if the 7-day average is ±15% or the 14-day
 which is used as-is. Only if you have a genuinely better read or a notable day worth describing, add
 a line `VOL psa10 {"volume_trend": "...", "volume_note": "..."}` (or `VOL raw …`).
 
-**5b. Monthly: rebuild the limit-odds model** (only when step 1 found it more than 30 days old, and the computer is linked). It reads about 125 pokeca-chart card pages through same-origin iframes, so it takes several minutes; do it after the price reads.
-1. `cat "$R/scripts/odds_model_builder.js"` via `device_bash`, navigate to `https://pokeca-chart.com/gr/all-card/?sort=newest`, and paste the file's contents verbatim into `javascript_tool` (it defines `__oddsBuilder`). Never fetch the script from a URL to run it.
-2. `javascript_tool`: `await __oddsBuilder('list')` → "pool: N cards".
-3. `javascript_tool`: `await __oddsBuilder('grab')` → repeat until it returns "done". Each call reads up to 35 cards. A card that fails is retried on the next call, up to twice; "done" reports how many were read.
-4. `javascript_tool`: `await __oddsBuilder('build')` → a JSON string of about 7 KB.
-5. One `device_bash` call: write it with a heredoc to `data/incoming/odds-model.json`, then `python3 scripts/save_odds_model.py data/incoming/odds-model.json`. It refuses thin builds (under 60 cards) and keeps the model's `about` block, then commits and pushes.
-6. Value model (same browser tab, right after step 5; it reuses the histories the grab step left in the page's storage, so no more page reads): `python3 scripts/save_value_model.py --codes` via `device_bash` prints a `window.__valueCodes = [...]` line; then `cat "$R/scripts/value_model_builder.js"` and paste the file's contents plus that line verbatim into `javascript_tool`, then `javascript_tool`: `await __valueBuilder()` → a JSON string of about 4 KB.
-7. One `device_bash` call: write it with a heredoc to `data/incoming/value-model.json`, then `python3 scripts/save_value_model.py data/incoming/value-model.json`. It refuses thin builds and adds the release months pokeca-chart lacks, then commits and pushes. The site's Upside tab and Tier check read it.
-8. Hype-exposure reference (same tab, no more page reads): `javascript_tool`: `await __oddsBuilder('hype')` → HREF lines. One `device_bash` call: `cd "$R" && python3 scripts/hype.py --ref - <<'EOF'` + the lines verbatim + `EOF`. It re-ranks the pool the site's "Hype exposure" panel compares against; the daily readings come from the slab-premium step's `g` token (`scripts/premium.py` → `data/hype.json`).
-Mention the rebuild in the chat message in one line ("Limit-odds model rebuilt: 125 cards, pool volatility 20%/39% per 30/90 days; value model rebuilt"). If any step fails, keep the old model and say so.
+**5b. Monthly model rebuild** (when the setup printed `REBUILD DUE`): follow
+`pricecheck/steps/5b-models.md` after the price reads.
 
-**6. Monday only: PSA tier status.** Follow `pricecheck/references/state.md`. On other days skip it entirely.
-Put the result on one line: `TIER <the psa_tier_status JSON>`.
-
-**6b. Monday only: release calendar** (computer linked only). The tracker's `data/events.json` drives the event rule: in the 3 days before a major release (and on the day), Buy-zone prices show as Watch on the site, and the evaluation skill won't call Buy. Keep it current:
-1. One `device_bash` call: `cd "$R" && python3 scripts/events.py list` (upcoming dated events plus rumoured undated ones).
-2. One or two `WebSearch` calls for newly announced Japanese products, e.g. `ポケモンカード 新弾 発売日 <this month> <next month>` and `ポケカ 新商品 発表 <year>`. Prefer the official site (pokemon-card.com) or a schedule page that cites it; open a page with `WebFetch` only if the snippets don't give a date.
-3. For each official announcement not yet listed, one `device_bash` call from the repo:
-   - New dated product: `python3 scripts/events.py add YYYY-MM-DD "<official Japanese name>" --scope all --source <url>`. Use `--scope <set code>` (e.g. `M6a`) for a product that only adds packs of an existing set, and `--minor` for promos, supplies or small reprints that won't move PSA10 prices. Major announcements with a known date (e.g. a Pokémon Presents) go in with `--kind announcement`.
-   - A rumoured (undated) event that now has an official date: `python3 scripts/events.py date "<name part>" YYYY-MM-DD`.
-   - A product that was cancelled or turned out wrong: `python3 scripts/events.py remove "<name part>"`.
-   The script commits and pushes each change (same credential rules as step 7).
-4. Only add official dates. Trademark filings and leaks stay undated and never trigger the rule; never give them a date.
-If nothing new was announced, change nothing. In the chat message, mention any calendar change in one line ("Calendar: added 拡張パック「…」 on 11/27"), and whether the event rule is on right now (`python3 scripts/events.py window`).
+**6 / 6b. Mondays:** follow `pricecheck/steps/6-monday.md` (PSA tier status, `TIER` line; release calendar).
 
 ## 7. Publish (one `device_bash` call)
 
@@ -169,7 +158,7 @@ Paste every line from steps 2, 2b, 3 and 4 (including the `PREM`, `SCP` and `SC`
 unusual worth recording, all optional) verbatim into a heredoc:
 
 ```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && python3 scripts/full_update.py - <<'EOF' 2>&1 | tail -120
+R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && python3 scripts/full_update.py - <<'EOF' 2>&1 | tee data/incoming/full-update.log | tail -120
 <the lines>
 EOF
 ```
@@ -184,7 +173,9 @@ from the `IDX` line) and stores any newly found photo URL. It prints `FULL_UPDAT
 to mention, such as a PSA pop page that couldn't be read. `--dry-run` decodes and assembles
 without publishing.
 
-Read the output. The snapshot was published if it says "Pushed." If it says the snapshot is
+The whole output is also kept in `data/incoming/full-update.log`: if the shown part starts after the `WARNINGS:` / `CHANGES` blocks, read them there (`grep -n -A30 "WARNINGS:\|CHANGES" data/incoming/full-update.log`) rather than skipping them.
+
+Read the output. Each part of the publish (snapshot, My-tier index, premium, holdings prices, scout) commits on its own, and `full_update.py` pushes them together once at the end (`add_snapshot.py`'s "Committed locally" line is expected). The snapshot was published if it says "Pushed N commit(s)."; a failed push says so and nothing reached the site. If it says the snapshot is
 byte-identical to an existing one, nothing new was published; say so. The repo has its own
 credential file configured. **Never put a token or credential in any command**, and never ask the
 user for one. If a push fails with an auth error, tell the user the token in `.psa10-git-credentials`
@@ -198,7 +189,7 @@ their A grade, and new-release cards have empty PSA10 results (see `pricecheck/r
 
 **If the computer isn't linked:** run steps 2–4 the same way with the plan from a public clone
 (`git clone --depth 1 https://github.com/sprdl/psa10-tracker.git /tmp/pt && cd /tmp/pt && python3
-pricecheck/plan.py`, reading the scripts there), then write the lines to a file and run
+pricecheck/start.py --mode full`, using the RUN calls it prints), then write the lines to a file and run
 `python3 scripts/full_update.py <file> --dry-run` in the clone. `SendUserFile` its
 `data/incoming/latest-run.json` and tell the user to publish it from the repo on their Mac with
 `python3 scripts/add_snapshot.py ~/Downloads/latest-run.json`.
@@ -213,161 +204,35 @@ data/incoming/latest-run.json --prev <latest snapshot>`, then
 
 Run one price check at a time. Overlapping runs published three identical snapshots on 2026-09-25.
 
-**7b. Write the analysis for cards that stand out** (computer linked, after step 7 has published).
-One `device_bash` call: `cd "$R" && python3 scripts/outliers.py`. It lists up to 3 cards whose
-numbers stand out (moving very differently from the market, asks far from recent sales, a big jump,
-trading speeding up or drying up, close to your limit), each with its findings and context; the
-site's "What stands out" panel explains the same findings automatically. For each listed card,
-write a short analysis the numbers alone can't give, from what this run collected (sales, listing
-depth, trading, tiers, limit, peak) plus what's happening outside the page. Research that with
-`WebSearch` (2–4 searches per card, Japanese queries work best; open a page with `WebFetch` only when
-the snippets aren't enough). Look for, in this order:
-1. Supply: a reprint, restock or 追加生産 of the card's set, a new product that reprints the card or
-   the same character (e.g. `<set name> 再販 <year>`, `<card name> 再録`), and PSA news that changes
-   how many slabs reach the market (turnaround, a paused tier resuming).
-2. Attention: new cards, sets, games, anime, movies, events or campaigns featuring the character
-   (e.g. `<character> ポケカ 新弾 <month>`, `<character> 30周年`), and notable news about the card
-   itself (a record sale, a shop feature, a viral post reported by a news site).
-3. Market-wide: anything that moves the whole tier this week (a big release, a PSA or SNKRDUNK
-   policy change), only if it explains this card better than the index does.
-Use only what a source actually says, name the source in the text ("per SNKRDUNK's reprint
-tracker…"), and pass each source you relied on as `--source "Title|URL"`. Rumours, leaks and
-price-prediction blogs are not evidence: skip them, or clearly label them as rumour. If the searches
-find nothing relevant, say so in one clause ("no news of a reprint or new card") rather than
-guessing. Never visit SNKRDUNK or pokeca-chart pages beyond the price check itself for this.
-
-Write it as three or four short paragraphs separated by blank lines, each starting with its label
-(the site shows the label as a small heading), one to three sentences each:
-- `What's happening:` the move, with the key numbers (price, market, sales, trading, depth).
-- `Why:` the likely reason (say "likely" when it is a hypothesis, and which part comes from the news).
-- `For you:` what it means for buying (tiers, the user's limit, the correction/event rules).
-- `Watch:` what to look for in the next checks. Save each with one
-`device_bash` call (same credential rules as step 7):
-```
-cd "$R" && python3 scripts/set_insight.py <snkrdunk_id> --headline "<one-line takeaway>" --signals "<the findings line from outliers.py>" --source "<title>|<url>" <<'EOF'
-<the analysis>
-EOF
-```
-A newer analysis replaces the card's previous one; the site marks analyses older than a week. If
-`outliers.py` says nothing stands out, skip this step. Mention each card analysed in the chat message
-in one line (its headline).
+**7b. Cards that stand out** (computer linked, after step 7 has published): one `device_bash` call,
+`cd "$R" && python3 scripts/outliers.py`. If it lists cards, follow `pricecheck/steps/7b-outliers.md`;
+if it says nothing stands out, skip it.
 
 **Freshness.** Just before the follow-ups, `full_update.py` (and `quick_update.py`) print `STALE DATA` for any source the site shows that is older than its cadence (`python3 scripts/freshness.py` prints the whole table: source, last update, cadence, which check refreshes it). Refresh what the full check can in this run; name the rest in the chat message.
 
-**Follow-ups.** `full_update.py`'s last line is `FOLLOW-UPS (…): …`, naming every step below that still has work (8b, 8c, 8f, 8g, 8h, with counts) or `none`. Do 8b (evaluations) first: it's the step a long run is most tempted to drop. The run is not finished until each one listed is done. If the output was cut, `python3 scripts/full_update.py --followups` prints the blocks again.
+**Follow-ups.** `full_update.py`'s last line is `FOLLOW-UPS (…): …`, naming every step that still has work (with counts and the file to read for each) or `none`. Do 8b (evaluations) first: it's the step a long run is most tempted to drop. The run is not finished until each one listed is done. If the output was cut, `python3 scripts/full_update.py --followups` prints the blocks again. Read each listed step's file before doing it; it holds that step's full rules:
 
-**8b. Evaluate new cards and cards that have no tiers yet** (full and quick checks, computer linked, after step 7 has published). **Required, not optional, and done before any other follow-up.** `full_update.py` (and `quick_update.py`) print an `EVALUATE NOW` block from `scripts/eval_queue.py`. It lists, in this order:
-- every card in the **evaluation queue**: added or restored by a request (step 1b) or restored with the site's Restore button, *whatever its PSA10 market*. A queued card leaves the queue only when `apply_analysis.py` applies a buy verdict to it (any tag, `defer` included);
-- a card with a PSA10 ask but no tiers and no verdict (a watched card whose PSA10 market has just formed);
-- a `defer` card with a PSA10 ask, on Mondays only (one fresh look a week).
-The run is not finished while that list has entries you haven't evaluated. "It's new" or "it has no tiers yet" is the reason this step exists, never a reason to skip it (runs on 2026-10-03 and 2026-10-10 skipped a new card this way).
-1. For each listed card (at most 3 per run; the rest show as "(next run)"), one `device_bash` call: `cd "$R" && python3 scripts/eval_context.py <snkrdunk_id>`. It prints everything this run already has for the card: asks, depth, sales, the raw A-rank price, population and gem rate, DIY cost, ownership and break-even, slab premium, hype exposure, age, the My-tier index with the correction rule and rally flag, the event window, and limit-odds for the tiers (add `--odds <price> <price>…` to test candidate tier prices).
-2. Run the `pokemon-tcg-card-evaluation` skill end to end for it, **reusing that output** instead of reading those pages again. Only fetch what the evaluation still needs: the card's price history and peak-month median (SNKRDUNK 売買履歴 or pokeca-chart), set and release details, and, for a card a quick check just added, its listing depth (`snkrdunk_listings.js` on the listings page) and its PSA pop page (find it as in 1c), saved with `card_requests.py set` (then `scripts/psa_pop.py apply -` with its POP line). Use `eval_context.py --odds` for the reachability check of the tiers you're about to set.
-3. A card with **no PSA10 ask** (no slabs listed yet, e.g. a set released weeks ago) still gets evaluated: the skill records a `defer` verdict without tiers, with reasoning about when a PSA10 market is likely (release date vs PSA turnaround), the raw A-rank price and what a DIY slab would cost. Same for a card whose data is too thin to set tiers (one or two listings, no sales). That's a valid result and takes the card off the queue.
-4. Apply with the skill's step 8 (`apply_analysis.py`, keyed by the card's SNKRDUNK URL). For an owned card, the buy part plus the sell part (next paragraph) go in one JSON.
-5. If an evaluation can't finish (a site is unreachable, or `apply_analysis.py` refuses the JSON), nothing is applied and the card stays queued for the next check. Say which card and why.
+| Step | When | File |
+|---|---|---|
+| 1b | open card requests | `pricecheck/steps/1b-add-cards.md` |
+| 1c | `PSAPOP MISSING` printed | `pricecheck/steps/1c-psa-pop-pages.md` |
+| 5b | `REBUILD DUE` printed | `pricecheck/steps/5b-models.md` |
+| 6, 6b | Mondays | `pricecheck/steps/6-monday.md` |
+| 7b | `outliers.py` lists cards | `pricecheck/steps/7b-outliers.md` |
+| 8b | `EVALUATE NOW` / `SELL TIERS NOW` have cards (required, first) | `pricecheck/steps/8b-evaluate.md` |
+| 8c | `WRITE STORIES NOW` has cards (required) | `pricecheck/steps/8c-stories.md` |
+| 8d | `REVIEW DUE NOW` has cards | `pricecheck/steps/8d-review.md` |
+| 8e | a major release was 4–10 days ago, not yet reported | `pricecheck/steps/8e-event-study.md` |
+| 8f | `MERCARI NOW` | `pricecheck/steps/8f-mercari.md` → `pricecheck/MERCARI.md` |
+| 8g | `REFRESH VERDICTS NOW` (required) | `pricecheck/steps/8g-refresh-verdicts.md` |
+| 8h | `SEALED INFO NOW` | `pricecheck/steps/8h-sealed.md` |
+| 8i | `PSA BACKLOG NOW` (required when due) | `pricecheck/steps/8i-psa-backlog.md` |
+| 8j | `WEEKLY RECAP NOW` (required when due) | `pricecheck/steps/8j-recap.md` |
 
-**8b (owned cards). Sell tiers.** `full_update.py` also prints a `SELL TIERS NOW` block: cards in `data/holdings.json` with no `sell_tiers`, a `sell_verdict` older than 30 days, or a My-tier index move of 10%+ since it was written. For each (at most 3 per run, together with the buy evaluations above), run the `pokemon-tcg-card-evaluation` skill's sell part (its step 7, Part A-sell / `sell_tiers` + `sell_verdict`) with this run's data and apply only those two keys with `apply_analysis.py`; the buy tiers stay. Chat line: "Sell tiers for <name>: take profit ≥¥X, sell ≥¥Y (<tag>)".
+The snapshot's JSON layout is in `pricecheck/references/output-shape.md` (only when you need it).
 
-**8d. Re-evaluate cards whose tiers are due** (full checks only, computer linked, after 8b; skip it on a run where 8b already evaluated 3 cards). `full_update.py` prints a `REVIEW DUE NOW` block (`python3 scripts/review_due.py` prints it again). It lists watched cards only (owned cards get sell tiers instead), at most 2 per run, or 4 when a market move made several due at once, most due first, with the reasons. A card is due when its tiers are over 30 days old, the My-tier index has moved 10%+ since they were set, its Definitely-buy is a long shot (under 10% in 90 days on the limit-odds model), or it is under 9 months old and its tiers are 2+ weeks old. The site shows the same "Review due" line. Re-run the `pokemon-tcg-card-evaluation` skill end to end for each listed card (including its step 8, `apply_analysis.py`), reusing this run's data as in 8b. A re-evaluation that keeps the tiers still counts as a review and resets the clock. Mention each in the chat message in one line ("Re-evaluated <name>: <verdict>, tiers ¥X / ¥Y / ¥Z (due: <reason>)"). The next full check continues with any cards still due.
-
-**8e. After a release: measure the event rule** (full checks only, computer linked). When a major release in `data/events.json` is 4–10 days in the past and this is the first full check since then that hasn't reported it, run `cd "$R" && python3 scripts/event_study.py` in one `device_bash` call. It compares how far the lowest ask dropped in the 4 days after a check inside the rule window (3 days before → release day) with the same measure on other days, using our own snapshots; pokeca-chart's older history is too coarse for this (30-day averages). Put one line in the chat message: "<release>: median dip after the rule window X% (≥5% dip in Y% of cards) vs Z% on other days; N releases measured so far." Don't change the rule from this alone; once 4–5 releases are in, suggest keeping, loosening or dropping it.
-
-**8g. Refresh written verdicts that no longer match the price** (full checks only, computer linked, after 8b and 8d). **Required.** `full_update.py` prints a `REFRESH VERDICTS` block: cards whose lowest ask has moved 5%+ from the price their written verdict was based on (at most 3 per run, biggest move first; `python3 scripts/review_due.py --text` prints it again). Cards 8d is reviewing this run are excluded, since that rewrites them anyway. For each listed card, rewrite only the verdict from this run's data, keeping the tiers:
-- `tag`: the live zone of today's ask against the existing tiers, with the guardrails applied (correction or event rule: a Buy-zone price becomes `watch`; keep `defer` only if its reason still holds).
-- `label`: `"<Tag> — <one-line takeaway>"`.
-- `reasoning`: 3–5 sentences with today's numbers: the ask and its move since the old verdict, the recent sales range, depth and activity, the market (My-tier index 30-day move), what changed versus the old text, and what would change the call. Never copy a number from the old text without re-checking it today.
-- `predictions`: only if the reasoning states a probability (each with price and deadline, as in the evaluation skill). Otherwise leave the key out; the old predictions stay on the Track record and keep being scored.
-
-Save each with one `device_bash` call (same credential rules as step 7):
-```
-cd "$R" && python3 scripts/apply_analysis.py - <<'JSON'
-{"<SNKRDUNK url>": {"verdict": {"tag": "...", "label": "...", "reasoning": "..."}}}
-JSON
-```
-`apply_analysis.py` dates the new verdict and resets its reference price to today's ask, so the card leaves the list. One line per card in the chat message: "Verdict refreshed: <name> <old tag> → <new tag> (<move>)".
-
-**8f. Mercari for cards near the limit** (full and quick checks, computer linked, after step 7 has published). `full_update.py` ends with a `MERCARI` block. When it says `MERCARI NOW`, follow `pricecheck/MERCARI.md` (one script call on jp.mercari.com, then `scripts/mercari.py` saves `data/mercari.json`); when it says `none due`, skip it. Alerts it prints (`** AT/UNDER LIMIT`, `** AUCTION ending`) go first in the chat message, with the item link.
-
-**8h. Sealed products: name and picture from SNKRDUNK** (full and quick checks, computer linked, only when the update script printed a `SEALED INFO NOW` block). Sealed products are logged from the site with their SNKRDUNK link; the Action that records them never opens SNKRDUNK, so the check reads each new product's page once. One `device_bash` call: `cd "$R" && python3 scripts/sealed_info.py --js`; on a snkrdunk.com tab paste the printed script verbatim into `javascript_tool` (it returns `started N products`), poll with the line in its header until done, then save the `SP`/`SE` lines with `cd "$R" && python3 scripts/sealed_info.py - <<'EOF'` … `EOF`. One line in the chat message ("Sealed: added name and picture for <product>").
-
-**8i. PSA backlog: new update on PSA's page?** (full checks only, computer linked, after step 7 has published; **required when it is due**). PSA posts a backlog update every other Tuesday at https://www.psacard.com/info/backlog-tracker. The tracker's Market page and Submissions page show it (`data/psa_backlog.json`), because PSA reopens the Value tiers once the backlog is under 5M units. `full_update.py` prints `PSA BACKLOG NOW` when a look is due and `PSA BACKLOG: none due (…)` otherwise, and lists "8i PSA backlog" in FOLLOW-UPS. **The schedule is enforced by `scripts/psa_backlog.py due`, not by you; don't look on a run that says none due.** Its rule:
-- An update is expected 14 days after the newest stored one. With 2026-10-06 stored, the update is expected 2026-10-20 and **the first look is on 2026-10-21**, on that day's first full check.
-- If the page has nothing newer, the look repeats on **every day's first full check** (a second full check the same day doesn't repeat it) until a newer update is there.
-- When a newer update is saved, the next one is expected 14 days after *its* heading date, so the cadence returns to every other Tuesday (an update posted late still carries its own date; the next look starts the day after the next expected date).
-
-When it is due:
-1. One `WebFetch` of `https://www.psacard.com/info/backlog-tracker` with this prompt: `Return verbatim, without paraphrasing or summarizing: the heading of the NEWEST dated update (like "October 6, 2026 Update") and the complete first paragraph under it; then the heading of the second newest update and its first sentence.`
-2. Save it, one `device_bash` call, pasting the fetched heading and paragraph verbatim (nothing added):
-```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && python3 scripts/psa_backlog.py from-page - <<'EOF'
-<heading>
-<paragraph>
-EOF
-```
-The script reads the date and the figure itself and checks them against what is stored (the update's own "down from X million" must match the last stored reading; a jump of more than 3M is refused). It prints one of:
-- `SAVED: 7.4M on 2026-10-20 …`: the reading, the projection and the page are updated and pushed (same credential rules as step 7). Report the new figure and the scenario lines it prints.
-- `NO NEW UPDATE …`: it records that you looked (shown on the Market page) and pushes. Nothing else to do; it is due again on the next day's first full check.
-- `CHECK BY HAND …`: nothing saved. Do what it says (read the page's earlier updates and use `python3 scripts/psa_backlog.py add YYYY-MM-DD <millions>` for each missed one, oldest first), or tell the user.
-
-If `WebFetch` fails or returns something that isn't the update text, open the page in the browser on a normal tab (`navigate`, then `get_page_text`) and use that text the same way. **If a Cloudflare or "verify you are human" page appears, stop: don't try to pass it, work around it or use curl** (psacard.com has been blocked to browser automation before, probably because of a VPN; on 2026-10-10 both WebFetch and the built-in browser read the page fine without one; see `pricecheck/references/state.md`). Remind Philipp to turn the VPN off if it's on. Say so in the chat message and ask the user to paste the newest update's text or a screenshot of it; the same `from-page -` command takes pasted text. One page load per look.
-
-Chat message: one line, e.g. "PSA backlog: 7.4M on 10/20 (−0.8M); the 5M line is crossed around 12/01 to 12/15 on the current pace" (use the scenario lines the script prints), or "PSA backlog: no new update yet (looked 10/21; will look again tomorrow)".
-
-**8j. Weekly recap note** (full checks only, computer linked, after step 7 has published; **required when due**, i.e. on the first full check from Monday until it's written). The site's Weekly recap page (`#/recap`, and a card on the Overview) computes every number itself for a Mon–Sun JST week: owned and watched cards' moves, the indices, purchases, `events.json` releases. What it can't compute is the news, so this step writes a short note for the week that just ended into `data/recaps.json`. `full_update.py` prints `WEEKLY RECAP NOW` and lists "8j weekly recap" in FOLLOW-UPS when it's due; `scripts/recap.py due` decides, not you.
-1. One `device_bash` call: `cd "$R" && python3 scripts/recap.py facts`. It prints the week's numbers (indices, every card's move, owned cards marked *, the releases already on the page).
-2. Research what happened that week and what's coming in the next 7 days, with `WebSearch` / `WebFetch` only (never SNKRDUNK or pokeca-chart pages): the official sites (pokemon-card.com, www.30th.pokemon-card.com, pokemon.co.jp news), PSA Japan announcements, reliable Japanese card-news sites (e.g. tcg-portal.jp, dengekionline, famitsu). Look for new product announcements, release dates, reprints or restocks, PSA service changes, regulation/rotation news and anything that plausibly explains the week's biggest moves. 2–4 searches are enough.
-3. Write the note in plain English. `headline`: one sentence on what defined the week **for Philipp's cards** (e.g. "A market-wide rally lifted every owned card except Mega Gengar MA"). `takeaway` (optional): 1–3 sentences on what it means for buying or selling. `happened` / `ahead`: 0–5 items each, `{d, title, text, source}`; `ahead` items may have `d: null` for an announced but undated product. Never invent a cause: if no news explains a move, say the move was broad and no single news item was found. Label rumours as rumours. Don't repeat items the page already shows (purchases, `events.json` releases, the price and index numbers); refer to them instead. If something belongs on the release calendar, also add it with `scripts/events.py`.
-4. Save with one `device_bash` call (same credential rules as step 7):
-```
-cd "$R" && python3 scripts/recap.py save - <<'JSON'
-{"week": "<Monday YYYY-MM-DD>", "headline": "...", "takeaway": "...", "happened": [{"d": "YYYY-MM-DD", "title": "...", "text": "...", "source": "https://..."}], "ahead": [{"d": "YYYY-MM-DD", "title": "...", "text": "...", "source": "https://..."}]}
-JSON
-```
-It checks the dates fall in the right week, commits and pushes. Chat message: one line, "Weekly recap written for <week>: <headline>".
-
-**8c. Write the story for cards that have none** (full checks only, computer linked, after step 7 has published). **Required, not optional**, like 8b: `full_update.py` ends by printing a `WRITE STORIES NOW` block with these cards, and the run is not finished while it lists cards you haven't written a story for (a 2026-10-03 run left a new card without one). Every tracked card gets a Story tab on its card page and a tile on the Stories page from `data/stories.json`: who illustrated it, what the art shows, how it connects to other cards or the games, set context and a few facts. A card added in step 1b arrives without one.
-1. One `device_bash` call: `cd "$R" && python3 scripts/set_story.py --missing`. It lists tracked cards without a story (usually none).
-2. For each listed card (at most 3 per run; name any others in the chat message), research with `WebSearch` / `WebFetch` only. Never use SNKRDUNK or pokeca-chart pages for this. Start with the illustrator: the official card database (pokemon-card.com; the card's page lists イラストレーター; search e.g. `<card name> <number> イラストレーター`), then Bulbapedia or Serebii. Then the art itself and its context: Famitsu's SAR/AR round-ups, PokeBeach reveal posts, Bleeding Cool's "The Cards of Pokémon TCG" series, the official set page, the illustrator's own posts. Worth looking for: connected artworks (panels that join into one picture, day/night pairs, a trainer and Pokémon pairing), the Pokédex lore or game/anime/film moment it depicts, the set's release date and theme, the English counterpart's name and number, the illustrator's other well-known cards.
-3. Write it in plain English. `art`: 2–4 sentences on what the artwork shows and details worth noticing. `story`: 1–3 sentences on connections or references, or null. `set`: 1–2 sentences. `trivia`: 1–3 verifiable facts. No prices or market talk. Every claim must come from a listed source. Never guess: leave out what you can't verify, and set `illustrator` to null if no source credits one. `confidence`: "high" when the illustrator is confirmed and the scene description has 2+ sources, "medium" when the scene rests on one source.
-4. Save each with one `device_bash` call (same credential rules as step 7):
-```
-cd "$R" && python3 scripts/set_story.py <snkrdunk_id> <<'EOF'
-{"illustrator": "...", "illustrator_ja": null, "art": "...", "story": "...", "set": "...", "trivia": ["..."], "english": "...", "sources": [{"title": "...", "url": "https://..."}], "confidence": "high"}
-EOF
-```
-It checks the fields, refuses SNKRDUNK/pokeca-chart sources, commits and pushes. Mention each story in the chat message in one line ("Story added: <name>, illustrated by <artist>").
+**End of the run.** After the last follow-up, one `device_bash` call: `cd "$R" && python3 scripts/runclock.py end`.
+It prints how long the run took (with the time it published) and logs it for comparison
+(`python3 scripts/runclock.py history`). Put that line in the chat message with the tokens used.
 
 **Chat message (full check):** keep it short. Say where it was published (snapshot file name, or "not published" and why). Then pass on anything notable from the WARNINGS/CHANGES/FULL_UPDATE NOTES and from `add_snapshot.py`'s own warnings: a stale timestamp, the tracked-card set changing, cards whose verdict now needs a fresh review. Examples: very few live listings, a big favorite-count move, a volume spike, a site that couldn't be reached. The live site shows the rest. Include the My-tier index line `add_custom_index.py` printed (level and change), or say why it was skipped. On Mondays, add the release-calendar line from step 6b. Every card in `full_update.py`'s `WRITE STORIES NOW` block must appear as "Story added: …" or "NOT written: <name> — <concrete reason>". Every card in its `EVALUATE NOW` block must appear either as evaluated ("Evaluated <name>: …") or as "NOT evaluated: <name> — <concrete reason, e.g. evaluation skill couldn't reach pokeca-chart>"; being new is not a reason. Also report any card requests handled in step 1b ("Added: <name>" / "Couldn't add #<n>: <reason>") one line per card analysed in step 7b, one line per card evaluated in step 8b or re-evaluated in step 8d, one line per PSA pop page found in step 1c, and one line per story written in step 8c, e.g. "Evaluated <name>: Watch, tiers ¥X / ¥Y / ¥Z, 2 predictions recorded".
-
-## Output shape (produced by assemble.py)
-
-```json
-{
-  "collected_at_jst": "2026-09-24T08:10:00+09:00",
-  "notes": "methodology: 販売中のみ / 安い順, top 20, 15% cutoff, ...",
-  "cards": [{
-    "card_name_ja": "...", "url": "...", "image_url": "...",
-    "favorite_count": 3921,
-    "psa10_population": 80321, "psa10_gem_rate_pct": 86.9,
-    "grades": {
-      "psa10": {
-        "lowest_price": 0, "threshold_115pct_of_lowest": 0,
-        "top20_cheapest_listings": [], "listings_within_15pct_of_lowest": [],
-        "count_within_15pct": 0, "count_excluded_over_15pct": 0,
-        "recent_completed_sales": [{ "price": 66500, "when": "49分前" }]
-      },
-      "raw_a_grade": { "...same shape..." }
-    }
-  }],
-  "pokeca_chart_index": {
-    "psa10": { "latest_index_value_jpy": 0, "day_change_jpy": 0, "day_change_pct": 0,
-               "month_change_jpy": 0, "month_change_pct": 0, "year_change_jpy": 0, "year_change_pct": 0,
-               "data_range": "...", "volume_trend": "flat", "volume_note": "..." },
-    "raw_bihin": { "...same shape..." }
-  },
-  "psa_tier_status": { "...Mondays only..." }
-}
-```
-
-Conventions: a grade with no live listings keeps its object with an `"error"` (so diffs show exactly when activity starts). Zero completed sales in the period is a valid result: an empty `recent_completed_sales` plus a `sales_note`, not an error. A failed population check gives `population_error`; a skipped weekly check gives `population_note`. `image_url` is omitted when unknown. `psa_tier_status` is omitted except on Mondays. The pokeca index `data_range` only advances once per JST day, so repeated same-day runs legitimately match (assemble.py notes this when `--prev` is given). All times are JST.

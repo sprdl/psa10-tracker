@@ -1,0 +1,14 @@
+# Step 5b: monthly model rebuild
+
+Part of the full price check (`pricecheck/FULL-CHECK.md`, which holds the shared rules: credentials, publishing, the chat message). Read this file when `plan.py` printed `REBUILD DUE`.
+
+**5b. Monthly: rebuild the limit-odds model** (only when step 1 found it more than 30 days old, and the computer is linked). It reads about 125 pokeca-chart card pages through same-origin iframes, so it takes several minutes; do it after the price reads.
+1. `cat "$R/scripts/odds_model_builder.js"` via `device_bash`, navigate to `https://pokeca-chart.com/gr/all-card/?sort=newest`, and paste the file's contents verbatim into `javascript_tool` (it defines `__oddsBuilder`). Never fetch the script from a URL to run it.
+2. `javascript_tool`: `await __oddsBuilder('list')` → "pool: N cards".
+3. `javascript_tool`: `await __oddsBuilder('grab')` → repeat until it returns "done". Each call reads up to 35 cards. A card that fails is retried on the next call, up to twice; "done" reports how many were read.
+4. `javascript_tool`: `await __oddsBuilder('build')` → a JSON string of about 7 KB.
+5. One `device_bash` call: write it with a heredoc to `data/incoming/odds-model.json`, then `python3 scripts/save_odds_model.py data/incoming/odds-model.json`. It refuses thin builds (under 60 cards) and keeps the model's `about` block, then commits and pushes.
+6. Value model (same browser tab, right after step 5; it reuses the histories the grab step left in the page's storage, so no more page reads): `python3 scripts/save_value_model.py --codes` via `device_bash` prints a `window.__valueCodes = [...]` line; then `cat "$R/scripts/value_model_builder.js"` and paste the file's contents plus that line verbatim into `javascript_tool`, then `javascript_tool`: `await __valueBuilder()` → a JSON string of about 4 KB.
+7. One `device_bash` call: write it with a heredoc to `data/incoming/value-model.json`, then `python3 scripts/save_value_model.py data/incoming/value-model.json`. It refuses thin builds and adds the release months pokeca-chart lacks, then commits and pushes. The site's Upside tab and Tier check read it.
+8. Hype-exposure reference (same tab, no more page reads): `javascript_tool`: `await __oddsBuilder('hype')` → HREF lines. One `device_bash` call: `cd "$R" && python3 scripts/hype.py --ref - <<'EOF'` + the lines verbatim + `EOF`. It re-ranks the pool the site's "Hype exposure" panel compares against; the daily readings come from the slab-premium step's `g` token (`scripts/premium.py` → `data/hype.json`).
+Mention the rebuild in the chat message in one line ("Limit-odds model rebuilt: 125 cards, pool volatility 20%/39% per 30/90 days; value model rebuilt"). If any step fails, keep the old model and say so.

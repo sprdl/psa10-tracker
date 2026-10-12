@@ -9,14 +9,14 @@ Same precautions as SNKRDUNK: only as part of a price check the user asked for, 
 Mercari's own pages in hidden same-origin iframes one at a time with pauses, no fetch/XHR, nothing
 scheduled. About 1 search page per card plus 1–5 item pages.
 
-1. Get the page script with the due cards filled in (one `device_bash` call):
-   `cd "$R" && python3 scripts/mercari.py --js`
+1. Get the browser calls with the due cards filled in (one `device_bash` call):
+   `cd "$R" && python3 pricecheck/jsrun.py run mercari_check && python3 pricecheck/jsrun.py poll mercari_check`
 2. In the browser tab, `navigate` to `https://jp.mercari.com/` (any jp.mercari.com page works), then
-   paste the printed script into `javascript_tool` **verbatim**. It returns `started N cards` at once.
-3. Poll until done (each call waits up to ~45 s; repeat while it says `running`):
-   ```
-   await (async()=>{for(let i=0;i<90&&!window.__mq.done;i++)await window.__wsleep(500);const q=window.__mq;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}`})()
-   ```
+   paste the RUN call into `javascript_tool` **verbatim**. It returns `started N cards` at once. If it
+   returns `NEED_SCRIPT`, paste the STORE call from `python3 pricecheck/jsrun.py store mercari_check`, then
+   the RUN call again (FULL-CHECK "Browser calls" explains the cache). `EVAL_BLOCKED` / `STORE FAILED`:
+   paste `python3 pricecheck/jsrun.py inline mercari_check` instead (the filled-in script itself).
+3. Poll with the POLL call until done (each call waits up to ~37 s; repeat while it says `running`).
 4. Save and publish the lines exactly as returned (one `device_bash` call; same credential rules as
    the rest of the check):
    ```

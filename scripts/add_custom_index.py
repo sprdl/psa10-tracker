@@ -204,6 +204,7 @@ def main():
     ap.add_argument("result", nargs="?")
     ap.add_argument("--pokeca", type=float, help="pokeca-chart PSA10 index value today")
     ap.add_argument("--no-push", action="store_true")
+    ap.add_argument("--commit-only", action="store_true", help="commit but don't push (full_update.py pushes once at the end)")
     ap.add_argument("--print-js", action="store_true")
     ap.add_argument("--print-backfill-js", action="store_true")
     ap.add_argument("--backfill", metavar="RESULT.json", help="merge a back series from the backfill script")
@@ -256,6 +257,8 @@ def main():
     git("add", "data/custom_index.json")
     if git("commit", "-m", f"my-tier index: {today} {level:.2f}", check=False).returncode != 0:
         print("Nothing to commit."); return
+    if args.commit_only:
+        print("my-tier index: committed (pushed with the snapshot)."); return
     p = git("push", check=False)
     if p.returncode != 0:
         sys.exit("git push failed:\n" + (p.stderr or p.stdout))

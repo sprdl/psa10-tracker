@@ -181,12 +181,13 @@ def update(prices, cards, errors, root=ROOT, push=True, now=None):
           + (": " + ", ".join(pool[r['slug']].get('nm', r['slug']) for r in data["ranked"][:5]) if data["ranked"] else ""))
     if not push:
         return
-    for cmd in (["git", "add", str(path)], ["git", "commit", "-q", "-m", "scout: candidates"], ["git", "push", "-q"]):
+    # push="commit": commit only; full_update.py pushes everything once at the end of the publish step
+    for cmd in (["git", "add", str(path)], ["git", "commit", "-q", "-m", "scout: candidates"], *([["git", "push", "-q"]] if push is True else [])):
         r = subprocess.run(cmd, cwd=root, text=True, capture_output=True)
         if r.returncode != 0 and "nothing to commit" not in (r.stdout + r.stderr):
             print(f"scout: {' '.join(cmd)} failed: {(r.stderr or r.stdout).strip()}")
             return
-    print("scout: pushed.")
+    print("scout: pushed." if push is True else "scout: committed (pushed with the snapshot).")
 
 
 if __name__ == "__main__":

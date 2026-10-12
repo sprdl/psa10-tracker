@@ -91,12 +91,13 @@ def save(entries, root=ROOT, push=True):
         print(f"hype: skipped ({ex})")
     if not push:
         return
-    for cmd in (["git", "add", str(path), str(root / "data" / "hype.json")], ["git", "commit", "-q", "-m", "premium: pokeca-chart slab premium + hype exposure"], ["git", "push", "-q"]):
+    # push="commit": commit only; full_update.py pushes everything once at the end of the publish step
+    for cmd in (["git", "add", str(path), str(root / "data" / "hype.json")], ["git", "commit", "-q", "-m", "premium: pokeca-chart slab premium + hype exposure"], *([["git", "push", "-q"]] if push is True else [])):
         r = subprocess.run(cmd, cwd=root, text=True, capture_output=True)
         if r.returncode != 0 and "nothing to commit" not in (r.stdout + r.stderr):
             print(f"premium: {' '.join(cmd)} failed: {(r.stderr or r.stdout).strip()}")
             return
-    print("premium: pushed.")
+    print("premium: pushed." if push is True else "premium: committed (pushed with the snapshot).")
 
 
 if __name__ == "__main__":

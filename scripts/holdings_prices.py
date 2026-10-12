@@ -115,12 +115,13 @@ def save(found, root=ROOT, push=True, dry=False):
     print(f"holdings prices: {sum(1 for v in prices.values() if v['price'] is not None)}/{len(prices)} priced")
     if not push:
         return
-    for cmd in (["git", "add", str(path), str(hist)], ["git", "commit", "-q", "-m", "holdings: SNKRDUNK prices for bought cards and sealed items"], ["git", "push", "-q"]):
+    # push="commit": commit only; full_update.py pushes everything once at the end of the publish step
+    for cmd in (["git", "add", str(path), str(hist)], ["git", "commit", "-q", "-m", "holdings: SNKRDUNK prices for bought cards and sealed items"], *([["git", "push", "-q"]] if push is True else [])):
         r = subprocess.run(cmd, cwd=root, text=True, capture_output=True)
         if r.returncode != 0 and "nothing to commit" not in (r.stdout + r.stderr):
             print(f"holdings prices: {' '.join(cmd)} failed: {(r.stderr or r.stdout).strip()}")
             return
-    print("holdings prices: pushed.")
+    print("holdings prices: pushed." if push is True else "holdings prices: committed (pushed with the snapshot).")
 
 
 def log_history(prices, root=ROOT, now=None):
