@@ -174,9 +174,9 @@ accepts `sell_tiers` / `sell_verdict` alone (an owned card needs no new buy tier
   sales: the lowest ask. The cheapest raw listing is often a copy that won't grade and doesn't sell. Used for the
   DIY cost, the grading calculator, raw pulls, the raw figure under owned cards and raw-only cards.
 - **Self-grade chip** (`selfGrade`, since 2026-10-12) — shown next to the verdict of a card you don't own when the DIY
-  expected cost below is at least 15% under the PSA10 price; not for Defer cards or a PSA10 worth over ¥150,000
-  (Standard's declared-value cap). It never changes the verdict.
-- **DIY expected cost & delta** — `(raw A-rank price + grading_fee + shipping) / gem_rate`,
+  expected cost below is at least 15% under the PSA10 price; not for Defer cards or a PSA10 worth over ¥250,000. It never changes the verdict.
+- **DIY expected cost & delta** — `(raw A-rank price + grading_fee + shipping) / gem_rate`; the grading fee follows the
+  PSA10 price as declared value (`psaTierFor`): Standard ¥9,980 up to ¥150,000, Priority ¥11,980 up to ¥250,000, else Express ¥29,980,
   compared against the representative PSA10 price
 - **Gauge zone boundaries & scale** — `scale_max = round(peak * 1.08, -3)`, with the
   watch band split into two visual shades at its midpoint

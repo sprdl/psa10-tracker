@@ -486,6 +486,10 @@
   // ¥1,900 + handling fee ¥550 = ¥12,430. Declared value is capped at ¥150,000 per card on Standard.
   // Older analyses stored shipping as a ¥2,000 estimate; that's read as the real ¥2,450.
   const PSA_STD = { fee: 9980, ship: 1900, handling: 550, cap: 150000 };
+  // Priority: ¥2,000 more than Standard, declared value up to ¥250,000 (Philipp, 2026-10-12). Above that only Express.
+  const PSA_PRIO = { fee: 11980, cap: 250000 };
+  // The cheapest PSA service whose declared-value limit covers a card worth `value` (its PSA10 price).
+  function psaTierFor(value) { return !value || value <= PSA_STD.cap ? 'standard' : value <= PSA_PRIO.cap ? 'priority' : 'express'; }
   function psaExtras(v) { return v == null || v === 2000 ? PSA_STD.ship + PSA_STD.handling : v; }
 
   // Raw A-rank price (decided 2026-10-08): the cheapest listing is often a copy that won't grade
@@ -518,25 +522,28 @@
     // Computed for every card with a raw A-rank price, a gem rate and a PSA10 price; the fees default to
     // PSA Standard, and an evaluation may override them (grading_fee_jpy / shipping_insurance_jpy).
     if (!rp || !rp.v || card.psa10_gem_rate_pct == null || !repPrice) return null;
-    const gradingFee = a && a.grading_fee_jpy != null ? a.grading_fee_jpy : PSA_STD.fee;
+    // the service follows the declared value (the PSA10 price): Standard to ¥150k, Priority to ¥250k, else Express
+    const tierKey = psaTierFor(repPrice);
+    // an evaluation's grading_fee_jpy overrides, except the old Standard default (9980), which follows the tier
+    const gradingFee = a && a.grading_fee_jpy != null && a.grading_fee_jpy !== PSA_STD.fee ? a.grading_fee_jpy : tierKey === 'standard' ? PSA_STD.fee : tierKey === 'priority' ? PSA_PRIO.fee : 29980;
     const shipping = psaExtras(a && a.shipping_insurance_jpy);
     const gemRate = card.psa10_gem_rate_pct / 100;
     if (!gemRate) return null;
     const rawP = rp.v;
     const diyExpected = (rawP + gradingFee + shipping) / gemRate;
     const delta = diyExpected - repPrice;
-    return { gradingFee, shipping, rawPrice: rawP, rawInfo: rp, diyExpected, delta, gemRate };
+    return { gradingFee, shipping, rawPrice: rawP, rawInfo: rp, diyExpected, delta, gemRate, tierKey, tierLabel: { standard: 'PSA Standard', priority: 'PSA Priority', express: 'PSA Express' }[tierKey] };
   }
 
   // Self-grade signal: making the PSA10 yourself (raw A-rank + PSA Standard ÷ gem rate, see computeDiyEconomics) is
   // expected to cost at least SELF_GRADE_MARGIN % less than the PSA10 trades for. Conservative: a copy that doesn't
   // come back a 10 counts as a total loss (it still sells raw), and it ignores the ~100 business days of waiting.
-  // Not for cards whose PSA10 is worth more than Standard's ¥150,000 declared-value cap, nor for Defer cards (no real
+  // Uses Standard up to ¥150,000 and Priority (+¥2,000) up to ¥250,000; not for cards worth more, nor for Defer cards (no real
   // PSA10 market to compare with). Shown next to the verdict; it never changes the verdict itself.
   const SELF_GRADE_MARGIN = 15;
   function selfGrade(card) {
     const rep = getRep(card);
-    if (!rep || rep > PSA_STD.cap || displayTagFor(card) === 'defer') return null;
+    if (!rep || rep > PSA_PRIO.cap || displayTagFor(card) === 'defer') return null;
     const diy = computeDiyEconomics(card, rep);
     if (!diy) return null;
     const margin = (1 - diy.diyExpected / rep) * 100;
@@ -544,8 +551,8 @@
   }
   function selfGradeTip(sg) {
     return `Self-grading looks cheaper: a PSA10 made yourself is expected to cost ${fmtYen(Math.round(sg.diyExpected))} `
-      + `(raw A-rank ${fmtYen(sg.rawPrice)} + PSA Standard ${fmtYen(sg.gradingFee + sg.shipping)}, ÷ ${Math.round(sg.gemRate * 1000) / 10}% gem rate), `
-      + `${Math.round(sg.margin)}% under the PSA10 price ${fmtYen(sg.rep)}. Takes about 100 business days; a copy that isn't a 10 counts as lost here.`;
+      + `(raw A-rank ${fmtYen(sg.rawPrice)} + ${sg.tierLabel} ${fmtYen(sg.gradingFee + sg.shipping)}, ÷ ${Math.round(sg.gemRate * 1000) / 10}% gem rate), `
+      + `${Math.round(sg.margin)}% under the PSA10 price ${fmtYen(sg.rep)}. Takes about ${sg.tierKey === 'priority' ? 80 : 100} business days; a copy that isn't a 10 counts as lost here.`;
   }
   function selfGradeChip(card) {
     const sg = selfGrade(card);
@@ -3131,7 +3138,7 @@
   // fee is spent: it only shows the expected result and the return date.
   // cap = the highest declared value (a card's value after grading) the service accepts; only Standard's is known
   // (pricecheck/references/state.md), the others are null until someone reads them off PSA Japan's order screen.
-  const GRADE_TIERS = { standard: { label: 'Standard', fee: 9980, days: 100, cap: 150000 }, priority: { label: 'Priority', fee: 11980, days: 80, cap: null }, express: { label: 'Express', fee: 29980, days: 25, cap: null } };
+  const GRADE_TIERS = { standard: { label: 'Standard', fee: 9980, days: 100, cap: 150000 }, priority: { label: 'Priority', fee: PSA_PRIO.fee, days: 80, cap: PSA_PRIO.cap }, express: { label: 'Express', fee: 29980, days: 25, cap: null } };
   const GRADE_MARGIN = 0.10;
   function addBusinessDays(iso, n) {
     const d = new Date(iso + 'T12:00:00Z');
@@ -3148,8 +3155,8 @@
     return out;
   }
   function gradeCalc(card, c) {
-    const it = c.item, tierKey = GRADE_TIERS[it.tier] ? it.tier : 'standard', tier = GRADE_TIERS[tierKey];
-    const raw = rawPriceV(card), psa = getRep(card);
+    const it = c.item, psa = getRep(card), tierKey = GRADE_TIERS[it.tier] ? it.tier : psaTierFor(psa), tier = GRADE_TIERS[tierKey];
+    const raw = rawPriceV(card);
     const own = it.gem_rate_pct != null, gem = own ? it.gem_rate_pct : card.psa10_gem_rate_pct;
     const ret = it.sent ? { date: addBusinessDays(it.sent, tier.days), days: tier.days, assumed: !GRADE_TIERS[it.tier] } : null;
     if (!raw || !psa || gem == null || !gem) return { missing: !psa ? 'no PSA10 price yet' : !raw ? 'no raw A-rank price to compare with' : 'no gem rate yet (give your own chance of a 10 in the grading info)', ret, tierKey };
@@ -3161,7 +3168,7 @@
     const gain = ev - fee - nraw;
     let verdict = null;
     if (!c.sunk) verdict = pBE == null || p <= pBE - GRADE_MARGIN ? 'dont' : p >= pBE + GRADE_MARGIN ? 'grade' : 'close';
-    return { p, gem, own, fee, n10, nraw, ev, gain, pBE, verdict, ret, raw, psa, tierKey, capWarn: tierKey === 'standard' && psa > PSA_STD.cap };
+    return { p, gem, own, fee, n10, nraw, ev, gain, pBE, verdict, ret, raw, psa, tierKey, capWarn: tier.cap != null && psa > tier.cap };
   }
   const GRADE_LABELS = { grade: 'Grade it', close: 'Close call', dont: "Don't grade" };
   function gradingFormUrl(c, name) {
@@ -3184,7 +3191,7 @@
       return `<div class="grade-line">${net}Expected ${fmtYen(g.ev)} once graded</span> (${chance}; a 10 nets ${fmtYen(g.n10)}, otherwise about ${fmtYen(g.nraw)}). ${retTxt ? retTxt + '. ' : 'Add the date it was sent to see the return date. '}${link}</div>`;
     }
     const need = g.pBE == null ? 'A PSA10 would not even beat the raw copy.' : `It pays off at a ${Math.ceil(g.pBE * 100)}%+ chance of a 10.`;
-    return `<div class="grade-line"><span class="vtag gr-${g.verdict}">${GRADE_LABELS[g.verdict]}</span> ${net}Graded: ${fmtYen(g.ev - g.fee)} expected vs ${fmtYen(g.nraw)} selling it raw (${g.gain >= 0 ? '+' : '−'}${fmtYen(Math.abs(g.gain))})</span> with ${chance} and ${fmtYen(g.fee)} grading costs. ${need}${g.capWarn ? ` A PSA10 here is above PSA Standard's ¥${PSA_STD.cap.toLocaleString()} declared-value limit, so it needs a higher tier.` : ''} ${link}</div>`;
+    return `<div class="grade-line"><span class="vtag gr-${g.verdict}">${GRADE_LABELS[g.verdict]}</span> ${net}Graded: ${fmtYen(g.ev - g.fee)} expected vs ${fmtYen(g.nraw)} selling it raw (${g.gain >= 0 ? '+' : '−'}${fmtYen(Math.abs(g.gain))})</span> with ${chance} and ${fmtYen(g.fee)} grading costs. ${need}${g.capWarn ? ` A PSA10 here is above PSA ${GRADE_TIERS[g.tierKey].label}'s ${fmtYen(GRADE_TIERS[g.tierKey].cap)} declared-value limit, so it needs ${psaTierFor(g.psa) === 'priority' ? 'Priority (¥2,000 more, up to ¥250,000)' : 'Express'}.` : ''} ${link}</div>`;
   }
   // For a raw single on the Holdings page: just when it was sent / is due back, and the grading-info link.
   function gradeMetaHtml(card, c) {
@@ -3258,7 +3265,7 @@
     const selIds = st.sel ? st.sel.filter((id) => todo.some((c) => c.id === id)) : base.filter((c) => !c.std.missing && c.std.verdict !== 'dont').map((c) => c.id);
     const picked = base.filter((c) => selIds.includes(c.id));
     const maxDecl = Math.max(0, ...picked.map((c) => (c.card && getRep(c.card)) || 0));
-    const autoKey = !maxDecl || maxDecl <= GRADE_TIERS.standard.cap ? 'standard' : 'priority';
+    const autoKey = psaTierFor(maxDecl);
     const tierKey = st.tier === 'auto' ? autoKey : st.tier, tier = GRADE_TIERS[tierKey];
     const date = st.date || todayJST();
     const slash = (d) => String(d).replace(/-/g, '/');   // shown as YYYY/MM/DD; stored and sent to the form as YYYY-MM-DD
@@ -3309,7 +3316,7 @@
     const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeAttr(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(slash(date))} ↗</a>` : '';
     el.innerHTML = psaBacklogLine() + top + summary + warn +`<div class="sub-acts">${sendBtn}<span class="muted">${picked.length ? 'opens one GitHub form for all ticked cards; submit it after you post them' : 'tick the cards to send'}</span></div>`
       + (todo.length ? `<div class="pl-list">${base.map(row).join('')}</div>` : '<div class="empty-state">Every raw copy is at PSA.</div>') + awayHtml
-      + `<p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), and Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are business days from the send date. Ticks, service and shipping are saved in this browser.</p>`;
+      + `<p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)} and Priority (¥2,000 more per card) up to ${fmtYen(GRADE_TIERS.priority.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are business days from the send date. Ticks, service and shipping are saved in this browser.</p>`;
     trimImages(el);
     el.querySelectorAll('[data-tier]').forEach((b) => b.addEventListener('click', () => save({ tier: b.dataset.tier })));
     el.querySelectorAll('[data-sub]').forEach((cb) => cb.addEventListener('change', () => {
@@ -4413,10 +4420,10 @@
         <div class="cd-stat"><div class="lbl">vs. buying the slab</div><div class="val ${diy.delta >= 0 ? 'neg' : 'pos'}">${diy.delta >= 0 ? '+' : '−'}${fmtYen(Math.abs(diy.delta))}</div></div>
       </div>
       <p class="cd-note">Raw A-rank price = ${diy.rawInfo.src === 'sales' ? `median of the last ${diy.rawInfo.n} sales in ${RAW_SALES_DAYS} days, because the cheapest listing (${fmtYen(diy.rawInfo.ask)}) is below what copies actually sell for` : diy.rawInfo.med != null ? `the lowest ask (recent sales median ${fmtYen(diy.rawInfo.med)} is lower, and you can't buy below the ask)` : `the lowest ask (fewer than ${RAW_SALES_MIN} sales in ${RAW_SALES_DAYS} days)`}.</p>
-      <p class="cd-note">Expected DIY cost = (raw ¥${Math.round(diy.rawPrice).toLocaleString()} + ${diy.gradingFee === PSA_STD.fee && diy.shipping === PSA_STD.ship + PSA_STD.handling
-        ? `PSA Standard ¥${(PSA_STD.fee + PSA_STD.ship + PSA_STD.handling).toLocaleString()}: grading ¥${PSA_STD.fee.toLocaleString()} + insurance &amp; shipping ¥${PSA_STD.ship.toLocaleString()} + handling ¥${PSA_STD.handling.toLocaleString()}`
+      <p class="cd-note">Expected DIY cost = (raw ¥${Math.round(diy.rawPrice).toLocaleString()} + ${diy.shipping === PSA_STD.ship + PSA_STD.handling && diy.gradingFee === { standard: PSA_STD.fee, priority: PSA_PRIO.fee, express: 29980 }[diy.tierKey]
+        ? `${diy.tierLabel} ¥${(diy.gradingFee + PSA_STD.ship + PSA_STD.handling).toLocaleString()}: grading ¥${diy.gradingFee.toLocaleString()} + insurance &amp; shipping ¥${PSA_STD.ship.toLocaleString()} + handling ¥${PSA_STD.handling.toLocaleString()}`
         : `grading ¥${diy.gradingFee.toLocaleString()} + shipping &amp; fees ¥${diy.shipping.toLocaleString()}`}) ÷ ${card.psa10_gem_rate_pct}% gem rate.</p>
-      ${rep > PSA_STD.cap ? `<p class="cd-note warn">A PSA10 is worth ${fmtYen(rep)} here, above the ¥${PSA_STD.cap.toLocaleString()} declared-value limit of PSA's Standard service, so self-grading would need a pricier tier than the one in this sum.</p>` : ''}
+      ${diy.tierKey === 'priority' ? `<p class="cd-note">A PSA10 is worth ${fmtYen(rep)} here, above Standard's ${fmtYen(PSA_STD.cap)} declared-value limit, so this uses PSA Priority (¥2,000 more, up to ${fmtYen(PSA_PRIO.cap)}, about 80 business days).</p>` : diy.tierKey === 'express' ? `<p class="cd-note warn">A PSA10 is worth ${fmtYen(rep)} here, above Priority's ${fmtYen(PSA_PRIO.cap)} limit, so this uses PSA Express (¥29,980); check PSA's declared-value limits for this tier.</p>` : ''}
       ${rt ? `<p class="cd-note">If buying raw anyway (as a PSA hedge, not a saving): definitely buy ≤${fmtYen(rt.definitely_buy)}, buy ≤${fmtYen(rt.buy_upper)}, don't pay over ${fmtYen(rt.ceiling)}.</p>` : ''}`
       : `<div class="tier-pending">${!rep ? 'No PSA10 price yet, so there is nothing to compare grading it yourself against.'
           : !rawPriceV(card) ? 'No raw A-rank listing or recent sales right now, so the DIY cost can\'t be worked out.'
