@@ -85,6 +85,18 @@
      "url": "https://tinpanblog.com/?p=9168"
     }
    ]
+  },
+  "https://snkrdunk.com/apparels/103080": {
+   "written": "2026-10-13T08:46:24+09:00",
+   "headline": "Flat for a week while the market rallied ~20%; no reprint or new-card news behind it",
+   "text": "What's happening: The lowest PSA10 ask is ¥26,999, exactly where it was a week ago, while the My-tier index rose 19.6%. It is not illiquid: 20 one-copy sales in the last 7 days (about 5 a day) and 16 of the 20 cheapest listings within 15% of the lowest, so the flat price is real trading, not a stale book. The slab sells for 3.1x raw on pokeca-chart against a 6-month norm of 2.6x.\n\nWhy: Likely that this card simply didn't join the rally rather than any card-specific news. Per altema's reprint tracker there is no VSTAR Universe reprint announced as of 10/12, and the searches found no new Mewtwo product news; a new Mewtwo ex SAR in the 30th CELEBRATION set (on the watch list, raw around ¥4,200) gives Mewtwo fans a cheaper option.\n\nFor you: ¥26,999 sits in the Watch band (Buy ≤¥24,000, ceiling ¥28,500) and well above your ¥20,000 limit. Not joining a rally is a mild plus in a later correction (cards that ran up less held up better in past falls), but it is not a reason to buy above the Buy line.\n\nWatch: whether asks start drifting toward ¥24,000 once the rally cools, and whether the stretched slab premium closes through raw rising (the usual pattern) or the slab slipping.",
+   "signals": "7d price +0.0% (¥26,999→¥26,999) vs My-tier index +19.6% = -19.6 pts | slab premium 3.12x vs its 6-month norm 2.56x (+22%, pokeca-chart 2026-10-12)",
+   "sources": [
+    {
+     "title": "VSTARユニバース 再販情報 (altema)",
+     "url": "https://altema.jp/pokemoncard/vstaruniversesaihan"
+    }
+   ]
   }
  }
 }
