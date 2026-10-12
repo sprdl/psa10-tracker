@@ -5687,11 +5687,11 @@
         },
         "verdict": {
           "tag": "dont_buy",
-          "label": "Don't buy — ask ¥156,000, ¥48k above the ¥108k ceiling",
-          "reasoning": "The lowest ask has risen to ¥156,000 from ¥115,000 on 10/10, while recent one-copy sales run ¥113,000–¥180,000 (median ¥115,000 over the last 7 days), so the ask is about 36% above the trade median and the market is still pricing in the rally. The card is 6 days into tracking with a high hype exposure (score 74), and its slab premium is about 3.0× raw, slightly above its 6-month norm. Nothing in the market supports a Buy here: the nearest tier is the ¥108k ceiling, and the limit-odds model puts a fall to ¥85k at about 1% within 30 days. The call would change if the ask fell back under ¥108k with sales holding at that level.",
-          "written": "2026-10-12T07:38:19+09:00"
+          "label": "Don't buy — the ask eased to ¥133k but is still 23% over the ¥108k ceiling",
+          "reasoning": "The lowest PSA10 ask is ¥133,000, down 14.7% from ¥156,000 when the last verdict was written on 10/12, but still 23% above the ¥108,000 ceiling. One-copy sales over the last 30 days ran ¥91,555–¥180,000 (median ¥105,000); the last 7 days' median rose to ¥115,000 on 13 sales, with one outlier print at ¥180,000 yesterday, so the ask is about 16% above where it actually trades. The book is thin (3 of 13 listings within 15% of the lowest) and trading is slow (about 1.6 sales a day). The rise rides a market rally: the My-tier index is +19.6% over 7 days but only +1.5% over 30 days. What would change the call: listings back at or below ¥108,000, ideally toward the ¥95,000 Buy line, once the rally cools.",
+          "written": "2026-10-13T08:45:17+09:00"
         },
-        "verdict_price_ref": 156000
+        "verdict_price_ref": 133000
       }
     },
     {
