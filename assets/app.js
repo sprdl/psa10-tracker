@@ -1460,6 +1460,43 @@
     }
     return best;
   }
+  // "On deck" for the Overview's Needs-you panel: the cards closest to their next signal, so the panel shows what
+  // is coming even on a quiet day. Watchlist cards: gap from the lowest ask down to your limit (else the Buy line).
+  // Owned cards: gap from the price up to their Take-profit line. Smallest gaps first.
+  function onDeck(cards, skip, n) {
+    const out = [];
+    for (const c of cards) {
+      if (skip.has(c.url) || !hasMarket(c)) continue;
+      if (holdingsFor(c).length) {
+        const t = sellTiersOf(c), p = getRep(c);
+        if (t && p && p < t.take_profit_from) out.push({ card: c, own: true, pct: (t.take_profit_from / p - 1) * 100, now: p, line: t.take_profit_from, what: 'Take profit' });
+        continue;
+      }
+      const g = limitGap(c), t = c.analysis && c.analysis.tiers, rep = getRep(c);
+      if (g && g.pct > 0) out.push({ card: c, pct: g.pct, now: g.ask, line: g.lim, what: 'your limit' });
+      else if (!g && t && rep && rep > t.buy_upper) out.push({ card: c, pct: (rep / t.buy_upper - 1) * 100, now: rep, line: t.buy_upper, what: 'Buy line' });
+    }
+    // a mix: the closest buy-side cards and at least one owned card when there is one, so neither side crowds out the other
+    out.sort((a, b) => a.pct - b.pct);
+    const buy = out.filter((x) => !x.own), own = out.filter((x) => x.own);
+    const pick = buy.slice(0, own.length ? n - 1 : n);
+    pick.push(...own.slice(0, n - pick.length));
+    for (const x of buy) if (pick.length < n && !pick.includes(x)) pick.push(x);
+    return pick.sort((a, b) => a.pct - b.pct);
+  }
+  function onDeckHtml(list) {
+    if (!list.length) return '';
+    return `<div class="od"><span class="lbl od-h">Closest to a signal</span><div class="od-grid">${list.map((x) => {
+      const nm = parseCardName(x.card.card_name_ja).short;
+      const fill = Math.max(6, Math.min(100, 100 - x.pct * 2.5));
+      return `<a class="od-tile${x.own ? ' own' : ''}" href="#/card/${escapeAttr(cardId(x.card))}" data-ib="${escapeAttr(x.card.url)}" title="${escapeAttr(`${nm}: ${fmtYen(x.now)} now, ${x.what} ${fmtYen(x.line)}`)}">
+        <span class="wthumb od-th">${x.card.image_url ? `<img class="card-img" src="${escapeAttr(x.card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+        <span class="od-txt"><b class="jp">${escapeHtml(nm)}</b>
+          <small>${fmtYen(x.now)} → ${escapeHtml(x.what)} ${fmtYen(x.line)}</small>
+          <span class="od-bar"><i style="width:${fill.toFixed(0)}%"></i></span>
+          <span class="od-gap"><em>${x.own ? 'Sell side' : 'Buy side'}</em>${x.own ? '+' : '−'}${Math.abs(x.pct).toFixed(1)}% to go</span></span></a>`;
+    }).join('')}</div></div>`;
+  }
   function renderInbox(cards) {
     const el = document.getElementById('inbox');
     if (!el) return;
@@ -1468,15 +1505,14 @@
     const seen = new Set(store.get('psa10.seenSignals', []));
     const items = inboxItems(cards), buys = items.filter((x) => x.buy);
     const tracked = cards.filter((c) => lowestAsk(c) != null).length;
-    const near = buys.length ? null : closestBuy(cards);
     const rules = correctionState().active || activeEvents().length;
-    const empty = buys.length ? '' : `<div class="ib-quiet"><span class="vtag none">Buy</span><span>No buy signals${rules ? ` (${correctionState().active ? 'correction' : 'event'} rule on: only Definitely-buy and your limits count)` : ''}.${near ? ` Closest: <a href="#/card/${escapeAttr(cardId(near.card))}" data-ib="${escapeAttr(near.card.url)}"><b class="jp">${escapeHtml(parseCardName(near.card.card_name_ja).short)}</b></a>, ${fmtPct(near.pct)} ${escapeHtml(near.what)}.` : ` ${tracked} cards tracked.`}</span></div>`;
+    const empty = buys.length ? '' : `<div class="ib-quiet"><span class="vtag none">Buy</span><span>No buy signals${rules ? ` (${correctionState().active ? 'correction' : 'event'} rule on: only Definitely-buy and your limits count)` : ''}. ${tracked} cards tracked.</span></div>`;
     el.innerHTML = `<h2 class="section-title">Needs you${items.length ? ` <span class="ib-n">${items.length}</span>` : ''}</h2>
       ${items.length || empty ? '' : '<p class="ib-none">Nothing to act on today.</p>'}
       <ul class="ib-list">${items.map((x) => {
         const isNew = x.buy && isLatest && !seen.has(x.key);
         return `<li><a class="ib-item" href="#/card/${escapeAttr(cardId(x.card))}" data-ib="${escapeAttr(x.card.url)}">${x.pill}<span class="ib-txt"><b class="jp">${escapeHtml(x.name)}</b><small>${escapeHtml(x.text)}</small></span>${isNew ? '<span class="sig-new">NEW</span>' : ''}<svg class="ib-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></li>`;
-      }).join('')}</ul>${empty}`;
+      }).join('')}</ul>${empty}${items.length >= 4 ? '' : onDeckHtml(onDeck(cards, new Set(items.map((x) => x.card.url)), 3))}`;
     el.querySelectorAll('[data-ib]').forEach((a) => a.addEventListener('click', (e) => {
       const card = cards.find((c) => c.url === a.dataset.ib);
       if (!card || !DESKTOP.matches) return;
