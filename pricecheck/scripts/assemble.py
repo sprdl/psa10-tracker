@@ -126,12 +126,17 @@ def main():
         if base.get("error") or base.get("favorite_error"):
             o["favorite_error"] = base.get("error") or base.get("favorite_error")
             warnings.append(f"{sid}: {o['favorite_error']}")
-        alt = r.get("altema") or {"skipped": "not collected"}
+        alt = r.get("altema") or {"skipped": "not collected"}   # population result: PSA pop report or altema
         if alt.get("skipped"):
-            o["population_note"] = f"altema not checked this run ({alt['skipped']})"
+            o["population_note"] = f"population not checked this run ({alt['skipped']})"
+        elif alt.get("source") == "psa" and alt.get("error") and alt.get("psa10_population") is None:
+            o["population_error"] = "PSA pop report: " + alt["error"]   # add_snapshot carries the last value forward
         else:
             o["psa10_population"] = alt.get("psa10_population")
             o["psa10_gem_rate_pct"] = alt.get("psa10_gem_rate_pct")
+            o["population_source"] = alt.get("source", "altema")
+            if alt.get("psa_total_graded") is not None:
+                o["psa_total_graded"] = alt["psa_total_graded"]
             if alt.get("error"):
                 o["population_error"] = alt["error"]
             if alt.get("psa10_population") and c.get("altema_mode") == "weekly_until_graded":

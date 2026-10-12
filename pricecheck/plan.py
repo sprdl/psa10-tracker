@@ -8,6 +8,7 @@ publishes, so the rules below live in one place.
 
 Prints a short summary plus two ready-made JS lines to paste into the in-page scripts:
     PLAN = [["455596","full",0], ...]            -> pricecheck/scripts/snkrdunk_full.js
+    PSAPOP = [["224087","/pop/tcg-cards/…","090","Greninja"], ...] -> pricecheck/scripts/psa_pop.js
     ALTEMA = [["224087","https://…","due"], ...] -> pricecheck/scripts/altema_batch.js
 
 Rules (unchanged from the old step 2/3 of the full check):
@@ -16,7 +17,11 @@ Rules (unchanged from the old step 2/3 of the full check):
             A "tile" card whose PSA10 tile shows a price gets its listings read too (in the page
             script), so a new market is captured from its first day. Third field 1 = fetch the
             photo URL (the card has none on file).
-  altema    altema_mode "daily": every run while PSA10 population < 8,000 (or unknown), Mondays
+  PSA pop   (since 2026-10-12, the primary population source) cards with psa_pop_url read PSA's own pop report:
+            every run while PSA10 population < 8,000 (or unknown), Mondays once it's 8,000+. Such a card is
+            not read on altema at all. "PSAPOP MISSING" lists cards with regular PSA10 sales (a PSA10 ask and a
+            verdict other than Defer, so not the brand-new 30th-anniversary prints) that have no psa_pop_url yet.
+  altema    (fallback, only cards without psa_pop_url) altema_mode "daily": every run while PSA10 population < 8,000 (or unknown), Mondays
             only once it's 8,000+.  "weekly_until_graded": Mondays, or when this run shows PSA10
             activity (listed as "ifpsa"; full_update.py keeps the result only if the SNKRDUNK line
             shows a PSA10 ask or a completed PSA10 sale).
@@ -79,6 +84,7 @@ def build_plan(root=ROOT, now=None):
     for c in (snap or {}).get("cards", []):
         by_id[c.get("url", "").rstrip("/").split("/")[-1]] = c
     plan, altema, skipped, prem, amiss = [], [], {}, [], []
+    psapop, pmiss = [], []
     tracked_slugs = set()
     for c in load_cards(root):
         sid = c["snkrdunk_id"]
@@ -94,6 +100,15 @@ def build_plan(root=ROOT, now=None):
         url = c.get("altema_url")
         pop = prev.get("psa10_population")
         amode = c.get("altema_mode", "daily")
+        verdict = (((prev.get("analysis") or {}).get("verdict") or {}).get("tag"))
+        if c.get("psa_pop_url"):
+            if isinstance(pop, int) and pop >= MATURE_POP and not monday and prev.get("population_source") == "psa":
+                skipped[sid] = "weekly population check (mature card, 8,000+ graded)"
+            else:
+                psapop.append([sid, c["psa_pop_url"], c.get("psa_pop_no", ""), c.get("psa_pop_name", "")])
+            continue
+        if has_market and verdict != "defer":
+            pmiss.append([sid, c.get("card_name_ja", "")])
         if not url:
             skipped[sid] = "no altema page on file yet"
             amiss.append([sid, c.get("card_name_ja", "")])
@@ -146,7 +161,7 @@ def build_plan(root=ROOT, now=None):
         print(f"(holdings prices skipped: {e})")
     return {
         "held": held, "now": now, "monday": monday, "scout": scout, "latest": snap_path.name if snap_path else None,
-        "plan": plan, "altema": altema, "altema_skipped": skipped, "altema_missing": amiss, "premium": prem,
+        "plan": plan, "psapop": psapop, "psapop_missing": pmiss, "altema": altema, "altema_skipped": skipped, "altema_missing": amiss, "premium": prem,
         "odds_model_built": odds_built, "odds_rebuild_due": odds_age is None or odds_age > 30,
     }
 
@@ -157,16 +172,20 @@ def main():
     print(f"{p['now']:%Y-%m-%d %A %H:%M} JST · latest snapshot {p['latest']} · "
           f"{'MONDAY: PSA tier check + release calendar due · ' if p['monday'] else ''}"
           f"odds model built {p['odds_model_built']}{' → REBUILD DUE (step 5b)' if p['odds_rebuild_due'] else ''}")
-    print(f"SNKRDUNK: {full} full, {len(p['plan']) - full} tile-only · altema: "
+    print(f"SNKRDUNK: {full} full, {len(p['plan']) - full} tile-only · PSA pop: {len(p['psapop'])} cards in "
+          f"{len({x[1] for x in p['psapop']})} set pages · altema: "
           f"{sum(1 for a in p['altema'] if a[2] == 'due')} due, {sum(1 for a in p['altema'] if a[2] == 'ifpsa')} if PSA10 activity, "
           f"{len(p['altema_skipped'])} skipped")
     print("PLAN = " + json.dumps(p["plan"]))
+    print("PSAPOP = " + json.dumps(p["psapop"], ensure_ascii=False))
     print("ALTEMA = " + json.dumps(p["altema"]))
     print("PREM = " + json.dumps(p["premium"]))
     print("HELD = " + json.dumps(p["held"]))
     print("SCOUT = " + json.dumps(p["scout"], separators=(",", ":")))
+    if p["psapop_missing"]:
+        print("PSAPOP MISSING (step 1c) = " + json.dumps(p["psapop_missing"], ensure_ascii=False))
     if p["altema_missing"]:
-        print("ALTEMA MISSING (step 1c) = " + json.dumps(p["altema_missing"], ensure_ascii=False))
+        print("ALTEMA MISSING (step 1d) = " + json.dumps(p["altema_missing"], ensure_ascii=False))
 
 
 if __name__ == "__main__":

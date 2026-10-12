@@ -9,7 +9,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/26372",
       "altema_mode": "daily",
       "note": "released 2024-03-22, mature population; altema lists it as 'ゲッコウガex SAR(テラスタル)'. Distinct from Mega Greninja (776365)",
-      "added": "2026-09-25"
+      "added": "2026-09-25",
+      "psa_pop_url": "/pop/tcg-cards/2024/pokemon-japanese-sv5a-crimson-haze/264649",
+      "psa_pop_no": "090",
+      "psa_pop_name": "Greninja"
     },
     {
       "snkrdunk_id": "776365",
@@ -29,7 +32,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/32441",
       "altema_mode": "daily",
       "note": "added from issue #3",
-      "added": "2026-09-26"
+      "added": "2026-09-26",
+      "psa_pop_url": "/pop/tcg-cards/2025/pokemon-japanese-sv11w-white-flare/305728",
+      "psa_pop_no": "174",
+      "psa_pop_name": "Reshiram"
     },
     {
       "snkrdunk_id": "100567",
@@ -49,7 +55,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/16122",
       "altema_mode": "daily",
       "note": "added from issue #20",
-      "added": "2026-09-26"
+      "added": "2026-09-26",
+      "psa_pop_url": "/pop/tcg-cards/2022/pokemon-japanese-sword-shield-vstar-universe/225772",
+      "psa_pop_no": "205",
+      "psa_pop_name": "Pikachu"
     },
     {
       "snkrdunk_id": "881430",
@@ -79,7 +88,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/10819",
       "altema_mode": "daily",
       "note": "added from issue #17",
-      "added": "2026-09-26"
+      "added": "2026-09-26",
+      "psa_pop_url": "/pop/tcg-cards/2021/pokemon-japanese-sword-shield-gengar-vmax-high-class-deck/193597",
+      "psa_pop_no": "020",
+      "psa_pop_name": "Gengar VMAX"
     },
     {
       "snkrdunk_id": "704401",
@@ -89,7 +101,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/33694",
       "altema_mode": "daily",
       "note": "added from issue #24",
-      "added": "2026-09-27"
+      "added": "2026-09-27",
+      "psa_pop_url": "/pop/tcg-cards/2025/pokemon-japanese-m2-inferno-x/318095",
+      "psa_pop_no": "110",
+      "psa_pop_name": "Charizard"
     },
     {
       "snkrdunk_id": "724996",
@@ -99,7 +114,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/34713",
       "altema_mode": "daily",
       "note": "added from issue #23",
-      "added": "2026-09-27"
+      "added": "2026-09-27",
+      "psa_pop_url": "/pop/tcg-cards/2025/pokemon-japanese-m2a-mega-dream-ex/323965",
+      "psa_pop_no": "240",
+      "psa_pop_name": "Gengar"
     },
     {
       "snkrdunk_id": "103079",
@@ -109,7 +127,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/16129",
       "altema_mode": "daily",
       "note": "added from issue #31",
-      "added": "2026-09-30"
+      "added": "2026-09-30",
+      "psa_pop_url": "/pop/tcg-cards/2022/pokemon-japanese-sword-shield-vstar-universe/225772",
+      "psa_pop_no": "212",
+      "psa_pop_name": "Charizard VSTAR"
     },
     {
       "snkrdunk_id": "103080",
@@ -119,7 +140,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/16138",
       "altema_mode": "daily",
       "note": "added from issue #30",
-      "added": "2026-09-30"
+      "added": "2026-09-30",
+      "psa_pop_url": "/pop/tcg-cards/2022/pokemon-japanese-sword-shield-vstar-universe/225772",
+      "psa_pop_no": "221",
+      "psa_pop_name": "Mewtwo VSTAR"
     },
     {
       "snkrdunk_id": "128099",
@@ -139,7 +163,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/34696",
       "altema_mode": "daily",
       "note": "added from issue #39",
-      "added": "2026-10-03"
+      "added": "2026-10-03",
+      "psa_pop_url": "/pop/tcg-cards/2025/pokemon-japanese-m2a-mega-dream-ex/323965",
+      "psa_pop_no": "223",
+      "psa_pop_name": "Charizard"
     },
     {
       "snkrdunk_id": "730952",
@@ -149,7 +176,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/34703",
       "altema_mode": "daily",
       "note": "added from issue #56",
-      "added": "2026-10-05"
+      "added": "2026-10-05",
+      "psa_pop_url": "/pop/tcg-cards/2025/pokemon-japanese-m2a-mega-dream-ex/323965",
+      "psa_pop_no": "230",
+      "psa_pop_name": "Gengar"
     },
     {
       "snkrdunk_id": "164250",
@@ -159,7 +189,10 @@
       "altema_url": "",
       "altema_mode": "daily",
       "note": "added in chat 2026-10-10 (raw-to-grade shortlist)",
-      "added": "2026-10-10"
+      "added": "2026-10-10",
+      "psa_pop_url": "/pop/tcg-cards/2023/pokemon-japanese-sv4a-shiny-treasure-ex/255404",
+      "psa_pop_no": "347",
+      "psa_pop_name": "Mew"
     },
     {
       "snkrdunk_id": "91189",
@@ -169,7 +202,10 @@
       "altema_url": "",
       "altema_mode": "daily",
       "note": "added in chat 2026-10-10 (raw-to-grade shortlist)",
-      "added": "2026-10-10"
+      "added": "2026-10-10",
+      "psa_pop_url": "/pop/tcg-cards/2021/pokemon-japanese-sword-shield-single-strike-master/188404",
+      "psa_pop_no": "077",
+      "psa_pop_name": "Tyranitar V"
     },
     {
       "snkrdunk_id": "91166",
@@ -179,7 +215,10 @@
       "altema_url": "",
       "altema_mode": "daily",
       "note": "added in chat 2026-10-10 (raw-to-grade shortlist)",
-      "added": "2026-10-10"
+      "added": "2026-10-10",
+      "psa_pop_url": "/pop/tcg-cards/2021/pokemon-japanese-sword-shield-blue-sky-stream/196709",
+      "psa_pop_no": "074",
+      "psa_pop_name": "Dragonite V"
     },
     {
       "snkrdunk_id": "132279",
@@ -189,7 +228,10 @@
       "altema_url": "",
       "altema_mode": "daily",
       "note": "added in chat 2026-10-10 (raw-to-grade shortlist)",
-      "added": "2026-10-10"
+      "added": "2026-10-10",
+      "psa_pop_url": "/pop/tcg-cards/2023/pokemon-japanese-sv3-ruler-black-flame/244384",
+      "psa_pop_no": "134",
+      "psa_pop_name": "Charizard"
     },
     {
       "snkrdunk_id": "408333",
@@ -199,7 +241,10 @@
       "altema_url": "https://altema.jp/pokemoncard/card/29010",
       "altema_mode": "daily",
       "note": "restored in chat 2026-10-10 (listed here so quick checks publish it)",
-      "added": "2026-10-10"
+      "added": "2026-10-10",
+      "psa_pop_url": "/pop/tcg-cards/2024/pokemon-japanese-sv8-super-electric-breaker/284389",
+      "psa_pop_no": "132",
+      "psa_pop_name": "Pikachu"
     },
     {
       "snkrdunk_id": "146897",
@@ -209,7 +254,10 @@
       "altema_url": "",
       "altema_mode": "daily",
       "note": "added from issue #83",
-      "added": "2026-10-11"
+      "added": "2026-10-11",
+      "psa_pop_url": "/pop/tcg-cards/2023/pokemon-svp-en-sv-black-star-promo/230299",
+      "psa_pop_no": "085",
+      "psa_pop_name": "Pikachu"
     }
   ]
 }

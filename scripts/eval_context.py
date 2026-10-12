@@ -135,6 +135,7 @@ def main():
     # SUPPLY / DIY
     pop, gem = card.get("psa10_population"), card.get("psa10_gem_rate_pct")
     print(f"\nSUPPLY    PSA10 population {pop if pop is not None else 'n/a'}, gem rate {f'{gem}%' if gem else 'n/a'}"
+          + (f" from {'PSA pop report' if card.get('population_source') == 'psa' else 'altema'}" if pop is not None else "")
           + (f" (as of {card['population_as_of']})" if card.get("population_as_of") else "")
           + (f"  [{card.get('population_error') or card.get('population_note')}]" if card.get("population_error") or card.get("population_note") else ""))
     if rp and gem:

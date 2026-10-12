@@ -4357,7 +4357,7 @@
       if (fdiff !== 0) favHtml += ` <span class="${fdiff > 0 ? 'up' : 'down'}">${fdiff > 0 ? '▲' : '▼'}</span>`;
     }
     const raw = card.grades.raw_a_grade;
-    const popText = `${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'}${card.psa10_gem_rate_pct != null ? ' · ' + card.psa10_gem_rate_pct + '%' : ''}`;
+    const popText = `${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'}${card.psa10_gem_rate_pct != null ? ' · ' + card.psa10_gem_rate_pct + '%' : ''}${card.psa10_population != null ? `<small class="muted" title="${card.population_source === 'psa' ? `PSA's own population report: PSA 10s ÷ ${card.psa_total_graded != null ? card.psa_total_graded.toLocaleString() + ' ' : ''}graded` : 'altema (ポケカチ), PSA10総枚数 and 取得率'}"> ${card.population_source === 'psa' ? 'PSA' : 'altema'}</small>` : ''}`;
     const statsHtml = `
       <div class="cd-stats">
         <div class="cd-stat"><div class="lbl">Order-book depth</div><div class="val">${depth.within} / ${depth.total}${asOfHtml(psa10.listings_as_of)}</div><div class="depth-bar-track"><div class="depth-bar-fill" style="width:${Math.round(depth.ratio * 100)}%"></div></div></div>
@@ -5789,7 +5789,7 @@
     const dys = { fmt: (v) => v.toFixed(v < 10 ? 1 : 0) + 'd', fmtTip: (v) => v.toFixed(1) + ' days of sales' };
     const p7 = growth(pop, 7), p30 = growth(pop, 30), f30 = growth(fav, 30), c30 = growth(cheap, 30), v7 = growth(cover, 7);
     const charts = [
-      [chart(carried(pop), 'PSA10 population', '#7cb8ff', cnt), 'Supply: PSA10 population', 'graded copies in existence (altema); a fast rise means a wave of new slabs'],
+      [chart(carried(pop), 'PSA10 population', '#7cb8ff', cnt), 'Supply: PSA10 population', 'graded copies in existence (PSA pop report; altema before 2026-10-12); a fast rise means a wave of new slabs'],
       [chart(carried(fav), 'SNKRDUNK favorites', 'var(--accent)', cnt), 'Demand: favorites on SNKRDUNK', 'people watching the card'],
       [chart(cheap, 'Cheap PSA10 listings', '#c9a0ff', cnt), 'Cheap listings', 'PSA10 listings within 15% of the lowest ask (of the 20 cheapest read on full checks)'],
       [chart(cover, 'Days of sales the cheap listings cover', '#5fd4b8', dys), 'How long the cheap listings would last', 'cheap listings ÷ PSA10 sales a day: rising = copies piling up, falling = the cheap end gets bought up'],
@@ -5804,7 +5804,7 @@
     if (!charts.length && !p7 && !f30 && !cheap.length) return '';
     return `<div class="sd-block"><div class="lbl sd-h">Supply and demand</div>${stats}
       ${charts.map(([c, t, sub]) => `<div class="prem-ch"><div class="lbl">${t} <span class="muted">${sub}</span></div>${c}</div>`).join('')}
-      <p class="cd-note">Population comes from the full check's altema reading (young cards daily, mature ones on Mondays), favorites from every check (one reading a day kept), cheap listings and their cover from full checks. SNKRDUNK's total number of listings isn't read, only the 20 cheapest.</p></div>`;
+      <p class="cd-note">Population comes from the full check's reading of PSA's own pop report (altema for cards PSA doesn't list yet; young cards daily, mature ones on Mondays), favorites from every check (one reading a day kept), cheap listings and their cover from full checks. SNKRDUNK's total number of listings isn't read, only the 20 cheapest.</p></div>`;
   }
 
   // A long-run line chart of representative_price across every snapshot the

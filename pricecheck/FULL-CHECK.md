@@ -1,4 +1,4 @@
-# Full price check (SNKRDUNK + pokeca-chart.com + altema)
+# Full price check (SNKRDUNK + pokeca-chart.com + PSA pop report + altema)
 
 The full-check procedure of the `pokemon-card-price-check` skill (the skill carries the mode choice and
 the quick check). Everything is in the tracker repo at `$R` on the linked computer:
@@ -32,13 +32,14 @@ files during the price check"). If it is declined, carry on; afterwards clear le
 ## 1. Setup (one `device_bash` call)
 
 ```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && git pull --ff-only --quiet; python3 pricecheck/plan.py; for f in snkrdunk_full snkrdunk_held altema_batch pokeca_both pokeca_premium pokeca_scout; do echo "=== $f"; grep -v '^//' pricecheck/scripts/$f.js; done; echo "=== mytier"; python3 scripts/add_custom_index.py --print-js; python3 scripts/psa_backlog.py due
+R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && git pull --ff-only --quiet; python3 pricecheck/plan.py; for f in snkrdunk_full snkrdunk_held psa_pop altema_batch pokeca_both pokeca_premium pokeca_scout; do echo "=== $f"; grep -v '^//' pricecheck/scripts/$f.js; done; echo "=== mytier"; python3 scripts/add_custom_index.py --print-js; python3 scripts/psa_backlog.py due
 ```
 
 `plan.py` prints the JST date and weekday (Mondays add steps 6 and 6b), the odds model's build date
 (`REBUILD DUE` adds step 5b), a summary, and lines to paste into the scripts: `PLAN = [...]`
 (which cards get the product page only, or the product page plus both listings pages, and which need
-their photo URL) and `ALTEMA = [...]` (the altema pages due today, including the "weekly until
+their photo URL), `PSAPOP = [...]` (cards whose population and gem rate come from PSA's own pop report
+today, one set page per set) and `ALTEMA = [...]` (the altema pages due today, only for cards without a PSA pop page, including the "weekly until
 graded" ones that only count if the card shows PSA10 activity). The rules behind them are in
 `plan.py`'s docstring; `full_update.py` applies the same plan again when it publishes, so don't
 hand-edit the lists.
@@ -64,7 +65,9 @@ progress, stop and report it rather than polling on.
   After the requests are handled, run `python3 pricecheck/plan.py` again: the new card is now in `data/tracked_cards.json`, so the plan includes it. **Adding a card commits you to evaluating it in this same run** (step 8b): the run isn't finished, and you don't offer it as an optional next step, until the evaluation is applied or you can name a concrete reason it couldn't be.
 - For a new card with an empty `altema_url`: find its altema page with the on-site search, using the tips in `pricecheck/references/state.md`, and confirm the 型番 matches. Save it with `python3 scripts/card_requests.py set <snkrdunk_id> altema_url=<url>`. If you can't find it, leave it empty; its population shows as unavailable until found.
 
-**1c. Find missing altema pages** (every full check). If `plan.py` printed an `ALTEMA MISSING` line, those tracked cards have no altema page on file, so they never get a population or gem rate (no DIY tab, no gem rate for evaluations). For up to 3 of them per run, find the page with altema's on-site search (tips in `pricecheck/references/state.md`), confirm the 型番 matches, and save it with `python3 scripts/card_requests.py set <snkrdunk_id> altema_url=<url>`. Then run `python3 pricecheck/plan.py` again so today's `ALTEMA` list reads them. A card altema doesn't list (e.g. a deck-only print) can stay missing; say so once in the chat message.
+**1c. Find missing PSA pop pages** (every full check). If `plan.py` printed a `PSAPOP MISSING` line, those cards have regular PSA10 sales (a PSA10 ask and a verdict other than Defer) but no PSA pop page on file, so their population falls back to altema or is missing. For up to 3 per run: in the browser (signed in to psacard.com), open `https://www.psacard.com/pop/tcg-cards/156940`, pick the set's release year, set the year page's "Show" menu to 250 and page through it to find the set ("Pokemon Japanese <code>-<English set name>", e.g. "Pokemon Japanese Sv8a-Terastal Fest EX"; older sets read "Pokemon Japanese Sword & Shield <name>"; English promos "Pokemon Svp EN-SV Black Star Promo"). Open the set page, find the card's row (card number as PSA writes it, e.g. "090"; the English name), then save it with `python3 scripts/card_requests.py set <snkrdunk_id> psa_pop_url=/pop/tcg-cards/<year>/<slug>/<id> psa_pop_no=<number> psa_pop_name="<English name fragment>"` and run `python3 pricecheck/plan.py` again so today's `PSAPOP` includes it. Also say "PSA pop page added: <name>" in the chat message.
+
+**1d. Find missing altema pages** (every full check, only cards PSA doesn't list yet). If `plan.py` printed an `ALTEMA MISSING` line, those tracked cards have no altema page on file, so they never get a population or gem rate (no DIY tab, no gem rate for evaluations). For up to 3 of them per run, find the page with altema's on-site search (tips in `pricecheck/references/state.md`), confirm the 型番 matches, and save it with `python3 scripts/card_requests.py set <snkrdunk_id> altema_url=<url>`. Then run `python3 pricecheck/plan.py` again so today's `ALTEMA` list reads them. A card altema doesn't list (e.g. a deck-only print) can stay missing; say so once in the chat message.
 
 ## 2. SNKRDUNK, all cards in one run
 
@@ -92,11 +95,24 @@ Same tab, run the `snkrdunk_held` script verbatim with its `const HELD = [...]` 
 `HELD` line from step 1, and collect its `H` / `HE` lines with the polling call of step 2 but
 `window.__hq` instead of `window.__pj` (about 5 s per item). Keep the lines exactly as returned.
 
-## 3. altema, the due pages in one run
+## 3. Population: PSA pop report first, altema for the rest
 
-Skip if `ALTEMA = []`. Otherwise `navigate` the tab to the first URL in `ALTEMA`, run the
+**3a. PSA pop report** (since 2026-10-12, the primary source of PSA10 population and gem rate). Skip if
+`PSAPOP = []`. The pop report needs a signed-in PSA account (the browser pane keeps the login; the
+user signed in on 2026-10-12). `navigate` the tab to `https://www.psacard.com/pop/tcg-cards/156940`, run
+the `psa_pop` script verbatim with its `const PSAPOP = [...]` line replaced by the one from step 1, and
+collect its `POP …` lines with the polling call in the script's header (`window.__pp`; about 5–8 s per set
+page). Gem rate = PSA 10s ÷ total graded on the card's row. If the lines say `PSA sign-in page`, ask the
+user to sign in to psacard.com in the browser pane and re-run; if they say `Cloudflare check`, ask the user
+to turn the VPN off. Never type credentials and never try to pass a "verify you are human" check. If PSA
+can't be read this run, re-run `full_update.py` with `--skip psapop` and say why: the previous population
+is carried forward. Same precautions as SNKRDUNK: the user's own browser, only when a check is asked for,
+one page load per set.
+
+**3b. altema, the due pages in one run.** Skip if `ALTEMA = []`. Otherwise `navigate` the tab to the first URL in `ALTEMA`, run the
 `altema_batch` script verbatim with its `const ALTEMA = [...]` line replaced by the one from step 1,
-and collect its `ALT …` lines with the same polling call as in step 2.
+and collect its `ALT …` lines with the same polling call as in step 2. Put the `POP` and `ALT` lines into the
+publish step together with the others.
 
 ## 4. Market indices
 
@@ -251,7 +267,7 @@ in one line (its headline).
 - a `defer` card with a PSA10 ask, on Mondays only (one fresh look a week).
 The run is not finished while that list has entries you haven't evaluated. "It's new" or "it has no tiers yet" is the reason this step exists, never a reason to skip it (runs on 2026-10-03 and 2026-10-10 skipped a new card this way).
 1. For each listed card (at most 3 per run; the rest show as "(next run)"), one `device_bash` call: `cd "$R" && python3 scripts/eval_context.py <snkrdunk_id>`. It prints everything this run already has for the card: asks, depth, sales, the raw A-rank price, population and gem rate, DIY cost, ownership and break-even, slab premium, hype exposure, age, the My-tier index with the correction rule and rally flag, the event window, and limit-odds for the tiers (add `--odds <price> <price>…` to test candidate tier prices).
-2. Run the `pokemon-tcg-card-evaluation` skill end to end for it, **reusing that output** instead of reading those pages again. Only fetch what the evaluation still needs: the card's price history and peak-month median (SNKRDUNK 売買履歴 or pokeca-chart), set and release details, and, for a card a quick check just added, its listing depth (`snkrdunk_listings.js` on the listings page) and its altema page (find it as in 1c, save it with `card_requests.py set`). Use `eval_context.py --odds` for the reachability check of the tiers you're about to set.
+2. Run the `pokemon-tcg-card-evaluation` skill end to end for it, **reusing that output** instead of reading those pages again. Only fetch what the evaluation still needs: the card's price history and peak-month median (SNKRDUNK 売買履歴 or pokeca-chart), set and release details, and, for a card a quick check just added, its listing depth (`snkrdunk_listings.js` on the listings page) and its PSA pop page (find it as in 1c; altema as in 1d only if PSA has no row yet), saved with `card_requests.py set`. Use `eval_context.py --odds` for the reachability check of the tiers you're about to set.
 3. A card with **no PSA10 ask** (no slabs listed yet, e.g. a set released weeks ago) still gets evaluated: the skill records a `defer` verdict without tiers, with reasoning about when a PSA10 market is likely (release date vs PSA turnaround), the raw A-rank price and what a DIY slab would cost. Same for a card whose data is too thin to set tiers (one or two listings, no sales). That's a valid result and takes the card off the queue.
 4. Apply with the skill's step 8 (`apply_analysis.py`, keyed by the card's SNKRDUNK URL). For an owned card, the buy part plus the sell part (next paragraph) go in one JSON.
 5. If an evaluation can't finish (a site is unreachable, or `apply_analysis.py` refuses the JSON), nothing is applied and the card stays queued for the next check. Say which card and why.
@@ -327,7 +343,7 @@ EOF
 ```
 It checks the fields, refuses SNKRDUNK/pokeca-chart sources, commits and pushes. Mention each story in the chat message in one line ("Story added: <name>, illustrated by <artist>").
 
-**Chat message (full check):** keep it short. Say where it was published (snapshot file name, or "not published" and why). Then pass on anything notable from the WARNINGS/CHANGES/FULL_UPDATE NOTES and from `add_snapshot.py`'s own warnings: a stale timestamp, the tracked-card set changing, cards whose verdict now needs a fresh review. Examples: very few live listings, a big favorite-count move, a volume spike, a site that couldn't be reached. The live site shows the rest. Include the My-tier index line `add_custom_index.py` printed (level and change), or say why it was skipped. On Mondays, add the release-calendar line from step 6b. Every card in `full_update.py`'s `WRITE STORIES NOW` block must appear as "Story added: …" or "NOT written: <name> — <concrete reason>". Every card in its `EVALUATE NOW` block must appear either as evaluated ("Evaluated <name>: …") or as "NOT evaluated: <name> — <concrete reason, e.g. evaluation skill couldn't reach pokeca-chart>"; being new is not a reason. Also report any card requests handled in step 1b ("Added: <name>" / "Couldn't add #<n>: <reason>") one line per card analysed in step 7b, one line per card evaluated in step 8b or re-evaluated in step 8d, one line per altema page found in step 1c, and one line per story written in step 8c, e.g. "Evaluated <name>: Watch, tiers ¥X / ¥Y / ¥Z, 2 predictions recorded".
+**Chat message (full check):** keep it short. Say where it was published (snapshot file name, or "not published" and why). Then pass on anything notable from the WARNINGS/CHANGES/FULL_UPDATE NOTES and from `add_snapshot.py`'s own warnings: a stale timestamp, the tracked-card set changing, cards whose verdict now needs a fresh review. Examples: very few live listings, a big favorite-count move, a volume spike, a site that couldn't be reached. The live site shows the rest. Include the My-tier index line `add_custom_index.py` printed (level and change), or say why it was skipped. On Mondays, add the release-calendar line from step 6b. Every card in `full_update.py`'s `WRITE STORIES NOW` block must appear as "Story added: …" or "NOT written: <name> — <concrete reason>". Every card in its `EVALUATE NOW` block must appear either as evaluated ("Evaluated <name>: …") or as "NOT evaluated: <name> — <concrete reason, e.g. evaluation skill couldn't reach pokeca-chart>"; being new is not a reason. Also report any card requests handled in step 1b ("Added: <name>" / "Couldn't add #<n>: <reason>") one line per card analysed in step 7b, one line per card evaluated in step 8b or re-evaluated in step 8d, one line per PSA pop page found in step 1c and altema page in 1d, and one line per story written in step 8c, e.g. "Evaluated <name>: Watch, tiers ¥X / ¥Y / ¥Z, 2 predictions recorded".
 
 ## Output shape (produced by assemble.py)
 

@@ -376,6 +376,9 @@ def carry_forward_population(data: dict, prev_path: Optional[Path]) -> None:
         card["psa10_population"] = p["psa10_population"]
         if card.get("psa10_gem_rate_pct") is None and p.get("psa10_gem_rate_pct") is not None:
             card["psa10_gem_rate_pct"] = p["psa10_gem_rate_pct"]
+        for k in ("population_source", "psa_total_graded"):
+            if card.get(k) is None and p.get(k) is not None:
+                card[k] = p[k]
         card["population_as_of"] = p.get("population_as_of") or prev_ts
         carried.append(card.get("card_name_ja", card.get("url")))
     if carried:

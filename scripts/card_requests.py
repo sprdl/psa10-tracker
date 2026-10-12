@@ -44,7 +44,7 @@ LABEL = "add-card"
 JST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 TRACKED = ROOT / "data" / "tracked_cards.json"
-SETTABLE = {"image_url", "altema_url", "altema_mode", "note", "card_name_ja"}
+SETTABLE = {"image_url", "altema_url", "altema_mode", "note", "card_name_ja", "psa_pop_url", "psa_pop_no", "psa_pop_name"}
 URL_RE = re.compile(r"https?://(?:www\.)?snkrdunk\.com/(?:en/)?apparels/(\d+)")
 
 
@@ -221,8 +221,12 @@ def cmd_set(args):
     dry = "--dry-run" in args
     tracked = load_tracked()
     card = next((c for c in tracked["cards"] if c["snkrdunk_id"] == sid), None)
+    ref_path, ref = ROOT / "pricecheck" / "references" / "cards.json", None
+    if not card and ref_path.exists():   # the original cards live in pricecheck/references/cards.json (same repo)
+        ref = json.loads(ref_path.read_text(encoding="utf-8"))
+        card = next((c for c in ref["cards"] if c["snkrdunk_id"] == sid), None)
     if not card:
-        die(f"{sid} isn't in data/tracked_cards.json (cards in the skill's own cards.json are changed via the skill)")
+        die(f"{sid} isn't a tracked card (data/tracked_cards.json or pricecheck/references/cards.json)")
     for p in pairs:
         k, v = p.split("=", 1)
         if k not in SETTABLE:
@@ -233,6 +237,10 @@ def cmd_set(args):
         print(f"{sid}: {k} = {v}")
     if dry:
         print("(dry run — nothing written)")
+        return
+    if ref is not None:
+        ref_path.write_text(json.dumps(ref, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        commit_and_push(f"update tracked card {sid}: {', '.join(p.split('=')[0] for p in pairs)}", extra=(str(ref_path.relative_to(ROOT)),))
         return
     save_tracked(tracked)
     commit_and_push(f"update tracked card {sid}: {', '.join(p.split('=')[0] for p in pairs)}")
