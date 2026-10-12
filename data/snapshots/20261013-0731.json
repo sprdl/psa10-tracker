@@ -2169,21 +2169,28 @@
         "grading_fee_jpy": 9980,
         "shipping_insurance_jpy": 2450,
         "verdict": {
-          "tag": "buy",
-          "label": "Buy — at the top of the buy zone, ¥5k above the old reference",
-          "reasoning": "The lowest PSA10 ask fell to ¥54,999 from ¥59,800 at the 10/08 verdict (−8%), so the price is now at the ¥55,000 Buy line of the ¥47,000 / ¥55,000 / ¥63,000 tiers. Recent one-copy sales run ¥49,000–¥59,990 over 30 days, median ¥55,000, about 4 sales a day, so the market is active and the listing depth is healthy (13 listings within 15%). The PSA10 premium over raw is 2.21x against a 6-month norm of 1.82x (+22%), which is rich, and the raw A-rank price of ¥36,999 with the ¥12,430 grading cost gives a DIY replacement of about ¥58,400, so the ask is slightly below DIY. The My-tier index is up 25% in 7 days (rally flag on), which is a reason to expect limit orders to fill less often. The Definitely-buy line of ¥47,000 is about 21% likely to be touched within 30 days on the limit-odds model. Your ¥37,000 limit is far below the market, so it will not fill soon. What would change the call: a PSA10 ask under ¥47,000, or a premium that falls back toward its norm.",
+          "tag": "watch",
+          "label": "Watch — ¥58k ask is ¥3k above the ¥55k Buy line",
+          "reasoning": "The lowest PSA10 ask is ¥58,000, up 5.5% from the ¥54,999 the 10/11 verdict was written at, which puts it back in the ¥55,000–¥63,000 Watch band of the ¥47,000 / ¥55,000 / ¥63,000 tiers. One-copy sales over 30 days ran ¥51,999–¥59,990, median ¥58,000, at about 3.4 sales a day, and all 20 cheapest listings sit within 15% of the ask, so liquidity is good. The ask is level with the ¥58,500 DIY replacement cost (¥36,999 raw plus ¥12,430 grading, at an 84.5% gem rate), so the slab is no longer cheap against raw; the PSA10 premium is 2.21x against a 6-month norm of 1.79x (+23%). The My-tier index is up about 20% in 7 days (rally flag on), so a limit fills less readily. The model gives about 46% for a listing at ¥55,000 within 30 days and 13% for ¥47,000. Your ¥37,000 limit is far below the market and will not fill soon. What would change the call: an ask at or under ¥55,000 (Buy) or ¥47,000 (Definitely buy).",
           "predictions": [
             {
-              "text": "Lowest PSA10 ask touches ¥47,000 or below by 2026-11-10",
-              "p": 0.21,
+              "text": "Lowest PSA10 ask touches ¥55,000 or below by 2026-11-12",
+              "p": 0.46,
+              "type": "touch_below",
+              "price": 55000,
+              "by": "2026-11-12"
+            },
+            {
+              "text": "Lowest PSA10 ask touches ¥47,000 or below by 2026-11-12",
+              "p": 0.13,
               "type": "touch_below",
               "price": 47000,
-              "by": "2026-11-10"
+              "by": "2026-11-12"
             }
           ],
-          "written": "2026-10-11T08:33:23+09:00"
+          "written": "2026-10-13T07:34:18+09:00"
         },
-        "verdict_price_ref": 54999
+        "verdict_price_ref": 58000
       },
       "psa10_population": 15446,
       "psa10_gem_rate_pct": 84.5,
@@ -3269,27 +3276,27 @@
         },
         "verdict": {
           "tag": "dont_buy",
-          "label": "Don't buy",
-          "reasoning": "The lowest PSA10 ask is ¥378,000 and completed sales sit around ¥385-400k, about 13% above the ¥335k ceiling and roughly 86% of the August peak median (¥457.7k). The price jumped about 35% in a week with the My-tier rally flag on, versus a Q4-2025 organic range of ¥238-247k and a Feb-2026 pre-hype level near ¥270k. Tiers stay anchored on those pre-hype levels (earlier 250k/285k/330k nudged up slightly for the re-rated market), not on the peak. Your ¥150k limit is far below the ask; the model gives under 10% odds of even ¥250k within 90 days. At this price the card alone also exceeds the ¥250k budget. Wait for a listing at or below ¥335k; the model puts that at about 36% within 90 days.",
+          "label": "Don't buy — ¥373k ask is still ¥38k above the ¥335k ceiling",
+          "reasoning": "The lowest PSA10 ask is ¥373,000, down 5.6% from the ¥395,000 the 10/10 verdict was written at, but still about 11% above the ¥335,000 ceiling. One-copy sales over 30 days ran ¥314,800–¥399,999, median ¥382,000, at about 2.9 sales a day, so the market is active and the book is deep (17 listings within 15% of the ask). Raw A-rank is an ask-only ¥335,500 with no sale in 30 days; the slab sits 18% under the ¥453k Express-route replacement cost, so there is no self-grading angle here. The My-tier index is up about 20% in 7 days (rally flag on, flag only) and hype exposure is high, so a pullback toward the pre-hype ¥265k-¥335k zone is plausible but not the base case. The model gives about 36% for a listing at ¥335,000 within 30 days and 15% for ¥295,000. At this price the card alone exceeds the ¥250k budget. What would change the call: an ask at or under ¥335,000 (Watch) or ¥295,000 (Buy).",
           "predictions": [
             {
-              "text": "Lowest PSA10 ask touches ¥335,000 or below within 30 days",
-              "p": 0.3,
+              "text": "Lowest PSA10 ask touches ¥335,000 or below by 2026-11-12",
+              "p": 0.36,
               "type": "touch_below",
               "price": 335000,
-              "by": "2026-11-09"
+              "by": "2026-11-12"
             },
             {
-              "text": "Lowest PSA10 ask touches ¥295,000 or below within 90 days",
-              "p": 0.23,
+              "text": "Lowest PSA10 ask touches ¥295,000 or below by 2027-01-11",
+              "p": 0.24,
               "type": "touch_below",
               "price": 295000,
-              "by": "2027-01-08"
+              "by": "2027-01-11"
             }
           ],
-          "written": "2026-10-10T10:24:18+09:00"
+          "written": "2026-10-13T07:34:18+09:00"
         },
-        "verdict_price_ref": 395000
+        "verdict_price_ref": 373000
       },
       "psa10_population": 8206,
       "psa10_gem_rate_pct": 81.2,

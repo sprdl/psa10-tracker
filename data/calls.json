@@ -10,7 +10,7 @@
    "right": 11,
    "wrong": 1,
    "neutral": 0,
-   "pending": 30
+   "pending": 31
   },
   "calls_scored": 0,
   "closed": {
@@ -40,7 +40,7 @@
    "right": 11,
    "wrong": 1
   },
-  "pending": 30,
+  "pending": 31,
   "next_close": "2026-10-15T16:26:00+09:00",
   "baseline": {
    "buy": {
@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 114,
+  "odds_open": 118,
   "odds_early_yes": 5,
   "model_odds": {
    "logged": 144,
@@ -88,6 +88,30 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/224087",
+   "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
+   "tag": "watch",
+   "label": "Watch — ¥58k ask is ¥3k above the ¥55k Buy line",
+   "latest_label": "Watch — ¥58k ask is ¥3k above the ¥55k Buy line",
+   "reaffirmed": 0,
+   "made": "2026-10-13T07:31:25+09:00",
+   "price": 58000,
+   "window_end": "2026-11-12T07:31:25+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
+  },
   {
    "url": "https://snkrdunk.com/apparels/146897",
    "name": "ピカチュウ : プロモ [SVP EN 085](「ゴッホ展」 プロモーションカード「SVP EN」) 【英語版】",
@@ -285,8 +309,8 @@
    "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
    "tag": "dont_buy",
    "label": "Don't buy",
-   "latest_label": "Don't buy",
-   "reaffirmed": 0,
+   "latest_label": "Don't buy — ¥373k ask is still ¥38k above the ¥335k ceiling",
+   "reaffirmed": 1,
    "made": "2026-10-10T10:21:37+09:00",
    "price": 378000,
    "window_end": "2026-11-09T10:21:37+09:00",
@@ -1582,6 +1606,51 @@
    "gap_pct": -12.6
   },
   {
+   "url": "https://snkrdunk.com/apparels/224087",
+   "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
+   "text": "Lowest PSA10 ask touches ¥55,000 or below by 2026-11-12",
+   "p": 0.46,
+   "type": "touch_below",
+   "price": 55000,
+   "by": "2026-11-12",
+   "made": "2026-10-13T07:31:25+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 58000,
+   "final": false,
+   "gap_pct": -5.2
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/224087",
+   "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
+   "text": "Lowest PSA10 ask touches ¥47,000 or below by 2026-11-12",
+   "p": 0.13,
+   "type": "touch_below",
+   "price": 47000,
+   "by": "2026-11-12",
+   "made": "2026-10-13T07:31:25+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 58000,
+   "final": false,
+   "gap_pct": -19.0
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/91178",
+   "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+   "text": "Lowest PSA10 ask touches ¥335,000 or below by 2026-11-12",
+   "p": 0.36,
+   "type": "touch_below",
+   "price": 335000,
+   "by": "2026-11-12",
+   "made": "2026-10-13T07:31:25+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 373000,
+   "final": false,
+   "gap_pct": -10.2
+  },
+  {
    "url": "https://snkrdunk.com/apparels/387059",
    "name": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
    "text": "Reaches Buy (≤¥38k) within 3 months",
@@ -2690,6 +2759,21 @@
    "now": 120000,
    "final": false,
    "gap_pct": -20.8
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/91178",
+   "name": "ゲンガーVMAX: SA[SGG 020/019](ハイクラスデッキ「ゲンガーVMAX」)",
+   "text": "Lowest PSA10 ask touches ¥295,000 or below by 2027-01-11",
+   "p": 0.24,
+   "type": "touch_below",
+   "price": 295000,
+   "by": "2027-01-11",
+   "made": "2026-10-13T07:31:25+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 373000,
+   "final": false,
+   "gap_pct": -20.9
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
