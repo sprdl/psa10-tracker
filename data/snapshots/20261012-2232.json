@@ -2019,11 +2019,12 @@
       "analysis": {
         "verdict": {
           "tag": "defer",
-          "label": "Defer — no PSA10 market yet",
-          "reasoning": "Re-checked at 13:08 JST: the ask is still ¥65,000 with one listing within 15%, and the only PSA10 sale on record is still ¥12,980 from 2026-09-18, so the price is unconfirmed. There is no population yet (released 2026-09-16); the September submission wave won't return before about February 2027. Raw A-rank is ¥7,500, so a DIY slab costs roughly ¥25k at a typical gem rate, well under the ask. The 30th CELEBRATION set launches 10/16 and the event rule applies from 10/13. Re-evaluate once five or more PSA10 sales exist.",
-          "written": "2026-10-12T13:08:41+09:00"
+          "label": "Defer — thin PSA10 market, no population yet",
+          "reasoning": "Re-checked at 22:32 JST: a second PSA10 sale came in at ¥65,000 about four hours ago, after the only earlier sale at ¥12,980 on 2026-09-18, so the market is still two prints deep. The ask is ¥65,000 with one listing within 15%. There is no population yet (released 2026-09-16), and the September submission wave won't return before about February 2027. Raw A-rank is about ¥7,000, so a DIY slab costs roughly ¥25k at a typical gem rate, well under the current price. The 30th CELEBRATION set launches 10/16 and the event rule applies from 10/13. Re-evaluate once five or more PSA10 sales exist.",
+          "written": "2026-10-12T22:32:12+09:00"
         },
-        "verdict_price_ref": 65000
+        "representative_price": 65000,
+        "price_source": "sales_confirmed"
       }
     },
     {
@@ -3315,10 +3316,11 @@
         "verdict": {
           "tag": "defer",
           "label": "Defer — thin PSA10 market, no population yet",
-          "reasoning": "Re-checked at 13:08 JST: the ask is ¥88,000 and the only PSA10 sale is still ¥85,000 (yesterday), so the market is still too thin to set tiers. altema has no population section yet. Raw A-rank is ¥15,000, which puts the PSA10 at about 5.7× raw, well above the normal 2.2–2.9× slab premium; treat that as unverified until more sales come in. Re-evaluate once five or more PSA10 sales and a population exist; the event rule applies to its set until 10/16.",
-          "written": "2026-10-12T13:08:41+09:00"
+          "reasoning": "Re-checked at 22:32 JST: the lowest ask has moved to ¥80,000 from ¥88,000, with the last PSA10 sale at ¥85,000 (2026-10-11), so the market is still too thin to set tiers. altema has no population section yet. Raw A-rank is about ¥14,500, which puts the PSA10 at about 5.5× raw, well above the normal 2.2–2.9× slab premium; treat that as unverified until more sales come in. Re-evaluate once five or more PSA10 sales and a population exist; the event rule applies to its set until 10/16.",
+          "written": "2026-10-12T22:32:12+09:00"
         },
-        "verdict_price_ref": 85000
+        "representative_price": 80000,
+        "price_source": "ask_depth"
       }
     },
     {
