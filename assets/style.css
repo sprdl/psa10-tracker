@@ -336,7 +336,9 @@ img.card-img {
 .wl-trend { font-weight: 700; }
 .wl-trend .chg-sub { font-weight: 500; white-space: nowrap; }
 .wl-tag { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.wl-tag > span { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 0; }
+.wl-tag > span { display: inline-grid; grid-auto-flow: row; justify-items: stretch; gap: 5px; }
+.wl-tag > span > * { margin-left: 0; justify-content: center; text-align: center; }
+.wl-tag > span > .vtag, .wl-tag > span > .diy-chip, .wl-tag > span > .limit-chip { font-size: 14px; padding: 4px 9px 2px; }
 .drawer { width: 350px; flex-shrink: 0; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; border-color: var(--line-2); padding: 20px; }
 
 /* ---------- card detail (drawer + page) ---------- */
@@ -676,6 +678,7 @@ td em { color: var(--muted-2); font-style: normal; }
   .wl-price { grid-area: price; font-size: 22px; }
   .wl-tag { grid-area: tag; justify-content: flex-end; }
   .wl-tag { flex-direction: row; align-items: center; justify-content: flex-start; }
+  .wl-tag > span { display: flex; flex-wrap: wrap; justify-items: initial; gap: 4px 6px; }
   .wl-heat { display: none; }
   .wl-row .zb, .wl-row .zb-none { grid-area: bar; height: 14px; margin-top: 4px; }
   .wl-off, .wl-chg { display: none; }
