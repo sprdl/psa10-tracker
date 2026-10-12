@@ -40,6 +40,8 @@ import eval_queue  # noqa: E402
 JST = timezone(timedelta(hours=9))
 DIY_FEES = 12430          # PSA Japan Standard, one card: ¥9,980 + insurance & shipping ¥1,900 + handling ¥550
 STANDARD_CAP = 150000     # declared value limit on Standard
+PRIORITY_FEES = 14430     # PSA Priority: ¥2,000 more than Standard, declared value up to ¥250,000 (same rule as psaTierFor in app.js)
+PRIORITY_CAP = 250000
 FEE_RATE, SHIP = 0.095, 1000   # SNKRDUNK Regular rank, seller-paid shipping
 
 
@@ -136,10 +138,13 @@ def main():
           + (f" (as of {card['population_as_of']})" if card.get("population_as_of") else "")
           + (f"  [{card.get('population_error') or card.get('population_note')}]" if card.get("population_error") or card.get("population_note") else ""))
     if rp and gem:
-        diy = (rp + DIY_FEES) / (gem / 100)
-        print(f"          DIY replacement cost ({yen(rp)} + ¥12,430) ÷ {gem}% = {yen(diy)}"
+        prio = (ask or 0) > STANDARD_CAP
+        fees = PRIORITY_FEES if prio else DIY_FEES
+        diy = (rp + fees) / (gem / 100)
+        print(f"          DIY replacement cost ({yen(rp)} + {yen(fees)} PSA {'Priority' if prio else 'Standard'}) ÷ {gem}% = {yen(diy)}"
               + (f"; PSA10 ask is {pct(ask, diy)} vs DIY" if ask else "")
-              + ("  — over Standard's ¥150,000 declared-value cap: Standard doesn't apply" if (ask or 0) > STANDARD_CAP else ""))
+              + (f"; self-grade margin {(1 - diy / ask) * 100:.0f}% (the site's Self-grade chip shows at 15%+)" if ask and ask <= PRIORITY_CAP else "")
+              + ("  — over Priority's ¥250,000 declared-value cap: only Express (¥29,980) applies" if (ask or 0) > PRIORITY_CAP else ""))
 
     # OWNED
     for h in held:
