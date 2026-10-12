@@ -58,7 +58,7 @@ These are written by `scripts/full_update.py` / `quick_update.py` / `add_snapsho
   card: when a value carried by a quick check was really measured. The site shows them as small
   "as of 9/26 15:15" labels.
 - `quick_note` on a card or a grade: why a quick check couldn't re-read it (values carried).
-- `population_error` / `population_note` on a card: why the altema population couldn't be read.
+- `population_error` / `population_note` on a card: why the PSA pop report couldn't be read (or wasn't due). `population_source` is `psa` (altema before 2026-10-12); `psa_total_graded` is PSA's total for the row, so gem rate = population ÷ total.
 - `volume_note` on an index object: the 7-day / 14-day / prior-30-day volume averages the site
   recomputes the volume trend from.
 - `psa_tier_status` (Mondays) and `notes` (free text from the run).
@@ -406,7 +406,7 @@ in each row has the details in its docstring.
 | `predict.json` (`predict.py`, `set_predictions.py`) | `{"weeks": {"2026-10-05": {"created", "close", "answer_by", "questions": [{id, url, name, dir: below/above, target, ask, lo30, hi30, model, why, days}], "answers": {id: {p, at}}, "results": {id: {outcome: 0/1, extreme, at}}}}}` |
 | `scout.json` (`scout.py`) | `{"updated", "pool": {slug: {nm, set, rel, sid, price, pre, peak, pk, prem, norm, gem, vol, ser, …}}, "ranked": [{slug, score, kind, reasons}], "daily": {date: {"p": [slugs], "a": [slugs]}}}` |
 | `mercari.json` (`mercari.py`) | `{"cards": {url: {"checked", "seen", "matched", "items": [{id, url, price, eff, fee, auction, ends, anshin, grade, num}], "error"}}}` |
-| `tracked_cards.json` (`card_requests.py`) | `{"cards": [{"snkrdunk_id", "card_name_ja", "url", "image_url", "altema_url", "altema_mode", "note"}]}` |
+| `tracked_cards.json` (`card_requests.py`) | `{"cards": [{"snkrdunk_id", "card_name_ja", "url", "image_url", "psa_pop_url", "psa_pop_no", "psa_pop_name", "note"}]}` |
 | `removed_cards.json` (`remove_card.py`) | `{"removed": {snkrdunk_id: {"name", "at", "issue"}}}` |
 | `eval_queue.json` (`eval_queue.py`) | `{"about", "queue": {card url: {"name", "why", "since"}}}`: added/restored cards awaiting their first evaluation; `apply_analysis.py` removes a card when a buy verdict is applied |
 

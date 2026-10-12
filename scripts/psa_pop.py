@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-PSA's own population report (psacard.com/pop) as the PSA10 population and gem rate source (since 2026-10-12).
+PSA's own population report (psacard.com/pop): the only PSA10 population and gem rate source (since 2026-10-12;
+altema, the earlier source, was dropped the same day).
 
 The full check reads it every run with pricecheck/scripts/psa_pop.js (step 3a) and full_update.py decodes the POP
 lines. This script is for everything outside a full check:
@@ -13,7 +14,7 @@ lines. This script is for everything outside a full check:
     EOF
     python3 scripts/psa_pop.py missing                  # cards with regular PSA10 sales but no psa_pop_url
 
-Gem rate = PSA 10 count ÷ total graded on PSA's row for the card (the same definition altema shows as 取得率).
+Gem rate = PSA 10 count ÷ total graded on PSA's row for the card (the usual 取得率 definition).
 Card config (data/tracked_cards.json or pricecheck/references/cards.json, set with `card_requests.py set`):
     psa_pop_url   the SET page, e.g. /pop/tcg-cards/2024/pokemon-japanese-sv8a-terastal-fest-ex/288603
     psa_pop_no    the card number as PSA writes it ("217", "090")

@@ -11,7 +11,7 @@ RAW.json is what Claude writes during the run, pasting each extractor's result v
       "base":   <snkrdunk_base.js result>,
       "psa10":  <snkrdunk_listings.js result on conditionIds=22>,
       "a":      <snkrdunk_listings.js result on conditionIds=18>,
-      "altema": <altema_population.js result>  or  {"skipped": "<reason>"},
+      "population": <decoded psa_pop.js POP line (full_update.py)>  or  {"skipped": "<reason>"},
       "image_url": "<only if freshly fetched this run>"          (optional)
     }, ...
   },
@@ -126,22 +126,19 @@ def main():
         if base.get("error") or base.get("favorite_error"):
             o["favorite_error"] = base.get("error") or base.get("favorite_error")
             warnings.append(f"{sid}: {o['favorite_error']}")
-        alt = r.get("altema") or {"skipped": "not collected"}   # population result: PSA pop report or altema
+        alt = r.get("population") or r.get("altema") or {"skipped": "not collected"}   # PSA pop report result
         if alt.get("skipped"):
             o["population_note"] = f"population not checked this run ({alt['skipped']})"
-        elif alt.get("source") == "psa" and alt.get("error") and alt.get("psa10_population") is None:
+        elif alt.get("error") and alt.get("psa10_population") is None:
             o["population_error"] = "PSA pop report: " + alt["error"]   # add_snapshot carries the last value forward
         else:
             o["psa10_population"] = alt.get("psa10_population")
             o["psa10_gem_rate_pct"] = alt.get("psa10_gem_rate_pct")
-            o["population_source"] = alt.get("source", "altema")
+            o["population_source"] = alt.get("source", "psa")
             if alt.get("psa_total_graded") is not None:
                 o["psa_total_graded"] = alt["psa_total_graded"]
             if alt.get("error"):
                 o["population_error"] = alt["error"]
-            if alt.get("psa10_population") and c.get("altema_mode") == "weekly_until_graded":
-                warnings.append(f"{sid}: altema now shows PSA10 population {alt['psa10_population']} — "
-                                "switch this card to altema_mode 'daily' in references/cards.json")
         sales = base.get("sales", {})
         o["grades"] = {"psa10": grade_obj(r.get("psa10"), sales.get("PSA10"), f"{sid} PSA10"),
                        "raw_a_grade": grade_obj(r.get("a"), sales.get("A"), f"{sid} A")}

@@ -28,7 +28,7 @@ a personal, low-stakes tracker — just don't post the link publicly.
 ## Price checks
 
 Price checks are run by the `pokemon-card-price-check` skill in your own browser: it opens
-SNKRDUNK, pokeca-chart.com and altema pages (and Mercari for cards near your limit) in hidden
+SNKRDUNK, pokeca-chart.com and PSA's pop report (and Mercari for cards near your limit) in hidden
 tabs, collects compact lines, and publishes them with one script. Nothing runs on a schedule.
 
 The skill picks one of two modes (`python3 scripts/check_status.py` shows which it would pick):

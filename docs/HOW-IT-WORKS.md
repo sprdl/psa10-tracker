@@ -35,7 +35,7 @@ share **JSON files in the `data/` folder**.
  │ (Claude runs in-page       │  scripts/*.py on   │  in the repo  │              │   repo       │
  │  scripts in your browser:  │  your Mac          └───────────────┘              └──────┬───────┘
  │  SNKRDUNK, pokeca-chart,   │                                                          │ Action
- │  altema, Mercari)          │                                                          ▼ "deploy"
+ │  PSA pop, Mercari)         │                                                          ▼ "deploy"
  └────────────────────────────┘                                                   ┌──────────────┐
  ┌────────────────────────────┐    issue forms     ┌───────────────┐  commit      │ GitHub Pages │
  │ You, on the site: Bought / │ ─────────────────▶ │ GitHub Action │ ───────────▶ │ (the website)│
@@ -253,12 +253,12 @@ bracket format when adding cards by hand.
 The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
 
 1. `pricecheck/plan.py` decides what today's run reads: which cards get their listings pages,
-   which altema population pages are due (young cards daily, mature ones on Mondays), which bought
+   which PSA pop-report set pages are due (young cards daily, mature ones on Mondays), which bought
    items need a price (`HELD`), the slab-premium cards (`PREM`), whether Scout runs (`SCOUT`), and the
    Monday and monthly extras.
 2. Claude runs one in-page script per site in your browser:
    `snkrdunk_full.js` (product pages and listings), `snkrdunk_held.js` (bought cards and unopened
-   sealed items that aren't tracked), `altema_batch.js` (PSA10 population and gem rate),
+   sealed items that aren't tracked), `psa_pop.js` (PSA10 population and gem rate from PSA's own pop report, signed in),
    `pokeca_both.js` (both pokeca-chart indices), the My-tier extractor
    (`add_custom_index.py --print-js`), `pokeca_premium.js` (slab premium and the hype reading) and
    `pokeca_scout.js` (Scout candidates). Each returns compact lines.

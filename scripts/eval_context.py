@@ -92,7 +92,7 @@ def main():
     print(f"CARD      {name}\n          {url}")
     tr = next((t for t in J("tracked_cards.json").get("cards", []) if t.get("url", "").rstrip("/") == url), None)
     if tr:
-        print(f"          tracked since {tr.get('added')} ({tr.get('note', '')}); altema {tr.get('altema_url') or 'not found yet'}")
+        print(f"          tracked since {tr.get('added')} ({tr.get('note', '')}); PSA pop page {tr.get('psa_pop_url') or 'not found yet (FULL-CHECK step 1c)'}")
     q = eval_queue.load(ROOT)["queue"].get(url)
     if q:
         print(f"          evaluation queue: {q.get('why')} (since {q.get('since')})")
@@ -135,7 +135,7 @@ def main():
     # SUPPLY / DIY
     pop, gem = card.get("psa10_population"), card.get("psa10_gem_rate_pct")
     print(f"\nSUPPLY    PSA10 population {pop if pop is not None else 'n/a'}, gem rate {f'{gem}%' if gem else 'n/a'}"
-          + (f" from {'PSA pop report' if card.get('population_source') == 'psa' else 'altema'}" if pop is not None else "")
+          + (f" from {'PSA pop report' if card.get('population_source') == 'psa' else 'altema (before 2026-10-12)'}" if pop is not None else "")
           + (f" (as of {card['population_as_of']})" if card.get("population_as_of") else "")
           + (f"  [{card.get('population_error') or card.get('population_note')}]" if card.get("population_error") or card.get("population_note") else ""))
     if rp and gem:

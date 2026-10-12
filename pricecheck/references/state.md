@@ -1,6 +1,6 @@
 # Reference state and lookup tips
 
-Read this file only when the step that needs it comes up (Monday PSA check, a new/broken altema URL, a card-list change).
+Read this file only when the step that needs it comes up (Monday PSA check, a new/broken PSA pop page, a card-list change).
 
 ## PSA Japan tier status — last known state (for the Monday check)
 
@@ -12,15 +12,16 @@ psacard.com/ja-JP has been Cloudflare-blocked to browser automation. If direct a
 
 `psa_tier_status` shape: `{ "checked": true, "value_tier_paused": bool, "resumption_date_stated": "<text or 'undetermined'>", "standard_price_jpy": n, "standard_turnaround_business_days": n, "notes": "..." }`
 
-## altema.jp lookup tips (only when adding a card or a URL breaks)
+## PSA pop report lookup tips (only when adding a card or a page breaks)
 
-- Use altema's own search (`https://altema.jp/pokemoncard/searchresults?q=<query>`) with simple one- or two-word Japanese queries, or tag links like `#ブラッキー`. Multi-word AND queries often 404; card-number-only searches ("217/187") return nothing.
-- Similar names collide (reprints in anniversary products, older promo prints). The altema extractor returns `card_number` and `pack` — confirm both match the tracked card before trusting its population. If in doubt, compare with the SNKRDUNK page's 発売日 / 管理番号.
+- The pop report needs a signed-in PSA account (the browser pane keeps the login). Years: `https://www.psacard.com/pop/tcg-cards/156940`; a year page lists its sets (Show 250, page through). Japanese sets are named "Pokemon Japanese <code>-<English set name>" (SV/Mega era) or "Pokemon Japanese Sword & Shield <name>" (S era); English promos "Pokemon Svp EN-SV Black Star Promo".
+- On the set page, the card number is written as PSA does ("090", "217"). A number can have several rows (rarity annotations like "Special Art Rare", error or stamp variants): `psa_pop.js` takes the row without extra variety text, else the biggest total; set `psa_pop_name` (English name fragment) when two different cards share a number.
+- Gem rate = PSA 10 ÷ total graded on that row.
 
 ## New-release (M6a "30th CELEBRATION") cards
 
-Released 2026-09-16. Expect few or zero PSA10 listings/sales and no altema population until PSA grading catches up (weeks). That is a valid result, not a failure. Their altema pages are the permanent `/pokemoncard/card/<id>` URLs in cards.json. When one gains population data, `assemble.py` prints a reminder to switch that card's `altema_mode` to `daily`.
+Released 2026-09-16. Expect few or zero PSA10 listings/sales and no PSA population until PSA grading catches up (weeks). That is a valid result, not a failure. They get a PSA pop page (step 1c) once they have regular PSA10 sales; Monday checks list Defer cards with a PSA10 ask so the first PSA rows are caught.
 
 ## Changing the tracked-card list
 
-If the user adds/removes SNKRDUNK favorites, ask for the new card's SNKRDUNK URL (or name + set/number), find its altema URL, and update `references/cards.json` via the skill-creator / propose_skills flow. Leave `image_url` empty for a new card; the run fills it (see SKILL.md) and the file is updated afterwards.
+If the user adds/removes SNKRDUNK favorites, ask for the new card's SNKRDUNK URL (or name + set/number), find its PSA pop page, and update `references/cards.json` via the skill-creator / propose_skills flow. Leave `image_url` empty for a new card; the run fills it (see SKILL.md) and the file is updated afterwards.

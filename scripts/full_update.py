@@ -4,8 +4,7 @@ Publish a FULL price check from the compact lines the in-page scripts return.
 
     python3 scripts/full_update.py - <<'EOF'            # lines on stdin (what the skill does)
     <snkrdunk_full.js lines>
-    <psa_pop.js lines>               (POP …)  PSA's own pop report: population + gem rate (primary)
-    <altema_batch.js lines>          (ALT …)  altema, only for cards without a PSA pop page
+    <psa_pop.js lines>               (POP …)  PSA's own pop report: population + gem rate
     <pokeca_both.js lines>           (IDX psa10 {…} / IDX raw {…})
     MYTIER {…}                       My-tier extractor result (optional)
     PREM …                           pokeca_premium.js lines (optional; saved to data/premium.json)
@@ -18,15 +17,15 @@ Publish a FULL price check from the compact lines the in-page scripts return.
     python3 scripts/full_update.py FILE [--dry-run] [--no-push] [--skip scout,premium,...]
 
 Completeness guard: the run is refused when a planned step left no lines (market index, My-tier
-index, altema pages due today, slab premiums, Scout), because a skipped step otherwise goes
+index, PSA pop pages due today, slab premiums, Scout), because a skipped step otherwise goes
 unnoticed for days (Scout was skipped on 10/1 and 10/2 without a trace). Run the missing step and
 re-run with all lines. Only if a step genuinely failed (site down, page structure changed), pass
 --skip with its name and say so in the chat message.
 
 What it does:
   1. decodes the lines into exactly the raw JSON pricecheck/scripts/assemble.py has always taken
-     (base + listings + altema per card, the two indices), applying the plan's rules
-     (pricecheck/plan.py) for tile-only cards and skipped/conditional altema checks;
+     (base + listings + PSA population per card, the two indices), applying the plan's rules
+     (pricecheck/plan.py) for tile-only cards and skipped population reads;
   2. runs assemble.py with --prev = the live snapshot, printing its WARNINGS / CHANGES;
   3. (not --dry-run) pulls, publishes with scripts/add_snapshot.py, saves the My-tier index with
      scripts/add_custom_index.py, the slab premium with scripts/premium.py, and stores any newly
@@ -106,10 +105,6 @@ def tile_listing(tile_tok, grade):
     return {"error": TILE_ERR.get(code, "grade tile not read")}
 
 
-def psa_activity(toks):
-    by = {t[0]: t for t in toks}
-    return (by.get("p", "p?")[1:].isdigit()) or bool(re.match(r"P(~\d+)?=\d", by.get("P", "")))
-
 
 def parse(text, cards_meta, plan):
     raw = {"cards": {}, "index": {}}
@@ -117,7 +112,6 @@ def parse(text, cards_meta, plan):
     prem_lines = []
     held_lines = []
     scout_lines = []
-    alt_lines = {}
     pop_lines = {}
     card_lines = {}
     for line in text.splitlines():
@@ -128,8 +122,7 @@ def parse(text, cards_meta, plan):
         if head.isdigit():
             card_lines[head] = s
         elif head == "ALT":
-            sid, _, r = rest.partition(" ")
-            alt_lines[sid] = r
+            print("  (ignored ALT line: altema is no longer read; population comes from POP lines)")
         elif head == "POP":
             sid, _, r = rest.partition(" ")
             pop_lines[sid] = r
@@ -154,7 +147,6 @@ def parse(text, cards_meta, plan):
         else:
             print(f"  (ignored line: {s[:60]})")
     decoded = quick_update.decode_compact("\n".join(card_lines.values()))["cards"]
-    altema_plan = {a[0]: a[2] for a in plan["altema"]}
     psapop_plan = {a[0] for a in plan.get("psapop", [])}
     notes = []
     for sid, line in card_lines.items():
@@ -172,13 +164,10 @@ def parse(text, cards_meta, plan):
             rc["a"] = tile_listing(by.get("a"), "A")
         if "I" in by:
             rc["image_url"] = unquote(by["I"][1:])
-        # population: PSA's own pop report for cards with a psa_pop_url (step 3a), else altema
-        st = altema_plan.get(sid)
+        # population: PSA's own pop report for cards with a psa_pop_url (step 3); nothing for the rest
         if sid in psapop_plan:
-            st = "psa"
-        if st == "psa":
             if sid not in pop_lines:
-                rc["altema"] = {"error": "PSA pop report not read this run", "source": "psa"}
+                rc["population"] = {"error": "PSA pop report not read this run", "source": "psa"}
             else:
                 a = {"source": "psa"}
                 for t in pop_lines[sid].split():
@@ -196,31 +185,9 @@ def parse(text, cards_meta, plan):
                     a["psa10_gem_rate_pct"] = round(a["psa10_population"] / a["psa_total_graded"] * 100, 1)
                 if a.get("error"):
                     notes.append(f"{sid}: PSA pop report: {a['error']}")
-                rc["altema"] = a
-        elif st is None:
-            rc["altema"] = {"skipped": plan["altema_skipped"].get(sid, "not planned")}
-        elif st == "ifpsa" and not psa_activity(toks):
-            rc["altema"] = {"skipped": "weekly check until graded"}
-        elif sid not in alt_lines:
-            rc["altema"] = {"error": "altema not read this run"}
+                rc["population"] = a
         else:
-            a = {}
-            for t in alt_lines[sid].split():
-                if t[0] == "n":
-                    a["psa10_population"] = int(t[1:]) if t[1:].isdigit() else None
-                elif t[0] == "r":
-                    a["psa10_gem_rate_pct"] = float(t[1:]) if t[1:] not in ("-", "") else None
-                elif t[0] == "c":
-                    a["card_number"] = unquote(t[1:])
-                elif t[0] == "!":
-                    a["error"] = unquote(t[1:])
-            name = (cards_meta.get(sid) or {}).get("card_name_ja", "")
-            num = re.search(r"\d+/\d+", a.get("card_number") or "")
-            if a.get("card_number") and num and num[0] not in name:
-                notes.append(f"{sid}: altema 型番 {a['card_number']} doesn't match the card name — check its altema_url")
-            if isinstance(a.get("psa10_gem_rate_pct"), float) and a["psa10_gem_rate_pct"].is_integer():
-                a["psa10_gem_rate_pct"] = int(a["psa10_gem_rate_pct"])
-            rc["altema"] = a
+            rc["population"] = {"skipped": plan["pop_skipped"].get(sid, "not planned")}
         raw["cards"][sid] = rc
     for sid in cards_meta:
         if sid not in raw["cards"]:
@@ -234,8 +201,7 @@ def parse(text, cards_meta, plan):
 STEP_NAMES = {
     "index": "market indices (step 4.1, IDX lines)",
     "mytier": "My-tier index (step 4.2, MYTIER line)",
-    "psapop": "PSA pop report (step 3a, POP lines)",
-    "altema": "altema pages due today (step 3b, ALT lines)",
+    "psapop": "PSA pop report (step 3, POP lines)",
     "premium": "slab premiums (step 4.3, PREM lines)",
     "scout": "Scout (step 4.4, SCP/SC lines)",
     "held": "bought cards and sealed items (step 2b, H lines)",
@@ -251,8 +217,6 @@ def missing_steps(text, plan):
         miss.append("mytier")
     if plan.get("psapop") and "POP" not in heads:
         miss.append("psapop")
-    if any(a[2] == "due" for a in plan.get("altema", [])) and "ALT" not in heads:
-        miss.append("altema")
     if plan.get("premium") and "PREM" not in heads:
         miss.append("premium")
     if plan.get("held") and not ({"H", "HE"} & heads):
@@ -335,9 +299,7 @@ def main():
     raw, mytier, notes = parse(text, cards_meta, plan)
     notes = skipped_note + notes
     for sid, name in plan.get("psapop_missing", []):
-        notes.append(f"{sid}: regular PSA10 sales but no PSA pop page on file ({name[:24]}) — find it (FULL-CHECK step 1c)")
-    for sid, name in plan.get("altema_missing", []):
-        notes.append(f"{sid}: no altema page on file ({name[:24]}) — find it (FULL-CHECK step 1d)")
+        notes.append(f"{sid}: PSA10 ask but no PSA pop page on file ({name[:24]}) — find it (FULL-CHECK step 1c)")
     prem = raw.pop("_premium", {})
     sc = raw.pop("_scout", None)
     held = raw.pop("_held", {})

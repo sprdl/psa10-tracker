@@ -18,5 +18,5 @@ Use this only for the specific page/step whose script returned an error indicati
 - Header fields: 最新価格, 前日比, 月間変動, 年間変動 (value + %), and the date range under 指数チャート（PSA10 / 美品）.
 - Volume: enable the 取引件数 toggle near 平均価格 and judge the last 1–2 weeks of bars vs the preceding month from one screenshot at the 3M view → rising / falling / flat / spiking. Dismiss ad modals via their × first.
 
-## altema.jp
-- PSA10総枚数 and PSA10取得率 in the PSA10 price table. Absent section → population error, not a guess.
+## PSA pop report (psacard.com/pop, signed in)
+- On the card's set page, the row for its number: the first figure in the "10" column is the PSA 10 count, the first in "TOTAL" the total graded; gem rate = 10 ÷ total. A missing row → population error, not a guess.

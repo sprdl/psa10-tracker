@@ -13,7 +13,7 @@ pricecheck/scripts/snkrdunk_quick.js returns (one card per line, see decode_comp
 which are decoded into exactly the same JSON before anything else happens.
 
 A quick run reads ONE page per card (the SNKRDUNK product page) instead of the full
-routine (listings pages, altema, pokeca index). The raw file the price-check skill
+routine (listings pages, PSA pop report, pokeca index). The raw file the price-check skill
 writes looks like:
 
     {"mode": "quick",

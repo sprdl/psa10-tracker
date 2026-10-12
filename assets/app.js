@@ -4357,7 +4357,7 @@
       if (fdiff !== 0) favHtml += ` <span class="${fdiff > 0 ? 'up' : 'down'}">${fdiff > 0 ? '▲' : '▼'}</span>`;
     }
     const raw = card.grades.raw_a_grade;
-    const popText = `${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'}${card.psa10_gem_rate_pct != null ? ' · ' + card.psa10_gem_rate_pct + '%' : ''}${card.psa10_population != null ? `<small class="muted" title="${card.population_source === 'psa' ? `PSA's own population report: PSA 10s ÷ ${card.psa_total_graded != null ? card.psa_total_graded.toLocaleString() + ' ' : ''}graded` : 'altema (ポケカチ), PSA10総枚数 and 取得率'}"> ${card.population_source === 'psa' ? 'PSA' : 'altema'}</small>` : ''}`;
+    const popText = `${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'}${card.psa10_gem_rate_pct != null ? ' · ' + card.psa10_gem_rate_pct + '%' : ''}${card.psa10_population != null ? `<small class="muted" title="${card.population_source === 'psa' ? `PSA's own population report: PSA 10s ÷ ${card.psa_total_graded != null ? card.psa_total_graded.toLocaleString() + ' ' : ''}graded` : 'an older reading from altema; PSA\'s pop report replaces it at the next full check'}"> ${card.population_source === 'psa' ? 'PSA' : 'old'}</small>` : ''}`;
     const statsHtml = `
       <div class="cd-stats">
         <div class="cd-stat"><div class="lbl">Order-book depth</div><div class="val">${depth.within} / ${depth.total}${asOfHtml(psa10.listings_as_of)}</div><div class="depth-bar-track"><div class="depth-bar-fill" style="width:${Math.round(depth.ratio * 100)}%"></div></div></div>
@@ -5804,7 +5804,7 @@
     if (!charts.length && !p7 && !f30 && !cheap.length) return '';
     return `<div class="sd-block"><div class="lbl sd-h">Supply and demand</div>${stats}
       ${charts.map(([c, t, sub]) => `<div class="prem-ch"><div class="lbl">${t} <span class="muted">${sub}</span></div>${c}</div>`).join('')}
-      <p class="cd-note">Population comes from the full check's reading of PSA's own pop report (altema for cards PSA doesn't list yet; young cards daily, mature ones on Mondays), favorites from every check (one reading a day kept), cheap listings and their cover from full checks. SNKRDUNK's total number of listings isn't read, only the 20 cheapest.</p></div>`;
+      <p class="cd-note">Population comes from the full check's reading of PSA's own pop report (young cards daily, mature ones on Mondays; altema before 2026-10-12), favorites from every check (one reading a day kept), cheap listings and their cover from full checks. SNKRDUNK's total number of listings isn't read, only the 20 cheapest.</p></div>`;
   }
 
   // A long-run line chart of representative_price across every snapshot the

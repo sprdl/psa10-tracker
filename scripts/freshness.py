@@ -12,7 +12,7 @@ Where each part of the site comes from and how often it should be refreshed (202
 | snapshot: lowest asks, sales, favs    | prices everywhere, signals, verdict chips | quick + full check (SNKRDUNK)      | several times a day |
 | snapshot: listing depth / top-20      | Listings tab, depth tile                  | full check                         | daily |
 | snapshot: pokeca_chart_index          | Market strip, KPI tiles, volume pill      | full check (pokeca_both.js)        | daily |
-| snapshot: psa10_population / gem rate | Population tile, DIY tab                  | full check (altema)                | young cards daily, mature (8,000+) Mondays |
+| snapshot: psa10_population / gem rate | Population tile, DIY tab                  | full check (PSA pop report)       | young cards daily, mature (8,000+) Mondays |
 | custom_index.json (My-tier index)     | My-tier tile + chart, correction rule     | full check (MYTIER line)           | daily |
 | premium.json (slab premium)           | DIY tab premium panel                     | full check (PREM lines)            | daily |
 | hype.json readings                    | Hype exposure panel, High hype chip       | full check (PREM lines, g token)   | daily |
@@ -99,7 +99,7 @@ def checks(root=ROOT, now=None):
         for group, label, age in ((young, "PSA10 population (young cards)", 34 * H), (mature, "PSA10 population (mature cards)", 8 * 24 * H)):
             if group:
                 oldest = min((c.get("population_as_of") or last_full["collected_at_jst"]) for c in group)
-                out.append((label, oldest, age, "full check (altema)"))
+                out.append((label, oldest, age, "full check (PSA pop report)"))
     return out
 
 

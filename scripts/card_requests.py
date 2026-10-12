@@ -7,16 +7,16 @@ tracked-card list (data/tracked_cards.json).
         Open add-card requests as JSON: [{"number", "title", "snkrdunk_id", "url"}].
         snkrdunk_id is null if no SNKRDUNK product URL could be found in the issue.
 
-    python3 scripts/card_requests.py add <issue#> --name "<card_name_ja>" [--mode daily|weekly_until_graded]
-                                    [--image URL] [--altema URL] [--note TEXT] [--dry-run]
+    python3 scripts/card_requests.py add <issue#> --name "<card_name_ja>" [--image URL] [--note TEXT]
+                                    [--psa-url SET_PAGE --psa-no NUMBER --psa-name NAME] [--dry-run]
         Adds the requested card to data/tracked_cards.json, commits, pushes, then
         comments on and closes the issue. A card that's already tracked just gets
         the issue closed with a note. An added or restored card is queued for its first
         evaluation in the same run (data/eval_queue.json, scripts/eval_queue.py).
 
     python3 scripts/card_requests.py set <snkrdunk_id> key=value [key=value ...] [--dry-run]
-        Update fields of a card in data/tracked_cards.json (image_url, altema_url,
-        altema_mode, note, card_name_ja), commit and push.
+        Update fields of a tracked card (image_url, note, card_name_ja, psa_pop_url, psa_pop_no,
+        psa_pop_name; also cards in pricecheck/references/cards.json), commit and push.
 
     python3 scripts/card_requests.py reject <issue#> "<reason>" [--dry-run]
         Comment the reason and close the issue (e.g. the URL isn't a SNKRDUNK card).
@@ -44,7 +44,7 @@ LABEL = "add-card"
 JST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 TRACKED = ROOT / "data" / "tracked_cards.json"
-SETTABLE = {"image_url", "altema_url", "altema_mode", "note", "card_name_ja", "psa_pop_url", "psa_pop_no", "psa_pop_name"}
+SETTABLE = {"image_url", "note", "card_name_ja", "psa_pop_url", "psa_pop_no", "psa_pop_name"}
 URL_RE = re.compile(r"https?://(?:www\.)?snkrdunk\.com/(?:en/)?apparels/(\d+)")
 
 
@@ -155,15 +155,15 @@ def cmd_list(args):
 
 def cmd_add(args):
     if len(args) < 1 or not args[0].isdigit():
-        die("usage: add <issue#> --name \"<card_name_ja>\" [--mode ...] [--image URL] [--altema URL] [--note TEXT]")
+        die("usage: add <issue#> --name \"<card_name_ja>\" [--image URL] [--note TEXT] [--psa-url … --psa-no … --psa-name …]")
     num = int(args[0])
     dry = "--dry-run" in args
     name = flag(args, "--name")
     if not name:
         die("--name is required (use the title SNKRDUNK shows for the card)")
-    mode = flag(args, "--mode", "weekly_until_graded")
-    if mode not in ("daily", "weekly_until_graded"):
-        die("--mode must be daily or weekly_until_graded")
+    # --mode (daily/weekly_until_graded) was altema's cadence; still accepted from old instructions, ignored.
+    psa = {k: v for k, v in (("psa_pop_url", flag(args, "--psa-url", "")), ("psa_pop_no", flag(args, "--psa-no", "")),
+                              ("psa_pop_name", flag(args, "--psa-name", ""))) if v}
 
     issue = api("GET", f"/issues/{num}", auth=bool(token()))
     m = URL_RE.search((issue.get("title") or "") + "\n" + (issue.get("body") or ""))
@@ -184,8 +184,7 @@ def cmd_add(args):
         msg = f"Already tracked: {name} (https://snkrdunk.com/apparels/{sid}). Nothing to add."
     else:
         entry = {"snkrdunk_id": sid, "card_name_ja": name, "url": f"https://snkrdunk.com/apparels/{sid}",
-                 "image_url": flag(args, "--image", ""), "altema_url": flag(args, "--altema", ""),
-                 "altema_mode": mode, "note": flag(args, "--note", f"added from issue #{num}"),
+                 "image_url": flag(args, "--image", ""), **psa, "note": flag(args, "--note", f"added from issue #{num}"),
                  "added": datetime.now(JST).strftime("%Y-%m-%d")}
         tracked["cards"].append(entry)
         msg = (f"Added to the tracker: **{name}** (https://snkrdunk.com/apparels/{sid}). "
@@ -202,8 +201,7 @@ def cmd_add(args):
         rp.write_text(json.dumps(rem, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         if sid not in {c["snkrdunk_id"] for c in tracked["cards"]} and sid not in base_ids():
             tracked["cards"].append({"snkrdunk_id": sid, "card_name_ja": name, "url": f"https://snkrdunk.com/apparels/{sid}",
-                                     "image_url": flag(args, "--image", ""), "altema_url": flag(args, "--altema", ""),
-                                     "altema_mode": mode, "note": f"restored from issue #{num}", "added": datetime.now(JST).strftime("%Y-%m-%d")})
+                                     "image_url": flag(args, "--image", ""), **psa, "note": f"restored from issue #{num}", "added": datetime.now(JST).strftime("%Y-%m-%d")})
             save_tracked(tracked)
         commit_and_push(f"restore {name} (requested in #{num})", extra=["data/removed_cards.json", "data/eval_queue.json"])
     elif not already:
@@ -231,8 +229,6 @@ def cmd_set(args):
         k, v = p.split("=", 1)
         if k not in SETTABLE:
             die(f"can't set '{k}' (allowed: {sorted(SETTABLE)})")
-        if k == "altema_mode" and v not in ("daily", "weekly_until_graded"):
-            die("altema_mode must be daily or weekly_until_graded")
         card[k] = v
         print(f"{sid}: {k} = {v}")
     if dry:
