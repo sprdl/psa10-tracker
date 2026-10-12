@@ -3949,6 +3949,17 @@
     const what = grade === 'raw' ? 'raw A-rank' : 'PSA10';
     return `<span class="heat-chip heat-${lv[1]}" title="About ${rateTxt(x)} ${what} sales a day on SNKRDUNK">${HEAT_ICON[lv[1]] || ''}${lv[2]}</span>`;
   }
+  // Overview "Market" column: how the card trades, in one pill. Left part = trading activity (Hot / Active / Slow /
+  // Cold, PSA10 sales a day); a red "Hype" end is added when the card's hype exposure is high (it swings harder than
+  // most cards when the market moves). Neither is a verdict, so they live in their own column.
+  function marketChip(card) {
+    const h = heatOf(card), x = h && h.psa, hype = (hypeOf(card) || {}).level === 'high';
+    const lv = x ? HEAT_LEVELS.find(([min]) => x.rate >= min) : null;
+    if (!lv && !hype) return '';
+    const tip = [lv ? `${lv[2]}: about ${rateTxt(x)} PSA10 sales a day on SNKRDUNK` : 'No recent PSA10 sales',
+      hype ? 'High hype: swings harder than most cards when the market moves (see Hype exposure on the card page)' : ''].filter(Boolean).join('\n');
+    return `<span class="mkt-chip${hype ? ' has-hype' : ''}" title="${escapeAttr(tip)}">${lv ? `<span class="heat-chip heat-${lv[1]}">${HEAT_ICON[lv[1]] || ''}${lv[2]}</span>` : ''}${hype ? '<span class="mkt-hype">Hype</span>' : ''}</span>`;
+  }
   function heatStatHtml(card) {
     const h = heatOf(card);
     if (!h || !h.psa) return `<div class="cd-stat"><div class="lbl">PSA10 trading</div><div class="val">—</div><div class="heat-sub">No recent PSA10 sales on SNKRDUNK</div></div>`;
@@ -4110,18 +4121,18 @@
   function wlHeadHtml(k) {
     const h = OV_HEAD[k];
     const b = (key, label, cls, tip) => `<button type="button" class="${cls || ''}" data-sort="${key}"${tip ? ` title="${escapeAttr(tip)}"` : ''}>${label}</button>`;
-    return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chgLast', 'Last', 'r', 'Change since the previous check (quick or full)')}${b('chg7', '7D', 'r', '7-day change, 30 days underneath')}${b('verdict', h.verdict, '', 'Activity (PSA10 sales a day) underneath; sort by it with the Sort menu')}</div>`;
+    return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chgLast', 'Last', 'r', 'Change since the previous check (quick or full)')}${b('chg7', '7D', 'r', '7-day change, 30 days underneath')}${b('verdict', h.verdict, '', h.verdict === 'Verdict' ? 'Buy verdict, plus Self-grade / Limit / Mercari flags' : 'Sell signal')}${b('heat', 'Market', 'wl-mkt', 'How the card trades: activity (PSA10 sales a day) and a red Hype end when it swings harder than most with the market')}</div>`;
   }
   function wlRowHtml(card) {
     const { short, code, pack } = parseCardName(card.card_name_ja);
     const owned = holdingsFor(card).length;
     return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) || sellHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
         ${slabHtml(card, 'xs')}
-        <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
+        <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
         <span class="wl-price display">${fmtYen(getRep(card))}${rawAskSub(card)}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg wl-lim')}${changeLastCell(card, 'wl-chg wl-last')}${trendCell(card)}
-        <span class="wl-tag"><span>${owned ? sellChip(card) : tagChip(card)}${!owned ? selfGradeChip(card) : ''}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${!owned && (mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}</span><span class="wl-heat">${heatChip(card)}</span></span>
+        <span class="wl-tag"><span>${owned ? sellChip(card) : tagChip(card)}${!owned ? selfGradeChip(card) : ''}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${!owned && (mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}</span></span><span class="wl-heat">${marketChip(card)}</span>
       </a>`;
   }
   function renderOverviewList(cards) {

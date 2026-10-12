@@ -282,7 +282,7 @@ img.card-img {
 .wl-sec-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 14px 18px 0; }
 .wl-sec-h .section-title { margin: 0; }
 .wl-sec-note { font-size: 12px; color: var(--muted); }
-.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 90px minmax(50px, 120px) 66px 56px 60px 96px; gap: 10px; align-items: center; padding: 0 18px; }
+.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 90px minmax(50px, 120px) 66px 56px 60px 96px 112px; gap: 10px; align-items: center; padding: 0 18px; }
 .wl-head { padding-top: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font: 15px var(--display); letter-spacing: 0.1em; color: var(--muted-2); }
 .wl-head .r, .wl-price, .wl-off, .wl-chg { text-align: right; }
 .wl-head span { white-space: nowrap; }
@@ -818,9 +818,13 @@ th.tc-head small { font-size: 11px; color: var(--muted-2); font-weight: 400; whi
    so card names keep enough room */
 .watchlist { container-type: inline-size; }
 @media (min-width: 900px) {
-@container (max-width: 640px) {
-  .wl-head, .wl-row { grid-template-columns: 34px minmax(0, 1fr) 96px 70px 52px 62px 104px; }
+@container (max-width: 960px) {
+  .wl-head, .wl-row { grid-template-columns: 34px minmax(0, 1fr) 96px 70px 52px 62px 96px 112px; }
   .wl-head .wl-zone, .wl-row .zb, .wl-row .zb-none { display: none; }
+}
+@container (max-width: 700px) {
+  .wl-head, .wl-row { grid-template-columns: 34px minmax(0, 1fr) 96px 70px 62px 96px 112px; }
+  .wl-head [data-sort="chgLast"], .wl-row .wl-last { display: none; }
 }
 }
 
@@ -1833,3 +1837,10 @@ div.rc-spark { font-size: 11px; height: auto; }
 /* self-grade signal (selfGrade in app.js): next to the verdict, never instead of it */
 .diy-chip { display: inline-flex; font: 14px var(--display); letter-spacing: 0.08em; line-height: 1; padding: 4px 6px 2px; border-radius: 3px; margin-left: 6px; color: #7cc4ff; border: 1px dashed #7cc4ff; white-space: nowrap; cursor: help; }
 .cd-diy-line { margin: 6px 0 2px; font-size: 13px; color: var(--soft); border-left: 2px solid #7cc4ff; padding-left: 10px; }
+
+/* Overview "Market" column (marketChip): activity pill with an optional red "Hype" end */
+.mkt-chip { display: inline-flex; align-items: stretch; white-space: nowrap; cursor: help; }
+.mkt-chip .heat-chip { vertical-align: top; }
+.mkt-chip.has-hype .heat-chip { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: 0; }
+.mkt-hype { display: inline-flex; align-items: center; font: 13px var(--display); letter-spacing: 0.08em; line-height: 1; padding: 4px 7px 2px; color: #fff; background: var(--red); border-radius: 0 4px 4px 0; }
+.mkt-chip > .mkt-hype:first-child { border-radius: 4px; }
