@@ -3849,7 +3849,7 @@
   function wlHeadHtml(k) {
     const h = OV_HEAD[k];
     const b = (key, label, cls, tip) => `<button type="button" class="${cls || ''}" data-sort="${key}"${tip ? ` title="${escapeAttr(tip)}"` : ''}>${label}</button>`;
-    return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chg7', '7D', 'r', '7-day change, 30 days underneath; hover a cell for the change since the last check')}${b('verdict', h.verdict, '', 'Activity (PSA10 sales a day) underneath; sort by it with the Sort menu')}</div>`;
+    return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chgLast', 'Last', 'r', 'Change since the previous check (quick or full)')}${b('chg7', '7D', 'r', '7-day change, 30 days underneath')}${b('verdict', h.verdict, '', 'Activity (PSA10 sales a day) underneath; sort by it with the Sort menu')}</div>`;
   }
   function wlRowHtml(card) {
     const { short, code, pack } = parseCardName(card.card_name_ja);
@@ -3859,7 +3859,7 @@
         <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}${(hypeOf(card) || {}).level === 'high' ? '<span class="hype-chip" title="High hype exposure: swings harder than most cards when the market moves (see the card page)">High hype</span>' : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
         <span class="wl-price display">${fmtYen(getRep(card))}${rawAskSub(card)}</span>
         ${zoneBarHtml(card)}
-        ${limitGapCell(card, 'wl-chg wl-lim')}${trendCell(card)}
+        ${limitGapCell(card, 'wl-chg wl-lim')}${changeLastCell(card, 'wl-chg wl-last')}${trendCell(card)}
         <span class="wl-tag"><span>${owned ? sellChip(card) : tagChip(card)}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${!owned && (mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}</span><span class="wl-heat">${heatChip(card)}</span></span>
       </a>`;
   }

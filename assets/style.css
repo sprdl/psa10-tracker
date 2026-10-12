@@ -282,7 +282,7 @@ img.card-img {
 .wl-sec-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 14px 18px 0; }
 .wl-sec-h .section-title { margin: 0; }
 .wl-sec-note { font-size: 12px; color: var(--muted); }
-.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 90px minmax(50px, 120px) 66px 60px 96px; gap: 10px; align-items: center; padding: 0 18px; }
+.wl-head, .wl-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 90px minmax(50px, 120px) 66px 56px 60px 96px; gap: 10px; align-items: center; padding: 0 18px; }
 .wl-head { padding-top: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); font: 15px var(--display); letter-spacing: 0.1em; color: var(--muted-2); }
 .wl-head .r, .wl-price, .wl-off, .wl-chg { text-align: right; }
 .wl-head span { white-space: nowrap; }
@@ -819,7 +819,7 @@ th.tc-head small { font-size: 11px; color: var(--muted-2); font-weight: 400; whi
 .watchlist { container-type: inline-size; }
 @media (min-width: 900px) {
 @container (max-width: 640px) {
-  .wl-head, .wl-row { grid-template-columns: 34px minmax(0, 1fr) 96px 70px 62px 104px; }
+  .wl-head, .wl-row { grid-template-columns: 34px minmax(0, 1fr) 96px 70px 52px 62px 104px; }
   .wl-head .wl-zone, .wl-row .zb, .wl-row .zb-none { display: none; }
 }
 }
