@@ -1829,3 +1829,7 @@ div.rc-spark { font-size: 11px; height: auto; }
   .rc-row { grid-template-columns: 26px minmax(0, 1fr) 44px 58px; gap: 8px; }
   .rc-tl li { grid-template-columns: 70px minmax(0, 1fr); }
 }
+
+/* self-grade signal (selfGrade in app.js): next to the verdict, never instead of it */
+.diy-chip { display: inline-flex; font: 14px var(--display); letter-spacing: 0.08em; line-height: 1; padding: 4px 6px 2px; border-radius: 3px; margin-left: 6px; color: #7cc4ff; border: 1px dashed #7cc4ff; white-space: nowrap; cursor: help; }
+.cd-diy-line { margin: 6px 0 2px; font-size: 13px; color: var(--soft); border-left: 2px solid #7cc4ff; padding-left: 10px; }

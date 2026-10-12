@@ -528,6 +528,30 @@
     return { gradingFee, shipping, rawPrice: rawP, rawInfo: rp, diyExpected, delta, gemRate };
   }
 
+  // Self-grade signal: making the PSA10 yourself (raw A-rank + PSA Standard ÷ gem rate, see computeDiyEconomics) is
+  // expected to cost at least SELF_GRADE_MARGIN % less than the PSA10 trades for. Conservative: a copy that doesn't
+  // come back a 10 counts as a total loss (it still sells raw), and it ignores the ~100 business days of waiting.
+  // Not for cards whose PSA10 is worth more than Standard's ¥150,000 declared-value cap, nor for Defer cards (no real
+  // PSA10 market to compare with). Shown next to the verdict; it never changes the verdict itself.
+  const SELF_GRADE_MARGIN = 15;
+  function selfGrade(card) {
+    const rep = getRep(card);
+    if (!rep || rep > PSA_STD.cap || displayTagFor(card) === 'defer') return null;
+    const diy = computeDiyEconomics(card, rep);
+    if (!diy) return null;
+    const margin = (1 - diy.diyExpected / rep) * 100;
+    return { ...diy, rep, margin, ok: margin >= SELF_GRADE_MARGIN };
+  }
+  function selfGradeTip(sg) {
+    return `Self-grading looks cheaper: a PSA10 made yourself is expected to cost ${fmtYen(Math.round(sg.diyExpected))} `
+      + `(raw A-rank ${fmtYen(sg.rawPrice)} + PSA Standard ${fmtYen(sg.gradingFee + sg.shipping)}, ÷ ${Math.round(sg.gemRate * 1000) / 10}% gem rate), `
+      + `${Math.round(sg.margin)}% under the PSA10 price ${fmtYen(sg.rep)}. Takes about 100 business days; a copy that isn't a 10 counts as lost here.`;
+  }
+  function selfGradeChip(card) {
+    const sg = selfGrade(card);
+    return sg && sg.ok ? `<span class="diy-chip" title="${escapeAttr(selfGradeTip(sg))}">Self-grade</span>` : '';
+  }
+
   function computeGauge(tiers, peakPrice, currentPrice) {
     if (!tiers || !peakPrice) return null;
     const scaleMax = roundToThousand(peakPrice * 1.08) || peakPrice;
@@ -4090,7 +4114,7 @@
         <span class="wl-price display">${fmtYen(getRep(card))}${rawAskSub(card)}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg wl-lim')}${changeLastCell(card, 'wl-chg wl-last')}${trendCell(card)}
-        <span class="wl-tag"><span>${owned ? sellChip(card) : tagChip(card)}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${!owned && (mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}</span><span class="wl-heat">${heatChip(card)}</span></span>
+        <span class="wl-tag"><span>${owned ? sellChip(card) : tagChip(card)}${!owned ? selfGradeChip(card) : ''}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${!owned && (mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}</span><span class="wl-heat">${heatChip(card)}</span></span>
       </a>`;
   }
   function renderOverviewList(cards) {
@@ -4428,7 +4452,8 @@
         </div>
         <div class="cd-panel" data-panel="overview"${cur === 'overview' ? '' : ' hidden'}>
           <section class="cd-decide" aria-label="Decision">
-            <div class="cd-decide-h"><span class="lbl">Decision</span>${own ? sellChip(card) : tagChip(card)}</div>
+            <div class="cd-decide-h"><span class="lbl">Decision</span><span class="cd-decide-chips">${own ? sellChip(card) : tagChip(card) + selfGradeChip(card)}</span></div>
+            ${!own && (selfGrade(card) || {}).ok ? `<p class="cd-diy-line">${escapeHtml(selfGradeTip(selfGrade(card)))} <a href="#" data-goto-tab="diy">See the DIY tab →</a></p>` : ''}
             ${verdictHtml}
             ${gaugeHtml}
             ${own ? sellRowHtml(card) : limitRowHtml + mercariRowHtml(card)}
@@ -4502,7 +4527,7 @@
           <span class="cd-meta">${escapeHtml([o.code, o.pack].filter(Boolean).join(' · '))}</span>
           <span class="cd-price display">${fmtYen(o.repPrice)}</span>
           <span class="dw-delta">${o.deltaHtml}</span>
-          <span class="cd-tags">${own ? sellChip(card) : tagChip(card)}${heatChip(card)}${o.ownedHtml}</span>
+          <span class="cd-tags">${own ? sellChip(card) : tagChip(card) + selfGradeChip(card)}${heatChip(card)}${o.ownedHtml}</span>
         </div>
       </div>
       ${verdict}
@@ -4535,6 +4560,7 @@
       }
     };
     el.querySelectorAll('.cd-tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    el.querySelectorAll('[data-goto-tab]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); showTab(a.dataset.gotoTab); }));
     if ((state.cardTab || 'overview') === 'history') showTab('history');
   }
 
