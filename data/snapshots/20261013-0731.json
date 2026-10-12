@@ -6550,7 +6550,7 @@
       "year_change_pct": 16.3,
       "data_range": "2020/06/01 〜 2026/10/12",
       "volume_trend": "spiking",
-      "volume_note": "daily trades: 7d avg 78.6, 14d avg 77.7 vs prior-30d avg 56.2; 14d peak 666 on 2026/10/11 (data to 2026/10/12)"
+      "volume_note": "daily trades: 7d avg 78.6, 14d avg 77.7 vs prior-30d avg 56.2; 14d peak 241 on 2026/10/11 (data to 2026/10/12)"
     }
   }
 }
