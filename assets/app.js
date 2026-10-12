@@ -166,7 +166,7 @@
   const OPTIONAL_DATA = {
     holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', portHist: 'data/portfolio_history.json', sellTargets: 'data/sell_targets.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', psaBacklog: 'data/psa_backlog.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
-    insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json',
+    insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json', recaps: 'data/recaps.json',
     valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', grails: 'data/grails.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
   };
   // The last loaded bundle, for an instant start, lives in IndexedDB: it's ~0.7 MB and grows with every check, and
@@ -265,6 +265,7 @@
     state.syncedTargets = (b.sellTargets && b.sellTargets.targets) || {};
     state.oddsModel = b.oddsModel || null;
     state.valueModel = b.valueModel || null;
+    state.recaps = b.recaps || null; // data/recaps.json — weekly recap notes (scripts/recap.py, FULL-CHECK step 8j)
     state.stories = b.stories || null; // data/stories.json — the art stories (researched, with sources)
     state.predict = b.predict || null; // data/predict.json — You vs the model (scripts/predict.py)
     state.scout = b.scout || null; // data/scout.json — untracked candidates (scripts/scout.py)
@@ -2048,6 +2049,233 @@
     el.querySelectorAll('.st-tile').forEach((a) => { a.addEventListener('pointerdown', toStory); a.addEventListener('keydown', (e) => { if (e.key === 'Enter') toStory(); }); a.addEventListener('click', toStory, true); });
   }
 
+  // ---------- Weekly recap (#/recap) ----------
+  // A Mon–Sun (JST) week, computed from data/history.json (every check's prices and the pokeca-chart indices),
+  // data/custom_index.json (My-tier), the holdings and data/events.json; plus a short written note from
+  // data/recaps.json ("what happened" and "watch out next week"), researched by the first full check on Monday
+  // (FULL-CHECK step 8j, scripts/recap.py). The current week is shown as "so far" until it ends.
+  const WEEK_MS = 7 * 86400000, JST_MS = 9 * 3600000;
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // Monday 00:00 JST of the week containing T (ms)
+  function weekStartOf(T) { const j = new Date(T + JST_MS); const dow = (j.getUTCDay() + 6) % 7; return Date.UTC(j.getUTCFullYear(), j.getUTCMonth(), j.getUTCDate() - dow) - JST_MS; }
+  function jstYmd(T) { return new Date(T + JST_MS).toISOString().slice(0, 10); }
+  function fmtMd(T) { const j = new Date(T + JST_MS); return `${MON[j.getUTCMonth()]} ${j.getUTCDate()}`; }
+  function fmtWdMd(d) { const T = Date.parse(d + 'T12:00:00+09:00'); const j = new Date(T + JST_MS); return `${WD[j.getUTCDay()]} ${MON[j.getUTCMonth()]} ${j.getUTCDate()}`; }
+  function isoWeekNo(W) { const d = new Date(W + JST_MS + 3 * 86400000); const y = d.getUTCFullYear(); const jan4 = Date.UTC(y, 0, 4); const w1 = jan4 - ((new Date(jan4).getUTCDay() + 6) % 7) * 86400000; return Math.floor((d - w1) / WEEK_MS) + 1; }
+  function recapNote(W) { const r = state.recaps && state.recaps.weeks; return (r && r[jstYmd(W)]) || null; }
+
+  function recapWeeks() {
+    const snaps = (state.hist && state.hist.snapshots) || [];
+    if (!snaps.length) return [];
+    const first = weekStartOf(Date.parse(snaps[0].d)), last = weekStartOf(Date.parse(snaps[snaps.length - 1].d));
+    const out = [];
+    for (let W = first; W <= last; W += WEEK_MS) out.push(W);
+    return out;
+  }
+
+  function recapData(W) {
+    const E = W + WEEK_MS;
+    const snaps = ((state.hist && state.hist.snapshots) || []).map((e) => ({ ...e, t: Date.parse(e.d) })).sort((a, b) => a.t - b.t);
+    const inWeek = snaps.filter((s) => s.t >= W && s.t < E);
+    if (!inWeek.length) return null;
+    const before = snaps.filter((s) => s.t < W);
+    const startSnap = before.length ? before[before.length - 1] : inWeek[0];
+    const endSnap = inWeek[inWeek.length - 1];
+    const live = endSnap === snaps[snaps.length - 1] && Date.now() < E;
+    const series = [startSnap, ...inWeek.filter((s) => s !== startSnap)];
+    // per card: price at the start, at the end, and the week's low/high (from every check in the week)
+    const priceIn = (s, url) => (s.p && s.p[url] ? s.p[url][0] : null);
+    const cards = ((state.currentData && state.currentData.cards) || []).filter(hasMarket);
+    const rows = cards.map((c) => {
+      let p0 = priceIn(startSnap, c.url);
+      const pts = series.map((s) => ({ t: s.t, v: priceIn(s, c.url) })).filter((x) => x.v != null);
+      if (p0 == null && pts.length) p0 = pts[0].v;   // added during the week: from its first check
+      const p1 = pts.length ? pts[pts.length - 1].v : null;
+      if (p0 == null || p1 == null) return null;
+      const weekPts = pts.filter((x) => x.t >= W);
+      const lo = Math.min(...weekPts.map((x) => x.v)), hi = Math.max(...weekPts.map((x) => x.v));
+      const owned = holdingsFor(c).length > 0;
+      // buy tiers as they were at each check (history.json tier_log), not today's
+      const log = (state.hist && state.hist.tier_log && state.hist.tier_log[c.url]) || [];
+      const tiersAt = (T) => { let x = null; for (const e of log) if (Date.parse(e[0]) <= T) x = e; return x ? { definitely_buy: x[1], buy_upper: x[2], ceiling: x[3] } : null; };
+      const lim = owned ? null : getLimit(c), st = owned ? sellTiersOf(c) : null;
+      const thin = displayTagFor(c) === 'defer';
+      const flags = [];
+      if (thin) flags.push({ cls: '', txt: 'Thin market: one or two asks' });
+      if (!owned && !thin) {
+        const dip = weekPts.reduce((best, x) => { const t = tiersAt(x.t); if (!t) return best; const z = x.v <= t.definitely_buy ? 2 : x.v <= t.buy_upper ? 1 : 0; return Math.max(best, z); }, 0);
+        if (lim != null && lo <= lim) flags.push({ cls: 'pos', txt: `Low ${fmtYenShort(lo)} at/under your limit` });
+        else if (dip) flags.push({ cls: 'pos', txt: dip === 2 ? 'Reached Definitely-buy' : 'Dipped into the Buy zone' });
+        const t0 = tiersAt(startSnap.t) , t1 = tiersAt(pts[pts.length - 1].t);
+        if (t0 && t1 && p0 <= t0.ceiling && p1 > t1.ceiling) flags.push({ cls: 'neg', txt: 'Rose above the ceiling' });
+      } else if (st) {
+        if (hi >= st.sell_from) flags.push({ cls: 'pos', txt: 'Reached Sell from' });
+        else if (hi >= st.take_profit_from) flags.push({ cls: 'pos', txt: 'Reached Take profit' });
+      }
+      return { card: c, owned, thin, p0, p1, lo, hi, pct: (p1 / p0 - 1) * 100, yen: (p1 - p0) * (owned ? holdingsFor(c).length : 1), flags, added: priceIn(startSnap, c.url) == null };
+    }).filter(Boolean);
+    // indices: My-tier (daily), pokeca-chart PSA10 ("i") and raw A ("ri") per check
+    const ciSer = (state.customIndex && state.customIndex.series) || [];
+    const ymdW = jstYmd(W), ymdE = jstYmd(E);
+    const ciBefore = ciSer.filter((e) => e.d < ymdW), ciIn = ciSer.filter((e) => e.d >= ymdW && e.d < ymdE);
+    const ciPts = (ciBefore.length ? [ciBefore[ciBefore.length - 1]] : []).concat(ciIn).map((e) => ({ t: Date.parse(e.d + 'T12:00:00+09:00'), v: e.level }));
+    const idxPts = (k) => series.filter((s) => s[k] != null).map((s) => ({ t: s.t, v: s[k] }));
+    const idx = [
+      { key: 'mytier', name: 'My-tier index', pts: ciPts, fmt: (v) => v.toFixed(1), tip: '22 modern SAR / alt-art PSA10s, equal-weighted, 9/26 = 100' },
+      { key: 'psa', name: 'PSA10 index', pts: idxPts('i'), fmt: fmtYen, tip: 'pokeca-chart PSA10 index (100 cards)' },
+      { key: 'raw', name: 'Raw A-rank index', pts: idxPts('ri'), fmt: fmtYen, tip: 'pokeca-chart raw A-rank index' },
+    ].map((x) => ({ ...x, pct: x.pts.length >= 2 ? (x.pts[x.pts.length - 1].v / x.pts[0].v - 1) * 100 : null }));
+    // holdings: market move = change in worth minus money added (purchases) during the week
+    let money = null;
+    const ser = portfolioSeries();
+    if (ser && ser.pts.length) {
+      const at = (T) => { let v = null; for (const p of ser.pts) { if (p.t > T) break; v = p; } return v; };
+      const a = at(W - 1) || { worth: { total: 0 }, spent: { total: 0 } }, b = at(endSnap.t) || at(E - 1);
+      if (b) {
+        const added = b.spent.total - a.spent.total, move = b.worth.total - a.worth.total - added;
+        const base = a.worth.total + added;
+        money = { worth0: a.worth.total, worth1: b.worth.total, spent: b.spent.total, added, move, pct: base ? (move / base) * 100 : null };
+      }
+    }
+    const buys = ((ser && ser.buys) || []).filter((x) => x.t >= W && x.t < E);
+    const evs = ((state.events && state.events.events) || []).filter((e) => e.d);
+    const happenedEv = evs.filter((e) => { const t = Date.parse(e.d + 'T12:00:00+09:00'); return t >= W && t < E; });
+    const aheadEv = evs.filter((e) => { const t = Date.parse(e.d + 'T12:00:00+09:00'); return t >= E && t < E + WEEK_MS; });
+    return { W, E, live, startSnap, endSnap, checks: inWeek.length, rows, idx, money, buys, happenedEv, aheadEv, note: recapNote(W) };
+  }
+
+  // tiny line chart for an index tile; hover shows each point
+  function recapSpark(pts, fmt, up) {
+    if (!pts || pts.length < 2) return '<div class="rc-spark muted">not enough checks</div>';
+    const w = 160, h = 40, pad = 4;
+    const t0 = pts[0].t, t1 = pts[pts.length - 1].t, vs = pts.map((p) => p.v);
+    const lo = Math.min(...vs), hi = Math.max(...vs), span = hi - lo || 1;
+    const X = (t) => pad + ((t - t0) / (t1 - t0 || 1)) * (w - 2 * pad), Y = (v) => h - pad - ((v - lo) / span) * (h - 2 * pad);
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.t).toFixed(1)},${Y(p.v).toFixed(1)}`).join('');
+    const dots = pts.map((p) => `<circle cx="${X(p.t).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="7" class="rc-hit"><title>${escapeHtml(fmtDateShort(new Date(p.t + JST_MS).toISOString().slice(0, 16)))} · ${escapeHtml(fmt(p.v))}</title></circle>`).join('');
+    const last = pts[pts.length - 1];
+    return `<svg class="rc-spark ${up ? 'up' : 'down'}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Index over the week"><path d="${d}"/><circle cx="${X(last.t).toFixed(1)}" cy="${Y(last.v).toFixed(1)}" r="3" class="rc-end"/>${dots}</svg>`;
+  }
+
+  // diverging bar row: zero in the middle, length = % change against the list's largest move
+  function recapBarRows(rows, scale) {
+    return rows.map((r) => {
+      const { short, code } = parseCardName(r.card.card_name_ja);
+      const w = Math.min(50, (Math.abs(r.pct) / scale) * 50);
+      const tip = `${short}: ${fmtYen(r.p0)} → ${fmtYen(r.p1)} (${fmtPct(r.pct)}) · week low ${fmtYen(r.lo)}, high ${fmtYen(r.hi)}${r.added ? ' · added during the week' : ''}`;
+      return `<a class="rc-row" href="#/card/${escapeAttr(cardId(r.card))}" title="${escapeAttr(tip)}">
+        ${slabHtml(r.card, 'xs')}
+        <span class="rc-name"><b class="jp">${escapeHtml(short)}</b><small>${escapeHtml(code)} · ${fmtYenShort(r.p0)} → <b>${fmtYenShort(r.p1)}</b></small>${r.flags.length ? `<span class="rc-flags">${r.flags.map((f) => `<em class="${f.cls}">${escapeHtml(f.txt)}</em>`).join('')}</span>` : ''}</span>
+        <span class="rc-bar" aria-hidden="true"><i class="${r.pct >= 0 ? 'up' : 'down'}" style="${r.pct >= 0 ? 'left:50%' : `right:50%`};width:${w.toFixed(1)}%"></i></span>
+        <span class="rc-pct ${dirClass(r.pct)}">${r.pct === 0 ? '±0' : fmtPct(r.pct)}<small>${r.yen === 0 ? '' : (r.yen > 0 ? '+' : '−') + fmtYenShort(Math.abs(r.yen))}</small></span>
+      </a>`;
+    }).join('');
+  }
+
+  function recapOutlook(d) {
+    const items = [];
+    const today = jstYmd(Date.now());
+    const evs = ((state.events && state.events.events) || []).filter((e) => e.d && (d.live ? e.d >= today && e.d < jstYmd(d.E + WEEK_MS) : e.d >= jstYmd(d.E) && e.d < jstYmd(d.E + WEEK_MS)));
+    for (const e of evs) items.push({ d: e.d, title: e.name, text: e.major ? `Major release: the event rule holds Buy calls from ${eventWindow()} days before.` : '', src: e.source, auto: true });
+    const n = d.note && d.note.ahead;
+    if (n) for (const a of n) if (!items.some((x) => x.d === a.d && x.title === a.title)) items.push({ d: a.d, title: a.title, text: a.text, src: a.source });
+    if (d.live || d.E >= weekStartOf(Date.now())) {
+      // signals worth watching from the latest check (only next to the newest weeks; they describe today)
+      const cards = (state.currentData && state.currentData.cards) || [];
+      for (const c of cards) {
+        if (!hasMarket(c)) continue;
+        const ask = lowestAsk(c), nm = parseCardName(c.card_name_ja).short;
+        if (holdingsFor(c).length) {
+          const st = sellTiersOf(c);
+          if (st && ask != null && ask < st.take_profit_from && ask >= st.take_profit_from * 0.92) items.push({ now: true, title: `${nm} is ${((st.take_profit_from / ask - 1) * 100).toFixed(0)}% under Take profit`, text: `Lowest ask ${fmtYen(ask)} vs Take profit from ${fmtYen(st.take_profit_from)}.`, card: c });
+        } else {
+          const lim = getLimit(c);
+          if (lim != null && ask != null && ask > lim && ask <= lim * 1.05) items.push({ now: true, title: `${nm} is ${((ask / lim - 1) * 100).toFixed(1)}% above your limit`, text: `Lowest ask ${fmtYen(ask)} vs your limit ${fmtYen(lim)}.`, card: c });
+        }
+      }
+      const rs = rallyState(), cs = correctionState();
+      if (rs.active) items.push({ now: true, title: `Rally rule is on (My-tier ${fmtPct(rs.pct)} in 7 days)`, text: 'Limits set before the rally are less likely to fill soon.' });
+      if (cs.active) items.push({ now: true, title: `Correction rule is on (${cs.name} ${fmtPct(cs.pct)} in 30 days)`, text: 'Buy only at Definitely-buy until it eases.' });
+    }
+    const rank = (x) => (x.d ? 0 : x.now ? 2 : 1);
+    return items.sort((a, b) => rank(a) - rank(b) || String(a.d || '').localeCompare(String(b.d || '')));
+  }
+
+  function renderRecap(arg) {
+    const el = document.getElementById('recap-page'); if (!el) return { title: 'Weekly recap', sub: '' };
+    const weeks = recapWeeks();
+    if (!weeks.length) { el.innerHTML = '<div class="empty-state">No checks yet.</div>'; return { title: 'Weekly recap', sub: '' }; }
+    const cur = weekStartOf(Date.now());
+    let W = arg ? Date.parse(arg + 'T00:00:00+09:00') : null;
+    if (W == null || isNaN(W) || !weeks.includes(W)) W = weeks.includes(cur - WEEK_MS) ? cur - WEEK_MS : weeks[weeks.length - 1]; // default: the last full week
+    const d = recapData(W);
+    const i = weeks.indexOf(W), prevW = weeks[i - 1], nextW = weeks[i + 1];
+    const range = `${fmtMd(W)} – ${fmtMd(W + WEEK_MS - 1)}`;
+    const nav = `<div class="rc-nav">
+        ${prevW != null ? `<a class="btn" href="#/recap/${jstYmd(prevW)}">‹ ${fmtMd(prevW)}</a>` : '<span></span>'}
+        <div class="rc-week"><span class="lbl">Week ${isoWeekNo(W)}${d && d.live ? ' · so far' : ''}</span><b class="display">${range}</b></div>
+        ${nextW != null ? `<a class="btn" href="#/recap/${jstYmd(nextW)}">${fmtMd(nextW)} ›</a>` : '<span></span>'}</div>`;
+    if (!d) { el.innerHTML = nav + '<div class="empty-state">No checks in this week.</div>'; return { title: 'Weekly recap', sub: range }; }
+    const note = d.note;
+    const owned = d.rows.filter((r) => r.owned).sort((a, b) => b.pct - a.pct);
+    const watch = d.rows.filter((r) => !r.owned).sort((a, b) => (a.thin - b.thin) || b.pct - a.pct);
+    const scale = Math.max(5, ...d.rows.filter((r) => !r.thin).map((r) => Math.abs(r.pct)));
+    const m = d.money;
+    const heroTiles = [
+      m ? `<div class="rc-tile rc-money"><span class="lbl">Your holdings</span><b class="display ${dirClass(m.move)}">${m.move >= 0 ? '+' : '−'}${fmtYen(Math.abs(Math.round(m.move)))}</b><small>${m.pct != null ? `<span class="${dirClass(m.pct)}">${fmtPct(m.pct)}</span> market move · ` : ''}worth ${fmtYenShort(m.worth1)}${m.added ? ` · ${fmtYenShort(m.added)} added in buys` : ''}</small></div>` : '',
+      ...d.idx.map((x) => `<div class="rc-tile" title="${escapeAttr(x.tip)}"><span class="lbl">${escapeHtml(x.name)}</span><b class="display ${dirClass(x.pct)}">${x.pct == null ? '—' : fmtPct(x.pct)}</b><small>${x.pts.length ? escapeHtml(x.fmt(x.pts[x.pts.length - 1].v)) : 'no data'}</small>${recapSpark(x.pts, x.fmt, (x.pct || 0) >= 0)}</div>`),
+    ].join('');
+    const solid = d.rows.filter((r) => !r.thin), best = solid.slice().sort((a, b) => b.pct - a.pct)[0], worst = solid.slice().sort((a, b) => a.pct - b.pct)[0];
+    const nmOf = (r) => parseCardName(r.card.card_name_ja).short;
+    const ups = solid.filter((r) => r.pct > 0.5).length, downs = solid.filter((r) => r.pct < -0.5).length;
+    const autoHead = best && worst ? `${ups} card${ups === 1 ? '' : 's'} up, ${downs} down. ${best.pct > 0.5 ? `${nmOf(best)} led (${fmtPct(best.pct)})` : `${nmOf(best)} held up best (${fmtPct(best.pct)})`}; ${worst.pct < -0.5 ? `${nmOf(worst)} fell most (${fmtPct(worst.pct)})` : `${nmOf(worst)} was the weakest (${fmtPct(worst.pct)})`}.` : '';
+    const happened = [];
+    for (const e of d.happenedEv) happened.push({ d: e.d, title: e.name, text: 'Release', src: e.source });
+    const byDay = {};
+    for (const b of d.buys) (byDay[jstYmd(b.t)] = byDay[jstYmd(b.t)] || []).push(b);
+    for (const [day, bs] of Object.entries(byDay)) happened.push({ d: day, mine: true, title: bs.length === 1 ? `You bought ${bs[0].name}` : `You bought ${bs.length} items (${fmtYen(bs.reduce((a, b) => a + b.cost, 0))})`, text: bs.length === 1 ? fmtYen(bs[0].cost) : bs.map((b) => `${b.name} ${fmtYenShort(b.cost)}`).join(' · ') });
+    if (note && note.happened) for (const h of note.happened) if (!happened.some((x) => x.d === h.d && x.title === h.title)) happened.push({ d: h.d, title: h.title, text: h.text, src: h.source });
+    happened.sort((a, b) => String(a.d || '').localeCompare(String(b.d || '')));
+    const tl = (items, empty) => items.length ? `<ol class="rc-tl">${items.map((x) => `<li class="${x.mine ? 'mine' : ''}"><span class="rc-tl-d${x.now ? ' now' : ''}">${x.d ? escapeHtml(fmtWdMd(x.d)) : x.now ? 'Now' : 'Date TBA'}</span><div><b>${escapeHtml(x.title)}</b>${x.text ? `<p>${escapeHtml(x.text)}</p>` : ''}${x.src ? `<a class="rc-src" href="${escapeAttr(x.src)}" target="_blank" rel="noopener">Source ↗</a>` : ''}</div></li>`).join('')}</ol>` : `<p class="muted rc-empty">${empty}</p>`;
+    const outlook = recapOutlook(d);
+    el.innerHTML = `${nav}
+      <section class="rc-head panel">
+        <p class="rc-headline">${escapeHtml((note && note.headline) || autoHead || 'A quiet week.')}</p>
+        ${note && note.takeaway ? `<p class="rc-take">${escapeHtml(note.takeaway)}</p>` : ''}
+        <p class="rc-basis muted">${d.checks} check${d.checks === 1 ? '' : 's'} · ${fmtDateShort(d.startSnap.d)} → ${fmtDateShort(d.endSnap.d)} JST${d.live ? ' · the week isn\'t over yet' : ''}${note ? ` · notes written ${escapeHtml((note.written || '').slice(0, 10))}` : d.live ? '' : ' · no written notes for this week'}</p>
+      </section>
+      <div class="rc-tiles">${heroTiles}</div>
+      <div class="rc-cols">
+        <section class="panel rc-panel"><h2 class="section-title">Your cards <span class="muted">${owned.length}</span></h2>${owned.length ? recapBarRows(owned, scale) : '<p class="muted rc-empty">No owned cards with a PSA10 price.</p>'}</section>
+        <section class="panel rc-panel"><h2 class="section-title">Watchlist <span class="muted">${watch.length}</span></h2>${watch.length ? recapBarRows(watch, scale) : '<p class="muted rc-empty">Nothing on the watchlist.</p>'}</section>
+      </div>
+      <div class="rc-cols">
+        <section class="panel rc-panel"><h2 class="section-title">What happened</h2>${tl(happened, d.live ? 'Written on Monday by the first full check.' : 'Nothing recorded for this week.')}</section>
+        <section class="panel rc-panel rc-ahead"><h2 class="section-title">Watch out ${d.live ? 'this week' : 'next week'}</h2>${tl(outlook.map((x) => ({ ...x, title: x.title })), 'Nothing scheduled.')}</section>
+      </div>`;
+    return { title: 'Weekly recap', sub: `Week ${isoWeekNo(W)} · ${range}${d.live ? ' (so far)' : ''}` };
+  }
+
+  // Overview card: last full week at a glance
+  function renderRecapCard() {
+    const box = document.getElementById('recap-card'); if (!box) return;
+    const cur = weekStartOf(Date.now());
+    const d = recapData(cur - WEEK_MS) || recapData(cur);
+    if (!d) { box.hidden = true; return; }
+    const m = d.money, my = d.idx.find((x) => x.key === 'mytier');
+    const best = d.rows.filter((r) => !r.thin).sort((a, b) => b.pct - a.pct)[0];
+    const next = recapOutlook(recapData(cur) || d).find((x) => x.d);
+    box.hidden = false;
+    box.innerHTML = `<a class="rc-card" href="#/recap/${jstYmd(d.W)}">
+      <span class="rc-card-h"><span class="lbl">Week ${isoWeekNo(d.W)} recap</span><small class="muted">${fmtMd(d.W)} – ${fmtMd(d.W + WEEK_MS - 1)}${d.live ? ' · so far' : ''}</small></span>
+      ${m ? `<span class="rc-kv"><small>Holdings</small><b class="${dirClass(m.move)}">${m.move >= 0 ? '+' : '−'}${fmtYenShort(Math.abs(Math.round(m.move)))}</b></span>` : ''}
+      ${my && my.pct != null ? `<span class="rc-kv"><small>My-tier</small><b class="${dirClass(my.pct)}">${fmtPct(my.pct)}</b></span>` : ''}
+      ${best ? `<span class="rc-kv"><small>Top mover</small><b><span class="jp">${escapeHtml(parseCardName(best.card.card_name_ja).short)}</span> <span class="${dirClass(best.pct)}">${fmtPct(best.pct)}</span></b></span>` : ''}
+      ${next ? `<span class="rc-kv rc-next"><small>Next</small><b>${escapeHtml(fmtWdMd(next.d))} · ${escapeHtml(next.title)}</b></span>` : ''}
+      <span class="rc-go">Open recap →</span></a>`;
+  }
+
   // ---------- You vs the model (#/predict) ----------
   // data/predict.json is written by scripts/predict.py whenever a snapshot is published: five
   // questions per week (Mon → Fri 23:59 JST) about your cards, each with the limit-odds model's
@@ -2467,7 +2695,7 @@
   const VIEWS = {
     overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
     planner: 'Budget planner', grails: 'Grails', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
-    compare: 'Head to head', duel: 'Budget duel', combos: 'Combination finder', rate: 'Rate my portfolio', scored: 'Scored calls', submit: 'PSA submission planner', scout: 'Scout', predict: 'You vs the model', stories: 'Stories',
+    compare: 'Head to head', duel: 'Budget duel', combos: 'Combination finder', rate: 'Rate my portfolio', scored: 'Scored calls', submit: 'PSA submission planner', scout: 'Scout', predict: 'You vs the model', stories: 'Stories', recap: 'Weekly recap',
   };
   const DESKTOP = window.matchMedia('(min-width: 1200px)');
 
@@ -2492,7 +2720,7 @@
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
-    if (tab && ['watching', 'planner', 'grails', 'collection', 'submit', 'record', 'market', 'tables', 'predict', 'stories'].includes(navView)) tab.classList.add('on');
+    if (tab && ['watching', 'planner', 'grails', 'collection', 'submit', 'record', 'market', 'tables', 'predict', 'stories', 'recap'].includes(navView)) tab.classList.add('on');
 
     const back = document.getElementById('back-link');
     back.hidden = view !== 'card' && !PARENT[view];
@@ -2517,6 +2745,7 @@
     } else {
       state.cardFrom = view === 'more' ? 'overview' : view;
       if (view === 'submit') ({ title, sub } = renderSubmit());
+      if (view === 'recap') ({ title, sub } = renderRecap(arg));
     }
     document.getElementById('page-title').textContent = title;
     document.getElementById('page-sub').textContent = sub;
@@ -2698,6 +2927,7 @@
     renderHeat();
     renderKpis(data);
     renderToday(data, state.previousData);
+    renderRecapCard();
     renderInbox(cards);
     els.notesBody.textContent = data.notes || '';
     renderPortfolio(state.holdings, cards);

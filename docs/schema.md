@@ -414,3 +414,11 @@ Long-term grails shown only on the Grails page (Buy › Grails). `{"grails": {"<
 The cards stay in `tracked_cards.json`, so every price check still reads them; `setShownData()` in app.js splits them off
 the shown snapshot (`state.grailCards`), which keeps them out of the Overview, collection, planner, tables and signals.
 The Grails page's target is the card's limit (`limits.json`), else its Buy tier. Edit the file by hand.
+
+## data/recaps.json (weekly recap notes)
+
+Written by `scripts/recap.py save` (FULL-CHECK step 8j, the first full check on a Monday) for the Mon–Sun JST week
+that just ended: `{"about": …, "weeks": {"<Monday YYYY-MM-DD>": {"headline", "takeaway"?, "happened": [{d, title,
+text?, source?}], "ahead": [{d|null, title, text?, source?}], "written"}}}`. The Weekly recap page (`#/recap`,
+`renderRecap` in `assets/app.js`) computes everything else itself from `history.json` (card prices, the PSA10 index
+`i` and raw A-rank index `ri` per check), `custom_index.json`, the holdings and `events.json`.

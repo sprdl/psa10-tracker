@@ -270,6 +270,8 @@ def main():
         sealed_info.print_due(ROOT)
         import psa_backlog
         psa_backlog.print_due(ROOT)
+        import recap
+        recap.print_due(ROOT)
         print_followups()
         return
     files = [a for i, a in enumerate(args) if not a.startswith("--") and not (i and args[i - 1] == "--skip")]
@@ -354,6 +356,8 @@ def main():
     sealed_info.print_due(ROOT)
     import psa_backlog
     psa_backlog.print_due(ROOT)
+    import recap
+    recap.print_due(ROOT)
     print_followups()
 
 
@@ -423,6 +427,7 @@ def print_followups():
         ("8g", "refresh verdicts", lambda: min(review_due.TEXT_PER_RUN, len(review_due.compute(ROOT)[1]))),
         ("8h", "sealed info", lambda: len(sealed_info.due(ROOT))),
         ("8i", "PSA backlog (WebFetch, then psa_backlog.py from-page)", lambda: psa_backlog.due_count(ROOT)),
+        ("8j", "weekly recap note (scripts/recap.py)", lambda: 1 if __import__("recap").due(ROOT) else 0),
     ):
         try:
             n = count()

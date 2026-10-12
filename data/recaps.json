@@ -1,0 +1,25 @@
+{
+ "about": "Weekly recap notes for the site's Weekly recap page: per week (key = Monday, JST) a headline, an optional takeaway, what happened (news) and what to watch next week. Written by FULL-CHECK step 8j with scripts/recap.py; the page computes all numbers itself.",
+ "weeks": {
+  "2026-10-05": {
+   "headline": "A broad rally: the My-tier index rose 25% and the PSA10 index 21%, lifting six of your seven cards, while raw A-rank prices barely moved.",
+   "takeaway": "No single news item explains it: the climb started on 10/07 and was steepest on 10/08–10/09, with PSA10 trading volume about 40% above the prior month. Slabs rising while raw A-rank stayed flat widened the PSA10 premium, which favours grading your raw copies over buying slabs. The rally rule is on, so limits set before the rally are less likely to fill soon.",
+   "happened": [
+    {
+     "d": "2026-10-09",
+     "title": "Steepest day of the rally",
+     "text": "The pokeca-chart PSA10 index went from ¥115,243 to ¥125,021 (+8.5%) between full checks. No product or PSA announcement was found for that day; the move was broad across cards."
+    }
+   ],
+   "ahead": [
+    {
+     "d": null,
+     "title": "Rumoured: ハドウシーカー expansion (Mega Lucario Z ex)",
+     "text": "An X post claims a 11/27 release; nothing official yet. An official reveal would be the next scheduled-release news to watch.",
+     "source": "https://x.com/MunPika_Pokemon/status/2059413717356626359"
+    }
+   ],
+   "written": "2026-10-12T13:26:32+09:00"
+  }
+ }
+}

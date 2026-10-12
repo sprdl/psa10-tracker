@@ -163,6 +163,8 @@ def entries(root: Path = ROOT):
             continue
         points = {}
         idx = (((d.get("pokeca_chart_index") or {}).get("psa10") or {}).get("latest_index_value_jpy"))
+        _pi = d.get("pokeca_chart_index") or {}
+        ridx = ((_pi.get("raw_bihin") or _pi.get("raw") or {}).get("latest_index_value_jpy"))  # raw A-rank index (weekly recap)
         when = d.get("collected_at_jst", s["collected_at_jst"])
         for c in d.get("cards", []):
             an = c.get("analysis") or {}
@@ -233,6 +235,8 @@ def entries(root: Path = ROOT):
                 entry[k] = v
         if idx:
             entry["i"] = idx
+        if ridx:
+            entry["ri"] = ridx
         series.append(entry)
     return series, tier_state, tier_log, sales
 
