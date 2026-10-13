@@ -1,6 +1,6 @@
 {
  "about": "Stories behind the tracked cards' artwork: illustrator, what the art shows, its connections, set context and trivia. Researched from the official card database, Bulbapedia, PokeBeach, Famitsu and card media (sources per card). Shown on each card's Story tab and the Stories page.",
- "updated": "2026-10-12T07:38:50+09:00",
+ "updated": "2026-10-14T08:14:38+09:00",
  "cards": {
   "https://snkrdunk.com/apparels/138599": {
    "illustrator": "Souichirou Gunjima",
@@ -799,6 +799,35 @@
    ],
    "confidence": "medium",
    "written": "2026-10-12T07:38:50+09:00"
+  },
+  "https://snkrdunk.com/apparels/93084": {
+   "illustrator": "5ban Graphics",
+   "illustrator_ja": null,
+   "art": "The full-art Ultra Rare shows the three legendary birds of Kanto, Moltres, Zapdos and Articuno (National Pokédex #144 to #146), together on one TAG TEAM GX card. The card is Colorless type with 300 HP, and its attack Trinity Burn needs Fire, Water, Lightning and Colorless energy, one for each bird.",
+   "story": "It is a reprint of the three-bird TAG TEAM GX that first appeared in the Sky Legend set in Japan and in Hidden Fates in English; this 226/173 is the Ultra Rare version in the Tag All Stars best-of set.",
+   "set": "TAG TEAM GX Tag All Stars (SM12a) is the last Sun & Moon era subset, a High Class Pack released in Japan on 4 October 2019 that collects TAG TEAM GX cards from the era.",
+   "trivia": [
+    "The listed illustrator is 5ban Graphics, the credit used on many Tag Team GX cards.",
+    "The English counterpart is Moltres & Zapdos & Articuno-GX from Hidden Fates.",
+    "The set's regular-rarity version of the same card is RR 102/173."
+   ],
+   "english": "Moltres & Zapdos & Articuno-GX (Hidden Fates)",
+   "sources": [
+    {
+     "title": "Card Codex: Moltres & Zapdos & Articuno-GX 226/173",
+     "url": "https://cardcodex.com/pokemon/sun-moon/tag-team-gx-tag-all-stars-ja/moltres-zapdos-articuno-gx-226-173-ultra-rare/"
+    },
+    {
+     "title": "Bulbapedia: Tag All Stars (TCG)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/SM12a"
+    },
+    {
+     "title": "Cardrush: 226/173 UR product page",
+     "url": "https://www.cardrush-pokemon.jp/product/6066"
+    }
+   ],
+   "confidence": "medium",
+   "written": "2026-10-14T08:14:38+09:00"
   }
  }
 }
