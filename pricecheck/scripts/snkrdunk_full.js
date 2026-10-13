@@ -114,10 +114,10 @@
         await sleep(1200);
       }
       if (!cb.checked) { cb.click(); await sleep(1200); }
-      const read = () => [...d.querySelectorAll('.item-list')].map((li) => ({
-        sold: li.classList.contains('sold'),
-        price: Number((li.querySelector('.item-price')?.childNodes[0]?.textContent || '').replace(/[^\d]/g, '')),
-        grade: li.querySelector('.item-price span:last-child')?.innerText.trim(),
+      const read = () => [...d.querySelectorAll('li[class*="__listItem"]')].map((li) => ({
+        sold: /sold/i.test(li.className) || /SOLD/.test(li.innerText),
+        price: Number((li.querySelector('[class*="__priceValue"]')?.textContent || '').replace(/[^\d]/g, '')),
+        grade: [...li.querySelectorAll('[class*="__subInfo"]')].pop()?.innerText.trim(),
       })).filter((x) => x.price);
       let items = [], ok = false;
       for (let t = 0; t < 15; t++) {                                  // wait for the re-render to settle
