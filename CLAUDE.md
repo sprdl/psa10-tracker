@@ -20,6 +20,18 @@ clone fallback: the repo is right here.
 | "load the `pokemon-tcg-card-evaluation` skill with the Skill tool" | same: it's a project skill here |
 | delete permission / stale `.git/*.lock` files | not an issue locally: git removes its own locks. If git says a lock file exists and no other git is running, `rm -f` that lock |
 
+**Tabs (full check).** Open the three tabs (S, P, K) right at the start: `tabs_context_mcp` with
+`createIfEmpty: true` for the first, then `tabs_create_mcp` twice, and pass each tab's id explicitly.
+If a tab can't be created, call `tabs_context_mcp` once and retry once. If you still only have two
+tabs, put PSA and pokeca-chart on the second tab one after the other (PSA first: `psa_pop` RUN, POLL
+until done, then the pokeca steps) and never wait for SNKRDUNK's tab: on 2026-10-13 PSA waited for
+SNKRDUNK and the run took 22 minutes. Say in the chat message that only two tabs were available.
+
+**A page script that reads nothing** (every listing empty, a "not found" error on every card): the site
+changed its markup. Fix the selectors in `pricecheck/scripts/`, keeping the old ones as a fallback
+in case the old markup comes back), commit, then re-print the calls with
+`python3 pricecheck/jsrun.py full` (new hashes; the RUN answers `NEED_SCRIPT`, so STORE it first).
+
 Everything else in the procedures applies unchanged: paste the `jsrun.py` browser calls verbatim,
 one price check at a time, never type credentials, PSA sign-in or a Cloudflare check → ask me.
 Close the tabs you opened when the run ends.

@@ -10,7 +10,10 @@ await (async () => {
   for (let i = 0; i < 25 && !(document.querySelector('select') && document.querySelector('input[type=checkbox]')); i++) await sleep(400);
   const sel = document.querySelector('select'), cb = document.querySelector('input[type=checkbox]');
   if (!sel || !cb) return { error: 'listings page controls (sort select / 販売中のみ) not found' };
-  const lm = document.body.innerText.match(/\n([^\n]+)\n+販売中のみ/);
+  const EXPECT = /conditionIds=22/.test(location.search) ? 'PSA10' : 'A';
+  const lms = [document.body.innerText.match(/\n([^\n]+)\n+販売中のみ/), document.body.innerText.match(/中古一覧\s*\n+\s*([^\n]+)/)]  // 2026-10 markup, older markup
+    .filter(Boolean).map((m) => m[1].trim());
+  const lm = [lms.find((x) => x.startsWith(EXPECT)) || lms[0]].filter(Boolean).map((x) => [0, x])[0];
   const filter_label = lm ? lm[1].trim() : null;           // e.g. "PSA10" or "A（きれいな状態）" — confirms the grade filter
   if (sel.value !== 'price') {                                 // sort FIRST, then the checkbox
     Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, 'price');
@@ -19,10 +22,10 @@ await (async () => {
     await sleep(1200);
   }
   if (!cb.checked) { cb.click(); await sleep(1200); }
-  const read = () => [...document.querySelectorAll('li[class*="__listItem"]')].map(li => ({
-    sold: /sold/i.test(li.className) || /SOLD/.test(li.innerText),
-    price: Number((li.querySelector('[class*="__priceValue"]')?.textContent || '').replace(/[^\d]/g, '')),
-    grade: [...li.querySelectorAll('[class*="__subInfo"]')].pop()?.innerText.trim(),
+  const read = () => [...document.querySelectorAll('li[class*="__listItem"], li.item-list, .item-list')].map(li => ({
+    sold: /sold/i.test(li.className) || /SOLD/.test(li.innerText),   // new and old markup (.item-list.sold)
+    price: Number((li.querySelector('[class*="__priceValue"]')?.textContent || li.querySelector('.item-price')?.childNodes[0]?.textContent || '').replace(/[^\d]/g, '')),
+    grade: ([...li.querySelectorAll('[class*="__subInfo"]')].pop() || li.querySelector('.item-price span:last-child'))?.innerText.trim(),
   })).filter(x => x.price);
   let items = [], ok = false;
   for (let w = 0; w < 15; w++) {                               // wait for re-render to settle

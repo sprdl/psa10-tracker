@@ -105,7 +105,9 @@
     try {
       if (!d) return k + '!' + encodeURIComponent('listings page controls (sort select / 販売中のみ) not found');
       const sel = d.querySelector('select'), cb = d.querySelector('input[type=checkbox]');
-      const lm = d.body.innerText.match(/\n([^\n]+)\n+販売中のみ/);
+      const lms = [d.body.innerText.match(/\n([^\n]+)\n+販売中のみ/), d.body.innerText.match(/中古一覧\s*\n+\s*([^\n]+)/)]  // 2026-10 markup, older markup
+        .filter(Boolean).map((m) => m[1].trim());
+      const lm = [lms.find((x) => x.startsWith(expect)) || lms[0]].filter(Boolean).map((x) => [0, x])[0];
       const label = lm ? lm[1].trim() : null;
       if (sel.value !== 'price') {                                   // sort FIRST, then the checkbox
         Object.getOwnPropertyDescriptor(w.HTMLSelectElement.prototype, 'value').set.call(sel, 'price');
@@ -114,10 +116,10 @@
         await sleep(1200);
       }
       if (!cb.checked) { cb.click(); await sleep(1200); }
-      const read = () => [...d.querySelectorAll('li[class*="__listItem"]')].map((li) => ({
-        sold: /sold/i.test(li.className) || /SOLD/.test(li.innerText),
-        price: Number((li.querySelector('[class*="__priceValue"]')?.textContent || '').replace(/[^\d]/g, '')),
-        grade: [...li.querySelectorAll('[class*="__subInfo"]')].pop()?.innerText.trim(),
+      const read = () => [...d.querySelectorAll('li[class*="__listItem"], li.item-list, .item-list')].map((li) => ({
+        sold: /sold/i.test(li.className) || /SOLD/.test(li.innerText),   // new and old markup (.item-list.sold)
+        price: Number((li.querySelector('[class*="__priceValue"]')?.textContent || li.querySelector('.item-price')?.childNodes[0]?.textContent || '').replace(/[^\d]/g, '')),
+        grade: ([...li.querySelectorAll('[class*="__subInfo"]')].pop() || li.querySelector('.item-price span:last-child'))?.innerText.trim(),
       })).filter((x) => x.price);
       let items = [], ok = false;
       for (let t = 0; t < 15; t++) {                                  // wait for the re-render to settle
