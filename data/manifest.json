@@ -449,6 +449,11 @@
       "file": "20261013-1906.json",
       "collected_at_jst": "2026-10-13T19:06:17+09:00",
       "check_mode": "quick"
+    },
+    {
+      "file": "20261014-0813.json",
+      "collected_at_jst": "2026-10-14T08:13:23+09:00",
+      "check_mode": "full"
     }
   ]
 }
