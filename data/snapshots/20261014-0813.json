@@ -6521,27 +6521,11 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch — fair-ish but not cheap; English print and far above budget",
-          "reasoning": "The ¥425k ask sits between Buy (≤¥390k) and the ¥450k sales median, 20% under the ¥532k May peak but still ~1.7× the Q4 2025 level (¥250–260k) after a run that beat the market; with the rally flag on, a ≤¥390k listing is about a coin flip within 30 days (~40%) and the mid-September panic low (¥355k) suggests ≤¥340k is reachable on a renewed correction (~30% within 90 days). Downside if bought today: a repeat of September's −30% swing (to ~¥350k) is plausible in a market-wide pullback, and as an English print it also carries USD/JPY risk; DIY gives no floor (Standard can't take it, and (¥160k raw + Express) ÷ 42% gem ≈ ¥450k). It alone exceeds the whole ¥250k singles budget, and it's the collection's only non-Japanese card.",
-          "predictions": [
-            {
-              "text": "A PSA10 listing at ≤¥390k (Buy) by 2026-11-10",
-              "p": 0.4,
-              "type": "touch_below",
-              "price": 390000,
-              "by": "2026-11-10"
-            },
-            {
-              "text": "A PSA10 listing at ≤¥340k (Definitely buy) by 2027-01-09",
-              "p": 0.3,
-              "type": "touch_below",
-              "price": 340000,
-              "by": "2027-01-09"
-            }
-          ],
-          "written": "2026-10-11T09:55:20+09:00"
+          "label": "Watch: in the Watch zone, wait until after the 30th CELEBRATION release (Oct 16)",
+          "reasoning": "Lowest ask ¥403,000, 5.2% under the ¥425,000 this verdict was written at and 3% above the Buy line (¥390k). The 30-day sales are ¥420-525k (median ¥499k, about 5 a day, so very active), and the last day's prints were ¥510-525k, well above the ask, with 6 listings within 15% of it; the ask is below recent sales, so a cheap listing may be a quick sell-out rather than a new level. A major release is 2 days away (event rule: no Buy) and the My-tier index is up 11.5% over 7 days (rally flag), so lines set earlier fill less often. Population is 50,446 at a 42.3% gem rate (DIY cost about ¥490k, ask 18% below it). A fall to ¥390k or lower after the release would change the call to Buy.",
+          "written": "2026-10-14T08:14:00+09:00"
         },
-        "verdict_price_ref": 425000
+        "verdict_price_ref": 403000
       },
       "psa10_population": 50446,
       "psa10_gem_rate_pct": 42.3,
