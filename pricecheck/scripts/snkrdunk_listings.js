@@ -10,7 +10,7 @@ await (async () => {
   for (let i = 0; i < 25 && !(document.querySelector('select') && document.querySelector('input[type=checkbox]')); i++) await sleep(400);
   const sel = document.querySelector('select'), cb = document.querySelector('input[type=checkbox]');
   if (!sel || !cb) return { error: 'listings page controls (sort select / 販売中のみ) not found' };
-  const lm = document.body.innerText.match(/中古一覧\s*\n+\s*([^\n]+)/);
+  const lm = document.body.innerText.match(/\n([^\n]+)\n+販売中のみ/);
   const filter_label = lm ? lm[1].trim() : null;           // e.g. "PSA10" or "A（きれいな状態）" — confirms the grade filter
   if (sel.value !== 'price') {                                 // sort FIRST, then the checkbox
     Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, 'price');

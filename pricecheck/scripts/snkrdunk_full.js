@@ -105,7 +105,7 @@
     try {
       if (!d) return k + '!' + encodeURIComponent('listings page controls (sort select / 販売中のみ) not found');
       const sel = d.querySelector('select'), cb = d.querySelector('input[type=checkbox]');
-      const lm = d.body.innerText.match(/中古一覧\s*\n+\s*([^\n]+)/);
+      const lm = d.body.innerText.match(/\n([^\n]+)\n+販売中のみ/);
       const label = lm ? lm[1].trim() : null;
       if (sel.value !== 'price') {                                   // sort FIRST, then the checkbox
         Object.getOwnPropertyDescriptor(w.HTMLSelectElement.prototype, 'value').set.call(sel, 'price');
