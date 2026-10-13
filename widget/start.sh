@@ -1,4 +1,17 @@
 #!/bin/bash
-# Menu button: start a full or quick check in a new Terminal window.
+# Actions of the menu bar app:
+#   start.sh full|quick   new Terminal window running run-check.sh (one run at a time)
+#   start.sh history      Terminal window with the recent run times
 . "$(dirname "$0")/lib.sh"
-open_run "${1:-quick}"
+case "${1:-}" in
+  full|quick) open_run "$1" ;;
+  history)
+    osascript >/dev/null <<OSA
+tell application "Terminal"
+  activate
+  do script "/bin/bash '$WIDGET_DIR/history.sh'"
+end tell
+OSA
+    ;;
+  *) echo "usage: start.sh full|quick|history"; exit 2 ;;
+esac

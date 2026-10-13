@@ -1,7 +1,7 @@
 #!/bin/bash
 # Runs one price check in this Terminal window with Claude Code:
 #   full  -> Sonnet,  quick -> Haiku   (models are set in lib.sh)
-# Started by the menu bar widget (open_run in lib.sh); can also be run by hand:
+# Started from the menu bar app (open_run in lib.sh); can also be run by hand:
 #   ~/.psa10/widget/run-check.sh quick
 set -u
 . "$(dirname "$0")/lib.sh"
