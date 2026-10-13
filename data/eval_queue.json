@@ -1,10 +1,4 @@
 {
  "about": "Cards added or restored by an Add card request, waiting for their first evaluation in the same price check (scripts/eval_queue.py). apply_analysis.py removes a card once a buy verdict is applied.",
- "queue": {
-  "https://snkrdunk.com/apparels/93084": {
-   "name": "ファイヤー&サンダー&フリーザーGX UR[SM12a 226/173](ハイクラスパック「TAG TEAM GX タッグオールスターズ」)",
-   "why": "added from #91",
-   "since": "2026-10-14T08:01:58+09:00"
-  }
- }
+ "queue": {}
 }

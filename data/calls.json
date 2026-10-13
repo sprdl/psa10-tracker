@@ -10,7 +10,7 @@
    "right": 12,
    "wrong": 1,
    "neutral": 0,
-   "pending": 31
+   "pending": 32
   },
   "calls_scored": 0,
   "closed": {
@@ -40,7 +40,7 @@
    "right": 12,
    "wrong": 1
   },
-  "pending": 31,
+  "pending": 32,
   "next_close": "2026-10-15T16:26:00+09:00",
   "baseline": {
    "buy": {
@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 120,
+  "odds_open": 122,
   "odds_early_yes": 5,
   "model_odds": {
    "logged": 147,
@@ -88,6 +88,30 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/93084",
+   "name": "ファイヤー&サンダー&フリーザーGX UR[SM12a 226/173](ハイクラスパック「TAG TEAM GX タッグオールスターズ」)",
+   "tag": "watch",
+   "label": "Watch: wait until after the 30th CELEBRATION card set (Oct 16)",
+   "latest_label": "Watch: wait until after the 30th CELEBRATION card set (Oct 16)",
+   "reaffirmed": 0,
+   "made": "2026-10-14T08:13:23+09:00",
+   "price": 46000,
+   "window_end": "2026-11-13T08:13:23+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
+  },
   {
    "url": "https://snkrdunk.com/apparels/724996",
    "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
@@ -2813,6 +2837,36 @@
    "now": 378000,
    "final": false,
    "gap_pct": -22.0
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/93084",
+   "name": "ファイヤー&サンダー&フリーザーGX UR[SM12a 226/173](ハイクラスパック「TAG TEAM GX タッグオールスターズ」)",
+   "text": "A listing at ≤¥41,400 (Buy) within 3 months",
+   "p": 0.43,
+   "type": "touch_below",
+   "price": 41400,
+   "by": "2027-01-12",
+   "made": "2026-10-14T08:13:23+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 46000,
+   "final": false,
+   "gap_pct": -10.0
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/93084",
+   "name": "ファイヤー&サンダー&フリーザーGX UR[SM12a 226/173](ハイクラスパック「TAG TEAM GX タッグオールスターズ」)",
+   "text": "A listing at ≤¥36,800 (Definitely-buy) within 3 months",
+   "p": 0.31,
+   "type": "touch_below",
+   "price": 36800,
+   "by": "2027-01-12",
+   "made": "2026-10-14T08:13:23+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 46000,
+   "final": false,
+   "gap_pct": -20.0
   },
   {
    "url": "https://snkrdunk.com/apparels/724996",

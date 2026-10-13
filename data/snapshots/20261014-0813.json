@@ -6721,6 +6721,42 @@
             }
           ]
         }
+      },
+      "analysis": {
+        "representative_price": 43000,
+        "price_source": "sales_confirmed",
+        "peak": {
+          "price": 56000,
+          "when": "July-August 2026",
+          "source": "SNKRDUNK 1枚 sales, ¥54-57k (Jul 22-Aug 19)"
+        },
+        "tiers": {
+          "definitely_buy": 36800,
+          "buy_upper": 41400,
+          "ceiling": 50000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: wait until after the 30th CELEBRATION card set (Oct 16)",
+          "reasoning": "Lowest ask ¥46,000; the last 9 one-copy sales ran ¥41-45k (median ¥43k, about 0.2 a day, so slow), down from ¥54-57k in Jul-Aug, with 7 asks within 15% of the lowest. Today's ask sits in the Watch zone, and the event rule applies: a major release is 2 days away, so wait for it; the My-tier index is up 11.5% over 7 days (rally flag), so lines set before the rally fill less often. PSA population is unknown (no pop page found yet) and raw A is only a ¥30k ask with no sales, so the DIY floor can't be judged; the 2019 UR is full art and fits the display criteria. Limit-odds model (card not in it, pool volatility): ¥41.4k 38% in 30 days, ¥36.8k 31% in 90 days.",
+          "predictions": [
+            {
+              "text": "A listing at ≤¥41,400 (Buy) within 3 months",
+              "p": 0.43,
+              "type": "touch_below",
+              "price": 41400,
+              "by": "2027-01-12"
+            },
+            {
+              "text": "A listing at ≤¥36,800 (Definitely-buy) within 3 months",
+              "p": 0.31,
+              "type": "touch_below",
+              "price": 36800,
+              "by": "2027-01-12"
+            }
+          ],
+          "written": "2026-10-14T08:13:47+09:00"
+        }
       }
     }
   ],
