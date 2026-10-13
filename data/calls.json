@@ -10,7 +10,7 @@
    "right": 11,
    "wrong": 1,
    "neutral": 0,
-   "pending": 31
+   "pending": 32
   },
   "calls_scored": 0,
   "closed": {
@@ -40,7 +40,7 @@
    "right": 11,
    "wrong": 1
   },
-  "pending": 31,
+  "pending": 32,
   "next_close": "2026-10-15T16:26:00+09:00",
   "baseline": {
    "buy": {
@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 118,
+  "odds_open": 120,
   "odds_early_yes": 5,
   "model_odds": {
    "logged": 145,
@@ -88,6 +88,30 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "tag": "watch",
+   "label": "Watch: above Buy, rally and 30th event on 10/16",
+   "latest_label": "Watch: above Buy, rally and 30th event on 10/16",
+   "reaffirmed": 0,
+   "made": "2026-10-13T14:40:39+09:00",
+   "price": 66500,
+   "window_end": "2026-11-12T14:40:39+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
+  },
   {
    "url": "https://snkrdunk.com/apparels/224087",
    "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
@@ -1651,6 +1675,21 @@
    "gap_pct": -11.4
   },
   {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A listing at ≤¥60k by 2026-11-13",
+   "p": 0.37,
+   "type": "touch_below",
+   "price": 60000,
+   "by": "2026-11-13",
+   "made": "2026-10-13T14:40:39+09:00",
+   "status": "open",
+   "why": "31 days left",
+   "now": 66500,
+   "final": false,
+   "gap_pct": -9.8
+  },
+  {
    "url": "https://snkrdunk.com/apparels/387059",
    "name": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
    "text": "Reaches Buy (≤¥38k) within 3 months",
@@ -2774,6 +2813,21 @@
    "now": 378000,
    "final": false,
    "gap_pct": -22.0
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A listing at ≤¥55k by 2027-01-13",
+   "p": 0.33,
+   "type": "touch_below",
+   "price": 55000,
+   "by": "2027-01-13",
+   "made": "2026-10-13T14:40:39+09:00",
+   "status": "open",
+   "why": "92 days left",
+   "now": 66500,
+   "final": false,
+   "gap_pct": -17.3
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
