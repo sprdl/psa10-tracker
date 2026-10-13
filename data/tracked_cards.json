@@ -216,6 +216,14 @@
       "psa_pop_url": "/pop/tcg-cards/2023/pokemon-svp-en-sv-black-star-promo/230299",
       "psa_pop_no": "085",
       "psa_pop_name": "Pikachu"
+    },
+    {
+      "snkrdunk_id": "93084",
+      "card_name_ja": "ファイヤー&サンダー&フリーザーGX UR[SM12a 226/173](ハイクラスパック「TAG TEAM GX タッグオールスターズ」)",
+      "url": "https://snkrdunk.com/apparels/93084",
+      "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/5ead7a11-33ee-401a-b288-0e79818efb40.webp?size=l",
+      "note": "added from issue #91",
+      "added": "2026-10-14"
     }
   ]
 }
