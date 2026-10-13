@@ -8,3 +8,6 @@ data/incoming/
 __pycache__/
 .git-credentials
 .psa10-git-credentials
+
+# Claude Code: widget/install.sh links settings and skills here from widget/claude/; local approvals
+.claude/

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(git pull:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(rm -f .git/index.lock)",
+      "Bash(rm -f .git/*.lock)",
+      "Bash(cd:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(tee:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Read",
+      "mcp__claude-in-chrome"
+    ]
+  }
+}
