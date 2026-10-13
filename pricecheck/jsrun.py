@@ -31,8 +31,7 @@ their text reaches the page.
     python3 pricecheck/jsrun.py list                 # names, sites and hashes
 
 Names: snkrdunk_full, snkrdunk_held, snkrdunk_quick, snkrdunk_sealed (snkrdunk.com) · psa_pop
-(psacard.com) · pokeca_both, mytier, pokeca_premium, pokeca_scout (pokeca-chart.com) ·
-mercari_check (jp.mercari.com).
+(psacard.com) · pokeca_both, mytier, pokeca_premium, pokeca_scout (pokeca-chart.com).
 """
 import hashlib
 import json
@@ -57,7 +56,6 @@ REGISTRY = {
     "mytier":          ("pokeca-chart.com", None,                 None,   ["CODES"], "MYTIER "),
     "pokeca_premium":  ("pokeca-chart.com", "pokeca_premium.js",  "__pj", ["PREM"], None),
     "pokeca_scout":    ("pokeca-chart.com", "pokeca_scout.js",    "__pj", ["SCOUT"], None),
-    "mercari_check":   ("jp.mercari.com",   "mercari_check.js",   "__mq", ["CARDS"], None),
 }
 
 
@@ -105,9 +103,6 @@ def args_for(name, plan=None):
     if name == "snkrdunk_sealed":
         import sealed_info
         return {"SEALED": [list(x) for x in sealed_info.due(ROOT)]}
-    if name == "mercari_check":
-        import mercari
-        return {"CARDS": [{k: c[k] for k in ("id", "q", "num", "lim")} for c in mercari.due(ROOT)]}
     return {}
 
 

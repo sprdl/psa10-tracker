@@ -167,7 +167,7 @@
     holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', portHist: 'data/portfolio_history.json', sellTargets: 'data/sell_targets.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', psaBacklog: 'data/psa_backlog.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json', recaps: 'data/recaps.json',
-    valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', grails: 'data/grails.json', mercari: 'data/mercari.json', hype: 'data/hype.json',
+    valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', grails: 'data/grails.json', hype: 'data/hype.json',
   };
   // The last loaded bundle, for an instant start, lives in IndexedDB: it's ~0.7 MB and grows with every check, and
   // localStorage stops at about 5 MB (Safari). Without IndexedDB (some private modes) it falls back to localStorage,
@@ -270,7 +270,6 @@
     state.predict = b.predict || null; // data/predict.json — You vs the model (scripts/predict.py)
     state.scout = b.scout || null; // data/scout.json — untracked candidates (scripts/scout.py)
     state.hype = b.hype || null; // data/hype.json — hype exposure per card (scripts/hype.py)
-    state.mercari = b.mercari || null; // data/mercari.json — Mercari PSA10 listings for cards near the limit (scripts/mercari.py)
     state.premium = b.premium || null; // data/premium.json — pokeca-chart slab premium per card (scripts/premium.py)
     state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
     if (fresh) { reconcileLimits(); reconcileTargets(); } // only against fresh data, never a cached copy
@@ -1085,13 +1084,13 @@
     st.reasons.filter((r) => !/sell target|Sell zone|Take-profit zone|fell below/.test(r)).forEach((r) => lines.push(r + '.'));
     let writtenHtml = '';
     if (sv && sv.reasoning) {
-      const wd = sv.written ? mercDay(sv.written) : '';
+      const wd = sv.written ? jstWeekday(sv.written) : '';
       writtenHtml = `<details class="verdict-written"><summary>Written sell analysis${wd ? ' · ' + escapeHtml(wd) : ''}${sv.label ? ': ' + escapeHtml(sv.label) : ''}</summary><p>${escapeHtml(sv.reasoning)}</p><div class="verdict-written-note">Written by the evaluation; its numbers are from that day.</div></details>`;
     } else if (!t) {
       writtenHtml = `<div class="tier-pending needs-review">No sell tiers written for this card yet. Run its evaluation with the sell-side block (see docs/schema.md: <code>sell_tiers</code> and <code>sell_verdict</code>); until then only your own target, the peak and the sales check above can signal a sell.</div>`;
     }
     const v = a.verdict;
-    const buyHtml = v && v.reasoning ? `<details class="verdict-written"><summary>Buy-side analysis (written before you owned it)${v.written ? ' · ' + escapeHtml(mercDay(v.written)) : ''}</summary><p>${escapeHtml(v.reasoning)}</p></details>` : '';
+    const buyHtml = v && v.reasoning ? `<details class="verdict-written"><summary>Buy-side analysis (written before you owned it)${v.written ? ' · ' + escapeHtml(jstDay(v.written)) : ''}</summary><p>${escapeHtml(v.reasoning)}</p></details>` : '';
     const html = `<div class="verdict"><h3 class="verdict-head">${escapeHtml(head)}</h3><p>${lines.map(escapeHtml).join(' ')}</p>${writtenHtml}${buyHtml}</div>`;
     return { html, dv: { headline: head, line: lines[0], held: false, tag: st.tag } };
   }
@@ -1347,76 +1346,14 @@
     return { head, lines, tag };
   }
 
-  // ---------- Mercari (data/mercari.json, scripts/mercari.py) ----------
-  // Read during price checks, only for cards whose SNKRDUNK ask is within 5% of the limit. eff = price +
-  // あんしん鑑定 fee (¥1,700, free from ¥100,000). Auction prices are the current bid, so a lower bound.
-  // Alerts: a fixed-price listing at or under the limit (read in the last 36 h, it may have sold since),
-  // or an auction still at or under the limit that ends within 2 hours.
-  const MERC_FRESH_H = 36, MERC_ENDING_MIN = 120;
-  function mercariOf(card) {
-    const e = state.mercari && state.mercari.cards && state.mercari.cards[card.url];
-    if (!e) return null;
-    const now = Date.now(), lim = getLimit(card);
-    const ageH = (now - Date.parse(e.checked)) / 3600000;
-    const items = (e.items || []).filter((x) => x.grade !== false && x.num !== false)
-      .map((x) => Object.assign({}, x, { left: x.ends ? (Date.parse(x.ends) - now) / 60000 : null }))
-      .filter((x) => x.left == null || x.left > 0);
-    const under = (x) => lim != null && x.eff <= lim;
-    const fixedHit = ageH <= MERC_FRESH_H ? items.find((x) => !x.auction && under(x)) : null;
-    const ending = items.find((x) => x.auction && under(x) && x.left != null && x.left <= MERC_ENDING_MIN);
-    return { e, items, best: items[0] || null, ageH, lim, fixedHit, ending, alert: fixedHit || ending || null };
-  }
-  function fmtLeft(min) {
-    if (min == null) return '';
-    if (min < 60) return Math.max(1, Math.round(min)) + 'm';
-    if (min < 48 * 60) return Math.floor(min / 60) + 'h ' + String(Math.round(min % 60)).padStart(2, '0') + 'm';
-    return Math.round(min / 1440) + 'd';
-  }
-  const mercHM = (iso) => { const d = new Date(Date.parse(iso) + 9 * 3600000); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
-  const mercDay = (iso) => { const d = new Date(Date.parse(iso) + 9 * 3600000); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (d.getUTCMonth() + 1) + '/' + d.getUTCDate(); };
-  function mercItemText(x) {
-    return x.auction ? `auction, current bid ${fmtYen(x.price)}${x.fee ? ' + ' + fmtYen(x.fee) + ' fee' : ''}, ends ${mercDay(x.ends)} ${mercHM(x.ends)} (<span data-ends="${escapeAttr(x.ends)}">${fmtLeft(x.left)}</span> left)`
-      : `fixed price ${fmtYen(x.price)}${x.fee ? ' + ' + fmtYen(x.fee) + ' あんしん鑑定' : ''}`;
-  }
-  function mercariRowHtml(card) {
-    const m = mercariOf(card);
-    const lim = getLimit(card), ask = lowestAsk(card);
-    const near = lim != null && ask != null && ask <= lim * 1.05;
-    if (!m) {
-      return near ? `<div class="merc-row muted"><span class="merc-lbl">Mercari</span> not read yet: the next price check reads it for this card (its ask is within 5% of your limit).</div>` : '';
-    }
-    const read = `read ${mercDay(m.e.checked)} ${mercHM(m.e.checked)}`;
-    if (m.e.error) return `<div class="merc-row muted"><span class="merc-lbl">Mercari</span> couldn't be read (${escapeHtml(m.e.error)}), ${read}.</div>`;
-    if (!m.best) return `<div class="merc-row"><span class="merc-lbl">Mercari</span> no PSA10 listing for this card${m.e.matched ? ' near the price range' : ''} (${read}).${near ? '' : ' <span class="muted">Read again once the ask is within 5% of your limit.</span>'}</div>`;
-    const rows = m.items.slice(0, 3).map((x) => {
-      const hit = lim != null && x.eff <= lim;
-      const cls = hit && (x === m.fixedHit || x === m.ending) ? ' hit' : hit ? ' under' : '';
-      return `<li class="merc-item${cls}"><a href="${escapeAttr(x.url)}" target="_blank" rel="noopener"><b>${fmtYen(x.eff)}</b> ${mercItemText(x)}</a>${x.anshin === false ? ' <span class="merc-warn" title="The seller did not enable あんしん鑑定, so Mercari will not verify the slab">no あんしん鑑定: check the cert yourself</span>' : ''}${hit ? ` <span class="merc-ok">≤ limit</span>` : lim != null ? ` <span class="muted">${fmtPct((x.eff / lim - 1) * 100)} vs limit</span>` : ''}</li>`;
-    }).join('');
-    const vs = ask != null ? ` vs SNKRDUNK ${fmtYen(ask)} (${fmtPct((m.best.eff / ask - 1) * 100)})` : '';
-    const stale = m.ageH > MERC_FRESH_H ? ' <span class="merc-warn">old reading: listings may have sold</span>' : '';
-    const alert = m.ending ? `<div class="merc-alert">Auction ending in <span data-ends="${escapeAttr(m.ending.ends)}">${fmtLeft(m.ending.left)}</span> is still at or under your limit</div>`
-      : m.fixedHit ? `<div class="merc-alert">A listing is at or under your limit, including the あんしん鑑定 fee</div>` : '';
-    return `<div class="merc-row${m.alert ? ' alert' : ''}">${alert}<div><span class="merc-lbl">Mercari</span> cheapest PSA10 <strong>${fmtYen(m.best.eff)}</strong> incl. fee${vs} · ${read}${stale}</div><ul class="merc-list">${rows}</ul><div class="muted merc-foot">${m.e.matched || 0} PSA10 listing(s) matched of ${m.e.seen || 0} read. Prices include the ¥1,700 あんしん鑑定 fee (free from ¥100,000); auction prices are the current bid.</div></div>`;
-  }
-  // keep "Xh YYm left" current without re-rendering
-  setInterval(() => {
-    document.querySelectorAll('[data-ends]').forEach((el) => { const l = (Date.parse(el.dataset.ends) - Date.now()) / 60000; el.textContent = l > 0 ? fmtLeft(l) : 'ended'; });
-  }, 30000);
+  // JST weekday + date, e.g. 'Tue 10/13'
+  const jstWeekday = (iso) => { const d = new Date(Date.parse(iso) + 9 * 3600000); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + (d.getUTCMonth() + 1) + '/' + d.getUTCDate(); };
 
   function computeSignals(cards) {
     const out = [];
     cards.forEach((card, i) => {
       if (lowestAsk(card) == null) return;
       const name = parseCardName(card.card_name_ja).short;
-      const mc = mercariOf(card);
-      if (mc && mc.ending) {
-        out.push({ key: card.url + '|merc|' + mc.ending.id, i, card, name, kind: 'mercari', rank: -1,
-          text: `Mercari auction ends ${mercHM(mc.ending.ends)} (in ${fmtLeft(mc.ending.left)}): bid + fee ${fmtYen(mc.ending.eff)} ≤ your limit ${fmtYen(mc.lim)}` });
-      } else if (mc && mc.fixedHit) {
-        out.push({ key: card.url + '|merc|' + mc.fixedHit.id, i, card, name, kind: 'mercari', rank: -1,
-          text: `Mercari listing ${fmtYen(mc.fixedHit.eff)} incl. あんしん鑑定 ≤ your limit ${fmtYen(mc.lim)} (read ${mercHM(mc.e.checked)})${mc.fixedHit.anshin === false ? ', no あんしん鑑定' : ''}` });
-      }
       if (limitHit(card)) {
         out.push({ key: card.url + '|limit', i, card, name, kind: 'limit', rank: 0,
           text: `Lowest ask ${fmtYen(lowestAsk(card))} is at or below your limit ${fmtYen(getLimit(card))}` });
@@ -1432,11 +1369,11 @@
   }
 
   // Overview "Needs you": everything that asks for a decision today, most urgent first. Buy signals (limit hits,
-  // Buy zones, Mercari), sell signals on cards you own, and buy tiers due for a review. With no buy signal it
+  // Buy zones), sell signals on cards you own, and buy tiers due for a review. With no buy signal it
   // says which card is closest, so an empty day still answers "how far off am I?".
   function inboxItems(cards) {
     const items = computeSignals(cards).map((s) => ({ key: s.key, card: s.card, name: sealedName(s), text: s.text,
-      pill: s.kind === 'limit' ? '<span class="sig-pill limit">My limit</span>' : s.kind === 'mercari' ? '<span class="sig-pill merc">Mercari</span>' : `<span class="vtag ${s.kind}">${escapeHtml(tagLabel(s.kind))}</span>`, buy: true }));
+      pill: s.kind === 'limit' ? '<span class="sig-pill limit">My limit</span>' : `<span class="vtag ${s.kind}">${escapeHtml(tagLabel(s.kind))}</span>`, buy: true }));
     for (const card of cards) {
       const st = sellState(card);
       if (!st || st.tag === 'hold') continue;
@@ -4179,7 +4116,7 @@
   function wlHeadHtml(k) {
     const h = OV_HEAD[k];
     const b = (key, label, cls, tip) => `<button type="button" class="${cls || ''}" data-sort="${key}"${tip ? ` title="${escapeAttr(tip)}"` : ''}>${label}</button>`;
-    return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chgLast', 'Last', 'r', 'Change since the previous check (quick or full)')}${b('chg7', '7D', 'r', '7-day change, 30 days underneath')}${b('verdict', h.verdict, '', h.verdict === 'Verdict' ? 'Buy verdict, plus Self-grade / Limit / Mercari flags' : 'Sell signal')}${b('heat', 'Market', 'wl-mkt', 'How the card trades: activity (PSA10 sales a day) and a red Hype end when it swings harder than most with the market')}</div>`;
+    return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chgLast', 'Last', 'r', 'Change since the previous check (quick or full)')}${b('chg7', '7D', 'r', '7-day change, 30 days underneath')}${b('verdict', h.verdict, '', h.verdict === 'Verdict' ? 'Buy verdict, plus Self-grade / Limit flags' : 'Sell signal')}${b('heat', 'Market', 'wl-mkt', 'How the card trades: activity (PSA10 sales a day) and a red Hype end when it swings harder than most with the market')}</div>`;
   }
   function wlRowHtml(card) {
     const { short, code, pack } = parseCardName(card.card_name_ja);
@@ -4190,7 +4127,7 @@
         <span class="wl-price display">${fmtYen(getRep(card))}${rawAskSub(card)}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg wl-lim')}${changeLastCell(card, 'wl-chg wl-last')}${trendCell(card)}
-        <span class="wl-tag"><span>${owned ? sellChip(card) : tagChip(card)}${!owned ? selfGradeChip(card) : ''}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}${!owned && (mercariOf(card) || {}).alert ? '<span class="merc-chip" title="Mercari: a listing or an ending auction is at or under your limit">Mercari</span>' : ''}</span></span><span class="wl-heat">${marketChip(card)}</span>
+        <span class="wl-tag"><span>${owned ? sellChip(card) : tagChip(card)}${!owned ? selfGradeChip(card) : ''}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}</span></span><span class="wl-heat">${marketChip(card)}</span>
       </a>`;
   }
   function renderOverviewList(cards) {
@@ -4458,7 +4395,7 @@
       // So the box leads with a summary computed from THIS snapshot, and the written analysis sits below,
       // dated and folded, as the longer-term reasoning.
       const live = liveVerdict(card);
-      const when = v.written ? `${mercDay(v.written)}` : '';
+      const when = v.written ? `${jstWeekday(v.written)}` : '';
       const tagNote = v.tag && v.tag !== 'defer' && displayTag && v.tag !== displayTag ? ` It called it ${tagLabel(v.tag)}; today's call above is ${tagLabel(displayTag)}.` : '';
       const drift = refP != null && repPrice != null && refP ? (repPrice / refP - 1) * 100 : null;
       const driftNote = drift != null && Math.abs(drift) >= 5 ? ` The price has ${drift < 0 ? 'fallen' : 'risen'} ${Math.abs(drift).toFixed(0)}% since, so the next full check rewrites it (a 5% move does).` : '';
@@ -4532,7 +4469,7 @@
             ${!own && (selfGrade(card) || {}).ok ? `<p class="cd-diy-line">${escapeHtml(selfGradeTip(selfGrade(card)))} <a href="#" data-goto-tab="diy">See the DIY tab →</a></p>` : ''}
             ${verdictHtml}
             ${gaugeHtml}
-            ${own ? sellRowHtml(card) : limitRowHtml + mercariRowHtml(card)}
+            ${own ? sellRowHtml(card) : limitRowHtml}
           </section>
           ${own ? positionHtml(card) : ''}
           ${gradePanelHtml(card)}

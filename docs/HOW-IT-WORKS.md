@@ -35,7 +35,7 @@ share **JSON files in the `data/` folder**.
  │ (Claude runs in-page       │  scripts/*.py on   │  in the repo  │              │   repo       │
  │  scripts in your browser:  │  your Mac          └───────────────┘              └──────┬───────┘
  │  SNKRDUNK, pokeca-chart,   │                                                          │ Action
- │  PSA pop, Mercari)         │                                                          ▼ "deploy"
+ │  PSA pop)                  │                                                          ▼ "deploy"
  └────────────────────────────┘                                                   ┌──────────────┐
  ┌────────────────────────────┐    issue forms     ┌───────────────┐  commit      │ GitHub Pages │
  │ You, on the site: Bought / │ ─────────────────▶ │ GitHub Action │ ───────────▶ │ (the website)│
@@ -165,7 +165,6 @@ pricecheck/scripts/assemble.py turns the decoded reads into a snapshot
 pricecheck/FULL-CHECK.md       the full-check procedure the price-check skill follows (core steps 0–7)
 pricecheck/QUICK-CHECK.md      the quick-check procedure
 pricecheck/steps/*.md          full-check steps only some runs need (1b, 1c, 5b, 6, 7b, 8b–8j), read on demand
-pricecheck/MERCARI.md          the Mercari step (full and quick checks)
 pricecheck/references/         the skill's card list (cards.json), PSA tier state, manual fallback, snapshot shape
 
 .github/workflows/*.yml        deploy + the Actions behind the site's forms (section 10)
@@ -192,7 +191,7 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `custom_index.json` | `add_custom_index.py` | Market page, overview index strip, correction rule, tier review, widget | `meta` (constituents, base prices) + `series[]` of daily `{d, level, prices, pokeca_psa10}` |
 | `events.json` | `events.py` | event rule, release calendar, widget | `window_days`, `events[] {d, name, major, scope}` |
 | `psa_backlog.json` | `psa_backlog.py` | Market page panel, Submissions line | `readings[] {d, m, note}` (PSA's backlog in millions of units), `check {last_checked, result}`, `threshold_m` (5.0), `tiers[]`, `value_prices`, `projection` (3 scenarios, written by the script) |
-| `limits.json` | `set_limit.py` (Action) | site, widget, `mercari.py`, `predict.py` | `{"limits": {url: {price, set, issue}}}` |
+| `limits.json` | `set_limit.py` (Action) | site, widget, `predict.py` | `{"limits": {url: {price, set, issue}}}` |
 | `sell_targets.json` | `set_limit.py` (Action) | sell signals | `{"targets": {url: {price, set, issue}}}` |
 | `holdings.json` | `log_purchase.py` (Action), `add_holding.py` | Holdings, owned views, budget | `holdings[]` (singles), `sealed[]` (with `pulls[]`), `sold[]` |
 | `holdings_prices.json` | `holdings_prices.py` (full check) | Holdings | latest SNKRDUNK price per bought untracked card / unopened sealed product |
@@ -206,7 +205,6 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `stories.json` | `set_story.py` (full check step 8c) | Story tab, Stories page | researched write-up of each card's artwork, with sources |
 | `predict.json` | `predict.py` (via `build_history.py`), `set_predictions.py` (Action) | You vs the model | `weeks {monday: {questions, answers, results, close}}` |
 | `scout.json` | `scout.py` (full check, about every 2 days) | Scout page | candidate pool, ranked list, daily picks two weeks ahead |
-| `mercari.json` | `mercari.py` (full and quick checks) | Mercari row, Mercari signals | Mercari PSA10 listings for cards whose ask is within 5% of your limit |
 | `tracked_cards.json` | `card_requests.py` | price-check skill | cards added with "+ Add card", beyond the skill's own `pricecheck/references/cards.json` |
 | `eval_queue.json` | `card_requests.py`, `remove_card.py` (restore); emptied by `apply_analysis.py` | `eval_queue.py`, `check_status.py`, both update scripts | cards added or restored that the same price check must evaluate (EVALUATE NOW) |
 | `removed_cards.json` | `remove_card.py` (Action) | site, `plan.py`, `assemble.py`, `add_snapshot.py` | `{"removed": {snkrdunk_id: {name, at}}}` |
@@ -287,8 +285,7 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    **FOLLOW-UPS** (step 8 of FULL-CHECK.md: evaluate new cards, write sell tiers for owned cards,
    stories for new cards, re-evaluate cards whose tiers are due, refresh written verdicts the price has
    moved 5%+ from, read sealed-product names, look at PSA's backlog page when `psa_backlog.py due` says so: from the
-   day after an update is expected, daily until it's there) and the **MERCARI** step (cards whose ask is within 5%
-   of your limit, `pricecheck/MERCARI.md`).
+   day after an update is expected, daily until it's there).
 5. Step 7b writes a short analysis for the cards `outliers.py` flags (`set_insight.py`).
 6. Monthly (step 5b): rebuild the odds model, the value model and the hype reference pool in the
    pokeca-chart tab (`odds_model_builder.js`, `value_model_builder.js`). Weekly on Mondays (step 6b):
@@ -317,7 +314,7 @@ page in a hidden iframe and returns one compact line per card
 and replaces only what a quick run measures (lowest asks, recent sales, favorites). Everything else
 is carried and stamped `listings_as_of` / `population_as_of` / `as_of`; the site shows those stamps as
 small "as of 9/26 15:15" labels (`asOfHtml`). A card whose page didn't load gets a `quick_note`. Then it
-hands off to `add_snapshot.py`, and ends with the same Mercari block as a full check.
+hands off to `add_snapshot.py`, and ends with the follow-ups (evaluations, sealed info).
 `scripts/check_status.py` says which mode the next check should be.
 
 ### Other ways data changes
@@ -418,7 +415,6 @@ In order:
 | purchases | `holdingCost`, `heldPrice`, `holdingsFor`, `boughtFormUrl`, `openBoughtDialog`, `removeFormUrl` | the Bought it dialog and links |
 | hype exposure | `hypeOf`, `hypeHtml` | the Hype exposure panel |
 | today's call | `liveVerdict` | the verdict headline computed from the shown snapshot |
-| Mercari | `mercariOf`, `mercariRowHtml`, `computeSignals`, `inboxItems`, `closestBuy`, `renderInbox` | Mercari listings and the Needs you list |
 | render: market strip | `volTrendOf`, `renderMarketStrip` | pokeca-chart cells on the Market page |
 | render: My-tier index | `customIndexStats`, `renderCustomIndex`, `drawIndexChart` | Market page index chart |
 | tier review status + card vs market | `tierReview`, `tierReviewHtml`, `cardPriceAt`, `marketMove`, `vsMarketHtml` | "Review due" and "Vs. the market" |
@@ -470,7 +466,7 @@ In order:
    the body gets the class `is-updating`, which shows the thin yellow bar at the top.
 4. `loadFreshBundle()` fetches `manifest.json`, all optional files (`OPTIONAL_DATA`: holdings,
    holdings prices, portfolio history, sell targets, calls, custom index, events, history, limits,
-   odds model, insights, premium, scout, predict, stories, value model, removed cards, Mercari, hype; `sales.json`
+   odds model, insights, premium, scout, predict, stories, value model, removed cards, hype; `sales.json`
    is not part of it, it loads when a History tab opens)
    **and** the two snapshots the cached manifest names, all in parallel. Only if the fresh manifest
    names newer snapshots are those fetched afterwards. Each fetch uses `{cache: 'no-cache'}`: the
@@ -627,8 +623,7 @@ in the Tier check, the drawer, the budget duel, the combination finder and You v
 
 ### Needs you (buy signals, sell signals, reviews)
 
-`computeSignals(cards)` collects, in order: a Mercari listing or ending auction at or under your
-limit (rank −1), a lowest ask at or below your limit (0), Definitely-buy (1) and Buy (2). Cards you
+`computeSignals(cards)` collects, in order: a lowest ask at or below your limit (0), Definitely-buy (1) and Buy (2). Cards you
 own never give limit signals. `inboxItems` puts those first, then every owned card whose `sellState`
 isn't Hold (strongest first), then watched cards whose `tierReview` is due. `renderInbox` shows them;
 with no buy signal, `closestBuy` names the card with the smallest gap to your limit (or, without a
@@ -721,7 +716,7 @@ the cheap listings would cover.
 the Owned or the Watchlist section: slab, name (with Insight and High hype chips), price (with the
 raw A-rank price under it for a card you own), zone bar, Limit / Vs cost, 7D with 30D under it
 (`trendCell`; the change since the last check is in its tooltip and the Sort menu), and the verdict
-(or sell chip, plus Limit / Mercari chips) with the activity chip under it. Tier reviews moved to
+(or sell chip, plus the Limit chip) with the activity chip under it. Tier reviews moved to
 Needs you. It uses `display: grid` in CSS, so each `<span>` is a column.
 
 The **Limit** column depends on the card: for a card you watch it's your limit with the distance to
@@ -750,7 +745,7 @@ rules in `style.css`.
   Bought it / Bought another, Sold it, SNKRDUNK, Remove card) and up to six tabs:
   - *Overview*, decision first. The **Decision** box (`.cd-decide`) holds the verdict with its
     pill (for a card you own, the sell verdict from `ownedVerdict`), the gauge, and the limit row with
-    its odds and the Mercari row (a card you own: the sell-target row). Then, for a card you own, your
+    its odds (a card you own: the sell-target row). Then, for a card you own, your
     position (`positionHtml`: paid, worth, after selling costs, break-even); the grading panel for raw
     copies; "What stands out"; the **Facts** (the stat tiles). Last come folded sections
     (`foldHtml`, a `<details>`): *Buy tiers* (tier review and tier check; opens by itself when a
@@ -979,10 +974,6 @@ Up to ten questions a week about your own cards ("Will a listing drop to ¥X by 
 
 Cards you don't track yet that fit your criteria and look cheap. Full checks run `pricecheck/scripts/pokeca_scout.js` on pokeca-chart's card list (about every other day): it keeps modern secret rares (card number above the set size, released 2021+, PSA10 ¥5k–150k; the floor was ¥15k until 2026-10-13) that aren't on the tracker, sends today's list price for all of them (`SCP` line) and reads 20 of their card pages, or enough to re-read the whole list about every 9 runs, at most 40 (`SC` lines, oldest reading first). `scripts/scout.py` (called by `full_update.py`) merges that into `data/scout.json`, ranks the candidates and plans 3 picks per day two weeks ahead (`daily`), so a card isn't shown again for 30 days while unseen ones are left; its docstring has the filters and the score. Young cards with no pre-hype price (released after mid-2025) are compared with the DIY replacement cost instead (gem rate 75%+, at least 3 months old, at or below DIY cost, with an age-curve penalty), and cards 10–25% above their pre-hype price go to a separate "Close to cheap" list (`near`), never into the daily picks. The page (`renderScout`) shows today's picks with "+ Track it" (the Add card form with the SNKRDUNK page filled in) and "Not for me" (hidden in this browser via `psa10.scout.dismissed`). Cards without an ex/V/VMAX/VSTAR/GX name (trainers, mostly) only show with the "Include trainers" switch.
 
-### Mercari
-
-For cards whose SNKRDUNK ask is within 5% of your limit, price checks read Mercari's PSA10 listings for that card (`pricecheck/MERCARI.md`, `scripts/mercari.py`). `mercariRowHtml` shows the cheapest three with the effective price (listing + ¥1,700 あんしん鑑定 fee, free from ¥100,000; an auction's current bid is a lower bound) against your limit and the SNKRDUNK ask, and warns when a listing has no あんしん鑑定. `mercariOf` raises an alert (and a Buy signal) for a fixed-price listing at or under your limit read within 36 hours, or an auction still at or under it that ends within 2 hours. The countdowns update every 30 seconds without a re-render.
-
 ### Market page and Tables
 
 - `renderMarketStrip`: the pokeca-chart index cells, with the trading-volume trend recomputed from
@@ -1111,7 +1102,6 @@ with a docstring explaining its usage. Open the file and read the top.
 | `premium.py` | saving the slab premium (normally via `full_update.py`) |
 | `hype.py` | rebuilding the hype reference pool (monthly) or showing readings |
 | `scout.py` | saving / re-ranking Scout candidates |
-| `mercari.py` | listing the cards due for Mercari, printing the page script, saving its lines |
 | `holdings_prices.py` | listing / saving prices of bought items that aren't tracked |
 | `sealed_info.py` | reading names and pictures of sealed products from SNKRDUNK |
 | `odds_model.py` / `save_odds_model.py` | printing today's odds / saving a rebuilt odds model |
@@ -1155,7 +1145,7 @@ all devices are visible to it. It also reads `holdings.json` and `sell_targets.j
 own never gives a limit or Buy signal; it gets the site's sell signal instead (`sellState`: Sell / Take profit /
 Reassess from the sell tiers, your sell target, Near peak, Rich ask), shown with its gain on what you paid (a raw
 copy against its DIY cost). Actionable sell signals rank after limit hits and before Buy signals in every size;
-the large widget marks owned rows with their gain. Mercari isn't read. If you change a rule in `app.js` (say, the
+the large widget marks owned rows with their gain. If you change a rule in `app.js` (say, the
 correction threshold), change the widget's copy too: `tests/test_rules.py` compares them on every snapshot.
 
 ---

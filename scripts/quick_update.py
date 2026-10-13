@@ -310,12 +310,9 @@ def main():
         import runclock
         runclock.lap("published")
         sys.path.insert(0, str(root / "scripts"))
-        import mercari
-        mercari.print_due(root)
         import sealed_info
         sealed_info.print_due(root)
-        todo = [f"{lbl}: {n}" for lbl, n in (("Mercari (pricecheck/MERCARI.md)", len(mercari.due(root))),
-                                             ("sealed info (pricecheck/steps/8h-sealed.md)", len(sealed_info.due(root)))) if n]
+        todo = [f"{lbl}: {n}" for lbl, n in (("sealed info (pricecheck/steps/8h-sealed.md)", len(sealed_info.due(root))),) if n]
         import eval_queue
         ev = eval_queue.print_due(root, step="quick check Q5")
         if ev:

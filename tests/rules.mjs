@@ -76,7 +76,7 @@ for (let k = Math.max(0, snaps.length - N); k < snaps.length; k++) {
   Object.assign(app.state, {
     currentData: keep(snap), previousData: keep(prev), hist, customIndex: ci, events, holdings: hold.holdings || [], sealed: hold.sealed || [],
     sold: hold.sold || [], syncedLimits: limits, syncedTargets: targets, oddsModel: J('data/odds_model.json'), valueModel: J('data/value_model.json'),
-    premium: J('data/premium.json'), insights: J('data/insights.json'), hype: J('data/hype.json'), mercari: null, heldPrices: {},
+    premium: J('data/premium.json'), insights: J('data/insights.json'), hype: J('data/hype.json'), heldPrices: {},
   });
   const cs = app.state.currentData.cards;
   const d = { snap: app.state.currentData, limits, hist, ci, events, holdings: hold.holdings || [], targets };

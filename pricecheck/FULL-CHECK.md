@@ -223,7 +223,6 @@ if it says nothing stands out, skip it.
 | 8c | `WRITE STORIES NOW` has cards (required) | `pricecheck/steps/8c-stories.md` |
 | 8d | `REVIEW DUE NOW` has cards | `pricecheck/steps/8d-review.md` |
 | 8e | a major release was 4–10 days ago, not yet reported | `pricecheck/steps/8e-event-study.md` |
-| 8f | `MERCARI NOW` | `pricecheck/steps/8f-mercari.md` → `pricecheck/MERCARI.md` |
 | 8g | `REFRESH VERDICTS NOW` (required) | `pricecheck/steps/8g-refresh-verdicts.md` |
 | 8h | `SEALED INFO NOW` | `pricecheck/steps/8h-sealed.md` |
 | 8i | `PSA BACKLOG NOW` (required when due) | `pricecheck/steps/8i-psa-backlog.md` |

@@ -28,7 +28,7 @@ a personal, low-stakes tracker — just don't post the link publicly.
 ## Price checks
 
 Price checks are run by the `pokemon-card-price-check` skill in your own browser: it opens
-SNKRDUNK, pokeca-chart.com and PSA's pop report (and Mercari for cards near your limit) in hidden
+SNKRDUNK, pokeca-chart.com and PSA's pop report in hidden
 tabs, collects compact lines, and publishes them with one script. Nothing runs on a schedule.
 
 The skill picks one of two modes (`python3 scripts/check_status.py` shows which it would pick):
@@ -37,7 +37,7 @@ The skill picks one of two modes (`python3 scripts/check_status.py` shows which 
   ask for one): listing depth, top-20 asks, recent sales, PSA10 population, both pokeca-chart
   indices, the My-tier index, slab premiums, Scout candidates and prices of bought items that aren't
   tracked. `scripts/full_update.py` decodes the lines, assembles the snapshot and publishes it, then
-  lists the follow-ups (evaluations, sell tiers, stories, tier reviews) and the Mercari step. The
+  lists the follow-ups (evaluations, sell tiers, stories, tier reviews). The
   procedure is in `pricecheck/FULL-CHECK.md`.
 - **Quick** (any later run that day, or when you ask for a quick check): one page
   per card, giving the lowest ask from the grade tiles plus recent completed sales.
@@ -154,7 +154,7 @@ then fine-tune it by dragging the gold handle on the bar. When the lowest PSA10 
 your limit, the card gets a gold outline and moves to the top.
 
 **Needs you** on the overview lists every card that's at your limit, in a Buy / Definitely-buy
-zone, or has a Mercari listing or ending auction at or under your limit, ahead of sell signals and
+zone, ahead of sell signals and
 tier reviews. Buy signals new since your last visit are marked NEW, and tapping one opens that card. A card you own never gives a
 limit signal; its sell target takes over.
 
@@ -279,7 +279,7 @@ data/sales.json                 every PSA10 sale the checks saw, once each (auto
 data/calls.json                 track record (auto-rebuilt on every publish)
 data/holdings.json              your purchases, sealed product, pulls and sales
 data/limits.json, sell_targets.json   limits and sell targets saved to all devices
-data/*.json                     indices, models, insights, stories, Scout, Mercari… (docs/HOW-IT-WORKS.md §4)
+data/*.json                     indices, models, insights, stories, Scout… (docs/HOW-IT-WORKS.md §4)
 scripts/full_update.py          publish a full price check from the in-page scripts' lines
 scripts/quick_update.py         publish a quick price check (lowest asks + sales, rest carried)
 scripts/add_snapshot.py         save a snapshot, carry evaluations forward, rebuild history, push
@@ -371,13 +371,6 @@ way (label `set-sell-target`, `data/sell_targets.json`). Only issues you open ar
 Under each limit the card page shows a rough chance that a listing reaches it
 within 30 and 90 days (the card's own price swings from about two years of pokeca-chart history,
 no trend assumed), next to the evaluation's own stated odds for a nearby price when there are any.
-
-## Mercari
-
-For cards whose SNKRDUNK ask is within 5% of your limit, price checks also read Mercari's PSA10
-listings (`pricecheck/MERCARI.md`, `scripts/mercari.py`). The card page shows the cheapest ones
-including the ¥1,700 あんしん鑑定 fee, and a fixed-price listing or an auction ending within 2 hours
-at or under your limit becomes a buy signal.
 
 ## Home Screen widget (iPhone / iPad)
 

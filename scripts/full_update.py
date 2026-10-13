@@ -275,11 +275,10 @@ def persist_images(raw, cards_meta, dry):
 def main():
     args = sys.argv[1:]
     if "--followups" in args:   # re-print the follow-up blocks (e.g. when the publish output was cut)
-        import mercari, review_due, sealed_info
+        import review_due, sealed_info
         print_eval_due()
         review_due.print_review_due(ROOT)
         review_due.print_text_due(ROOT)
-        mercari.print_due(ROOT)
         sealed_info.print_due(ROOT)
         import psa_backlog
         psa_backlog.print_due(ROOT)
@@ -371,8 +370,6 @@ def main():
     import review_due
     review_due.print_review_due(ROOT)
     review_due.print_text_due(ROOT)
-    import mercari
-    mercari.print_due(ROOT)
     import sealed_info
     sealed_info.print_due(ROOT)
     import psa_backlog
@@ -437,14 +434,13 @@ def print_sell_due():
 
 def print_followups():
     """One last line naming every follow-up step still to do, so a truncated output can't hide one."""
-    import mercari, psa_backlog, review_due, sealed_info, set_story
+    import psa_backlog, review_due, sealed_info, set_story
     todo = []
     for step, label, count in (
         ("8b", "evaluate (pricecheck/steps/8b-evaluate.md)", lambda: min(3, len(eval_due()))),
         ("8b", "sell tiers (pricecheck/steps/8b-evaluate.md)", lambda: min(3, len(sell_due()))),
         ("8d", "review buy tiers (pricecheck/steps/8d-review.md)", lambda: min(review_due.per_run(review_due.compute(ROOT)[0]), len(review_due.compute(ROOT)[0]))),
         ("8c", "stories (pricecheck/steps/8c-stories.md)", lambda: min(3, len(set_story.missing()))),
-        ("8f", "Mercari (pricecheck/MERCARI.md)", lambda: len(mercari.due(ROOT))),
         ("8g", "refresh verdicts (pricecheck/steps/8g-refresh-verdicts.md)", lambda: min(review_due.TEXT_PER_RUN, len(review_due.compute(ROOT)[1]))),
         ("8h", "sealed info (pricecheck/steps/8h-sealed.md)", lambda: len(sealed_info.due(ROOT))),
         ("8i", "PSA backlog (pricecheck/steps/8i-psa-backlog.md)", lambda: psa_backlog.due_count(ROOT)),

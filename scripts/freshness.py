@@ -23,7 +23,6 @@ Where each part of the site comes from and how often it should be refreshed (202
 | value_model.json                      | Upside tab, combination finder            | full check step 5b                 | monthly |
 | events.json                           | release calendar, event rule              | full check step 6b (Mondays)       | weekly |
 | psa_backlog.json                      | Market page PSA backlog panel             | full check step 8i (WebFetch)      | every other Tuesday |
-| mercari.json                          | Mercari row + alerts                      | full + quick (cards near limit)    | when due |
 | stories / insights / verdicts / tiers | Story tab, analyses, verdict box          | full check steps 7b, 8b–8h         | when due (FOLLOW-UPS) |
 """
 import json

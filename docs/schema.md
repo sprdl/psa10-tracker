@@ -157,7 +157,7 @@ gauge positions, tier zone math — all computed client-side from these inputs, 
 ### Owned cards: the sell view
 
 A card that appears in `data/holdings.json` gets a different card page and side panel: its buy tiers, tier
-check, limit and Mercari rows are left out (the written buy analysis stays, folded), and the gauge shows what
+check and limit rows are left out (the written buy analysis stays, folded), and the gauge shows what
 you paid, the break-even price after SNKRDUNK's selling costs, your sell target and the peak, coloured by
 `sell_tiers`. Its verdict chip is Sell / Take profit / Reassess / Near peak / Rich ask / Hold: the tiers, your
 sell target, the peak and the ask-vs-sales check all feed it. Without `sell_tiers` the card still shows its
@@ -405,7 +405,6 @@ in each row has the details in its docstring.
 | `stories.json` (`set_story.py`) | `{"cards": {url: {"illustrator", "illustrator_ja", "art", "story", "set", "trivia": [], "english", "sources": [{title, url}], "confidence"}}}` |
 | `predict.json` (`predict.py`, `set_predictions.py`) | `{"weeks": {"2026-10-05": {"created", "close", "answer_by", "questions": [{id, url, name, dir: below/above, target, ask, lo30, hi30, model, why, days}], "answers": {id: {p, at}}, "results": {id: {outcome: 0/1, extreme, at}}}}}` |
 | `scout.json` (`scout.py`) | `{"updated", "pool": {slug: {nm, set, rel, sid, price, pre, peak, pk, prem, norm, gem, vol, ser, …}}, "ranked": [{slug, score, kind, reasons}], "daily": {date: {"p": [slugs], "a": [slugs]}}}` |
-| `mercari.json` (`mercari.py`) | `{"cards": {url: {"checked", "seen", "matched", "items": [{id, url, price, eff, fee, auction, ends, anshin, grade, num}], "error"}}}` |
 | `tracked_cards.json` (`card_requests.py`) | `{"cards": [{"snkrdunk_id", "card_name_ja", "url", "image_url", "psa_pop_url", "psa_pop_no", "psa_pop_name", "note"}]}` |
 | `removed_cards.json` (`remove_card.py`) | `{"removed": {snkrdunk_id: {"name", "at", "issue"}}}` |
 | `eval_queue.json` (`eval_queue.py`) | `{"about", "queue": {card url: {"name", "why", "since"}}}`: added/restored cards awaiting their first evaluation; `apply_analysis.py` removes a card when a buy verdict is applied |
