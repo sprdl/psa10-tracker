@@ -1,8 +1,13 @@
 #!/bin/bash
 # Runs one price check in this Terminal window with Claude Code:
 #   full  -> Sonnet,  quick -> Haiku   (models are set in lib.sh)
-# Started from the menu bar app (open_run in lib.sh); can also be run by hand:
+# Started from the menu bar app (open_run in lib.sh), minimized; can also be run by hand:
 #   ~/.psa10/widget/run-check.sh quick
+#
+# The window closes by itself when the run is done: the run clock (data/incoming/runclock.json)
+# appeared and was removed again by `runclock.py end`, and Claude then finished its last message
+# (the Stop hook, hooks/stop.sh). If the run needs you before that (a permission question, PSA
+# sign-in, an error), the Notification hook shows a notice and the icon turns 🃏❗; the window stays.
 set -u
 . "$(dirname "$0")/lib.sh"
 
@@ -20,21 +25,57 @@ fi
 
 if ! command -v "$CLAUDE_BIN" >/dev/null 2>&1; then
   echo "Claude Code (claude) not found. Install it, then run ~/.psa10/widget/install.sh again."
+  run_window show "$(tty)"
   read -r -p "Press Return to close." _; exit 1
 fi
 
+me_tty=$(tty)
 echo "$$ $mode $(date +%s)" > "$PIDFILE"
-trap 'rm -f "$PIDFILE"' EXIT
+echo "$me_tty" > "$STATE/run-tty"
+rm -f "$STATE/attention" "$STATE/stopped" "$STATE/done"
+trap 'rm -f "$PIDFILE" "$STATE/attention"' EXIT
 date "+%Y-%m-%d %H:%M $mode" >> "$STATE/runs.log"
 
 cd "$REPO" || exit 1
-printf '\033]0;PSA10 %s check (%s)\007' "$mode" "$model"
 clear_stale_git_locks
 git pull --ff-only --quiet || echo "(git pull failed; the check pulls again at its start)"
 
-prompt="Run a $mode price check on my tracked cards with the pokemon-card-price-check skill (pass --mode $mode to start.py). This is a local Claude Code run: follow CLAUDE.md for how the skill's tools map here. Don't ask whether to start; the run was requested from the menu bar widget."
+session=$(uuidgen | tr 'A-Z' 'a-z')
+echo "$session" > "$STATE/last-session"
+export PSA10_RUN=1   # the hooks only act inside widget runs
 
-"$CLAUDE_BIN" --chrome --model "$model" --permission-mode acceptEdits "$prompt"
+# Watcher: ends the Claude session once the run is done (see the header).
+(
+  seen=0
+  while sleep 3; do
+    if [ -f "$RUNCLOCK" ]; then seen=1; continue; fi
+    [ "$seen" = 1 ] || continue
+    ended=$(( $(date +%s) - 6 ))
+    for _ in $(seq 60); do                      # Claude's final message: at most 3 minutes
+      [ "$(cat "$STATE/stopped" 2>/dev/null || echo 0)" -ge "$ended" ] && break
+      sleep 3
+    done
+    sleep 2
+    touch "$STATE/done"
+    pkill -TERM -P $$                           # claude (and this watcher)
+    exit 0
+  done
+) &
+
+prompt="Run a $mode price check on my tracked cards with the pokemon-card-price-check skill (pass --mode $mode to start.py). This is a local Claude Code run: follow CLAUDE.md for how the skill's tools map here. Don't ask whether to start; the run was requested from the menu bar."
+
+"$CLAUDE_BIN" --chrome --model "$model" --permission-mode acceptEdits --session-id "$session" "$prompt"
+
+if [ -f "$STATE/done" ]; then
+  summary=$(python3 -c 'import json,sys
+r=json.loads(open(sys.argv[1]).read().splitlines()[-1]); t=r["total_s"]
+print(r["mode"].capitalize()+" check done in %dm%02ds" % (t//60, t%60))' "$REPO/data/incoming/run_times.jsonl" 2>/dev/null || echo "Price check done")
+  notify "$summary. Details: Open last run in the 🃏 bubble."
+  rm -f "$PIDFILE" "$STATE/attention"
+  # Close this window a moment after this script has exited (no "terminate processes?" question).
+  nohup /bin/bash -c "sleep 1; . '$WIDGET_DIR/lib.sh'; run_window close '$me_tty'" >/dev/null 2>&1 &
+  exit 0
+fi
 
 echo
 echo "Session ended. You can close this window."

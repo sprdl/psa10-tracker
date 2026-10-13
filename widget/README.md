@@ -5,7 +5,12 @@ whether to start one, in a small bubble that drops from the icon. Runs use **Cla
 Mac (not the desktop app):
 
 - **Full check → Sonnet**, **Quick check → Haiku** (`FULL_MODEL` / `QUICK_MODEL` in `lib.sh`)
-- Each run opens a Terminal window with the session, so you can watch it and step in (PSA sign-in…)
+- Each run opens a **minimized** Terminal window with the session (it doesn't take the focus), and
+  **closes it by itself** when the run is done: the run clock was started and ended (`runclock.py end`)
+  and Claude finished its last message. A notification then says how long it took; **Open last run** in
+  the bubble reopens the session (`claude --resume`) to read Claude's summary
+- If the run needs you first (a permission question, PSA sign-in, an error), the icon turns **🃏❗**,
+  a notification says why, and **Show window** in the bubble brings the window up
 - Git runs natively on the Mac, so no delete-permission prompts and no stale `.git/*.lock` files;
   `run-check.sh` also clears locks older than 5 minutes (only when no git is running) before each run
 - One run at a time: the buttons are disabled and prompts are skipped while a check runs, including
@@ -17,13 +22,15 @@ Click 🃏 (🃏⏳ while a check runs):
 
 ```
  PSA10 price check
+ ⏳ Quick check is running…   Show window   ← only while a check runs
  [Quick · Haiku] [Full · Sonnet]      ← the suggested mode is highlighted
  ───────────────────────────────
  Last snapshot: today 08:44 (full) · 5h21m ago
  Last full check: today 08:44
+ Last run: quick · 6m12s · today 14:05–14:11
  Suggested: quick · next prompt 19:00
  ───────────────────────────────
- Tracker site   Run history      Quit
+ Tracker site   Run history   Open last run   Quit
 ```
 
 At a prompt time the same bubble opens by itself, titled **Start a new price check?**, with a
@@ -50,6 +57,7 @@ within 2 hours after. Times and windows are at the top of `lib.sh`.
 | `status.sh` | status lines for the bubble, and whether a prompt is due (the app runs it every minute) |
 | `start.sh` | bubble buttons → new Terminal window running `run-check.sh` (or the run history) |
 | `run-check.sh` | one run: lock, stale git locks, `git pull`, `claude --chrome --model …` |
+| `hooks/` | Claude Code hooks, only active in widget runs (`PSA10_RUN=1`): `stop.sh` (turn finished → the run can close), `notify.sh` (needs you → 🃏❗ + notification), `clear.sh` (you answered → clear 🃏❗) |
 | `history.sh` | recent run times (`scripts/runclock.py history`) |
 | `lib.sh` | settings and shared functions |
 | `install.sh` | one-time setup; safe to re-run |
@@ -60,8 +68,8 @@ Outside the repo: `~/.psa10/` (the app, links, PATH, run lock, prompt bookkeepin
 the repo, so the procedures' `$HOME/mnt/...` commands work unchanged).
 
 **Permissions.** `widget/claude/settings.json` (linked as `.claude/settings.json` by the installer)
-lets the run use python3, read-only git, the lock cleanup and Claude in Chrome without asking.
-Anything else still asks in the Terminal window.
+lets the run use python3, read-only git, the lock cleanup and Claude in Chrome without asking, and
+registers the hooks. Anything else still asks in the Terminal window (and turns the icon 🃏❗).
 
 **Skills.** `widget/claude/skills/` (linked as `.claude/skills/`) holds copies of the claude.ai skills
 `pokemon-card-price-check` and `pokemon-tcg-card-evaluation`; `CLAUDE.md` maps their desktop-app tool

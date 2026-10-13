@@ -1,5 +1,6 @@
 // PSA10Bar: the 🃏 menu bar icon for the PSA10 tracker's price checks.
 //
+// Icon: 🃏 idle · 🃏⏳ a check is running · 🃏❗ the running check needs you (permission, sign-in…).
 // Click the icon: a small bubble drops from it with Quick / Full and the status.
 // At the prompt times (widget/lib.sh) the same bubble opens by itself with "Start a new price check?"
 // and Skip; it closes on its own after 15 minutes or when you click elsewhere.
@@ -39,6 +40,9 @@ struct Status {
     var lastFull = ""
     var next = ""
     var due = false
+    var attention = false
+    var lastRun = ""
+    var canResume = false
 
     init() {}
     init(_ text: String) {
@@ -56,6 +60,9 @@ struct Status {
         lastFull = d["last_full"] ?? ""
         next = d["next"] ?? ""
         due = d["due"] == "1"
+        attention = d["attention"] == "1"
+        lastRun = d["last_run"] ?? ""
+        canResume = d["can_resume"] == "1"
     }
 }
 
@@ -74,9 +81,17 @@ struct Panel: View {
                 .font(.headline)
 
             if m.st.running {
-                Text("⏳ \(m.st.runningMode.isEmpty ? "A" : m.st.runningMode.capitalized) check is running…")
-                    .font(.callout)
-                    .foregroundColor(.secondary)
+                HStack {
+                    if m.st.attention {
+                        Text("⚠️ The run needs you").font(.callout)
+                    } else {
+                        Text("⏳ \(m.st.runningMode.isEmpty ? "A" : m.st.runningMode.capitalized) check is running…")
+                            .font(.callout)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Button("Show window") { act("show") }.buttonStyle(.link).font(.caption)
+                }
             }
 
             HStack(spacing: 8) {
@@ -95,6 +110,7 @@ struct Panel: View {
                     Text("Last snapshot: \(m.st.latest)\(m.st.ago.isEmpty ? "" : " · \(m.st.ago)")")
                 }
                 if !m.st.lastFull.isEmpty { Text("Last full check: \(m.st.lastFull)") }
+                if !m.st.lastRun.isEmpty { Text("Last run: \(m.st.lastRun)") }
                 Text("Suggested: \(m.st.suggested) · next prompt \(m.st.next)")
             }
             .font(.caption)
@@ -105,6 +121,9 @@ struct Panel: View {
             HStack(spacing: 12) {
                 Button("Tracker site") { act("site") }
                 Button("Run history") { act("history") }
+                if m.st.canResume && !m.st.running {
+                    Button("Open last run") { act("resume") }
+                }
                 Spacer()
                 Button("Quit") { act("quit") }
             }
@@ -164,7 +183,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             let st = Status(runScript("status.sh"))
             DispatchQueue.main.async {
                 self.model.st = st
-                self.item.button?.title = st.running ? "🃏⏳" : "🃏"
+                self.item.button?.title = st.running ? (st.attention ? "🃏❗" : "🃏⏳") : "🃏"
                 if st.due && !self.popover.isShown {
                     self.showPrompt()
                 } else if self.popover.isShown {
@@ -221,8 +240,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             model.st.running = true
             model.st.runningMode = a
             item.button?.title = "🃏⏳"
+            // The run window opens minimized; if Terminal still grabbed the focus, hand it back.
+            let previous = NSWorkspace.shared.frontmostApplication
             _ = runScript("start.sh", [a], wait: false)
+            for delay in [1.0, 2.5] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == "com.apple.Terminal",
+                       let previous = previous, previous.bundleIdentifier != "com.apple.Terminal" {
+                        previous.activate(options: [])
+                    }
+                }
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.refresh() }
+        case "show", "resume":
+            popover.performClose(nil)
+            _ = runScript("start.sh", [a], wait: false)
         case "history":
             popover.performClose(nil)
             _ = runScript("start.sh", ["history"], wait: false)

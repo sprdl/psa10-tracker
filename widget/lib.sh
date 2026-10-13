@@ -83,7 +83,8 @@ notify() {  # notify "message"
   osascript -e "display notification \"$1\" with title \"PSA10 price check\"" >/dev/null 2>&1
 }
 
-# Opens a Terminal window running the check, so you can watch it and step in (PSA sign-in etc.).
+# Opens a Terminal window running the check, minimized and without taking the focus. It closes by
+# itself when the run is done; "Show window" in the bubble brings it up (start.sh show).
 open_run() {  # open_run full|quick
   local mode="$1"
   if m=$(running_mode); then
@@ -92,8 +93,39 @@ open_run() {  # open_run full|quick
   fi
   osascript >/dev/null <<OSA
 tell application "Terminal"
-  activate
-  do script "exec /bin/bash '$WIDGET_DIR/run-check.sh' $mode"
+  set t to do script "exec /bin/bash '$WIDGET_DIR/run-check.sh' $mode"
+  delay 0.3
+  set tt to tty of t
+  repeat with w in windows
+    if tty of tab 1 of w is tt then set miniaturized of w to true
+  end repeat
 end tell
 OSA
+}
+
+# The run's Terminal window (by its tty, saved by run-check.sh): show / close it.
+run_window() {  # run_window show|close [tty]
+  local tt="${2:-$(cat "$STATE/run-tty" 2>/dev/null)}"
+  [ -n "$tt" ] || return 1
+  if [ "$1" = show ]; then
+    osascript >/dev/null 2>&1 <<OSA
+tell application "Terminal"
+  repeat with w in windows
+    if tty of tab 1 of w is "$tt" then
+      set miniaturized of w to false
+      set index of w to 1
+    end if
+  end repeat
+  activate
+end tell
+OSA
+  else
+    osascript >/dev/null 2>&1 <<OSA
+tell application "Terminal"
+  repeat with w in windows
+    if tty of tab 1 of w is "$tt" then close w
+  end repeat
+end tell
+OSA
+  fi
 }

@@ -41,7 +41,25 @@ else
 fi
 if [ "$since" -lt 99999 ]; then ago="$((since / 60))h$(printf %02d $((since % 60)))m ago"; else ago=""; fi
 
+attention=0
+[ "$running" = 1 ] && [ -f "$STATE/attention" ] && attention=1
+last_run=$(python3 - "$REPO/data/incoming/run_times.jsonl" <<'PY2' 2>/dev/null
+import json, sys, datetime as D
+try:
+    r = json.loads(open(sys.argv[1], encoding="utf-8").read().splitlines()[-1])
+    s = D.datetime.fromisoformat(r["start"]); t = int(r["total_s"]); e = s + D.timedelta(seconds=t)
+    day = "today" if s.date() == D.datetime.now(s.tzinfo).date() else s.strftime("%m/%d")
+    print(f"{r['mode']} · {t // 60}m{t % 60:02d}s · {day} {s:%H:%M}–{e:%H:%M}")
+except Exception:
+    pass
+PY2
+)
+can_resume=0; [ -s "$STATE/last-session" ] && can_resume=1
+
 echo "running=$running"
+echo "attention=$attention"
+echo "last_run=$last_run"
+echo "can_resume=$can_resume"
 echo "running_mode=$rmode"
 echo "suggested=${suggested:-full}"
 echo "latest=$latest_label"
