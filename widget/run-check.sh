@@ -33,7 +33,20 @@ me_tty=$(tty)
 echo "$$ $mode $(date +%s)" > "$PIDFILE"
 echo "$me_tty" > "$STATE/run-tty"
 rm -f "$STATE/attention" "$STATE/stopped" "$STATE/done"
-trap 'rm -f "$PIDFILE" "$STATE/attention"' EXIT
+touch "$STATE/run-start"
+# On any exit (run finished, Claude quit, window closed): drop this run's process marker, and its run
+# clock too if the run stopped before `runclock.py end` (an API error, Chrome not connected). Otherwise
+# the menu bar keeps showing "check is running" for up to 3 hours. Only a run clock written after this
+# run started is removed, so a desktop-app run's clock is never touched.
+cleanup() {
+  rm -f "$PIDFILE" "$STATE/attention"
+  if [ -f "$RUNCLOCK" ] && [ "$RUNCLOCK" -nt "$STATE/run-start" ]; then
+    rm -f "$RUNCLOCK"
+    date "+%Y-%m-%d %H:%M $mode stopped before the end (run clock cleared)" >> "$STATE/runs.log"
+  fi
+}
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
 date "+%Y-%m-%d %H:%M $mode" >> "$STATE/runs.log"
 
 cd "$REPO" || exit 1
