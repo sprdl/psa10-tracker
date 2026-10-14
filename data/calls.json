@@ -10,7 +10,7 @@
    "right": 16,
    "wrong": 1,
    "neutral": 0,
-   "pending": 28
+   "pending": 25
   },
   "calls_scored": 0,
   "closed": {
@@ -40,7 +40,7 @@
    "right": 16,
    "wrong": 1
   },
-  "pending": 28,
+  "pending": 25,
   "next_close": "2026-10-15T16:26:00+09:00",
   "baseline": {
    "buy": {
@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 122,
+  "odds_open": 103,
   "odds_early_yes": 5,
   "model_odds": {
    "logged": 149,
@@ -631,8 +631,8 @@
    "low_pct": -0.5,
    "now": 154000,
    "now_pct": -0.5,
-   "status": "pending",
-   "why": "",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05, before the window ended",
    "threshold": 0.05,
    "final": false,
    "ret_pct": null,
@@ -799,8 +799,8 @@
    "low_pct": -4.8,
    "now": 10299,
    "now_pct": -1.9,
-   "status": "pending",
-   "why": "",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05, before the window ended",
    "threshold": 0.05,
    "final": false,
    "ret_pct": null,
@@ -1039,8 +1039,8 @@
    "low_pct": 1.2,
    "now": 48000,
    "now_pct": 18.5,
-   "status": "pending",
-   "why": "",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-03, before the window ended",
    "threshold": 0.05,
    "final": false,
    "ret_pct": null,
@@ -1242,8 +1242,8 @@
    "price": 128000,
    "by": "2026-10-26",
    "made": "2026-09-26T16:01:20+09:00",
-   "status": "open",
-   "why": "12 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 154000,
    "final": false,
    "gap_pct": -16.9
@@ -1347,8 +1347,8 @@
    "price": 25000,
    "by": "2026-11-04",
    "made": "2026-10-05T09:02:43+09:00",
-   "status": "open",
-   "why": "21 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-06",
    "now": 30500,
    "final": false,
    "gap_pct": -18.0
@@ -1392,8 +1392,8 @@
    "price": 128000,
    "by": "2026-11-04",
    "made": "2026-10-05T15:08:39+09:00",
-   "status": "open",
-   "why": "21 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 154000,
    "final": false,
    "gap_pct": -16.9
@@ -1722,8 +1722,8 @@
    "price": 38000,
    "by": "2026-12-25",
    "made": "2026-09-25T10:03:18+09:00",
-   "status": "open",
-   "why": "72 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-03",
    "now": 48000,
    "final": false,
    "gap_pct": -20.8
@@ -1827,8 +1827,8 @@
    "price": 128000,
    "by": "2026-12-26",
    "made": "2026-09-26T16:01:20+09:00",
-   "status": "open",
-   "why": "73 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 154000,
    "final": false,
    "gap_pct": -16.9
@@ -1842,8 +1842,8 @@
    "price": 115000,
    "by": "2026-12-26",
    "made": "2026-09-26T16:01:20+09:00",
-   "status": "open",
-   "why": "73 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 154000,
    "final": false,
    "gap_pct": -25.3
@@ -1917,8 +1917,8 @@
    "price": 9000,
    "by": "2026-12-29",
    "made": "2026-09-30T16:45:15+09:00",
-   "status": "open",
-   "why": "76 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 10299,
    "final": false,
    "gap_pct": -12.6
@@ -1932,8 +1932,8 @@
    "price": 7500,
    "by": "2026-12-29",
    "made": "2026-09-30T16:45:15+09:00",
-   "status": "open",
-   "why": "76 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 10299,
    "final": false,
    "gap_pct": -27.2
@@ -2007,8 +2007,8 @@
    "price": 42000,
    "by": "2026-12-31",
    "made": "2026-10-02T16:31:33+09:00",
-   "status": "open",
-   "why": "78 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-03",
    "now": 48000,
    "final": false,
    "gap_pct": -12.5
@@ -2022,8 +2022,8 @@
    "price": 38000,
    "by": "2026-12-31",
    "made": "2026-10-02T16:31:33+09:00",
-   "status": "open",
-   "why": "78 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-03",
    "now": 48000,
    "final": false,
    "gap_pct": -20.8
@@ -2112,8 +2112,8 @@
    "price": 9500,
    "by": "2026-12-31",
    "made": "2026-10-02T16:31:33+09:00",
-   "status": "open",
-   "why": "78 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 10299,
    "final": false,
    "gap_pct": -7.8
@@ -2127,8 +2127,8 @@
    "price": 8000,
    "by": "2026-12-31",
    "made": "2026-10-02T16:31:33+09:00",
-   "status": "open",
-   "why": "78 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 10299,
    "final": false,
    "gap_pct": -22.3
@@ -2172,8 +2172,8 @@
    "price": 25000,
    "by": "2026-12-31",
    "made": "2026-10-02T16:31:33+09:00",
-   "status": "open",
-   "why": "78 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-06",
    "now": 30500,
    "final": false,
    "gap_pct": -18.0
@@ -2277,8 +2277,8 @@
    "price": 22000,
    "by": "2027-01-03",
    "made": "2026-10-05T09:02:43+09:00",
-   "status": "open",
-   "why": "81 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-06",
    "now": 30500,
    "final": false,
    "gap_pct": -27.9
@@ -2322,8 +2322,8 @@
    "price": 128000,
    "by": "2027-01-03",
    "made": "2026-10-05T15:08:39+09:00",
-   "status": "open",
-   "why": "81 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 154000,
    "final": false,
    "gap_pct": -16.9
@@ -2337,8 +2337,8 @@
    "price": 115000,
    "by": "2027-01-03",
    "made": "2026-10-05T15:08:39+09:00",
-   "status": "open",
-   "why": "81 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-05",
    "now": 154000,
    "final": false,
    "gap_pct": -25.3
@@ -2892,8 +2892,8 @@
    "price": 22000,
    "by": "2027-01-31",
    "made": "2026-10-02T16:31:33+09:00",
-   "status": "open",
-   "why": "109 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-06",
    "now": 30500,
    "final": false,
    "gap_pct": -27.9
@@ -2922,8 +2922,8 @@
    "price": 32000,
    "by": "2027-03-25",
    "made": "2026-09-25T10:03:18+09:00",
-   "status": "open",
-   "why": "162 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-03",
    "now": 48000,
    "final": false,
    "gap_pct": -33.3
@@ -2982,8 +2982,8 @@
    "price": 22000,
    "by": "2027-03-25",
    "made": "2026-09-25T15:15:03+09:00",
-   "status": "open",
-   "why": "162 days left",
+   "status": "void",
+   "why": "card removed from tracking on 2026-10-06",
    "now": 30500,
    "final": false,
    "gap_pct": -27.9
@@ -3299,7 +3299,7 @@
    "p": 0.074,
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3313,7 +3313,7 @@
    "p": 0.196,
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3327,7 +3327,7 @@
    "p": 0.29,
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3341,7 +3341,7 @@
    "p": 0.372,
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3383,7 +3383,7 @@
    "p": 0.161,
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-10-26",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3397,7 +3397,7 @@
    "p": 0.289,
    "made": "2026-09-26T09:04:31+09:00",
    "by": "2026-12-25",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3579,7 +3579,7 @@
    "p": 0.125,
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-10-26",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3593,7 +3593,7 @@
    "p": 0.261,
    "made": "2026-09-26T16:01:20+09:00",
    "by": "2026-12-25",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3663,7 +3663,7 @@
    "p": 0.106,
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-10-26",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3677,7 +3677,7 @@
    "p": 0.244,
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-12-25",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3691,7 +3691,7 @@
    "p": 0.196,
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-10-26",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3705,7 +3705,7 @@
    "p": 0.308,
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-12-25",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3719,7 +3719,7 @@
    "p": 0.433,
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-10-26",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3733,7 +3733,7 @@
    "p": 0.452,
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-12-25",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3747,7 +3747,7 @@
    "p": 0.025,
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-10-26",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -3761,7 +3761,7 @@
    "p": 0.113,
    "made": "2026-09-26T19:34:04+09:00",
    "by": "2026-12-25",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4279,7 +4279,7 @@
    "p": 0.077,
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-10-31",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4293,7 +4293,7 @@
    "p": 0.203,
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-12-30",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4307,7 +4307,7 @@
    "p": 0.333,
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-10-31",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4321,7 +4321,7 @@
    "p": 0.395,
    "made": "2026-10-01T07:38:51+09:00",
    "by": "2026-12-30",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4531,7 +4531,7 @@
    "p": 0.329,
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4545,7 +4545,7 @@
    "p": 0.4,
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4671,7 +4671,7 @@
    "p": 0.146,
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4685,7 +4685,7 @@
    "p": 0.28,
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4699,7 +4699,7 @@
    "p": 0.414,
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2026-11-02",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4713,7 +4713,7 @@
    "p": 0.443,
    "made": "2026-10-03T09:02:42+09:00",
    "by": "2027-01-01",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4867,7 +4867,7 @@
    "p": 0.215,
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4881,7 +4881,7 @@
    "p": 0.335,
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4895,7 +4895,7 @@
    "p": 0.451,
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2026-11-02",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4909,7 +4909,7 @@
    "p": 0.463,
    "made": "2026-10-03T12:31:56+09:00",
    "by": "2027-01-01",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4979,7 +4979,7 @@
    "p": 0.101,
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -4993,7 +4993,7 @@
    "p": 0.236,
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -5035,7 +5035,7 @@
    "p": 0.169,
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -5049,7 +5049,7 @@
    "p": 0.289,
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -5063,7 +5063,7 @@
    "p": 0.336,
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -5077,7 +5077,7 @@
    "p": 0.398,
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -5091,7 +5091,7 @@
    "p": 0.046,
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2026-11-03",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },
@@ -5105,7 +5105,7 @@
    "p": 0.13,
    "made": "2026-10-04T08:23:55+09:00",
    "by": "2027-01-02",
-   "status": "open",
+   "status": "void",
    "final": false,
    "why": ""
   },

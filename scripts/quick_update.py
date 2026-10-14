@@ -259,6 +259,7 @@ def main():
             not_checked.append(f"{name}: {reason}")
             continue
 
+        card.pop("quick_note", None)   # re-read this run: an earlier quick check's "carried"/"new card" note no longer applies
         if base_res.get("favorite_count") is not None:
             card["favorite_count"] = base_res["favorite_count"]
         tiles = rc.get("tiles") or {}

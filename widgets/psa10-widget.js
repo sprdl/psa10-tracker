@@ -153,13 +153,14 @@ function copyBasis(h, card) {
   const paid = h.purchase_price_jpy || 0;
   const ship = h.shipping_insurance_jpy == null || h.shipping_insurance_jpy === 2000 ? 2450 : h.shipping_insurance_jpy;
   // same as gradingCostOf() on the site: the fee of the PSA service it was sent at, else the stored fee, else Standard
-  const fee = ({ standard: 9980, priority: 11980, express: 29980 }[h.tier] || h.grading_fee_jpy || 9980) + ship;
+  const v = repPrice(card), auto = !h.tier && h.condition === 'raw_to_grade' && v > 150000 ? (v <= 250000 ? 11980 : 29980) : 0;
+  const fee = ({ standard: 9980, priority: 11980, express: 29980 }[h.tier] || auto || h.grading_fee_jpy || 9980) + ship;
   if (h.condition !== 'raw_to_grade') return h.sent || h.graded_from_raw ? paid + fee : paid;
   const gem = h.gem_rate_pct != null ? h.gem_rate_pct : card.psa10_gem_rate_pct;
   return gem ? (paid + fee) / (gem / 100) : paid + fee;
 }
 function sellState(d, card) {
-  const hs = d.holdings.filter((h) => h.card_url === card.url);
+  const hs = d.holdings.filter((h) => h.card_url === card.url && h.condition !== 'graded_other');   // same as holdingsFor() on the site
   if (!hs.length) return null;
   const a = card.analysis || {}, price = repPrice(card), ask = lowestAsk(card), target = targetOf(d, card);
   const t = a.sell_tiers && typeof a.sell_tiers.take_profit_from === 'number' && typeof a.sell_tiers.sell_from === 'number' ? a.sell_tiers : null;
@@ -213,7 +214,9 @@ function buildModel(d) {
     .sort((a, b) => (a.tag === 'definitely_buy' ? 0 : 1) - (b.tag === 'definitely_buy' ? 0 : 1));
   // closest to a buy: % above your limit, or above the Buy line when there's no limit (cards you don't own)
   const gap = (x) => x.lim != null ? x.ask / x.lim - 1 : x.tiers ? x.price / x.tiers.buy_upper - 1 : Infinity;
-  const closest = cards.filter((x) => !x.own && !x.limitHit && x.tag !== 'buy' && x.tag !== 'definitely_buy').sort((a, b) => gap(a) - gap(b));
+  // only cards still above the line: a Buy-zone price held at Watch by the event or correction rule has a negative gap
+  // (the site's closestBuy/onDeck filter the same way)
+  const closest = cards.filter((x) => !x.own && !x.limitHit && x.tag !== 'buy' && x.tag !== 'definitely_buy' && gap(x) > 0).sort((a, b) => gap(a) - gap(b));
   return { cards, limitHits, sells, buys, closest, gap, corr, rally: rallyOn(d), when: d.snap.collected_at_jst };
 }
 

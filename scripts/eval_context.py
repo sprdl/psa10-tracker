@@ -97,7 +97,8 @@ def main():
     q = eval_queue.load(ROOT)["queue"].get(url)
     if q:
         print(f"          evaluation queue: {q.get('why')} (since {q.get('since')})")
-    held = [h for h in J("holdings.json").get("holdings", []) if h.get("card_url", "").rstrip("/") == url]
+    held = [h for h in J("holdings.json").get("holdings", []) if h.get("card_url", "").rstrip("/") == url
+            and h.get("condition") != "graded_other"]   # came back below a 10: not the tracked PSA10 (site: holdingsFor)
     for h in held:
         print(f"          OWNED {h.get('condition')}: paid {yen(h.get('purchase_price_jpy'))} on {h.get('purchase_date')}"
               f", grading & shipping {yen(grading_cost(h))}" + (" (sent)" if h.get("sent") else ""))
@@ -152,7 +153,7 @@ def main():
     for h in held:
         paid = h.get("purchase_price_jpy") or 0
         if h.get("condition") == "raw_to_grade":
-            basis = (paid + grading_cost(h)) / ((gem or 100) / 100)
+            basis = (paid + grading_cost(h, ask)) / ((gem or 100) / 100)
             how = f"(paid + grading & shipping) ÷ gem rate {gem or 'n/a (fees added undivided)'}%"
         else:
             basis = paid + (grading_cost(h) if h.get("sent") or h.get("graded_from_raw") else 0)

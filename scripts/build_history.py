@@ -167,7 +167,7 @@ def entries(root: Path = ROOT):
     series = []
     tier_state = {}  # url -> [tiers tuple, changed_at, index_then, reviewed_at]
     tier_log = {}    # url -> [[since, db, bu, ceil], ...]
-    last_sales, sales, last_rows = {}, {}, {}   # url -> [(price, window)] of the previous check / url -> [(time, price)] / raw rows
+    seen, sales, last_rows = {}, {}, {}   # url -> [(price, window)] of every sale recorded / url -> [(time, price)] / raw rows
     for s in snaps:
         path = root / "data" / "snapshots" / s["file"]
         try:
@@ -246,13 +246,20 @@ def entries(root: Path = ROOT):
                     last_rows[url] = rows
                 if cur:
                     mid_p = sorted(p for p, _ in cur)[len(cur) // 2]
-                    for price, win in new_sales(last_sales.get(url), cur):
+                    # compare with every sale already recorded that could still be in this list, not only the previous
+                    # list: a short list (10 rows) or a quick check's restated times otherwise re-add older sales
+                    known = seen.setdefault(url, [])
+                    starts = [w[0] for _, w in cur if w]
+                    lo = min(starts) - timedelta(hours=1) if starts else None
+                    pool = [k for k in known if lo is None or k[1] is None or k[1][1] >= lo]
+                    fresh = new_sales(pool, cur)
+                    known.extend(fresh)
+                    for price, win in fresh:
                         # a print far off the rest of the list (¥18,999 among ¥140k PSA10 sales on 2026-10-08) is a
                         # misread row or a mislabeled grade: keep it out of the sales history
                         if win and 0.4 * mid_p <= price <= 2.5 * mid_p:
                             mid = win[0] + (win[1] - win[0]) / 2
                             sales.setdefault(url, []).append((min(mid, ref), price))
-                    last_sales[url] = cur
         entry = {"d": when, "m": s.get("check_mode", "full"), "p": points}
         for k, v in (("h", heat), ("r", prem), ("f", favs), ("q", depth), ("n", pop)):
             if v:

@@ -236,10 +236,14 @@ GRADE_FEES = {"standard": 9980, "priority": 11980, "express": 29980}   # same as
 PSA_EXTRAS = 1900 + 550   # shipping & insurance + handling; an old stored ¥2,000 estimate means this
 
 
-def grading_cost(h):
-    """Grading + shipping for a copy bought raw: the fee of the PSA service it was sent at (else the stored fee,
+def grading_cost(h, value=None):
+    """Grading + shipping for a copy bought raw: the fee of the PSA service it was sent at (else, with the PSA10 price
+    `value` known and above Standard's ¥150k declared-value limit, Priority up to ¥250k or Express; else the stored fee,
     else Standard) plus shipping & handling. Same rule as gradingCostOf() in assets/app.js."""
-    fee = GRADE_FEES.get(h.get("tier")) or h.get("grading_fee_jpy") or GRADE_FEES["standard"]
+    auto = None
+    if not GRADE_FEES.get(h.get("tier")) and value and value > 150000:
+        auto = GRADE_FEES["priority"] if value <= 250000 else GRADE_FEES["express"]
+    fee = GRADE_FEES.get(h.get("tier")) or auto or h.get("grading_fee_jpy") or GRADE_FEES["standard"]
     extra = h.get("shipping_insurance_jpy")
     return fee + (PSA_EXTRAS if extra in (None, 2000) else extra)
 
@@ -247,7 +251,7 @@ def grading_cost(h):
 def paid_with_grading(h):
     """What a single cost so far: the price, plus grading once the copy was actually sent to PSA (a raw copy sold
     without grading never paid for it). Same rule as holdingPaid() in assets/app.js."""
-    return h.get("purchase_price_jpy", 0) + (grading_cost(h) if h.get("sent") else 0)
+    return h.get("purchase_price_jpy", 0) + (grading_cost(h) if h.get("sent") or h.get("graded_from_raw") else 0)
 
 
 # A raw copy you bought ("p…") that came back from PSA: its condition changes, so the site values it as what it is now.
@@ -272,6 +276,8 @@ def apply_grading_info(issue, store):
             item = next((p for x in store.get("sealed", []) for p in x.get("pulls", []) if p.get("id") == gid), None)
         if not item:
             raise FormError(f"There's no card with id {gid} (maybe it was removed).")
+        if gid.startswith("p") and item.get("condition") != "raw_to_grade" and not item.get("graded_from_raw"):
+            raise FormError(f"{gid} was bought as a graded slab, so it has no grading info. Grading info is for raw copies.")
         items.append((gid, item))
     multi = len(items) > 1
     sent = optional_date(field(form, "date sent", "sent"))
@@ -286,6 +292,7 @@ def apply_grading_info(issue, store):
         if not 1 <= chance <= 100:
             raise FormError("Chance of a PSA10 must be between 1 and 100 (%).")
     st = field(form, "status").lower()
+    changed = []
     for gid, item in items:
         for key, val in (("sent", sent), ("tier", tier), ("gem_rate_pct", int(chance) if chance is not None and chance.is_integer() else chance)):
             if key == "gem_rate_pct" and val is None and multi:
@@ -299,13 +306,18 @@ def apply_grading_info(issue, store):
         elif gid.startswith("p") and st and "keep as is" not in st:
             cond = next((k for key, k in HOLDING_STATUS if key in st), None)
             if cond and (item.get("condition") == "raw_to_grade" or item.get("graded_from_raw")):
+                if item.get("condition") != cond:
+                    changed.append(cond)
+                    if cond != "raw_to_grade":   # the day it came back: before it, the copy was still raw
+                        item["graded_on"] = datetime.now(JST).date().isoformat()
                 item["condition"] = cond
                 if cond == "raw_to_grade":
                     item.pop("graded_from_raw", None)
+                    item.pop("graded_on", None)
                 else:
                     item["graded_from_raw"] = True   # keeps its grading cost in the cost basis
     conds = {"psa10": "now a PSA10", "graded_other": "came back lower than a 10", "raw_to_grade": "raw"}
-    st_bit = next((conds[item["condition"]] for gid, item in items if gid.startswith("p") and st and "keep as is" not in st and item.get("condition") in conds), "")
+    st_bit = conds.get(changed[0], "") if changed else ""
     bits = [x for x in (st_bit, f"sent {sent}" if sent else "", f"{tier} service" if tier else "", f"your PSA10 chance {int(chance) if chance.is_integer() else chance}%" if chance is not None else "") if x]
     if multi:
         names = ", ".join(f"**{gid}** ({item.get('card_name_ja', gid)})" for gid, item in items)

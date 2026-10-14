@@ -631,10 +631,17 @@
       .sort((a, b) => String(a.d).localeCompare(String(b.d)));
   }
   function eventFor(card) { return activeEvents().find((e) => eventApplies(e, card)) || null; }
-  function eventWhen(e) {
+  // `from`: the day to count from. Rule wording passes the check's own day (checkDay), so an older check reads
+  // "3 days after this check" instead of a negative count; the calendar counts from today.
+  function eventWhen(e, from) {
     if (!e.d) return e.when || 'date TBA';
+    const md = e.d.slice(5).replace('-', '/');
+    if (from && from !== todayJst()) {
+      const k = daysUntil(e.d, from);
+      return `${md} (${k === 0 ? 'the day of this check' : k > 0 ? k + ' day' + (k === 1 ? '' : 's') + ' after this check' : k === -1 ? 'the day before this check' : -k + ' days before this check'})`;
+    }
     const n = daysUntil(e.d);
-    return `${e.d.slice(5).replace('-', '/')} (${n === 0 ? 'today' : n === 1 ? 'tomorrow' : 'in ' + n + ' days'})`;
+    return `${md} (${n === 0 ? 'today' : n === 1 ? 'tomorrow' : n > 0 ? 'in ' + n + ' days' : n === -1 ? 'yesterday' : -n + ' days ago'})`;
   }
   function eventScope(e) { return !e.scope || e.scope === 'all' ? 'all cards' : e.scope.join(', ') + ' cards'; }
 
@@ -741,9 +748,11 @@
   // month change is used instead.
   const CORRECTION_PCT = 10;
   let correctionCache = null;
+  function indexStamp() { const ser = (state.customIndex && state.customIndex.series) || []; return ser.length + ':' + (ser.length ? ser[ser.length - 1].d + ':' + ser[ser.length - 1].level : ''); }
   function correctionState() {
     const key = (state.currentData && state.currentData.collected_at_jst) || '';
-    if (correctionCache && correctionCache.key === key) return correctionCache.v;
+    const ck = key + '|' + indexStamp();   // a refreshed custom_index.json must not reuse old values
+    if (correctionCache && correctionCache.key === ck) return correctionCache.v;
     let v = { active: false, pct: null, name: null };
     const ref = key || new Date().toISOString();
     const ser = (state.customIndex && state.customIndex.series) || [];
@@ -758,7 +767,7 @@
       const m = (((state.currentData || {}).pokeca_chart_index || {}).psa10 || {}).month_change_pct;
       if (m != null) v = { active: m <= -CORRECTION_PCT, pct: m, name: 'PSA10 index' };
     }
-    correctionCache = { key, v };
+    correctionCache = { key: ck, v };
     return v;
   }
 
@@ -770,7 +779,8 @@
   let rallyCache = null;
   function rallyState() {
     const key = (state.currentData && state.currentData.collected_at_jst) || '';
-    if (rallyCache && rallyCache.key === key) return rallyCache.v;
+    const ck = key + '|' + indexStamp();
+    if (rallyCache && rallyCache.key === ck) return rallyCache.v;
     const ser = (state.customIndex && state.customIndex.series) || [];
     const day = jstDay(key || new Date().toISOString());
     const past = new Date(Date.parse(day + 'T00:00:00Z') - RALLY_DAYS * 86400000).toISOString().slice(0, 10);
@@ -778,7 +788,7 @@
     for (const e of ser) { if (e.d <= day) now = e; if (e.d <= past) then = e; }
     const pct = now && then && then !== now ? (now.level / then.level - 1) * 100 : null;
     const v = { active: pct != null && pct >= RALLY_PCT, pct, from: then ? then.d : null };
-    rallyCache = { key, v };
+    rallyCache = { key: ck, v };
     return v;
   }
   // Breadth of the My-tier index over `days`: how many constituents rose, the spread of their moves and how much of
@@ -1171,9 +1181,17 @@
   function todayJST() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
   // Grading + shipping for a copy bought raw: the fee of the PSA service it was (or will be) sent at, else the stored
   // fee, else Standard, plus shipping & handling. Same rule as grading_cost() in scripts/log_purchase.py.
+  // With no service saved, a card whose PSA10 price is above Standard's ¥150k declared-value limit needs Priority or
+  // Express (psaTierFor), whatever fee was stored when it was bought.
   function gradingCostOf(h) {
     const fees = { standard: PSA_STD.fee, priority: PSA_PRIO.fee, express: 29980 };
-    return (fees[h.tier] || h.grading_fee_jpy || PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
+    let auto = null;
+    if (!fees[h.tier] && h.condition === 'raw_to_grade') {
+      const c = ((state.currentData && state.currentData.cards) || []).find((x) => x.url === h.card_url);
+      const k = c ? psaTierFor(getRep(c)) : 'standard';
+      if (k !== 'standard') auto = fees[k];
+    }
+    return (fees[h.tier] || auto || h.grading_fee_jpy || PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
   }
   // A single's planned cash out (budget): the price, plus grading for a raw copy you mean to grade or that was graded.
   function holdingCost(h) {
@@ -1182,7 +1200,9 @@
   // Latest price read for something bought but not tracked (full check): raw A-rank price of a card (rawPrice rule), or the
   // lowest ask of one sealed product. null when there's no reading or nothing is for sale.
   function heldPrice(url) { const e = state.heldPrices[(url || '').replace(/\/$/, '').split('/').pop()]; return e && e.price != null ? e.price : null; }
-  function holdingsFor(card) { return state.holdings.filter((h) => h.card_url === card.url); }
+  // Copies of this card you hold as it trades on the tracker: a slab or a raw copy. A copy that came back from PSA below a
+  // 10 (graded_other) isn't the tracked PSA10, so it gets no PSA10 sell or position math (it still shows on Holdings).
+  function holdingsFor(card) { return state.holdings.filter((h) => h.card_url === card.url && h.condition !== 'graded_other'); }
   // GitHub re-applies prefilled form values over what you type, so the price, date and condition are
   // asked here first (Log purchase dialog) and the form opens with exactly those, ready to submit.
   function boughtFormUrl(card, v) {
@@ -1451,8 +1471,11 @@
     const seen = new Set(store.get('psa10.seenSignals', []));
     const items = inboxItems(cards), buys = items.filter((x) => x.buy);
     const tracked = cards.filter((c) => lowestAsk(c) != null).length;
-    const rules = correctionState().active || activeEvents().length;
-    const empty = buys.length ? '' : `<div class="ib-quiet"><span class="vtag none">Buy</span><span>No buy signals${rules ? ` (${correctionState().active ? 'correction' : 'event'} rule on: only Definitely-buy and your limits count)` : ''}. ${tracked} cards tracked.</span></div>`;
+    // name a rule only when it holds back cards on this list (the event rule covers only its release's sets)
+    const evOn = activeEvents().filter((e) => cards.some((c) => eventApplies(e, c) && c.analysis && c.analysis.tiers && !holdingsFor(c).length));
+    const ruleTxt = correctionState().active ? 'correction rule on: only Definitely-buy and your limits count'
+      : evOn.length ? `event rule on for ${[...new Set(evOn.map(eventScope))].join(', ')}: only Definitely-buy and your limits count there` : '';
+    const empty = buys.length ? '' : `<div class="ib-quiet"><span class="vtag none">Buy</span><span>No buy signals${ruleTxt ? ` (${escapeHtml(ruleTxt)})` : ''}. ${tracked} cards tracked.</span></div>`;
     el.innerHTML = `<h2 class="section-title">Needs you${items.length ? ` <span class="ib-n">${items.length}</span>` : ''}</h2>
       ${items.length || empty ? '' : '<p class="ib-none">Nothing to act on today.</p>'}
       <ul class="ib-list">${items.map((x) => {
@@ -2680,7 +2703,7 @@
     if (act.length) {
       const held = (data.cards || []).filter(heldByEvent).map((c) => parseCardName(c.card_name_ja).short);
       out.push({ key: 'event', tone: 'warning', label: `Event rule on · ${act.map((e) => e.name).join(', ')}`,
-        body: `<strong>Event rule on: ${escapeHtml(act.map((e) => e.name + ' ' + eventWhen(e)).join(' · '))}.</strong>Right before a major release prices often dip, so Buy-zone prices show as Watch until it's out (${escapeHtml([...new Set(act.map(eventScope))].join(', '))})${held.length ? `; now: ${escapeHtml(held.join(', '))}` : ''}. Definitely-buy prices and your own limits still count.` });
+        body: `<strong>Event rule on: ${escapeHtml(act.map((e) => e.name + ' ' + eventWhen(e, checkDay())).join(' · '))}.</strong>Right before a major release prices often dip, so Buy-zone prices show as Watch until it's out (${escapeHtml([...new Set(act.map(eventScope))].join(', '))})${held.length ? `; now: ${escapeHtml(held.join(', '))}` : ''}. Definitely-buy prices and your own limits still count.` });
     } else {
       const next = upcomingEvents().find((e) => e.d && e.major !== false && daysUntil(e.d) <= 14);
       if (next) out.push({ key: 'next', tone: 'info', label: `${next.name} · ${eventWhen(next)}`,
@@ -3582,7 +3605,12 @@
         continue;
       }
       const nowV = trk ? getRep(cards.find((c) => c.url === url)) : null;
-      items.push({ cat: 'singles', t, cost, at: nowV == null ? () => 0 : (T) => { const v = psaAt(url, T); return v != null ? basisV(v) : cost; } });
+      // a copy graded from raw was a raw card until it came back (graded_on)
+      const back = h.graded_from_raw ? dayT(h.graded_on || h.purchase_date) : null;
+      items.push({ cat: 'singles', t, cost, at: nowV == null ? () => 0 : (T) => {
+        const v = back != null && T < back ? (trk ? rawAt(url, T) : heldAt(url, T)) : psaAt(url, T);
+        return v != null ? basisV(v) : cost;
+      } });
     }
     for (const sd of state.sealed || []) {
       const t = dayT(sd.date), pulls = sd.pulls || [];
@@ -4409,7 +4437,7 @@
       let staleHtml = '';
       if (heldByEvent(card)) {
         const ev = eventFor(card);
-        staleHtml = `<div class="verdict-stale">Price is in the Buy zone, shown as Watch by the event rule: ${escapeHtml(ev.name)} ${escapeHtml(eventWhen(ev))}. Prices often dip around a big release; it becomes a buy again after that, or now at Definitely-buy (≤${fmtYen(analysis.tiers.definitely_buy)}).</div>`;
+        staleHtml = `<div class="verdict-stale">Price is in the Buy zone, shown as Watch by the event rule: ${escapeHtml(ev.name)} ${escapeHtml(eventWhen(ev, checkDay()))}. Prices often dip around a big release; it becomes a buy again after that, or now at Definitely-buy (≤${fmtYen(analysis.tiers.definitely_buy)}).</div>`;
       } else if (heldByCorrection(card)) {
         const cs = correctionState();
         staleHtml = `<div class="verdict-stale">Price is in the Buy zone, shown as Watch by the correction rule (${escapeHtml(cs.name)} ${fmtPct(cs.pct)} over 30 days). It becomes a buy at Definitely-buy (≤${fmtYen(analysis.tiers.definitely_buy)}) or once the market steadies.</div>`;
@@ -4629,7 +4657,7 @@
       const t = c && sellTiersOf(c);
       if (t) {
         tp += sellNet(t.take_profit_from);
-        if (raw && !h.sent) gradeLeft += (h.grading_fee_jpy != null ? h.grading_fee_jpy : PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
+        if (raw && !h.sent) gradeLeft += gradingCostOf(h);
       } else tp += sellNet(v);
     }
     return { now: Math.round(now), tp: Math.round(tp - gradeLeft), gradeLeft, n, missing };

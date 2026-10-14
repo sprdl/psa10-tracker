@@ -72,7 +72,8 @@ const out = [];
 for (let k = Math.max(0, snaps.length - N); k < snaps.length; k++) {
   const snap = J('data/snapshots/' + snaps[k].file), prev = k ? J('data/snapshots/' + snaps[k - 1].file) : null;
   const keep = (d) => d && Object.assign({}, d, { cards: (d.cards || []).filter((c) => !removed.includes(id(c))) });
-  clock.now = RealDate.parse(snap.collected_at_jst);
+  // days after the check: every rule must judge a check by its own time, not by today (2026-10-14)
+  clock.now = RealDate.parse(snap.collected_at_jst) + 5 * 864e5;
   Object.assign(app.state, {
     currentData: keep(snap), previousData: keep(prev), hist, customIndex: ci, events, holdings: hold.holdings || [], sealed: hold.sealed || [],
     sold: hold.sold || [], syncedLimits: limits, syncedTargets: targets, oddsModel: J('data/odds_model.json'), valueModel: J('data/value_model.json'),

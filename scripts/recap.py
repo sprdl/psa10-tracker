@@ -87,8 +87,9 @@ def facts(week, root=ROOT):
     held = {x.get("card_url") for x in json.loads((root / "data" / "holdings.json").read_text(encoding="utf-8")).get("holdings", [])}
     rows = []
     for url in names:
-        p0 = (a.get("p") or {}).get(url) or next(((s.get("p") or {}).get(url) for s in inw if (s.get("p") or {}).get(url)), None)
-        p1 = (b.get("p") or {}).get(url)
+        p0 = next(((s.get("p") or {}).get(url) for s in reversed(before) if (s.get("p") or {}).get(url)), None) or next(((s.get("p") or {}).get(url) for s in inw if (s.get("p") or {}).get(url)), None)
+        # the last price the week has for the card (the week's last check may have skipped it: a carried ask)
+        p1 = next(((s.get("p") or {}).get(url) for s in reversed(inw) if (s.get("p") or {}).get(url)), None)
         if p0 and p1 and p0[0] and p1[0]:
             rows.append(((p1[0] / p0[0] - 1) * 100, url, p0[0], p1[0]))
     rows.sort(reverse=True)

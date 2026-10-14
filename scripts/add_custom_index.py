@@ -237,6 +237,13 @@ def main():
     series = [e for e in d.get("series", []) if e["d"] != today]
     real = [e for e in series if e.get("prices")]
     prev = real[-1] if real else None
+    # pokeca-chart often hasn't updated yet at a morning check: every constituent price identical to the last day is
+    # yesterday's data, and storing it under today flattens the 7- and 30-day changes the rally/correction rules use
+    if prev and prev["d"] < today and r.get("prices") and all(prev["prices"].get(k) == v for k, v in r["prices"].items()) \
+            and set(r["prices"]) == set(prev["prices"]):
+        print(f"My-tier index {today}: all prices unchanged since {prev['d']} (pokeca-chart not updated yet): not stored. "
+              "Re-run later in the day to record today.")
+        return
     level, used, carried, left_out = compute(meta, r.get("prices", {}), prev)
     entry = {"d": today, "level": level, "n": len(used), "prices": used}
     if carried: entry["carried"] = carried

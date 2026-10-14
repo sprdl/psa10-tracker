@@ -201,6 +201,15 @@ def build(root: Path = ROOT, now: datetime = None) -> Path:
     now = now or (_dt(as_of) if as_of else datetime.now(JST))
 
     ci = _mytier(root)
+    # Cards taken off the tracker get no prices after that day: a window that runs past it can't be judged, so its
+    # call / prediction / odds becomes "void" (left out of every score) unless it was already decided before.
+    rp = root / "data" / "removed_cards.json"
+    removed = {}
+    if rp.exists():
+        for sid, r in (json.loads(rp.read_text(encoding="utf-8")).get("removed") or {}).items():
+            if r.get("at"):
+                removed[f"https://snkrdunk.com/apparels/{sid}"] = _dt(r["at"])
+    gone = lambda url, end: url in removed and removed[url] < end and removed[url] <= now
 
     def judge(url, tag, price, made_s):
         """Outcome of a call (tag at price, made at made_s): the same rules for real calls and the baseline."""
@@ -230,6 +239,8 @@ def build(root: Path = ROOT, now: datetime = None) -> Path:
                     status, why = "neutral", "no clear move either way"
         else:
             status, why = "unscored", "Defer isn't scored"
+        if gone(url, end) and status != "unscored" and not dipped:
+            status, why, matured = "void", f"card removed from tracking on {removed[url].date().isoformat()}, before the window ended", False
         ret = mkt = rel = edge = None
         if matured and last:
             ret = (last[1] / price - 1) * 100
@@ -290,6 +301,8 @@ def build(root: Path = ROOT, now: datetime = None) -> Path:
             status, why = "void", "already true when made"
         elif hit:
             status, why = "yes", f"¥{hit[1]:,} on {hit[0][:10]}"
+        elif gone(p["url"], by):
+            status, why = "void", f"card removed from tracking on {removed[p['url']].date().isoformat()}"
         elif now >= by:
             status, why = "no", "deadline passed"
         else:
@@ -313,7 +326,7 @@ def build(root: Path = ROOT, now: datetime = None) -> Path:
             for days, pk in ((30, "p30"), (90, "p90")):
                 by = made + timedelta(days=days)
                 hit = next(((d, x) for d, x in pts if made < _dt(d) <= by and x <= e["price"]), None)
-                status = "yes" if hit else ("no" if now >= by else "open")
+                status = "yes" if hit else ("void" if gone(e["url"], by) else "no" if now >= by else "open")
                 model_odds.append({"url": e["url"], "name": names.get(e["url"], e["url"]), "kind": e.get("kind"),
                                    "price": e["price"], "ask": e.get("ask"), "days": days, "p": e[pk],
                                    "made": e["made"], "by": by.date().isoformat(), "status": status, "final": now >= by,

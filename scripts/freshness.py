@@ -65,7 +65,7 @@ def checks(root=ROOT, now=None):
         d = _load(root, "snapshots/" + s["file"]) or {}
         if latest is None:
             latest = d
-        if d.get("check_mode") != "quick":
+        if d.get("check_mode", "full") == "full":   # quick and the old email_alert snapshots carry depth and index
             last_full = d
             break
     out.append(("SNKRDUNK prices (latest snapshot)", (latest or {}).get("collected_at_jst"), 26 * H, "quick or full check"))
