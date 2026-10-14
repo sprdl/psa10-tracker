@@ -11,7 +11,7 @@ clone fallback: the repo is right here.
 | The skills / procedures say | Use here |
 |---|---|
 | `device_bash` / "one `device_bash` call" | the **Bash** tool (one call each, same command) |
-| `$R`, `R=$(ls -d "$HOME"/mnt/*/psa10-tracker …)` | works as written (`~/mnt/psa10-tracker` links to this repo); `R` is also simply the repo root, the working directory |
+| `$R`, `R=$(ls -d "$HOME"/mnt/*/psa10-tracker …); cd "$R" && …` | **drop the prefix**: the working directory already is the repo root, so run what follows `cd "$R" &&` as its own command (e.g. `python3 pricecheck/start.py --mode quick`; a `git pull --ff-only --quiet` before it goes in a separate Bash call). A command with `$(…)` or `"$HOME"` can't be matched against `.claude/settings.json`'s allow list, so it asks for confirmation on every run and stalls an unattended check. Same for any other `$R/…` path: write it relative to the repo root |
 | `mcp__remote-devices__Claude_Browser__*` (built-in browser) | **Claude in Chrome**: `mcp__claude-in-chrome__*` |
 | `tabs_context` / `tabs_create` / `tabs_close` | `tabs_context_mcp` (with `createIfEmpty: true`) / `tabs_create_mcp` / `tabs_close_mcp` |
 | `javascript_tool` | `mcp__claude-in-chrome__javascript_tool` with `action: "javascript_exec"`, `text`, `tabId` (a number) |
