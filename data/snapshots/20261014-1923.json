@@ -5695,11 +5695,11 @@
         },
         "verdict": {
           "tag": "dont_buy",
-          "label": "Don't buy — the ask eased to ¥133k but is still 23% over the ¥108k ceiling",
-          "reasoning": "The lowest PSA10 ask is ¥133,000, down 14.7% from ¥156,000 when the last verdict was written on 10/12, but still 23% above the ¥108,000 ceiling. One-copy sales over the last 30 days ran ¥91,555–¥180,000 (median ¥105,000); the last 7 days' median rose to ¥115,000 on 13 sales, with one outlier print at ¥180,000 yesterday, so the ask is about 16% above where it actually trades. The book is thin (3 of 13 listings within 15% of the lowest) and trading is slow (about 1.6 sales a day). The rise rides a market rally: the My-tier index is +19.6% over 7 days but only +1.5% over 30 days. What would change the call: listings back at or below ¥108,000, ideally toward the ¥95,000 Buy line, once the rally cools.",
-          "written": "2026-10-13T08:45:17+09:00"
+          "label": "Don't buy — the ask eased to ¥120k but is still 11% over the ¥108k ceiling",
+          "reasoning": "The lowest PSA10 ask is ¥120,000, down 9.8% from ¥133,000 when the last verdict was written on 10/13, but still 11% above the ¥108,000 ceiling. The last 30 days' 20 sales ran ¥91,555–¥180,000 (median ¥108,000), and the 10 newest, from 10/8 on, ranged ¥108,000–¥180,000 with the latest at ¥116,000 today, so the ask sits near the top of where it has traded this week. The book is thin (3 of 11 listings within 15% of the lowest) and trading is slow (about 1.4 sales a day). The rise rides a market rally: the My-tier index is +11.8% over 7 days but only +3.2% over 30 days, and the 30th CELEBRATION card set release on 10/16 puts the event rule on. What would change the call: listings at or below ¥108,000, ideally toward the ¥95,000 Buy line, once the rally cools.",
+          "written": "2026-10-14T19:24:02+09:00"
         },
-        "verdict_price_ref": 133000
+        "verdict_price_ref": 120000
       }
     },
     {
