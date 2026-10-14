@@ -87,11 +87,16 @@
    ]
   },
   "https://snkrdunk.com/apparels/103080": {
-   "written": "2026-10-13T14:42:19+09:00",
-   "headline": "Mewtwo VSTAR SAR is flat while the market rallied ~20%",
-   "text": "What's happening: the lowest PSA10 ask is ¥26,900, unchanged over 7 days while the My-tier index rose about 20%. 20 sales in 7 days (about 4.9 a day) at ¥27-28k, and 17 of 20 listings sit within 15% of the ask.\n\nWhy: likely an older, deep-supply VSTAR Universe card that isn't part of the current anniversary-driven buying; a web search found no reprint or new Mewtwo card news (only shop listings), so this is a hypothesis.\n\nFor you: ¥26,900 is above your ¥20,000 limit and the Definitely-buy ¥20,000 line; the Buy line (¥24,000) is the realistic entry, not a chase of the rally.\n\nWatch: whether the card catches up after the 30th CELEBRATION card set on 10/16, or the gap to the market keeps widening.",
-   "signals": "7d price -0.4% (¥26,999→¥26,900) vs My-tier index +19.7% = -20.1 pts",
-   "sources": []
+   "written": "2026-10-14T19:24:30+09:00",
+   "headline": "Ask +4% in a week while the market rallied +19%: this card is lagging",
+   "text": "What's happening: The PSA10 ask is ¥27,000, up 4.2% over 7 days against +19.5% for the My-tier index. 14 of 20 listings sit within 15% of the lowest, with about 3.8 sales a day.\n\nWhy: Likely a lagging catch-up rather than weakness: the slab premium is 2.54x raw against a 6-month norm of 2.54x. Per altema's reprint page there is no announced VSTARユニバース reprint; I found no new card or supply news for it.\n\nFor you: ¥27,000 is above your ¥20,000 limit and the ¥24,000 Buy tier, just under the ¥28,500 ceiling. The lag is not a reason to pay up.\n\nWatch: whether the ask follows the index higher, or the index rally fades first. The 10/16 event rule is on.",
+   "signals": "7d price +4.2% (¥25,900→¥27,000) vs My-tier index +19.5% = -15.3 pts",
+   "sources": [
+    {
+     "title": "ハイクラスパック VSTARユニバース 再販情報",
+     "url": "https://altema.jp/pokemoncard/vstaruniversesaihan"
+    }
+   ]
   },
   "https://snkrdunk.com/apparels/91189": {
    "written": "2026-10-13T14:42:31+09:00",
