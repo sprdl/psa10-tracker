@@ -111,6 +111,18 @@
    "text": "What's happening: The lowest PSA10 ask is ¥400,000 against a sales median of ¥498,500, with 20 sales in the last 7 days (about 4.6 a day). Only 6 of 20 listings sit within 15% of the lowest, and the next asks are ¥403,000 and ¥414,000.\n\nWhy: Likely one seller pricing below the pack while the rest of the book stays at ¥480,000–¥525,000. A search found no reprint or new-supply news for this promo, only shop and marketplace listings, so nothing public explains the gap.\n\nFor you: ¥400,000 is above your ¥200,000 limit and the ¥340,000 / ¥390,000 / ¥450,000 tiers put it between the second and third. The gap to sales does not make it a bargain by itself.\n\nWatch: whether the ¥400,000 listing sells and the next ask resets near ¥403,000–¥414,000, or the whole book follows it down.",
    "signals": "lowest ask ¥400,000 is -20% vs recent sales median ¥498,500",
    "sources": []
+  },
+  "https://snkrdunk.com/apparels/103079": {
+   "written": "2026-10-14T19:24:32+09:00",
+   "headline": "Ask +9% in a week vs market +19%, but the slab premium is already 30% above its norm",
+   "text": "What's happening: The PSA10 ask is ¥27,900, up 8.6% in 7 days against +19.5% for the My-tier index. 10 of 20 listings are within 15% of the lowest, with about 3.8 sales a day.\n\nWhy: It trails the market, yet pokeca-chart's slab premium is 3.50x raw against a 6-month norm of 2.69x (+30%), so the PSA10 price has run ahead of the raw price. Per altema's reprint page there is no announced VSTARユニバース reprint; I found no new card or supply news.\n\nFor you: ¥27,900 is above your ¥20,000 limit and the ¥24,500 Buy tier, just under the ¥28,500 ceiling. The stretched premium argues for patience.\n\nWatch: raw prices catching up or the premium falling back toward 2.7x, and any VSTARユニバース reprint news.",
+   "signals": "7d price +8.6% (¥25,700→¥27,900) vs My-tier index +19.5% = -11.0 pts | slab premium 3.50x vs its 6-month norm 2.69x (+30%, pokeca-chart 2026-10-13)",
+   "sources": [
+    {
+     "title": "ハイクラスパック VSTARユニバース 再販情報",
+     "url": "https://altema.jp/pokemoncard/vstaruniversesaihan"
+    }
+   ]
   }
  }
 }
