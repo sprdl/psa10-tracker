@@ -22,9 +22,9 @@
   // 売買履歴 → A pill → one-copy rows from the last 30 days, newest first (same table rules as snkrdunk_quick.js).
   const ageDays = (w) => {
     w = String(w || '').trim(); let m;
-    if (w === 'たった今') return 0;
-    if ((m = w.match(/^(\d+)(秒|分|時間|日|週間|ヶ月|か月)前$/))) return Number(m[1]) * { '秒': 1 / 86400, '分': 1 / 1440, '時間': 1 / 24, '日': 1, '週間': 7, 'ヶ月': 30, 'か月': 30 }[m[2]];
-    if ((m = w.match(/^(\d{4})\/(\d{2})\/(\d{2})$/))) return (Date.now() - Date.parse(`${m[1]}-${m[2]}-${m[3]}T12:00:00+09:00`)) / 864e5;
+    if (w === 'たった今' || w === '今') return 0;   // same parsing as saleAgeDays() on the site (midpoint of the stamp)
+    if ((m = w.match(/^(\d+)\s*(秒|分|時間|日|週間|ヶ月|か月)前/))) return (Number(m[1]) + 0.5) * { '秒': 1 / 86400, '分': 1 / 1440, '時間': 1 / 24, '日': 1, '週間': 7, 'ヶ月': 30, 'か月': 30 }[m[2]];
+    if ((m = w.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/))) return Math.max(0, (Date.now() - Date.parse(`${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T12:00:00+09:00`)) / 864e5);
     return null;
   };
   async function aSales(d) {

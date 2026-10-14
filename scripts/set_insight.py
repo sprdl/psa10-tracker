@@ -67,9 +67,10 @@ def main():
                 if not link.startswith("http"):
                     die(f"--source needs 'Title|https://…', got {a[i + 1]!r}")
                 sources.append({"title": title.strip() or link, "url": link.strip()})
+        replacing = url in items
         items[url] = {"written": now.isoformat(), "headline": arg("--headline") or "", "text": text,
                       "signals": arg("--signals") or "", "sources": sources}
-        msg = f"insight: {sid} {arg('--headline') or ''}".strip()
+        msg = f"insight: {'update ' if replacing else ''}{sid} {arg('--headline') or ''}".strip()
     PATH.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"saved {PATH.relative_to(ROOT)} ({len(items)} card(s) with an analysis)")
     if "--no-push" in a:

@@ -56,6 +56,28 @@ LISTING_ARRAYS = ("top20_cheapest_listings", "listings_within_15pct_of_lowest",
                   "count_within_15pct", "count_excluded_over_15pct", "top20_stats")
 
 
+REL_UNIT_DAYS = {"秒": 1 / 86400, "分": 1 / 1440, "時間": 1 / 24, "日": 1, "週間": 7, "ヶ月": 30, "か月": 30}
+
+
+def reage_sales(g, days):
+    """Carried completed sales: SNKRDUNK's relative stamps ("20時間前") were read at the earlier check, but every
+    reader ages them from this snapshot's time. Restate them as of now (in hours, same midpoint convention as
+    saleAgeDays() in app.js and sale_window() in build_history.py) so a carried sale doesn't look newer than it is."""
+    rows = g.get("recent_completed_sales")
+    if not rows or days <= 0:
+        return
+    for x in rows:
+        w = str(x.get("when") or "").strip()
+        if w in ("たった今", "今"):
+            age = 0.0
+        else:
+            m = re.match(r"^(\d+)\s*(秒|分|時間|日|週間|ヶ月|か月)前", w)
+            if not m:
+                continue   # absolute dates ("2026/10/11") don't move
+            age = (int(m.group(1)) + 0.5) * REL_UNIT_DAYS[m.group(2)]
+        x["when"] = f"{max(0, round((age + days) * 24 - 0.5))}時間前"
+
+
 def die(msg):
     print(f"\nERROR: {msg}", file=sys.stderr)
     sys.exit(1)
@@ -184,6 +206,7 @@ def main():
 
     out = copy.deepcopy(base)
     now = datetime.now(JST).replace(microsecond=0)
+    age_by = (now - datetime.fromisoformat(base_ts)).total_seconds() / 86400
     out["collected_at_jst"] = now.isoformat()
     out["check_mode"] = "quick"
     out["notes"] = ("Quick check: lowest asks read from the SNKRDUNK grade tiles (¥X~) and completed sales "
@@ -231,6 +254,8 @@ def main():
         if not rc or base_res.get("error"):
             reason = base_res.get("error") or "not in this quick run"
             card["quick_note"] = f"not re-checked in this quick run ({reason}); all values carried from {base_ts}"
+            for g in grades.values():
+                reage_sales(g, age_by)
             not_checked.append(f"{name}: {reason}")
             continue
 
@@ -267,6 +292,7 @@ def main():
                     g.pop("sales_note", None)
             else:
                 g["sales_note"] = f"completed sales not re-read this run ({(s or {}).get('error', 'missing')}); carried from {base_ts}"
+                reage_sales(g, age_by)
                 problems.append(f"{name} {label} sales: {(s or {}).get('error', 'missing')}")
         updated.append(name)
 

@@ -125,6 +125,15 @@ def _pct(a, b):
     return round((a - b) / b * 100, 1) if b else None
 
 
+def _gap_minutes(a, b):
+    try:
+        fa = datetime.fromisoformat(str(a).replace("Z", "+00:00"))
+        fb = datetime.fromisoformat(str(b).replace("Z", "+00:00"))
+        return abs((fb - fa).total_seconds()) / 60
+    except (TypeError, ValueError):
+        return 1e9
+
+
 def build(root: Path = ROOT, now: datetime = None) -> Path:
     """now: score as if it were this time (tests); default = the latest snapshot."""
     snaps = _load(root)
@@ -136,8 +145,13 @@ def build(root: Path = ROOT, now: datetime = None) -> Path:
                 continue
             names[url] = c.get("card_name_ja") or names.get(url, url)
             ask = ((c.get("grades") or {}).get("psa10") or {}).get("lowest_price")
-            if ask is not None:
-                series.setdefault(url, []).append((d, ask))
+            g10 = (c.get("grades") or {}).get("psa10") or {}
+            carried = "carried" in (c.get("quick_note") or "") or "carried" in (g10.get("quick_note") or "")
+            ser = series.setdefault(url, [])
+            # a reading counts once: an ask a quick check carried over, or one taken minutes after the last
+            # (the duplicate snapshots of 2026-09-27), isn't a second look at the market
+            if ask is not None and not carried and not (ser and _gap_minutes(ser[-1][0], d) < 30):
+                ser.append((d, ask))
             v = (c.get("analysis") or {}).get("verdict") or {}
             tag, label = v.get("tag"), v.get("label")
             if tag:

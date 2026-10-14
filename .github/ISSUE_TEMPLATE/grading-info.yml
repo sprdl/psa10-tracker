@@ -33,7 +33,7 @@ body:
   - type: dropdown
     id: status
     attributes:
-      label: Status (pulls only)
+      label: Status
       options:
         - Keep as is
         - Keeping it raw

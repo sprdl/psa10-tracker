@@ -438,6 +438,20 @@ def main():
             sys.exit(f"This snapshot's cards are byte-identical to the already-saved {existing_file} "
                       f"(same collected_at_jst). Not saving a duplicate — nothing to do.")
 
+    # Two runs of the same check minutes apart (the 2026-09-27 "-2" snapshots): the second adds nothing new but counts
+    # as an extra reading in the track record. Refuse it; a real re-check later on is fine.
+    try:
+        new_t = datetime.fromisoformat(data.get("collected_at_jst", ""))
+        for s in manifest["snapshots"]:
+            if s.get("check_mode", "full") != data.get("check_mode", "full") or not s.get("collected_at_jst"):
+                continue
+            gap = abs((new_t - datetime.fromisoformat(s["collected_at_jst"])).total_seconds())
+            if 0 < gap < 300:
+                sys.exit(f"A {data.get('check_mode', 'full')} check was already saved {int(gap)} s apart ({s['file']}). "
+                         "Not saving a near-duplicate; run the check again later if prices moved.")
+    except ValueError:
+        pass
+
     if no_carry_forward:
         print("Skipping analysis carry-forward (--no-carry-forward).")
     else:

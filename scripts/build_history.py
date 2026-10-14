@@ -131,14 +131,27 @@ def _same_sale(a, b, slack=timedelta(hours=1)):
     return a[1][0] - slack <= b[1][1] and b[1][0] - slack <= a[1][1]
 
 
+def carried_ask(card):
+    """True when this snapshot's PSA10 ask wasn't re-read (quick check: card or grade tile carried from the base)."""
+    g = (card.get("grades") or {}).get("psa10") or {}
+    return "carried" in (card.get("quick_note") or "") or "carried" in (g.get("quick_note") or "")
+
+
 def new_sales(prev, cur):
-    """The sales in cur (oldest first) that come after its overlap with prev."""
+    """The sales in cur (oldest first) that weren't already in prev. Matched one-to-one by price and overlapping
+    time window, ignoring order: SNKRDUNK lists sales from the same hour in a different order from one check to the
+    next, and the old order-based overlap then failed and re-added the whole list (2026-10-14 fix)."""
     if not prev:
         return cur
-    for k in range(min(len(prev), len(cur)), 0, -1):
-        if all(_same_sale(prev[len(prev) - k + i], cur[i]) for i in range(k)):
-            return cur[k:]
-    return cur
+    pool = list(prev)
+    out = []
+    for x in cur:
+        hit = next((i for i, p in enumerate(pool) if _same_sale(p, x)), None)
+        if hit is None:
+            out.append(x)
+        else:
+            pool.pop(hit)
+    return out
 
 
 def _fresh_listings(g):
@@ -154,7 +167,7 @@ def entries(root: Path = ROOT):
     series = []
     tier_state = {}  # url -> [tiers tuple, changed_at, index_then, reviewed_at]
     tier_log = {}    # url -> [[since, db, bu, ceil], ...]
-    last_sales, sales = {}, {}   # url -> [(price, window)] of the previous check / url -> [(time, price)]
+    last_sales, sales, last_rows = {}, {}, {}   # url -> [(price, window)] of the previous check / url -> [(time, price)] / raw rows
     for s in snaps:
         path = root / "data" / "snapshots" / s["file"]
         try:
@@ -171,22 +184,23 @@ def entries(root: Path = ROOT):
             t = an.get("tiers")
             if t:
                 key = (t.get("definitely_buy"), t.get("buy_upper"), t.get("ceiling"))
-                made = max([pr.get("made", "") for pr in ((an.get("verdict") or {}).get("predictions") or [])] or [""])
+                made = max([pr.get("made") for pr in ((an.get("verdict") or {}).get("predictions") or []) if pr.get("made")] or [""], key=lambda m: _ts(m) if m else _ts("1970-01-01"))
                 st = tier_state.get(c.get("url"))
                 if not st or st[0] != key:
                     tier_state[c.get("url")] = st = [key, when, idx, when]
                     log = tier_log.setdefault(c.get("url"), [])
                     if not log or tuple(log[-1][1:]) != key:
                         log.append([when, *key])
-                if made and made > st[3]:
+                if made and _ts(made) > _ts(st[3]):
                     st[3] = made
             else:
                 tier_state.pop(c.get("url"), None)
             psa10 = (c.get("grades") or {}).get("psa10") or {}
-            if psa10.get("lowest_price") is None:
-                continue
             a = c.get("analysis") or {}
-            price = a.get("representative_price", psa10["lowest_price"])
+            # a quick check that couldn't re-read the ask carries the old one: that's not a new reading
+            if carried_ask(c):
+                continue
+            price = a.get("representative_price") if a.get("representative_price") is not None else psa10.get("lowest_price")
             if price is None:
                 continue
             points[c.get("url")] = [price, 1 if a.get("price_source") == "sales_confirmed" else 0]
@@ -222,10 +236,20 @@ def entries(root: Path = ROOT):
                     depth[url] = [g10.get("count_within_15pct") or 0, len(g10["top20_cheapest_listings"])]
                 if c.get("psa10_population") is not None and not c.get("population_as_of"):
                     pop[url] = [c["psa10_population"], c.get("psa10_gem_rate_pct")]
-                cur = [(x.get("price"), sale_window(x.get("when"), ref)) for x in g10.get("recent_completed_sales") or [] if x.get("price")]
+                rows = [(x.get("price"), x.get("when")) for x in g10.get("recent_completed_sales") or [] if x.get("price")]
+                cur = [(p, sale_window(w, ref)) for p, w in rows]
+                # a list carried over word for word ("57分前" still "57分前" hours later: the 2026-09-27/28 email_alert
+                # snapshots, a quick check that couldn't re-read sales) is the same sales, not new ones
+                if rows and rows == last_rows.get(url):
+                    cur = []
+                elif rows:
+                    last_rows[url] = rows
                 if cur:
+                    mid_p = sorted(p for p, _ in cur)[len(cur) // 2]
                     for price, win in new_sales(last_sales.get(url), cur):
-                        if win:
+                        # a print far off the rest of the list (¥18,999 among ¥140k PSA10 sales on 2026-10-08) is a
+                        # misread row or a mislabeled grade: keep it out of the sales history
+                        if win and 0.4 * mid_p <= price <= 2.5 * mid_p:
                             mid = win[0] + (win[1] - win[0]) / 2
                             sales.setdefault(url, []).append((min(mid, ref), price))
                     last_sales[url] = cur
@@ -305,7 +329,7 @@ def build(root: Path = ROOT) -> Path:
     def index_at(ts):
         v = None
         for e in series:
-            if e["d"] <= ts and e.get("i"):
+            if _ts(e["d"]) <= _ts(ts) and e.get("i"):
                 v = e["i"]
         return v
 

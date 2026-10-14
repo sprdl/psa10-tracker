@@ -34,6 +34,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from raw_price import raw_price  # noqa: E402
 from build_history import sale_age_days, sales_per_day  # noqa: E402
+from log_purchase import grading_cost  # noqa: E402
 import odds_model  # noqa: E402
 import eval_queue  # noqa: E402
 
@@ -99,7 +100,7 @@ def main():
     held = [h for h in J("holdings.json").get("holdings", []) if h.get("card_url", "").rstrip("/") == url]
     for h in held:
         print(f"          OWNED {h.get('condition')}: paid {yen(h.get('purchase_price_jpy'))} on {h.get('purchase_date')}"
-              f", grading & shipping {yen((h.get('grading_fee_jpy') or 0) + (h.get('shipping_insurance_jpy') or 0))}")
+              f", grading & shipping {yen(grading_cost(h))}" + (" (sent)" if h.get("sent") else ""))
     lim = (J("limits.json").get("limits") or {}).get(url)
     if lim:
         print(f"          your limit {yen(lim.get('price'))} (set {str(lim.get('set'))[:10]})")
@@ -151,10 +152,11 @@ def main():
     for h in held:
         paid = h.get("purchase_price_jpy") or 0
         if h.get("condition") == "raw_to_grade":
-            basis = (paid + (h.get("grading_fee_jpy") or 9980) + (h.get("shipping_insurance_jpy") or 2450)) / ((gem or 100) / 100)
+            basis = (paid + grading_cost(h)) / ((gem or 100) / 100)
             how = f"(paid + grading & shipping) ÷ gem rate {gem or 'n/a (fees added undivided)'}%"
         else:
-            basis, how = paid, "price paid for the slab"
+            basis = paid + (grading_cost(h) if h.get("sent") or h.get("graded_from_raw") else 0)
+            how = "price paid + PSA grading (graded from a raw copy)" if h.get("graded_from_raw") else "price paid for the slab"
         be = break_even(basis)
         net = (ask * (1 - FEE_RATE) - (200 if ask < 30000 else 300) - SHIP) if ask else None
         print(f"\nOWNED     basis {yen(basis)} = {how}; break-even sale after fees {yen(be)} ({pct(be, basis)})"

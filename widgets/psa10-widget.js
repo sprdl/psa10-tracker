@@ -107,7 +107,8 @@ function correctionOn(d) {
 }
 function eventFor(d, card) {
   const evs = (d.events && d.events.events) || [], win = (d.events && d.events.window_days) || 3;
-  const today = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10);
+  // judged on the day of the check, like the site's activeEvents() and the correction rule
+  const today = new Date(Date.parse(d.snap.collected_at_jst) + 9 * 36e5).toISOString().slice(0, 10);
   const set = (parseName(card.card_name_ja).code.split(/\s+/)[0] || '').toLowerCase();
   return evs.find((e) => {
     if (!e.d || e.major === false) return false;
@@ -150,9 +151,10 @@ const targetOf = (d, card) => { const e = d.targets[card.url]; return e && typeo
 // What a copy is measured against: a slab's price paid, a raw copy's DIY cost, (paid + grading & shipping) ÷ gem rate.
 function copyBasis(h, card) {
   const paid = h.purchase_price_jpy || 0;
-  if (h.condition !== 'raw_to_grade') return paid;
   const ship = h.shipping_insurance_jpy == null || h.shipping_insurance_jpy === 2000 ? 2450 : h.shipping_insurance_jpy;
-  const fee = (h.grading_fee_jpy != null ? h.grading_fee_jpy : 9980) + ship;
+  // same as gradingCostOf() on the site: the fee of the PSA service it was sent at, else the stored fee, else Standard
+  const fee = ({ standard: 9980, priority: 11980, express: 29980 }[h.tier] || h.grading_fee_jpy || 9980) + ship;
+  if (h.condition !== 'raw_to_grade') return h.sent || h.graded_from_raw ? paid + fee : paid;
   const gem = h.gem_rate_pct != null ? h.gem_rate_pct : card.psa10_gem_rate_pct;
   return gem ? (paid + fee) / (gem / 100) : paid + fee;
 }
@@ -185,15 +187,9 @@ function change7d(d, card) {
   return old && now != null ? (now / old - 1) * 100 : null;
 }
 function salesPerDay(sales, refIso) {
-  const ref = Date.parse(refIso), REL = { '秒': 1 / 86400, '分': 1 / 1440, '時間': 1 / 24, '日': 1, '週間': 7 };
-  const ages = (sales || []).map((s) => {
-    const w = String(s.when || '');
-    let m = w.match(/^(\d+)\s*(秒|分|時間|日|週間)前/);
-    if (m) return (Number(m[1]) + 0.5) * REL[m[2]];
-    m = w.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})/);
-    if (m) return Math.max(0, (ref - Date.parse(`${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}T12:00:00+09:00`)) / 864e5);
-    return null;
-  }).filter((a) => a != null);
+  // same parsing as saleAgeDays() on the site (saleAge above)
+  const ref = Date.parse(refIso);
+  const ages = (sales || []).map((s) => saleAge(s.when, ref)).filter((a) => a != null);
   return ages.length < 2 ? null : ages.length / Math.max(Math.max(...ages), 0.25);
 }
 function heat(d, card) {

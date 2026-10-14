@@ -610,7 +610,10 @@
   // scope is "all" or a list of set codes (the first part of the card code, e.g. M6a).
   // Undated (rumoured) events are listed but never applied.
   function todayJst() { return new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10); }
-  function daysUntil(d) { return Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse(todayJst() + 'T00:00:00Z')) / 86400000); }
+  function daysUntil(d, from) { return Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse((from || todayJst()) + 'T00:00:00Z')) / 86400000); }
+  // The event rule judges a check by the day it was taken (like the correction and rally rules), so an older
+  // check opened later still shows the verdicts it had; the release calendar counts from today.
+  function checkDay() { return jstDay(refTime()); }
   function eventWindow() { return (state.events && state.events.window_days) || 3; }
   function upcomingEvents() {
     const evs = (state.events && state.events.events) || [];
@@ -623,7 +626,9 @@
     return e.scope.some((x) => String(x).toLowerCase() === set);
   }
   function activeEvents() {
-    return upcomingEvents().filter((e) => e.d && e.major !== false && daysUntil(e.d) <= eventWindow());
+    const day = checkDay(), evs = (state.events && state.events.events) || [];
+    return evs.filter((e) => e.d && e.major !== false && daysUntil(e.d, day) >= 0 && daysUntil(e.d, day) <= eventWindow())
+      .sort((a, b) => String(a.d).localeCompare(String(b.d)));
   }
   function eventFor(card) { return activeEvents().find((e) => eventApplies(e, card)) || null; }
   function eventWhen(e) {
@@ -742,7 +747,7 @@
     let v = { active: false, pct: null, name: null };
     const ref = key || new Date().toISOString();
     const ser = (state.customIndex && state.customIndex.series) || [];
-    const day = ref.slice(0, 10);
+    const day = jstDay(ref);
     const past = new Date(Date.parse(day + 'T00:00:00Z') - 30 * 86400000).toISOString().slice(0, 10);
     let now = null, then = null;
     for (const e of ser) { if (e.d <= day) now = e; if (e.d <= past) then = e; }
@@ -767,7 +772,7 @@
     const key = (state.currentData && state.currentData.collected_at_jst) || '';
     if (rallyCache && rallyCache.key === key) return rallyCache.v;
     const ser = (state.customIndex && state.customIndex.series) || [];
-    const day = (key || new Date().toISOString()).slice(0, 10);
+    const day = jstDay(key || new Date().toISOString());
     const past = new Date(Date.parse(day + 'T00:00:00Z') - RALLY_DAYS * 86400000).toISOString().slice(0, 10);
     let now = null, then = null;
     for (const e of ser) { if (e.d <= day) now = e; if (e.d <= past) then = e; }
@@ -907,7 +912,7 @@
     let basis = 0, paid = 0, gem = null, fee = 0;
     for (const h of hs) {
       paid += h.purchase_price_jpy || 0;
-      if (h.condition === 'raw_to_grade') { const b = rawCopyBasis(h, card); basis += b.v; gem = b.gem; fee = b.fee; } else basis += h.purchase_price_jpy || 0;
+      if (h.condition === 'raw_to_grade') { const b = rawCopyBasis(h, card); basis += b.v; gem = b.gem; fee = b.fee; } else basis += holdingPaid(h);
     }
     const toGrade = hs.some((h) => h.condition === 'raw_to_grade');
     return { hs, n: hs.length, cost: hs.reduce((a, h) => a + holdingCost(h), 0) / hs.length, basis: basis / hs.length, paid: paid / hs.length, gem, fee,
@@ -935,7 +940,7 @@
   const sellCache = new WeakMap();
   function sellState(card) {
     if (!holdingsFor(card).length) return null;
-    const key = `${getTarget(card)}|${state.holdings.length}`;
+    const key = `${getTarget(card)}|${holdingsFor(card).map((h) => [h.id, h.condition, h.purchase_price_jpy, h.sent, h.tier].join(':')).join(',')}`;
     const hit = sellCache.get(card);
     if (hit && hit.key === key) return hit.v;
     const price = getRep(card), ask = lowestAsk(card), target = getTarget(card), tiers = sellTiersOf(card);
@@ -1164,11 +1169,15 @@
   // turns it into a holdings.json change and redeploys the site. Nothing is stored here.
   const REPO_URL = 'https://github.com/sprdl/psa10-tracker';
   function todayJST() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
+  // Grading + shipping for a copy bought raw: the fee of the PSA service it was (or will be) sent at, else the stored
+  // fee, else Standard, plus shipping & handling. Same rule as grading_cost() in scripts/log_purchase.py.
+  function gradingCostOf(h) {
+    const fees = { standard: PSA_STD.fee, priority: PSA_PRIO.fee, express: 29980 };
+    return (fees[h.tier] || h.grading_fee_jpy || PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
+  }
+  // A single's planned cash out (budget): the price, plus grading for a raw copy you mean to grade or that was graded.
   function holdingCost(h) {
-    const grading = h.condition === 'raw_to_grade'
-      ? (h.grading_fee_jpy || 0) + psaExtras(h.shipping_insurance_jpy)
-      : 0;
-    return (h.purchase_price_jpy || 0) + grading;
+    return (h.purchase_price_jpy || 0) + (h.condition === 'raw_to_grade' || h.graded_from_raw ? gradingCostOf(h) : 0);
   }
   // Latest price read for something bought but not tracked (full check): raw A-rank price of a card (rawPrice rule), or the
   // lowest ask of one sealed product. null when there's no reading or nothing is for sale.
@@ -3191,7 +3200,7 @@
   // For a raw single on the Holdings page: just when it was sent / is due back, and the grading-info link.
   function gradeMetaHtml(card, c) {
     const name = parseCardName(card.card_name_ja).short, it = c.item;
-    const tierKey = GRADE_TIERS[it.tier] ? it.tier : 'standard', tier = GRADE_TIERS[tierKey];
+    const tierKey = GRADE_TIERS[it.tier] ? it.tier : psaTierFor(getRep(card)), tier = GRADE_TIERS[tierKey];
     const link = `<a class="pf-remove" href="${escapeAttr(gradingFormUrl(c, name))}" target="_blank" rel="noopener">${it.sent || it.gem_rate_pct != null || it.tier ? 'Edit grading info' : 'Grading info'}</a>`;
     const ret = it.sent ? `Sent ${escapeHtml(it.sent)} · ${tier.label}${GRADE_TIERS[it.tier] ? '' : ' (assumed)'} · back around <b>${escapeHtml(addBusinessDays(it.sent, tier.days))}</b> (${tier.days} business days) · ` : 'Not sent yet · ';
     return `<div class="grade-line muted">${ret}${link}</div>`;
@@ -3286,7 +3295,7 @@
       </div>`;
     const warn = [
       over.length ? `${escapeHtml(over.map((c) => parseCardName(c.name).short).join(', '))} ${over.length === 1 ? 'is' : 'are'} worth more than ${tier.label}'s ${fmtYen(tier.cap)} declared-value limit as a PSA10: choose a higher service (or Auto).` : '',
-      tierKey !== 'standard' ? `The tracker doesn't know ${tier.label}'s declared-value limit: check it on PSA Japan's order screen.` : '',
+      tier.cap == null ? `The tracker doesn't know ${tier.label}'s declared-value limit: check it on PSA Japan's order screen.` : '',
       picked.length && picked.length < calc.length ? '' : '',
     ].filter(Boolean).map((t) => `<p class="cd-note warn">${t}</p>`).join('');
     const row = (c) => {
@@ -3304,7 +3313,7 @@
       </label>`;
     };
     const awayHtml = away.length ? `<h2 class="section-title sub-h">At PSA now <span class="muted">${away.length}</span></h2><div class="pf-list">${away.map((c) => {
-      const t = GRADE_TIERS[c.item.tier] || GRADE_TIERS.standard, nm = parseCardName((c.card && c.card.card_name_ja) || c.name);
+      const t = GRADE_TIERS[c.item.tier] || GRADE_TIERS[psaTierFor(c.card ? getRep(c.card) : null)], nm = parseCardName((c.card && c.card.card_name_ja) || c.name);
       return `<div class="pf-row"><div class="pf-info"><div class="pf-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.id)}</span></div>
         <div class="pf-meta">${c.item.sent ? `Sent ${escapeHtml(c.item.sent)} · ${escapeHtml(t.label)}${GRADE_TIERS[c.item.tier] ? '' : ' (assumed)'} · back around <b>${escapeHtml(addBusinessDays(c.item.sent, t.days))}</b>` : 'At PSA, no send date saved'} · <a class="pf-remove" href="${escapeAttr(gradingFormUrl({ id: c.id, item: c.item }, nm.short))}" target="_blank" rel="noopener">Grading info</a></div></div></div>`;
     }).join('')}</div>` : '';
@@ -3463,6 +3472,7 @@
   // Suggested sale price for the Sold form: a slab sells at the PSA10 price, a raw copy at the raw A-rank price.
   function soldPrefill(h, card) {
     if (h.condition === 'raw_to_grade') return card ? rawPriceV(card) : heldPrice(h.card_url);
+    if (h.condition === 'graded_other') return null;
     return card ? getRep(card) : null;
   }
   function soldTotals() {
@@ -3538,7 +3548,7 @@
     const dayT = (d) => Date.parse((d || '').slice(0, 10) + 'T12:00:00+09:00');
     const cards = (state.currentData && state.currentData.cards) || [];
     const tracked = new Set(cards.map((c) => c.url));
-    const phist = (state.portHist || []).map((x) => ({ t: Date.parse(x.d.slice(0, 10) + 'T00:00:00+09:00'), p: x.p || {} }))   // a day's reading counts from the start of that day, so today's last point equals today's price.sort((a, b) => a.t - b.t);
+    const phist = (state.portHist || []).map((x) => ({ t: Date.parse(x.d.slice(0, 10) + 'T00:00:00+09:00'), p: x.p || {} })).sort((a, b) => a.t - b.t);   // a day's reading counts from the start of that day, so today's last point equals today's price
     const lastAt = (arr, T, pick) => { let v = null; for (const x of arr) { if (x.t > T) break; const y = pick(x); if (y != null) v = y; } return v; };
     const sales = state.holdBasis === 'sales';   // "Recent sales": the sales medians history.json keeps per check ([2] PSA10, [3] raw A)
     const psaAt = (url, T) => lastAt(snaps, T, (x) => (sales && x.r[url] && x.r[url][2]) || (x.p[url] ? x.p[url][0] : null));
@@ -3547,7 +3557,10 @@
     const now = snaps.length ? snaps[snaps.length - 1].t : Date.now();
     // purchases
     const buys = [];
-    for (const h of state.holdings) buys.push({ t: dayT(h.purchase_date), cost: holdingPaid(h), cat: 'singles', name: parseCardName(h.card_name_ja || '').short, id: h.id });
+    for (const h of state.holdings) {
+      buys.push({ t: dayT(h.purchase_date), cost: h.purchase_price_jpy || 0, cat: 'singles', name: parseCardName(h.card_name_ja || '').short, id: h.id });
+      if (h.sent || h.graded_from_raw) buys.push({ t: dayT(h.sent || h.purchase_date), cost: gradingCostOf(h), cat: 'singles', name: parseCardName(h.card_name_ja || '').short + ' (PSA grading)', id: h.id + '-g' });
+    }
     for (const sd of state.sealed || []) buys.push({ t: dayT(sd.date), cost: sd.price_jpy || 0, cat: (sd.pulls || []).length ? 'pulls' : 'sealed', name: sealedName(sd), id: sd.id });
     for (const r of state.sold || []) buys.push({ t: dayT(r.bought), cost: r.cost_jpy || 0, cat: r.kind === 'single' ? 'singles' : 'sealed', name: (r.kind === 'single' ? parseCardName(r.name || '').short : r.name) + ' (sold)', id: r.id });
     if (!buys.length || !snaps.length) return null;
@@ -3559,7 +3572,10 @@
     // what each item is worth at T, or null when it is left out for good (no price now)
     const items = [];
     for (const h of state.holdings) {
-      const t = dayT(h.purchase_date), url = h.card_url, cost = holdingPaid(h), trk = tracked.has(url);
+      const t = dayT(h.purchase_date), url = h.card_url, cost = h.purchase_price_jpy || 0, trk = tracked.has(url);
+      // grading is spent on the day the copy goes to PSA; it adds nothing to the value by itself
+      if (h.sent || h.graded_from_raw) items.push({ cat: 'singles', t: dayT(h.sent || h.purchase_date), cost: gradingCostOf(h), at: () => 0 });
+      if (h.condition === 'graded_other') { items.push({ cat: 'singles', t, cost, at: () => 0 }); continue; }
       if (h.condition === 'raw_to_grade') {   // raw copies: worth the raw A-rank price, at each date
         const nowRaw = holdingValue(h, trk ? cards.find((c) => c.url === url) : null);
         items.push({ cat: 'singles', t, cost, at: nowRaw == null ? () => 0 : (T) => { const v = trk ? rawAt(url, T) : heldAt(url, T); return v != null ? basisV(v) : cost; } });
@@ -3594,7 +3610,10 @@
       const t = dayT(r.bought), ts = dayT(r.sold_date), cost = r.cost_jpy || 0, cash = r.sold_price_jpy - (r.fees_jpy || 0), url = r.card_url || r.url, q = r.qty || 1;
       items.push({ cat: r.kind === 'single' ? 'singles' : 'sealed', t, cost, end: ts, at: (T) => {
         if (T >= ts) return cash;
-        const v = r.kind === 'single' ? (tracked.has(url) ? psaAt(url, T) : heldAt(url, T)) : (heldAt(url, T) != null ? heldAt(url, T) * q : null);
+        const raw = r.condition === 'raw_to_grade';
+        const v = r.kind === 'single'
+          ? (r.condition === 'graded_other' ? null : tracked.has(url) ? (raw ? rawAt(url, T) : psaAt(url, T)) : heldAt(url, T))
+          : (heldAt(url, T) != null ? heldAt(url, T) * q : null);
         return v != null ? basisV(v) : cost;
       } });
     }
@@ -3760,14 +3779,14 @@
   function rawHoldingCols(h, card) {
     const paid = h.purchase_price_jpy || 0, basis = rawCopyBasis(h, card).v;
     const raw = card ? rawPriceV(card) : heldPrice(h.card_url);
-    const ask = card ? lowestAsk(card) : null;
+    const ask = card ? getRep(card) : null;   // the PSA10 price the rest of the page uses
     const pct = (now, ref) => (now != null && ref ? (now / ref - 1) * 100 : null);
     const cell = (label, price, p, ref, tip) => `<div class="pf-tri" title="${escapeAttr(tip)}"><span class="k">${label}</span><b>${price != null ? fmtYen(price) : '—'}</b>${p != null ? `<span class="${p >= 0 ? 'pos' : 'neg'}">${p === 0 ? '±0%' : fmtPct(p)}</span>` : '<span class="muted"></span>'}<small>${ref}</small></div>`;
     const rp = card ? rawPrice(card) : null;
     return `<div class="pf-current pf-trio">
       ${cell('Raw A-rank', raw, pct(raw, paid), 'vs ' + fmtYen(paid) + ' paid', (rp ? rawPriceNote(rp) : 'Raw A-rank price') + `; you paid ${fmtYen(paid)} for the raw card`)}
       <div class="pf-tri" title="(price paid + grading & shipping) ÷ gem rate"><span class="k">My DIY cost</span><b>${fmtYen(basis)}</b><span class="muted"></span><small>(${fmtYen(paid)} + ${fmtYen(rawCopyBasis(h, card).fee)}) ÷ ${rawCopyBasis(h, card).gem != null ? Math.round(rawCopyBasis(h, card).gem * 10) / 10 + '%' : '—'}</small></div>
-      ${cell('PSA10 lowest ask', ask, pct(ask, basis), 'vs your DIY cost', `PSA10 lowest ask ${ask != null ? fmtYen(ask) : '—'} against your DIY cost ${fmtYen(basis)}`)}
+      ${cell('PSA10 price', ask, pct(ask, basis), 'vs your DIY cost', `PSA10 price ${ask != null ? fmtYen(ask) : '—'} against your DIY cost ${fmtYen(basis)}`)}
     </div>`;
   }
   // Holdings sections as tabs: Singles, Sealed, Sold (each only when it has something), and a link to the copies
@@ -3836,7 +3855,7 @@
       const totalPnl = totalValue - totalCost;
       const totalPnlPct = totalCost ? (totalPnl / totalCost) * 100 : null;
       els.portfolioSummary.innerHTML = `
-        <div class="pf-stat"><div class="lbl">Total cost</div><div class="val">${fmtYen(totalCost)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">purchase prices, grading not included</div>` : ''}</div>
+        <div class="pf-stat"><div class="lbl">Total cost</div><div class="val">${fmtYen(totalCost)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">purchase prices, grading counted once a copy is sent</div>` : ''}</div>
         <div class="pf-stat"><div class="lbl">Current value</div><div class="val">${fmtYen(totalValue)}</div>${holdings.some((h) => h.condition === 'raw_to_grade') ? `<div class="kpi-d muted">slabs at the PSA10 price, raw cards at the raw A-rank price</div>` : ''}</div>
         <div class="pf-stat"><div class="lbl">Unrealized P&amp;L</div><div class="val ${totalPnl >= 0 ? 'pos' : 'neg'}">${totalPnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(totalPnl))}${totalPnlPct != null ? ' (' + fmtPct(totalPnlPct) + ')' : ''}</div></div>
         ${matchedCount < holdings.length ? `<div class="pf-stat"><div class="lbl">Untracked</div><div class="val muted">${holdings.length - matchedCount} card${holdings.length - matchedCount === 1 ? '' : 's'}</div></div>` : ''}
@@ -3928,7 +3947,8 @@
     for (const e of snaps) { if (Date.parse(e.d) <= Date.parse(weekAgo) && e.h && e.h[card.url] && e.h[card.url][0] != null) prev = { d: e.d, rate: e.h[card.url][0] }; }
     const within = (g.psa10 || {}).count_within_15pct;
     const cover = psa && within ? within / psa.rate : null;
-    return { psa, raw, prev, cover, within, level: heatLevel(psa ? psa.rate : null) };
+    // the depth count comes from the last full check (quick checks carry it): label it when it's older than the rate
+    return { psa, raw, prev, cover, within, depthAsOf: (g.psa10 || {}).listings_as_of || null, level: heatLevel(psa ? psa.rate : null) };
   }
   // Raw A-rank sells far more often than PSA10, so it has its own thresholds (watching page).
   const HEAT_LEVELS_RAW = [[40, 'hot', 'Hot'], [15, 'active', 'Active'], [5, 'slow', 'Slow'], [0, 'cold', 'Cold']];
@@ -3962,7 +3982,7 @@
     const spanTxt = h.psa.span < 1 ? `${Math.max(1, Math.round(h.psa.span * 24))} h` : `${h.psa.span.toFixed(h.psa.span < 10 ? 1 : 0)} days`;
     return `<div class="cd-stat"><div class="lbl">PSA10 trading (SNKRDUNK)</div>
       <div class="val">≈${rateTxt(h.psa)} / day ${heatChip(card)}</div>
-      <div class="heat-sub">Last ${h.psa.n} sales in ${spanTxt}${h.prev ? ` · a week ago ≈${fmtRate(h.prev.rate)}/day${ch != null ? ` <span class="${dirClass(ch)}">(${fmtPct(ch)})</span>` : ''}` : ''}${h.cover != null ? `<br>Cheap listings (${h.within}) ≈ ${h.cover < 1 ? Math.max(1, Math.round(h.cover * 24)) + ' h' : h.cover.toFixed(1) + ' days'} of sales` : ''}${h.raw ? ` · raw A ≈${fmtRate(h.raw.rate)}/day` : ''}</div></div>`;
+      <div class="heat-sub">Last ${h.psa.n} sales in ${spanTxt}${h.prev ? ` · a week ago ≈${fmtRate(h.prev.rate)}/day${ch != null ? ` <span class="${dirClass(ch)}">(${fmtPct(ch)})</span>` : ''}` : ''}${h.cover != null ? `<br>Cheap listings (${h.within}) ≈ ${h.cover < 1 ? Math.max(1, Math.round(h.cover * 24)) + ' h' : h.cover.toFixed(1) + ' days'} of sales${h.depthAsOf ? ' (listings ' + asOfHtml(h.depthAsOf) + ')' : ''}` : ''}${h.raw ? ` · raw A ≈${fmtRate(h.raw.rate)}/day` : ''}</div></div>`;
   }
   function renderHeat() {
     const el = document.getElementById('heat-panel');
@@ -3977,7 +3997,7 @@
       return `<tr><td><a href="#/card/${escapeAttr(cardId(c))}"><b class="jp">${escapeHtml(short)}</b></a> <small class="muted">${escapeHtml(code)}</small></td>
         <td class="num">${rateTxt(h.psa)}</td><td>${heatChip(c)}</td>
         <td class="num">${h.prev ? fmtRate(h.prev.rate) : '—'}${ch != null ? ` <span class="${dirClass(ch)}">${fmtPct(ch)}</span>` : ''}</td>
-        <td class="num">${h.cover != null ? (h.cover < 1 ? Math.max(1, Math.round(h.cover * 24)) + ' h' : h.cover.toFixed(1) + ' d') : '—'}</td>
+        <td class="num">${h.cover != null ? (h.cover < 1 ? Math.max(1, Math.round(h.cover * 24)) + ' h' : h.cover.toFixed(1) + ' d') + (h.depthAsOf ? ' ' + asOfHtml(h.depthAsOf) : '') : '—'}</td>
         <td class="num">${h.raw ? fmtRate(h.raw.rate) : '—'}</td></tr>`;
     }).join('');
     el.innerHTML = `<h2 class="section-title">Trading activity</h2>
@@ -4031,7 +4051,7 @@
   // cost is price + grading, undivided.
   function rawCopyBasis(h, card) {
     const price = h.purchase_price_jpy || 0;
-    const fee = (h.grading_fee_jpy != null ? h.grading_fee_jpy : PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
+    const fee = gradingCostOf(h);
     const gem = h.gem_rate_pct != null ? h.gem_rate_pct : (card && card.psa10_gem_rate_pct) || null;
     return gem ? { v: (price + fee) / (gem / 100), price, fee, gem, diy: true } : { v: price + fee, price, fee, gem: null, diy: false };
   }
@@ -4040,10 +4060,13 @@
   // there is no price (an untracked slab, or a raw card without a raw price).
   function holdingValue(h, card) {
     if (h.condition === 'raw_to_grade') return card ? markRaw(card) : heldPrice(h.card_url);
+    if (h.condition === 'graded_other') return null;   // came back below a 10: no price tracked for that grade
     return card ? markPsa(card) : null;
   }
   // What you paid for a single, without grading or shipping (grading is a separate cost, see holdingCost).
-  function holdingPaid(h) { return h.purchase_price_jpy || 0; }
+  // What a single has cost so far (holdings value, P&L, chart): the price, plus grading once the copy was sent to PSA.
+  // A raw copy that was never sent paid nothing for grading (same rule as paid_with_grading() in log_purchase.py).
+  function holdingPaid(h) { return (h.purchase_price_jpy || 0) + (h.sent || h.graded_from_raw ? gradingCostOf(h) : 0); }
   // The Overview's Limit column for a card you own: the PSA10 price now against your cost basis.
   //  - bought as a PSA10: the price you paid;
   //  - bought raw (to grade): its DIY cost with the price you paid (rawCopyBasis).
@@ -4054,7 +4077,7 @@
     let sum = 0, paid = 0, anyRaw = false, allDiy = true, parts = null;
     for (const h of held) {
       paid += h.purchase_price_jpy || 0;
-      if (h.condition !== 'raw_to_grade') { sum += h.purchase_price_jpy || 0; continue; }
+      if (h.condition !== 'raw_to_grade') { sum += holdingPaid(h); continue; }
       anyRaw = true;
       const b = rawCopyBasis(h, card);
       sum += b.v; parts = { raw: b.price, fee: b.fee, gem: b.gem };
@@ -4599,7 +4622,7 @@
     let now = 0, tp = 0, gradeLeft = 0, n = 0, missing = 0;
     for (const h of state.holdings || []) {
       const c = cards.find((x) => x.url === h.card_url), raw = h.condition === 'raw_to_grade';
-      const v = c ? (raw ? rawPriceV(c) : getRep(c)) : heldPrice(h.card_url);
+      const v = h.condition === 'graded_other' ? null : c ? (raw ? rawPriceV(c) : getRep(c)) : heldPrice(h.card_url);
       if (v == null) { missing++; continue; }
       n++;
       now += sellNet(v);
@@ -4699,7 +4722,7 @@
   const PLANNER_KEY = 'psa10.planner';
   function plannerState() {
     const st = store.get(PLANNER_KEY, {});
-    return { budget: typeof st.budget === 'number' ? st.budget : 200000,
+    return { budget: typeof st.budget === 'number' ? st.budget : 250000,
              mode: st.mode === 'limits' ? 'limits' : 'today',
              selected: Array.isArray(st.selected) ? st.selected : [],
              pins: Array.isArray(st.pins) ? st.pins : [], excl: Array.isArray(st.excl) ? st.excl : [],
@@ -4868,7 +4891,7 @@
       <div class="up-cols">${own ? upsideCol(card, ask, 'Your copy, from today\'s ask', own.basis) : upsideCol(card, ask, "Bought today") + (lim != null && lim < ask ? upsideCol(card, lim, 'Bought at my limit') : '')}</div>
       ${ageNote}
       ${!own && lim != null && lim < ask ? `<p class="cd-note">The chance of a profit is about the same in both columns: if a listing does drop to your limit, history gives no sign that the price then recovers faster or slower, so the limit buys the same chances for less money, if it fills (${(() => { const o = touchOdds(card, lim); return o && !o.reached ? `${fmtOdds(o.p90)} within 90 days` : 'already reachable'; })()}).</p>` : ''}
-      <p class="cd-note">How it's worked out: every 12- and 24-month stretch of 125 modern PSA10s on pokeca-chart, ${escapeHtml((vm.source || '').replace(/^.*cards, /, ''))}. The market part comes from how the whole tier moved, shifted so the typical outcome is no change (no market growth assumed), because 2022–26 holds one big rally and one crash and its average says little about the next years. So “Typical” is roughly today's price, and the loss shown there is the cost of selling; the italic figure shows the odds if the market repeats 2022–26. The card part is how far single cards strayed from the market; this card ${sw}. Selling costs SNKRDUNK's Regular-rank fee (9.5%), the ¥300 transfer fee and about ¥1,000 shipping. Not modelled: events for this Pokémon, reprints and the coming wave of graded copies. The 2022–26 data has only one full boom and bust, so treat these as rough ranges, not forecasts.</p>
+      <p class="cd-note">How it's worked out: every 12- and 24-month stretch of 125 modern PSA10s on pokeca-chart, ${escapeHtml((vm.source || '').replace(/^.*cards, /, ''))}. The market part comes from how the whole tier moved, shifted so the typical outcome is no change (no market growth assumed), because 2022–26 holds one big rally and one crash and its average says little about the next years. So “Typical” is roughly today's price, and the loss shown there is the cost of selling; the italic figure shows the odds if the market repeats 2022–26. The card part is how far single cards strayed from the market; this card ${sw}. Selling costs SNKRDUNK's Regular-rank fee (9.5%), the ¥200/¥300 transfer fee and about ¥1,000 shipping. Not modelled: events for this Pokémon, reprints and the coming wave of graded copies. The 2022–26 data has only one full boom and bust, so treat these as rough ranges, not forecasts.</p>
     </div>`;
   }
 

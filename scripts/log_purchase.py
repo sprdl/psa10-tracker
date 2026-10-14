@@ -232,6 +232,26 @@ def build_pull(issue, sealed):
 
 
 GRADE_TIERS = (("standard", "standard"), ("priority", "priority"), ("express", "express"))
+GRADE_FEES = {"standard": 9980, "priority": 11980, "express": 29980}   # same as GRADE_TIERS in assets/app.js
+PSA_EXTRAS = 1900 + 550   # shipping & insurance + handling; an old stored ¥2,000 estimate means this
+
+
+def grading_cost(h):
+    """Grading + shipping for a copy bought raw: the fee of the PSA service it was sent at (else the stored fee,
+    else Standard) plus shipping & handling. Same rule as gradingCostOf() in assets/app.js."""
+    fee = GRADE_FEES.get(h.get("tier")) or h.get("grading_fee_jpy") or GRADE_FEES["standard"]
+    extra = h.get("shipping_insurance_jpy")
+    return fee + (PSA_EXTRAS if extra in (None, 2000) else extra)
+
+
+def paid_with_grading(h):
+    """What a single cost so far: the price, plus grading once the copy was actually sent to PSA (a raw copy sold
+    without grading never paid for it). Same rule as holdingPaid() in assets/app.js."""
+    return h.get("purchase_price_jpy", 0) + (grading_cost(h) if h.get("sent") else 0)
+
+
+# A raw copy you bought ("p…") that came back from PSA: its condition changes, so the site values it as what it is now.
+HOLDING_STATUS = (("sending", "raw_to_grade"), ("came back psa10", "psa10"), ("came back psa 10", "psa10"), ("lower", "graded_other"), ("raw", "raw_to_grade"))
 
 
 def optional_date(s):
@@ -276,7 +296,17 @@ def apply_grading_info(issue, store):
                 item[key] = val
         if gid.startswith("u") and st and "keep as is" not in st:
             item["status"] = next((k for key, k in PULL_STATUS if key in st), item.get("status", "raw"))
-    bits = [x for x in (f"sent {sent}" if sent else "", f"{tier} service" if tier else "", f"your PSA10 chance {int(chance) if chance.is_integer() else chance}%" if chance is not None else "") if x]
+        elif gid.startswith("p") and st and "keep as is" not in st:
+            cond = next((k for key, k in HOLDING_STATUS if key in st), None)
+            if cond and (item.get("condition") == "raw_to_grade" or item.get("graded_from_raw")):
+                item["condition"] = cond
+                if cond == "raw_to_grade":
+                    item.pop("graded_from_raw", None)
+                else:
+                    item["graded_from_raw"] = True   # keeps its grading cost in the cost basis
+    conds = {"psa10": "now a PSA10", "graded_other": "came back lower than a 10", "raw_to_grade": "raw"}
+    st_bit = next((conds[item["condition"]] for gid, item in items if gid.startswith("p") and st and "keep as is" not in st and item.get("condition") in conds), "")
+    bits = [x for x in (st_bit, f"sent {sent}" if sent else "", f"{tier} service" if tier else "", f"your PSA10 chance {int(chance) if chance.is_integer() else chance}%" if chance is not None else "") if x]
     if multi:
         names = ", ".join(f"**{gid}** ({item.get('card_name_ja', gid)})" for gid, item in items)
         return (f"Saved grading info for {len(items)} cards: {names}: {', '.join(bits) if bits else 'date and service cleared'}. The site updates in about a minute.",
@@ -311,7 +341,7 @@ def apply_sold(issue, store):
         h = next((x for x in hs if x.get("id") == iid), None)
         if not h:
             raise FormError(f"There's no card with id {iid} (maybe it was already sold or removed).")
-        cost = h.get("purchase_price_jpy", 0) + (h.get("grading_fee_jpy", 0) + h.get("shipping_insurance_jpy", 0) if h.get("condition") == "raw_to_grade" else 0)
+        cost = paid_with_grading(h)
         rec.update({"kind": "single", "item_id": iid, "name": h.get("card_name_ja", iid), "card_url": h.get("card_url"), "image_url": h.get("image_url"),
                     "condition": h.get("condition"), "cost_jpy": cost, "bought": h.get("purchase_date"), "orig": h})
         store["holdings"] = [x for x in hs if x.get("id") != iid]
@@ -512,10 +542,10 @@ def apply(issue, labels, store, dry=False):
     h, tracked = build_holding(issue)
     replaced = any(x.get("id") == h["id"] for x in hs)
     store["holdings"] = [x for x in hs if x.get("id") != h["id"]] + [h]
-    cost = h["purchase_price_jpy"] + (h.get("grading_fee_jpy", 0) + h.get("shipping_insurance_jpy", 0))
+    cost = h["purchase_price_jpy"] + (grading_cost(h) if h["condition"] == "raw_to_grade" else 0)
     msg = (f"{'Updated' if replaced else 'Logged'} purchase **{h['id']}**: {h['card_name_ja']}, "
            f"¥{h['purchase_price_jpy']:,} on {h['purchase_date']}"
-           + (f" + ¥{h['grading_fee_jpy'] + h['shipping_insurance_jpy']:,} grading & shipping (total ¥{cost:,})" if h["condition"] == "raw_to_grade" else " (PSA10 slab)")
+           + (f" + ¥{grading_cost(h):,} grading & shipping once sent (total ¥{cost:,})" if h["condition"] == "raw_to_grade" else " (PSA10 slab)")
            + ". The site updates in about a minute."
            + ("" if tracked else "\n\nNote: this card isn't on the tracker, so it shows without a current price or P&L."))
     return msg, f"holdings: {'update' if replaced else 'add'} {h['card_name_ja']} (#{issue['number']})"
