@@ -4240,10 +4240,10 @@
           "source": "pokeca-chart per-card chart, read 2026-09-30"
         },
         "verdict": {
-          "tag": "watch",
-          "label": "Watch — ask ¥29.5k is above every tier; wait for the Oct 16 card set",
+          "tag": "dont_buy",
+          "label": "Don't buy — ask ¥29.5k is above every tier; wait for the Oct 16 card set",
           "reasoning": "The lowest ask rose to ¥29,500 (+7.7% since the verdict was written at ¥27,400), above the Buy ceiling of ¥28,500; the last 20 sales ran ¥27,400–¥29,499 (median ¥28,000) at about 5.2 a day, with 17 asks within 15% of the lowest, so there is depth. The My-tier index is +6.7% over 7 days and +5.0% over 30, and the slab premium is 3.00x against a 2.69x norm (+11.6%), which leaves less room for the price to hold if raw cards soften. The event rule is on: the 30th CELEBRATION set releases tomorrow (Oct 16), so wait for it. DIY cost is about ¥29.9k, so the ask is already at the cost of grading it yourself. This changes if the ask falls to ¥28,500 or lower.",
-          "written": "2026-10-15T09:14:07+09:00"
+          "written": "2026-10-15T09:14:17+09:00"
         },
         "verdict_price_ref": 29500
       },
@@ -4518,10 +4518,10 @@
           "source": "pokeca-chart per-card chart, read 2026-09-30"
         },
         "verdict": {
-          "tag": "watch",
-          "label": "Watch — ask ¥29.5k is above every tier; wait for the Oct 16 card set",
+          "tag": "dont_buy",
+          "label": "Don't buy — ask ¥29.5k is above every tier; wait for the Oct 16 card set",
           "reasoning": "The lowest ask rose to ¥29,500 (+9.3% since the verdict was written at ¥27,000), above the Buy ceiling of ¥28,500; the last 20 sales ran ¥26,666–¥29,000 (median ¥27,400) at about 5.2 a day, with 13 asks within 15% of the lowest, so it trades actively. The My-tier index is +6.7% over 7 days and +5.0% over 30, so the card moved with the market rather than ahead of it, and the slab premium is 2.74x against a 2.55x norm (+7.6%). The event rule is on: the 30th CELEBRATION set releases tomorrow (Oct 16), so wait to see where the market settles. DIY cost is about ¥28.0k, so the ask is only 5% above it. This changes if the ask falls back to ¥28,500 or lower, or sales slip below ¥26k.",
-          "written": "2026-10-15T09:14:07+09:00"
+          "written": "2026-10-15T09:14:17+09:00"
         },
         "verdict_price_ref": 29500
       },
