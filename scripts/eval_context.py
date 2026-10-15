@@ -101,7 +101,7 @@ def main():
             and h.get("condition") != "graded_other"]   # came back below a 10: not the tracked PSA10 (site: holdingsFor)
     for h in held:
         print(f"          OWNED {h.get('condition')}: paid {yen(h.get('purchase_price_jpy'))} on {h.get('purchase_date')}"
-              f", grading & shipping {yen(grading_cost(h))}" + (" (sent)" if h.get("sent") else ""))
+              f", grading & shipping {yen(grading_cost(h, g10.get('lowest_price')))}" + (" (sent)" if h.get("sent") else ""))
     lim = (J("limits.json").get("limits") or {}).get(url)
     if lim:
         print(f"          your limit {yen(lim.get('price'))} (set {str(lim.get('set'))[:10]})")

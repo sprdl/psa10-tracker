@@ -10,7 +10,7 @@
    "right": 16,
    "wrong": 1,
    "neutral": 0,
-   "pending": 25
+   "pending": 23
   },
   "calls_scored": 0,
   "closed": {
@@ -40,7 +40,7 @@
    "right": 16,
    "wrong": 1
   },
-  "pending": 25,
+  "pending": 23,
   "next_close": "2026-10-15T16:26:00+09:00",
   "baseline": {
    "buy": {
@@ -1087,8 +1087,8 @@
    "low_pct": -1.2,
    "now": 44700,
    "now_pct": 6.4,
-   "status": "pending",
-   "why": "",
+   "status": "void",
+   "why": "card removed from tracking on 2026-09-24, before the window ended",
    "threshold": 0.05,
    "final": false,
    "ret_pct": null,
@@ -1207,8 +1207,8 @@
    "low_pct": -3.0,
    "now": 44700,
    "now_pct": 4.4,
-   "status": "pending",
-   "why": "",
+   "status": "void",
+   "why": "card removed from tracking on 2026-09-24, before the window ended",
    "threshold": 0.05,
    "final": false,
    "ret_pct": null,

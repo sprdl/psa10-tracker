@@ -153,7 +153,7 @@ function copyBasis(h, card) {
   const paid = h.purchase_price_jpy || 0;
   const ship = h.shipping_insurance_jpy == null || h.shipping_insurance_jpy === 2000 ? 2450 : h.shipping_insurance_jpy;
   // same as gradingCostOf() on the site: the fee of the PSA service it was sent at, else the stored fee, else Standard
-  const v = repPrice(card), auto = !h.tier && h.condition === 'raw_to_grade' && v > 150000 ? (v <= 250000 ? 11980 : 29980) : 0;
+  const v = repPrice(card), auto = !h.tier && !h.sent && h.condition === 'raw_to_grade' && v > 150000 ? (v <= 250000 ? 11980 : 29980) : 0;
   const fee = ({ standard: 9980, priority: 11980, express: 29980 }[h.tier] || auto || h.grading_fee_jpy || 9980) + ship;
   if (h.condition !== 'raw_to_grade') return h.sent || h.graded_from_raw ? paid + fee : paid;
   const gem = h.gem_rate_pct != null ? h.gem_rate_pct : card.psa10_gem_rate_pct;

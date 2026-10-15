@@ -241,7 +241,7 @@ def grading_cost(h, value=None):
     `value` known and above Standard's ¥150k declared-value limit, Priority up to ¥250k or Express; else the stored fee,
     else Standard) plus shipping & handling. Same rule as gradingCostOf() in assets/app.js."""
     auto = None
-    if not GRADE_FEES.get(h.get("tier")) and value and value > 150000:
+    if not GRADE_FEES.get(h.get("tier")) and not h.get("sent") and value and value > 150000:
         auto = GRADE_FEES["priority"] if value <= 250000 else GRADE_FEES["express"]
     fee = GRADE_FEES.get(h.get("tier")) or auto or h.get("grading_fee_jpy") or GRADE_FEES["standard"]
     extra = h.get("shipping_insurance_jpy")

@@ -209,6 +209,18 @@ def build(root: Path = ROOT, now: datetime = None) -> Path:
         for sid, r in (json.loads(rp.read_text(encoding="utf-8")).get("removed") or {}).items():
             if r.get("at"):
                 removed[f"https://snkrdunk.com/apparels/{sid}"] = _dt(r["at"])
+    # a card that just stopped appearing (dropped before removals were logged, e.g. the Detective Pikachu promo after
+    # 2026-09-24) counts as removed from the last check that had it
+    if snaps:
+        latest = {c.get("url") for c in snaps[-1][1]}
+        last_seen = {}
+        for d, cards in snaps:
+            for c in cards:
+                last_seen[c.get("url")] = d
+        for url, d in last_seen.items():
+            if url and url not in latest:
+                t = _dt(d)
+                removed[url] = min(removed.get(url, t), t)
     gone = lambda url, end: url in removed and removed[url] < end and removed[url] <= now
 
     def judge(url, tag, price, made_s):

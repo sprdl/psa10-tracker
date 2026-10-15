@@ -1186,8 +1186,8 @@
   function gradingCostOf(h) {
     const fees = { standard: PSA_STD.fee, priority: PSA_PRIO.fee, express: 29980 };
     let auto = null;
-    if (!fees[h.tier] && h.condition === 'raw_to_grade') {
-      const c = ((state.currentData && state.currentData.cards) || []).find((x) => x.url === h.card_url);
+    if (!fees[h.tier] && h.condition === 'raw_to_grade' && !h.sent) {   // once sent, the stored fee is what was paid
+      const c = [...((state.currentData && state.currentData.cards) || []), ...(state.grailCards || [])].find((x) => x.url === h.card_url);
       const k = c ? psaTierFor(getRep(c)) : 'standard';
       if (k !== 'standard') auto = fees[k];
     }
