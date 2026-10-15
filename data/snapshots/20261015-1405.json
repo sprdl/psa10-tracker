@@ -6964,7 +6964,38 @@
         }
       },
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/6ee5c554-3732-4b90-9464-a6dde75456ed.webp?size=l",
-      "favorite_count": 530
+      "favorite_count": 530,
+      "analysis": {
+        "representative_price": 28000,
+        "price_source": "sales_confirmed",
+        "tiers": {
+          "definitely_buy": 22600,
+          "buy_upper": 26000,
+          "ceiling": 30000
+        },
+        "verdict": {
+          "tag": "watch",
+          "label": "Watch: wait until after 30th CELEBRATION (event rule)",
+          "reasoning": "¥28,000 sits in the Watch band: 20 PSA10 one-copy sales in 30 days ran ¥26–30.7k (median ¥28.8k, about 1.8 a day). The 30th CELEBRATION release on 2026-10-16 falls inside the event window, so no Buy call until after it. Limits at ¥26k have roughly 45% odds within 30 days; no PSA pop page yet, so the DIY floor is unknown.",
+          "predictions": [
+            {
+              "text": "Lowest PSA10 ask reaches ≤¥26k (Buy) within 30 days",
+              "p": 0.4,
+              "type": "touch_below",
+              "price": 26000,
+              "by": "2026-11-15"
+            },
+            {
+              "text": "Lowest PSA10 ask reaches ≤¥22.6k (Definitely-buy) within 3 months",
+              "p": 0.25,
+              "type": "touch_below",
+              "price": 22600,
+              "by": "2027-01-15"
+            }
+          ],
+          "written": "2026-10-15T14:05:53+09:00"
+        }
+      }
     },
     {
       "card_name_ja": "ロケット団のミュウツーex SAR [SV10 125/098](拡張パック「ロケット団の栄光」)",
@@ -7144,7 +7175,38 @@
         }
       },
       "image_url": "https://cdn.snkrdunk.com/upload_bg_removed/998109b2-08f2-44ec-bb59-417af89a11c0.webp?size=l",
-      "favorite_count": 1362
+      "favorite_count": 1362,
+      "analysis": {
+        "representative_price": 95000,
+        "price_source": "sales_confirmed",
+        "tiers": {
+          "definitely_buy": 82000,
+          "buy_upper": 86800,
+          "ceiling": 92000
+        },
+        "verdict": {
+          "tag": "dont_buy",
+          "label": "Don't buy: ¥96.5k ask is above the ¥92k ceiling",
+          "reasoning": "The lowest ask (¥96.5k) is about 1.6% above the 30-day sales median (¥95k, about 3.9 sales a day, very liquid), and above the ceiling. Limits at ¥86.8k have about 40% odds within 30 days and ¥82k about 30%, so the first entry is a listing there. No PSA pop page yet, so the DIY floor is unknown.",
+          "predictions": [
+            {
+              "text": "Lowest PSA10 ask reaches ≤¥86.8k (Buy) within 30 days",
+              "p": 0.4,
+              "type": "touch_below",
+              "price": 86800,
+              "by": "2026-11-15"
+            },
+            {
+              "text": "Lowest PSA10 ask reaches ≤¥82k (Definitely-buy) within 3 months",
+              "p": 0.35,
+              "type": "touch_below",
+              "price": 82000,
+              "by": "2027-01-15"
+            }
+          ],
+          "written": "2026-10-15T14:05:53+09:00"
+        }
+      }
     }
   ],
   "pokeca_chart_index": {

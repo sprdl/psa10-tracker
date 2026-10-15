@@ -10,7 +10,7 @@
    "right": 16,
    "wrong": 1,
    "neutral": 0,
-   "pending": 25
+   "pending": 27
   },
   "calls_scored": 0,
   "closed": {
@@ -40,7 +40,7 @@
    "right": 16,
    "wrong": 1
   },
-  "pending": 25,
+  "pending": 27,
   "next_close": "2026-10-15T16:26:00+09:00",
   "baseline": {
    "buy": {
@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 103,
+  "odds_open": 107,
   "odds_early_yes": 6,
   "model_odds": {
    "logged": 150,
@@ -88,6 +88,54 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/568323",
+   "name": "ロケット団のファイヤーex SAR [SV10 124/098](拡張パック「ロケット団の栄光」)",
+   "tag": "watch",
+   "label": "Watch: wait until after 30th CELEBRATION (event rule)",
+   "latest_label": "Watch: wait until after 30th CELEBRATION (event rule)",
+   "reaffirmed": 0,
+   "made": "2026-10-15T14:05:14+09:00",
+   "price": 28300,
+   "window_end": "2026-11-14T14:05:14+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/568902",
+   "name": "ロケット団のミュウツーex SAR [SV10 125/098](拡張パック「ロケット団の栄光」)",
+   "tag": "dont_buy",
+   "label": "Don't buy: ¥96.5k ask is above the ¥92k ceiling",
+   "latest_label": "Don't buy: ¥96.5k ask is above the ¥92k ceiling",
+   "reaffirmed": 0,
+   "made": "2026-10-15T14:05:14+09:00",
+   "price": 96500,
+   "window_end": "2026-11-14T14:05:14+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.05,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
+  },
   {
    "url": "https://snkrdunk.com/apparels/103079",
    "name": "リザードンVSTAR SAR[s12a 212/172](ハイクラスパック「VSTARユニバース」)",
@@ -1762,6 +1810,36 @@
    "gap_pct": -7.7
   },
   {
+   "url": "https://snkrdunk.com/apparels/568323",
+   "name": "ロケット団のファイヤーex SAR [SV10 124/098](拡張パック「ロケット団の栄光」)",
+   "text": "Lowest PSA10 ask reaches ≤¥26k (Buy) within 30 days",
+   "p": 0.4,
+   "type": "touch_below",
+   "price": 26000,
+   "by": "2026-11-15",
+   "made": "2026-10-15T14:05:14+09:00",
+   "status": "open",
+   "why": "31 days left",
+   "now": 28300,
+   "final": false,
+   "gap_pct": -8.1
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/568902",
+   "name": "ロケット団のミュウツーex SAR [SV10 125/098](拡張パック「ロケット団の栄光」)",
+   "text": "Lowest PSA10 ask reaches ≤¥86.8k (Buy) within 30 days",
+   "p": 0.4,
+   "type": "touch_below",
+   "price": 86800,
+   "by": "2026-11-15",
+   "made": "2026-10-15T14:05:14+09:00",
+   "status": "open",
+   "why": "31 days left",
+   "now": 96500,
+   "final": false,
+   "gap_pct": -10.1
+  },
+  {
    "url": "https://snkrdunk.com/apparels/387059",
    "name": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
    "text": "Reaches Buy (≤¥38k) within 3 months",
@@ -2930,6 +3008,36 @@
    "now": 65000,
    "final": false,
    "gap_pct": -15.4
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/568323",
+   "name": "ロケット団のファイヤーex SAR [SV10 124/098](拡張パック「ロケット団の栄光」)",
+   "text": "Lowest PSA10 ask reaches ≤¥22.6k (Definitely-buy) within 3 months",
+   "p": 0.25,
+   "type": "touch_below",
+   "price": 22600,
+   "by": "2027-01-15",
+   "made": "2026-10-15T14:05:14+09:00",
+   "status": "open",
+   "why": "92 days left",
+   "now": 28300,
+   "final": false,
+   "gap_pct": -20.1
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/568902",
+   "name": "ロケット団のミュウツーex SAR [SV10 125/098](拡張パック「ロケット団の栄光」)",
+   "text": "Lowest PSA10 ask reaches ≤¥82k (Definitely-buy) within 3 months",
+   "p": 0.35,
+   "type": "touch_below",
+   "price": 82000,
+   "by": "2027-01-15",
+   "made": "2026-10-15T14:05:14+09:00",
+   "status": "open",
+   "why": "92 days left",
+   "now": 96500,
+   "final": false,
+   "gap_pct": -15.0
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
