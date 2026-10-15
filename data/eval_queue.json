@@ -1,4 +1,10 @@
 {
  "about": "Cards added or restored by an Add card request, waiting for their first evaluation in the same price check (scripts/eval_queue.py). apply_analysis.py removes a card once a buy verdict is applied.",
- "queue": {}
+ "queue": {
+  "https://snkrdunk.com/apparels/568323": {
+   "name": "ロケット団のファイヤーex SAR [SV10 124/098](拡張パック「ロケット団の栄光」)",
+   "why": "added from #94",
+   "since": "2026-10-15T14:01:33+09:00"
+  }
+ }
 }
