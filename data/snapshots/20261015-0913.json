@@ -4241,11 +4241,11 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch — sales ¥26–28.5k, ask ¥27.4k, Buy from ¥24.5k",
-          "reasoning": "The lowest ask is ¥27,400, 5.4% above the ¥26,000 the old verdict was written at, and still above the ¥24,500 Buy line and the ¥28,500 ceiling is only 4% away. The last 20 sales ran ¥25.5k–28.5k and the latest ones sit at ¥27.5k–28.5k, so the sales range has moved up with the market. Depth is thin: only 8 of 20 listings are within 15% of the ask, and the rest start at ¥31.5k. The My-tier index rose 5.0% today. It would become a Buy if a listing appeared at ≤¥24.5k, and it would turn to Don't buy above ¥28.5k.",
-          "written": "2026-10-10T07:25:49+09:00"
+          "label": "Watch — ask ¥29.5k is above every tier; wait for the Oct 16 card set",
+          "reasoning": "The lowest ask rose to ¥29,500 (+7.7% since the verdict was written at ¥27,400), above the Buy ceiling of ¥28,500; the last 20 sales ran ¥27,400–¥29,499 (median ¥28,000) at about 5.2 a day, with 17 asks within 15% of the lowest, so there is depth. The My-tier index is +6.7% over 7 days and +5.0% over 30, and the slab premium is 3.00x against a 2.69x norm (+11.6%), which leaves less room for the price to hold if raw cards soften. The event rule is on: the 30th CELEBRATION set releases tomorrow (Oct 16), so wait for it. DIY cost is about ¥29.9k, so the ask is already at the cost of grading it yourself. This changes if the ask falls to ¥28,500 or lower.",
+          "written": "2026-10-15T09:14:07+09:00"
         },
-        "verdict_price_ref": 27400
+        "verdict_price_ref": 29500
       },
       "psa10_population": 40230,
       "psa10_gem_rate_pct": 86.6,
@@ -4519,27 +4519,11 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch — ¥27k, Buy from ¥24k",
-          "reasoning": "Sales and the lowest ask both sit around ¥27k after the bounce. Buy ≤¥24k is about 38% likely within 30 days and Definitely-buy ≤¥20k about 29% within 90 days. It has the highest hype exposure of your cards (still +22% vs the market over 12 months), so in a renewed fall it should drop faster than most.",
-          "predictions": [
-            {
-              "text": "A listing at ≤¥24k (Buy) within 30 days",
-              "p": 0.38,
-              "type": "touch_below",
-              "price": 24000,
-              "by": "2026-11-07"
-            },
-            {
-              "text": "A listing at ≤¥20k (Definitely buy) within 90 days",
-              "p": 0.29,
-              "type": "touch_below",
-              "price": 20000,
-              "by": "2027-01-06"
-            }
-          ],
-          "written": "2026-10-08T07:32:31+09:00"
+          "label": "Watch — ask ¥29.5k is above every tier; wait for the Oct 16 card set",
+          "reasoning": "The lowest ask rose to ¥29,500 (+9.3% since the verdict was written at ¥27,000), above the Buy ceiling of ¥28,500; the last 20 sales ran ¥26,666–¥29,000 (median ¥27,400) at about 5.2 a day, with 13 asks within 15% of the lowest, so it trades actively. The My-tier index is +6.7% over 7 days and +5.0% over 30, so the card moved with the market rather than ahead of it, and the slab premium is 2.74x against a 2.55x norm (+7.6%). The event rule is on: the 30th CELEBRATION set releases tomorrow (Oct 16), so wait to see where the market settles. DIY cost is about ¥28.0k, so the ask is only 5% above it. This changes if the ask falls back to ¥28,500 or lower, or sales slip below ¥26k.",
+          "written": "2026-10-15T09:14:07+09:00"
         },
-        "verdict_price_ref": 27000
+        "verdict_price_ref": 29500
       },
       "psa10_population": 35454,
       "psa10_gem_rate_pct": 89.0,
@@ -6743,27 +6727,11 @@
         },
         "verdict": {
           "tag": "watch",
-          "label": "Watch: wait until after the 30th CELEBRATION card set (Oct 16)",
-          "reasoning": "Lowest ask ¥46,000; the last 9 one-copy sales ran ¥41-45k (median ¥43k, about 0.2 a day, so slow), down from ¥54-57k in Jul-Aug, with 7 asks within 15% of the lowest. Today's ask sits in the Watch zone, and the event rule applies: a major release is 2 days away, so wait for it; the My-tier index is up 11.5% over 7 days (rally flag), so lines set before the rally fill less often. PSA population is unknown (no pop page found yet) and raw A is only a ¥30k ask with no sales, so the DIY floor can't be judged; the 2019 UR is full art and fits the display criteria. Limit-odds model (card not in it, pool volatility): ¥41.4k 38% in 30 days, ¥36.8k 31% in 90 days.",
-          "predictions": [
-            {
-              "text": "A listing at ≤¥41,400 (Buy) within 3 months",
-              "p": 0.43,
-              "type": "touch_below",
-              "price": 41400,
-              "by": "2027-01-12"
-            },
-            {
-              "text": "A listing at ≤¥36,800 (Definitely-buy) within 3 months",
-              "p": 0.31,
-              "type": "touch_below",
-              "price": 36800,
-              "by": "2027-01-12"
-            }
-          ],
-          "written": "2026-10-14T08:13:47+09:00"
+          "label": "Watch — ask ¥46k; wait for the Oct 16 card set",
+          "reasoning": "The lowest ask is ¥46,000 (+7.0% since the verdict was written at ¥43,000), still in the Watch zone above the ¥41,400 Buy tier; the last 8 sales in 30 days ran ¥41,000–¥45,000 (median ¥43,000) at only about 0.2 a day, with 7 asks within 15% of the lowest. The ask is above where the card has been selling, and trading is slow, so a higher ask doesn't mean a higher price. The event rule is on: a major release is tomorrow, so wait for it. PSA now lists 1,836 PSA 10s out of 2,454 graded (74.8% gem rate), but there is no raw sale to judge the DIY floor (raw A is a ¥30,000 ask only), and the card isn't on pokeca-chart. This changes if the ask falls to ¥41,400 or lower or sales move above ¥46k.",
+          "written": "2026-10-15T09:14:07+09:00"
         },
-        "verdict_price_ref": 43000
+        "verdict_price_ref": 46000
       }
     }
   ],
