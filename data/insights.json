@@ -123,6 +123,13 @@
      "url": "https://altema.jp/pokemoncard/vstaruniversesaihan"
     }
    ]
+  },
+  "https://snkrdunk.com/apparels/881431": {
+   "written": "2026-10-15T09:14:46+09:00",
+   "headline": "Ask halved to ¥80k on one listing: thin market, not a trend",
+   "text": "What's happening: The lowest PSA10 ask is ¥80,000, down from ¥150,000 a week ago, while the My-tier index is up 6.7%. Only one PSA10 listing exists, and there were 2 sales in the last 7 days (about 0.5 a day).\n\nWhy: Most likely the earlier ¥150k ask was a single seller's price and the new ¥80k is another seller's; with one listing the \"price\" is not a market. A search found no news of a reprint, and no usable price data for this card.\n\nFor you: The card has no buy tiers yet, so there is nothing to compare ¥80k with. Treat the move as noise until more listings appear.\n\nWatch: How many PSA10 listings there are at the next check, and whether sales at ¥80k or below repeat.",
+   "signals": "7d price -46.7% (¥150,000→¥80,000) vs My-tier index +6.7% = -53.4 pts",
+   "sources": []
   }
  }
 }
