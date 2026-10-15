@@ -13,11 +13,22 @@ It prints, in order:
 It also starts the run clock (scripts/runclock.py). Nothing is published or changed in the repo.
 """
 import json
+import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+# Local Claude Code runs (the menu bar widget sets PSA10_RUN=1) already work in the repo root. The procedures' repo-finding
+# prefix R=$(ls -d …); cd "$R" && can't be matched against .claude/settings.json's allow list (the $(…)), so every
+# command written with it stops an unattended run for a permission question. Print the procedure without it.
+LOCAL = os.environ.get("PSA10_RUN") == "1"
+PREFIX = re.compile(r'R=\$\(ls -d "\$HOME"/mnt/\*/psa10-tracker[^;]*;\s*cd "\$R"\s*(?:&&|;)\s*')
+
+
+def local(text):
+    return PREFIX.sub("", text).replace('"$R"/', "").replace("$R/", "") if LOCAL else text
 
 
 def sh(*cmd):
@@ -53,7 +64,12 @@ def main():
 
     doc = ROOT / "pricecheck" / ("FULL-CHECK.md" if mode == "full" else "QUICK-CHECK.md")
     print(f"\n======== {doc.relative_to(ROOT)} (follow it) ========\n")
-    print(doc.read_text(encoding="utf-8").rstrip("\n"))
+    if LOCAL:
+        print("LOCAL RUN (menu bar widget): the working directory is the repo root and was just pulled. Run every command "
+              "exactly as printed here, one plain command per Bash call: no R=$(ls -d …); cd \"$R\" && prefix, no $(…), no \"$HOME\". "
+              "When a step file or skill shows that prefix, leave it out. Those forms can't be pre-approved, so each one "
+              "stops the run for a permission question.\n")
+    print(local(doc.read_text(encoding="utf-8").rstrip("\n")))
     print("\n======== today's setup output ========\n")
     if mode == "full":
         print(sh("pricecheck/plan.py"))
