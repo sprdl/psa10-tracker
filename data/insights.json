@@ -75,16 +75,11 @@
    "sources": []
   },
   "https://snkrdunk.com/apparels/724996": {
-   "written": "2026-10-06T07:18:03+09:00",
-   "headline": "Sales ran at 36 a day, 2.7x last week, with the ask holding at ¥59k",
-   "text": "What's happening: Mega Gengar ex SAR (M2a) is the busiest card on the tracker: about 36 PSA10 sales a day against 13 a week ago. Sales are ¥56-58k and the lowest ask is ¥59,000 with a full, tight book (20 of 20 listings within 15%).\n\nWhy: Likely a sell-off meeting buyers at the replacement-cost floor (raw A about ¥34k) rather than news; my searches for a Mega Dream ex reprint or Gengar announcement found nothing dated October 2026. Heavy volume with no price drop is the first sign the floor is holding.\n\nFor you: Today's ask is just above Buy (¥58k) and your ¥50k limit; the correction rule means only ≤¥52k counts as a Buy. The graded-supply wave expected Nov-Feb is still the main downside risk.\n\nWatch: Whether volume stays high at ¥56-58k (a floor) or sales step down toward ¥52k.",
-   "signals": "PSA10 sales/day 35.6 vs 13.3 a week ago (+167%)",
-   "sources": [
-    {
-     "title": "MEGAドリームex reprint lottery roundup (last updated Apr 2026)",
-     "url": "https://tinpanblog.com/?p=9168"
-    }
-   ]
+   "written": "2026-10-15T09:14:50+09:00",
+   "headline": "Down 9% in a week, trading slowed 71%, ask near your limit",
+   "text": "What's happening: The lowest ask is ¥65,400, down 9.4% in a week while the My-tier index rose 6.7%. PSA10 sales fell to about 13 a day from about 46 a week ago, and the ask is within 2.2% of your ¥64,000 limit.\n\nWhy: Likely the post-launch rush for this set fading (it has been 11 months since release, so this is partly the pull-back after a spike); a search found no news of a reprint, so that part is a hypothesis.\n\nFor you: The ask is above the Buy tier of ¥60,000 and the ceiling of ¥68,000 is above it, so it is in the Buy zone only by the ceiling; the event rule is on (30th CELEBRATION releases Oct 16), so wait.\n\nWatch: Whether sales per day recover and whether the ask reaches ¥64,000.",
+   "signals": "7d price -9.4% (¥72,222→¥65,400) vs My-tier index +6.7% = -16.1 pts | lowest ask within 2.2% of your limit ¥64,000 | PSA10 sales/day 13.3 vs 45.7 a week ago (-71%)",
+   "sources": []
   },
   "https://snkrdunk.com/apparels/103080": {
    "written": "2026-10-14T19:24:39+09:00",
