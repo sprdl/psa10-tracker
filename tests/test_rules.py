@@ -126,6 +126,12 @@ class Rules(unittest.TestCase):
                 with self.subTest(snapshot=s["file"], card=c["name"][:20], what="widget"):
                     self.assertEqual(c["event"], c["widget_event"])
 
+    def test_no_buy_signal_for_owned(self):
+        """Cards you own get sell guidance only: never a Buy / Definitely-buy / limit signal in "Needs you"."""
+        for s in self.js:
+            with self.subTest(snapshot=s["file"]):
+                self.assertEqual(sorted(set(s["signals"]) & set(s["owned"])), [])
+
     def test_site_and_widget(self):
         for s in self.js:
             with self.subTest(snapshot=s["file"], rule="correction"):

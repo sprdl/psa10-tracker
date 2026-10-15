@@ -97,9 +97,10 @@ for (let k = Math.max(0, snaps.length - N); k < snaps.length; k++) {
     };
   });
   const cs0 = app.correctionState(), rl = app.rallyState();
+  const signals = app.computeSignals(cs).map((x) => x.card.url);
   out.push({ file: snaps[k].file, at: snap.collected_at_jst, cards,
     correction: { active: cs0.active, pct: r3(cs0.pct) }, widget_correction: { active: m.corr.on, pct: r3(m.corr.pct) },
     rally: { active: rl.active, pct: r3(rl.pct) }, widget_rally: { active: m.rally.on, pct: r3(m.rally.pct) },
-    events: app.activeEvents().map((e) => e.name) });
+    events: app.activeEvents().map((e) => e.name), signals, owned: [...new Set((hold.holdings || []).filter((h) => h.condition !== 'graded_other').map((h) => h.card_url))] });
 }
 process.stdout.write(JSON.stringify(out));

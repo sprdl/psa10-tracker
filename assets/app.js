@@ -1381,7 +1381,8 @@
   function computeSignals(cards) {
     const out = [];
     cards.forEach((card, i) => {
-      if (lowestAsk(card) == null) return;
+      // cards you own get sell guidance only (their sell signals come from sellState), never a buy signal
+      if (lowestAsk(card) == null || holdingsFor(card).length) return;
       const name = parseCardName(card.card_name_ja).short;
       if (limitHit(card)) {
         out.push({ key: card.url + '|limit', i, card, name, kind: 'limit', rank: 0,
@@ -6653,7 +6654,7 @@
   // widget twin, and start nothing. Never set in a browser.
   if (window.__PSA10_TEST__) {
     window.__PSA10_TEST__({ state, rawPrice, salesPerDay, heatOf, insightsFor, tierReview, touchOdds, correctionState, rallyState,
-      activeEvents, eventFor, displayTagFor, sellState, limitHit, getRep, lowestAsk, cardAgeMonths, salesMedianOf, renderPsaBacklog, psaBacklogLine });
+      activeEvents, eventFor, displayTagFor, sellState, limitHit, computeSignals, getRep, lowestAsk, cardAgeMonths, salesMedianOf, renderPsaBacklog, psaBacklogLine });
     return;
   }
   init();
