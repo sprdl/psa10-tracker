@@ -474,6 +474,11 @@
       "file": "20261015-1405.json",
       "collected_at_jst": "2026-10-15T14:05:14+09:00",
       "check_mode": "quick"
+    },
+    {
+      "file": "20261015-2205.json",
+      "collected_at_jst": "2026-10-15T22:05:50+09:00",
+      "check_mode": "quick"
     }
   ]
 }
