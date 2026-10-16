@@ -399,7 +399,11 @@
   // Grails (data/grails.json) are priced by every check like any tracked card, but they live on their own page:
   // they're split off here, so the Overview, collection, planner, tables and signals never see them.
   // state.grailCards / state.grailPrev hold them for the Grails page and the card page.
+  // Bumped whenever the shown data changes (a new bundle, another check picked, a removal): the memoized
+  // computations below (portfolioSeries, recapData, insightsFor, heatOf) are only reused within one epoch.
+  let dataEpoch = 0;
   function setShownData() {
+    dataEpoch++;
     const cur = withoutRemoved(state.rawCur), prev = withoutRemoved(state.rawPrev);
     const g = state.grails || {};
     const split = (d) => {
@@ -1828,11 +1832,15 @@
 
   // Timestamps mix JST ("…+09:00") and UTC ("…Z") strings, so compare real times, never strings.
   function jstDay(ts) { return new Date(Date.parse(ts) + 9 * 3600000).toISOString().slice(0, 10); }
+  let mtMemo = { epoch: -1, m: new Map() };
   function myTierAt(ts) {
     const ser = (state.customIndex && state.customIndex.series) || [];
     const day = jstDay(ts);
+    if (mtMemo.epoch !== dataEpoch) mtMemo = { epoch: dataEpoch, m: new Map() };
+    if (mtMemo.m.has(day)) return mtMemo.m.get(day);
     let hit = null;
     for (const e of ser) if (e.d <= day) hit = e;
+    mtMemo.m.set(day, hit);
     return hit;
   }
   function pokecaAt(ts) {
@@ -1881,12 +1889,21 @@
   }
 
   // Card price change vs the market over a window, from data/history.json.
+  // history.json entries with their times parsed once (they're in time order); rebuilt when a new history arrives
+  let histTimes = { hist: null, t: [] };
+  function histT() {
+    if (histTimes.hist !== state.hist) histTimes = { hist: state.hist, t: ((state.hist && state.hist.snapshots) || []).map((e) => Date.parse(e.d)) };
+    return histTimes.t;
+  }
   function cardPriceAt(card, ts) {
-    const snaps = (state.hist && state.hist.snapshots) || [];
-    let v = null;
+    const snaps = (state.hist && state.hist.snapshots) || [], times = histT();
     const t = Date.parse(ts);
-    for (const e of snaps) if (Date.parse(e.d) <= t && e.p && e.p[card.url]) v = { d: e.d, price: e.p[card.url][0] };
-    return v;
+    for (let i = snaps.length - 1; i >= 0; i--) {
+      if (times[i] > t) continue;
+      const e = snaps[i];
+      if (e.p && e.p[card.url]) return { d: e.d, price: e.p[card.url][0] };
+    }
+    return null;
   }
 
   function vsMarketHtml(card) {
@@ -1925,7 +1942,14 @@
   const INSIGHT = { gap7: 8, gap30: 12, move: 8, askVsSales: 8, heat: 50 };
   function median(a) { const s = a.slice().sort((x, y) => x - y); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; }
   // Same numbers as the "Vs. the market" box (vsMarketHtml): history.json prices, index since that day.
+  const gapMemo = new WeakMap();
   function marketGap(card, days) {
+    let m = gapMemo.get(card);
+    if (!m || m.epoch !== dataEpoch) gapMemo.set(card, m = { epoch: dataEpoch });
+    if (!(days in m)) m[days] = marketGapCalc(card, days);
+    return m[days];
+  }
+  function marketGapCalc(card, days) {
     const now = refTime();
     const cur = cardPriceAt(card, now);
     const past = cardPriceAt(card, new Date(new Date(now).getTime() - days * 86400000).toISOString());
@@ -1939,7 +1963,18 @@
     const rows = (((card.grades || {}).psa10 || {}).recent_completed_sales || []).map((s) => ({ p: s.price, age: saleAgeDays(s.when, ref) })).filter((s) => s.age != null);
     return { recent: rows.filter((s) => s.age <= days).map((s) => s.p), before: rows.filter((s) => s.age > days).map((s) => s.p), all: rows.map((s) => s.p) };
   }
+  // per card object (a new snapshot means new objects); the key covers what changes without new data: your limit,
+  // sell target and whether you own the card
+  const insightMemo = new WeakMap();
   function insightsFor(card) {
+    const key = `${dataEpoch}|${getLimit(card)}|${getTarget(card)}|${ownsCard(card)}`;
+    const hit = insightMemo.get(card);
+    if (hit && hit.key === key) return hit.v;
+    const v = insightsForCalc(card);
+    insightMemo.set(card, { key, v });
+    return v;
+  }
+  function insightsForCalc(card) {
     if (!hasMarket(card)) return [];
     const out = [];
     const name = parseCardName(card.card_name_ja).short;
@@ -2148,7 +2183,13 @@
     return out;
   }
 
+  const recapMemo = new Map();
   function recapData(W) {
+    const key = `${dataEpoch}|${state.holdBasis}|${W}|${Math.floor(Date.now() / 60000)}`;
+    if (!recapMemo.has(key)) { if (recapMemo.size > 20) recapMemo.clear(); recapMemo.set(key, recapDataCalc(W)); }
+    return recapMemo.get(key);
+  }
+  function recapDataCalc(W) {
     const E = W + WEEK_MS;
     const snaps = ((state.hist && state.hist.snapshots) || []).map((e) => ({ ...e, t: Date.parse(e.d) })).sort((a, b) => a.t - b.t);
     const inWeek = snaps.filter((s) => s.t >= W && s.t < E);
@@ -2812,6 +2853,7 @@
     const { view, arg } = parseRoute();
     document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== view; });
     renderLazy(view);
+    if (view === 'holdings') { const pf = document.getElementById('pf-history'); if (pf && pf._stale) drawPortfolioChart(); }
     const PARENT = { compare: 'collection', duel: 'planner', combos: 'planner', rate: 'planner', scored: 'record' };
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
@@ -3026,16 +3068,15 @@
     renderRecapCard();
     renderInbox(cards);
     els.notesBody.textContent = data.notes || '';
-    renderPortfolio(state.holdings, cards);
     renderOverviewList(cards);
     renderDrawer();
-    renderCollection(cards);
-    renderWatchPanel(cards.filter((c) => !hasMarket(c)), prevCards);
-    renderPlanner(cards);
-    renderGrails();
     // Pages that aren't on screen are built when first opened, or in the background once the
     // browser is idle, so the first paint doesn't wait for them.
-    lazyPending = { record: renderTrackRecord, scout: renderScout, predict: renderPredict, stories: renderStories, tables: () => renderTables(cards, prevCards) };
+    lazyPending = {
+      holdings: () => renderPortfolio(state.holdings, cards), collection: () => renderCollection(cards),
+      watching: () => renderWatchPanel(cards.filter((c) => !hasMarket(c)), prevCards), planner: () => renderPlanner(cards), grails: renderGrails,
+      record: renderTrackRecord, scout: renderScout, predict: renderPredict, stories: renderStories, tables: () => renderTables(cards, prevCards),
+    };
     updateCounts();
     applyRoute();
     trimImages(document);
@@ -3151,7 +3192,7 @@
     sortState = { key, dir: dir != null ? dir : (sortState.key === key ? -sortState.dir : SORTS[key].dir) };
     store.set('psa10.sort', sortState);
     syncSortUi();
-    if (state.currentData) { renderOverviewList(state.currentData.cards || []); renderCollection(state.currentData.cards || []); }
+    if (state.currentData) { renderOverviewList(state.currentData.cards || []); if (!lazyPending.collection) renderCollection(state.currentData.cards || []); }
   }
   function syncSortUi() {
     document.querySelectorAll('.wl-head [data-sort]').forEach((b) => {
@@ -3604,13 +3645,29 @@
   }
   const PFH_KEY = 'psa10.pfh';
   const PFH_CATS = { total: 'Total', singles: 'Singles', sealed: 'Sealed', pulls: 'Pulls' };
+  // Holdings value over time: used by Your money, the weekly recap and the Holdings chart, so computed once per
+  // data epoch and value basis.
+  let pfsMemo = null;
   function portfolioSeries() {
+    const key = dataEpoch + '|' + state.holdBasis;
+    if (pfsMemo && pfsMemo.key === key) return pfsMemo.v;
+    const v = portfolioSeriesCalc();
+    pfsMemo = { key, v };
+    return v;
+  }
+  function portfolioSeriesCalc() {
     const snaps = ((state.hist && state.hist.snapshots) || []).map((e) => ({ t: Date.parse(e.d), p: e.p || {}, r: e.r || {} })).sort((a, b) => a.t - b.t);
     const dayT = (d) => Date.parse((d || '').slice(0, 10) + 'T12:00:00+09:00');
     const cards = (state.currentData && state.currentData.cards) || [];
     const tracked = new Set(cards.map((c) => c.url));
     const phist = (state.portHist || []).map((x) => ({ t: Date.parse(x.d.slice(0, 10) + 'T00:00:00+09:00'), p: x.p || {} })).sort((a, b) => a.t - b.t);   // a day's reading counts from the start of that day, so today's last point equals today's price
-    const lastAt = (arr, T, pick) => { let v = null; for (const x of arr) { if (x.t > T) break; const y = pick(x); if (y != null) v = y; } return v; };
+    // the last non-null reading at or before T: binary search for T, then step back past entries without one
+    const lastAt = (arr, T, pick) => {
+      let lo = 0, hi = arr.length;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (arr[mid].t <= T) lo = mid + 1; else hi = mid; }
+      for (let i = lo - 1; i >= 0; i--) { const y = pick(arr[i]); if (y != null) return y; }
+      return null;
+    };
     const sales = state.holdBasis === 'sales';   // "Recent sales": the sales medians history.json keeps per check ([2] PSA10, [3] raw A)
     const psaAt = (url, T) => lastAt(snaps, T, (x) => (sales && x.r[url] && x.r[url][2]) || (x.p[url] ? x.p[url][0] : null));
     const rawAt = (url, T) => lastAt(snaps, T, (x) => (sales && x.r[url] && x.r[url][3]) || (x.r[url] && (x.r[url][4] || x.r[url][1])) || null); // [4] = raw A-rank price (rawPrice rule), [1] = ask in older entries
@@ -3684,7 +3741,8 @@
       } });
     }
     // Benchmark: the same money put into the My-tier index on each purchase day (and taken out on a sale day).
-    const lvl = (T) => { const e = myTierAt(new Date(T).toISOString()); return e ? e.level : null; };
+    const lvlMemo = new Map();
+    const lvl = (T) => { if (!lvlMemo.has(T)) { const e = myTierAt(new Date(T).toISOString()); lvlMemo.set(T, e ? e.level : null); } return lvlMemo.get(T); };
     const pts = times.map((T) => {
       const o = { t: T, spent: { total: 0, singles: 0, sealed: 0, pulls: 0 }, worth: { total: 0, singles: 0, sealed: 0, pulls: 0 }, bench: { total: 0, singles: 0, sealed: 0, pulls: 0 } };
       for (const it of items) {
@@ -3701,6 +3759,11 @@
   function drawPortfolioChart() {
     const box = document.getElementById('pf-history');
     if (!box) return;
+    // Holdings hidden: measuring the box would force a layout of the whole page for a 0-width chart. Draw when
+    // Holdings is opened instead (applyRoute).
+    const sec = box.closest('.view');
+    if (sec && sec.hidden) { box._stale = true; return; }
+    box._stale = false;
     const ser = portfolioSeries();
     if (!ser || !state.holdings.length && !(state.sealed || []).length && !(state.sold || []).length) { box.hidden = true; box.innerHTML = ''; return; }
     box.hidden = false;
@@ -4000,7 +4063,15 @@
   function rateTxt(x) { return x ? fmtRate(x.rate) + (x.sat ? '+' : '') : '—'; }
   function heatLevel(rate) { return rate == null ? null : HEAT_LEVELS.find(([min]) => rate >= min); }
   function fmtRate(r) { return r == null ? '—' : r >= 10 ? String(Math.round(r)) : r >= 1 ? r.toFixed(1) : r.toFixed(2); }
+  const heatMemo = new WeakMap();
   function heatOf(card) {
+    const hit = heatMemo.get(card);
+    if (hit && hit.epoch === dataEpoch) return hit.v;
+    const v = heatOfCalc(card);
+    heatMemo.set(card, { epoch: dataEpoch, v });
+    return v;
+  }
+  function heatOfCalc(card) {
     const ref = (state.currentData && state.currentData.collected_at_jst) || new Date().toISOString();
     const g = card.grades || {};
     const psa = salesPerDay((g.psa10 || {}).recent_completed_sales, ref);
@@ -6000,9 +6071,12 @@
       if (!cfg || box._mounted) return;
       box._mounted = true;
       const draw = () => (cfg.type === 'bars' ? drawBarChart : cfg.type === 'multi' ? drawMultiChart : drawLineChart)(box, cfg);
-      let lastW = box.clientWidth;
+      // a chart in a closed tab: don't measure it (that forces a layout of the page for a 0 width); the
+      // ResizeObserver draws it when its tab opens
+      const hidden = !!box.closest('[hidden]');
+      let lastW = hidden ? 0 : box.clientWidth;
       if (window.ResizeObserver) new ResizeObserver(() => { const w = box.clientWidth; if (w && Math.abs(w - lastW) > 2) { lastW = w; draw(); } }).observe(box);
-      if (box.clientWidth) draw();
+      if (!hidden && lastW) draw();
     });
   }
   function yenShort(v) { return v >= 1e6 ? '¥' + +(v / 1e6).toFixed(2) + 'M' : v >= 1e4 ? '¥' + +(v / 1e3).toFixed(1) + 'k' : fmtYen(v); }
@@ -6213,7 +6287,7 @@
       : `<button type="button" class="btn" data-cmp="start">⇄ Compare two cards</button>`) + ownedToggle;
     bar.querySelector('[data-own-filter]').addEventListener('change', (e) => {
       store.set('psa10.ownedOnly', e.target.checked);
-      renderCollection((state.currentData && state.currentData.cards) || []);
+      if (!lazyPending.collection) renderCollection((state.currentData && state.currentData.cards) || []);
     });
     bar.querySelectorAll('[data-cmp]').forEach((b) => b.addEventListener('click', () => {
       const act = b.dataset.cmp;
@@ -6225,14 +6299,14 @@
         location.hash = '#/compare/' + ids.join(',');
         return;
       }
-      renderCollection((state.currentData && state.currentData.cards) || []);
+      if (!lazyPending.collection) renderCollection((state.currentData && state.currentData.cards) || []);
     }));
   }
   function togglePick(url) {
     const i = state.cmpPick.indexOf(url);
     if (i >= 0) state.cmpPick.splice(i, 1);
     else { state.cmpPick.push(url); if (state.cmpPick.length > 2) state.cmpPick.shift(); }
-    renderCollection((state.currentData && state.currentData.cards) || []);
+    if (!lazyPending.collection) renderCollection((state.currentData && state.currentData.cards) || []);
   }
 
   // ----- head to head -----
@@ -6689,7 +6763,7 @@
       if (stuck.length) parts.push(`<a href="${escapeAttr(stuck[0].html_url)}" target="_blank" rel="noopener">A purchase couldn't be recorded. See why ↗</a>`);
       if (!parts.length) return;
       [el, document.getElementById('card-requests-m')].forEach((x) => { if (x) { x.innerHTML = parts.join(' · '); x.hidden = false; } });
-      if (state.currentData) renderCollection(state.currentData.cards || []);
+      if (state.currentData && !lazyPending.collection) renderCollection(state.currentData.cards || []);
     } catch (e) { /* offline or blocked — the button still works */ }
   }
 
