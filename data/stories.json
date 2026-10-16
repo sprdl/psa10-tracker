@@ -852,6 +852,30 @@
    ],
    "confidence": "medium",
    "written": "2026-10-16T21:29:12+09:00"
+  },
+  "https://snkrdunk.com/apparels/568902": {
+   "illustrator": "Iwamoto05",
+   "illustrator_ja": null,
+   "art": "Team Rocket's Mewtwo ex in a brooding Special Illustration Rare scene tied to Giovanni, the Team Rocket leader.",
+   "story": "It is the Team Rocket-themed counterpart to the Mewtwo ex printed in other sets, and one of the headline chase cards of its set.",
+   "set": "Glory of Team Rocket (SV10) is the Japanese set whose English counterpart, Destined Rivals, released on May 30, 2025.",
+   "trivia": [
+    "The English counterpart is the Special Illustration Rare numbered 231/182 in Destined Rivals.",
+    "Bulbapedia credits other prints of this card to aky CG Works, while the Special Illustration Rare is credited to Iwamoto05."
+   ],
+   "english": "Team Rocket's Mewtwo ex 231/182 (Destined Rivals)",
+   "sources": [
+    {
+     "title": "Bulbapedia: Team Rocket's Mewtwo ex (Destined Rivals 81)",
+     "url": "https://bulbapedia.bulbagarden.net/wiki/Team_Rocket's_Mewtwo_ex_(Destined_Rivals_81)"
+    },
+    {
+     "title": "Video Games Chronicle: Destined Rivals secret rares like Giovanni's Mewtwo",
+     "url": "https://www.videogameschronicle.com/news/pokemon-destined-rivals-secret-rare-cards-like-giovannis-mewtwo-revealed/"
+    }
+   ],
+   "confidence": "medium",
+   "written": "2026-10-16T21:29:12+09:00"
   }
  }
 }
