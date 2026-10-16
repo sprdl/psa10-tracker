@@ -470,7 +470,8 @@ def main():
         dest = snapshots_dir / filename
         suffix += 1
 
-    dest.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    # compact: indentation was ~half of every snapshot's bytes (2026-10-16); nobody reads these by eye
+    dest.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"Saved {dest.relative_to(root)}")
 
     manifest["snapshots"].append({

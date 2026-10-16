@@ -274,9 +274,11 @@
     state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
     if (fresh) { reconcileLimits(); reconcileTargets(); } // only against fresh data, never a cached copy
 
+    // the site upload holds only the last SITE_DAYS of checks (scripts/site_bundle.py); older ones stay in the repo
+    const pickFrom = siteFirstIndex(snaps);
     els.snapshotSelects.forEach((sel) => {
       sel.innerHTML = '';
-      for (let i = snaps.length - 1; i >= 0; i--) {
+      for (let i = snaps.length - 1; i >= pickFrom; i--) {
         const opt = document.createElement('option');
         opt.value = String(i);
         opt.textContent = fmtDateShort(snaps[i].collected_at_jst) + (snaps[i].check_mode === 'quick' ? ' · quick' : '');
@@ -348,6 +350,13 @@
     if (changed) cacheWrite(freshRaw);
   }
 
+  const SITE_DAYS = 30;   // keep in step with scripts/site_bundle.py
+  function siteFirstIndex(snaps) {
+    if (!snaps.length) return 0;
+    const cut = Date.parse(snaps[snaps.length - 1].collected_at_jst) - SITE_DAYS * 864e5;
+    const i = snaps.findIndex((x) => Date.parse(x.collected_at_jst) >= cut);
+    return i < 0 ? 0 : i;
+  }
   let loadToken = 0;
   async function loadIndex(idx) {
     const snaps = state.manifest.snapshots, token = ++loadToken;
@@ -355,7 +364,7 @@
     try {
       [cur, prev] = await Promise.all([
         fetchJSON('data/snapshots/' + snaps[idx].file),
-        idx > 0 ? fetchJSON('data/snapshots/' + snaps[idx - 1].file) : null,
+        idx > 0 ? fetchJSON('data/snapshots/' + snaps[idx - 1].file).catch(() => null) : null,   // may be past the site's window
       ]);
     } catch (e) {
       if (token === loadToken) els.snapshotSelects.forEach((o) => { o.value = String(state.currentIndex); });   // stay on what's shown
@@ -5845,13 +5854,14 @@
   // Bounds the worst-case fetch volume as the archive grows over months/years of
   // 2x/day checks — plenty of runway for a multi-month trend without ever
   // downloading the entire history on every card expand.
-  const HISTORY_MAX_SNAPSHOTS = 200;
+  const HISTORY_MAX_SNAPSHOTS = 20;   // fallback only (history.json failed): the site holds ~30 days of checks
   let historySnapshotsPromise = null;
 
   function loadAllSnapshotsForHistory() {
     if (historySnapshotsPromise) return historySnapshotsPromise;
     const snaps = state.manifest.snapshots || [];
-    const capped = snaps.length > HISTORY_MAX_SNAPSHOTS ? snaps.slice(snaps.length - HISTORY_MAX_SNAPSHOTS) : snaps;
+    const recent = snaps.slice(siteFirstIndex(snaps));
+    const capped = recent.length > HISTORY_MAX_SNAPSHOTS ? recent.slice(recent.length - HISTORY_MAX_SNAPSHOTS) : recent;
     historySnapshotsPromise = Promise.all(
       capped.map((s) => fetchJSON('data/snapshots/' + s.file).catch(() => null))
     ).then((results) => results.filter(Boolean));

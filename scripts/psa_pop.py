@@ -93,7 +93,7 @@ def apply(found, root=ROOT, push=True):
     print("\n".join(done) or "nothing to apply")
     if not done:
         return
-    path.write_text(json.dumps(snap, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(snap, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")   # compact, like add_snapshot.py
     if not push:
         return
     run("add", str(path.relative_to(root)))

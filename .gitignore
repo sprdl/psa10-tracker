@@ -11,3 +11,4 @@ __pycache__/
 
 # Claude Code: widget/install.sh links settings and skills here from widget/claude/; local approvals
 .claude/
+_site/

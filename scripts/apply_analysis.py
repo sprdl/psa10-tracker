@@ -354,7 +354,7 @@ def main():
         print("\nDry run — nothing written.")
         return
 
-    snap_path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    snap_path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")   # compact, like add_snapshot.py
     rel = str(snap_path.relative_to(root))
     sys.path.insert(0, str(root / "scripts"))
     import build_history
