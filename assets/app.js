@@ -519,6 +519,9 @@
   const PSA_STD = { fee: 9980, ship: 1900, handling: 550, cap: 150000 };
   // Priority: ¥2,000 more than Standard, declared value up to ¥250,000 (Philipp, 2026-10-12). Above that only Express.
   const PSA_PRIO = { fee: 11980, cap: 250000 };
+  const PSA_EXP = { fee: 29980 };   // Express: no declared-value limit known
+  // the grading fee per service, the one table everything uses (same values as GRADE_FEES in scripts/log_purchase.py)
+  const PSA_FEES = { standard: PSA_STD.fee, priority: PSA_PRIO.fee, express: PSA_EXP.fee };
   // The cheapest PSA service whose declared-value limit covers a card worth `value` (its PSA10 price).
   function psaTierFor(value) { return !value || value <= PSA_STD.cap ? 'standard' : value <= PSA_PRIO.cap ? 'priority' : 'express'; }
   function psaExtras(v) { return v == null || v === 2000 ? PSA_STD.ship + PSA_STD.handling : v; }
@@ -556,7 +559,7 @@
     // the service follows the declared value (the PSA10 price): Standard to ¥150k, Priority to ¥250k, else Express
     const tierKey = psaTierFor(repPrice);
     // an evaluation's grading_fee_jpy overrides, except the old Standard default (9980), which follows the tier
-    const gradingFee = a && a.grading_fee_jpy != null && a.grading_fee_jpy !== PSA_STD.fee ? a.grading_fee_jpy : tierKey === 'standard' ? PSA_STD.fee : tierKey === 'priority' ? PSA_PRIO.fee : 29980;
+    const gradingFee = a && a.grading_fee_jpy != null && a.grading_fee_jpy !== PSA_STD.fee ? a.grading_fee_jpy : PSA_FEES[tierKey] || PSA_EXP.fee;
     const shipping = psaExtras(a && a.shipping_insurance_jpy);
     const gemRate = card.psa10_gem_rate_pct / 100;
     if (!gemRate) return null;
@@ -1210,13 +1213,12 @@
   // "Bought it" / "Remove" open a pre-filled GitHub issue form; .github/workflows/purchases.yml
   // turns it into a holdings.json change and redeploys the site. Nothing is stored here.
   const REPO_URL = 'https://github.com/sprdl/psa10-tracker';
-  function todayJST() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
   // Grading + shipping for a copy bought raw: the fee of the PSA service it was (or will be) sent at, else the stored
   // fee, else Standard, plus shipping & handling. Same rule as grading_cost() in scripts/log_purchase.py.
   // With no service saved, a card whose PSA10 price is above Standard's ¥150k declared-value limit needs Priority or
   // Express (psaTierFor), whatever fee was stored when it was bought.
   function gradingCostOf(h) {
-    const fees = { standard: PSA_STD.fee, priority: PSA_PRIO.fee, express: 29980 };
+    const fees = PSA_FEES;
     let auto = null;
     if (!fees[h.tier] && h.condition === 'raw_to_grade' && !h.sent) {   // once sent, the stored fee is what was paid
       const c = [...((state.currentData && state.currentData.cards) || []), ...(state.grailCards || [])].find((x) => x.url === h.card_url);
@@ -1273,7 +1275,7 @@
         <div><div class="bd-title">Log a purchase</div><div class="bd-sub">${escapeHtml(parseCardName(card.card_name_ja).short)} · ${escapeHtml(parseCardName(card.card_name_ja).code)}</div></div></div>
       <label class="bd-row"><span>Price paid (¥)</span><input name="price" type="number" inputmode="numeric" min="1" step="1" required value="${ask || ''}"></label>
       <div class="bd-hint">${ask ? `Today's lowest SNKRDUNK ask is ${fmtYen(ask)}; change it to what you actually paid.` : ''}</div>
-      <label class="bd-row"><span>Date</span><input name="date" type="date" required value="${todayJST()}" max="${todayJST()}"></label>
+      <label class="bd-row"><span>Date</span><input name="date" type="date" required value="${todayJst()}" max="${todayJst()}"></label>
       <div class="bd-row"><span>Condition</span><div class="bd-seg">
         <label><input type="radio" name="condition" value="slab" checked> PSA10 slab</label>
         <label><input type="radio" name="condition" value="raw"> Raw, I'll grade it</label></div></div>
@@ -1290,7 +1292,7 @@
       e.preventDefault();
       const price = Math.round(Number(f.price.value));
       if (!(price > 0)) { f.price.focus(); return; }
-      const url = boughtFormUrl(card, { price, date: f.date.value || todayJST(), condition: f.condition.value, fee: Number(f.fee.value) || 0, notes: f.notes.value.trim() });
+      const url = boughtFormUrl(card, { price, date: f.date.value || todayJst(), condition: f.condition.value, fee: Number(f.fee.value) || 0, notes: f.notes.value.trim() });
       window.open(url, '_blank', 'noopener');
       dlg.close();
     });
@@ -2574,7 +2576,7 @@
     const list = scoutList(), N = list.length;
     if (!N) return { picks: [], list, n: 0 };
     const other = store.get('psa10.scout.other', false), key = other ? 'a' : 'p';
-    const daily = (state.scout && state.scout.daily) || {}, today = todayJST();
+    const daily = (state.scout && state.scout.daily) || {}, today = todayJst();
     const by = new Map(list.map((r) => [r.slug, r]));
     const picks = ((daily[today] || {})[key] || []).map((sl) => by.get(sl)).filter(Boolean);
     if (picks.length < SCOUT_DAILY) {
@@ -3253,7 +3255,7 @@
   // fee is spent: it only shows the expected result and the return date.
   // cap = the highest declared value (a card's value after grading) the service accepts; only Standard's is known
   // (pricecheck/references/state.md), the others are null until someone reads them off PSA Japan's order screen.
-  const GRADE_TIERS = { standard: { label: 'Standard', fee: 9980, days: 100, cap: 150000 }, priority: { label: 'Priority', fee: PSA_PRIO.fee, days: 80, cap: PSA_PRIO.cap }, express: { label: 'Express', fee: 29980, days: 25, cap: null } };
+  const GRADE_TIERS = { standard: { label: 'Standard', fee: PSA_STD.fee, days: 100, cap: PSA_STD.cap }, priority: { label: 'Priority', fee: PSA_PRIO.fee, days: 80, cap: PSA_PRIO.cap }, express: { label: 'Express', fee: PSA_EXP.fee, days: 25, cap: null } };
   const GRADE_MARGIN = 0.10;
   function addBusinessDays(iso, n) {
     const d = new Date(iso + 'T12:00:00Z');
@@ -3382,7 +3384,7 @@
     const maxDecl = Math.max(0, ...picked.map((c) => (c.card && getRep(c.card)) || 0));
     const autoKey = psaTierFor(maxDecl);
     const tierKey = st.tier === 'auto' ? autoKey : st.tier, tier = GRADE_TIERS[tierKey];
-    const date = st.date || todayJST();
+    const date = st.date || todayJst();
     const slash = (d) => String(d).replace(/-/g, '/');   // shown as YYYY/MM/DD; stored and sent to the form as YYYY-MM-DD
     const calc = picked.map((c) => Object.assign({}, c, { k: submitCalc(c, tierKey) }));
     const priced = calc.filter((c) => !c.k.missing);
@@ -4261,12 +4263,7 @@
     return `<span class="${cls} ${dirClass(c.pct)}" title="${fmtYen(c.old)} on ${c.from}">${fmtPct(c.pct)}</span>`;
   }
 
-  function offPeakText(card) {
-    const peak = card.analysis && card.analysis.peak;
-    if (!peak || !peak.price) return '—';
-    const pct = computeOffPeakPct(peak.price, getRep(card));
-    return `${pct >= 0 ? '−' : '+'}${Math.abs(pct).toFixed(0)}%`;
-  }
+
 
   // Trend column: the 7-day change, with the last check and 30 days underneath.
   function trendCell(card) {
@@ -4601,7 +4598,7 @@
         <div class="cd-stat"><div class="lbl">vs. buying the slab</div><div class="val ${diy.delta >= 0 ? 'neg' : 'pos'}">${diy.delta >= 0 ? '+' : '−'}${fmtYen(Math.abs(diy.delta))}</div></div>
       </div>
       <p class="cd-note">Raw A-rank price = ${diy.rawInfo.src === 'sales' ? `median of the last ${diy.rawInfo.n} sales in ${RAW_SALES_DAYS} days, because the cheapest listing (${fmtYen(diy.rawInfo.ask)}) is below what copies actually sell for` : diy.rawInfo.med != null ? `the lowest ask (recent sales median ${fmtYen(diy.rawInfo.med)} is lower, and you can't buy below the ask)` : `the lowest ask (fewer than ${RAW_SALES_MIN} sales in ${RAW_SALES_DAYS} days)`}.</p>
-      <p class="cd-note">Expected DIY cost = (raw ¥${Math.round(diy.rawPrice).toLocaleString()} + ${diy.shipping === PSA_STD.ship + PSA_STD.handling && diy.gradingFee === { standard: PSA_STD.fee, priority: PSA_PRIO.fee, express: 29980 }[diy.tierKey]
+      <p class="cd-note">Expected DIY cost = (raw ¥${Math.round(diy.rawPrice).toLocaleString()} + ${diy.shipping === PSA_STD.ship + PSA_STD.handling && diy.gradingFee === PSA_FEES[diy.tierKey]
         ? `${diy.tierLabel} ¥${(diy.gradingFee + PSA_STD.ship + PSA_STD.handling).toLocaleString()}: grading ¥${diy.gradingFee.toLocaleString()} + insurance &amp; shipping ¥${PSA_STD.ship.toLocaleString()} + handling ¥${PSA_STD.handling.toLocaleString()}`
         : `grading ¥${diy.gradingFee.toLocaleString()} + shipping &amp; fees ¥${diy.shipping.toLocaleString()}`}) ÷ ${card.psa10_gem_rate_pct}% gem rate.</p>
       ${diy.tierKey === 'priority' ? `<p class="cd-note">A PSA10 is worth ${fmtYen(rep)} here, above Standard's ${fmtYen(PSA_STD.cap)} declared-value limit, so this uses PSA Priority (¥2,000 more, up to ${fmtYen(PSA_PRIO.cap)}, about 80 business days).</p>` : diy.tierKey === 'express' ? `<p class="cd-note warn">A PSA10 is worth ${fmtYen(rep)} here, above Priority's ${fmtYen(PSA_PRIO.cap)} limit, so this uses PSA Express (¥29,980); check PSA's declared-value limits for this tier.</p>` : ''}
@@ -4810,7 +4807,6 @@
   }
   const gChg = (c, lbl) => (c ? `<span class="${dirClass(c.pct)}">${c.pct === 0 ? '±0%' : fmtPct(c.pct)}</span> <small>${lbl}</small>` : `<span class="muted">—</span> <small>${lbl}</small>`);
   function grailChanges(g) { return `<span class="gr-chg">${gChg(g.c1, 'last check')}${gChg(g.c7, '7d')}${gChg(g.c30, '30d')}</span>`; }
-  function grailTargetLbl(g) { return g.targetSrc === 'limit' ? 'Your target' : 'Buy line'; }
   function grailOddsTxt(g) {
     if (g.atTarget) return 'At target now';
     if (!g.odds || g.odds.reached) return '—';

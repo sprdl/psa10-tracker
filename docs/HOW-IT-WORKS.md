@@ -184,7 +184,7 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | File | Written by | Read by | What's inside |
 |---|---|---|---|
 | `manifest.json` | `add_snapshot.py` | site, scripts, widget | `{"snapshots": [{"file", "collected_at_jst", "check_mode"}]}`, oldest first |
-| `snapshots/YYYYMMDD-HHMM.json` | `add_snapshot.py` (via `full_update.py` / `quick_update.py`), `apply_analysis.py`, `email_price_alert.py` | site, widget | `collected_at_jst`, `check_mode`, `notes`, `cards[]`, `pokeca_chart_index`, optional `banners`, `market_context` |
+| `snapshots/YYYYMMDD-HHMM.json` | `add_snapshot.py` (via `full_update.py` / `quick_update.py`), `apply_analysis.py` | site, widget | `collected_at_jst`, `check_mode`, `notes`, `cards[]`, `pokeca_chart_index`, optional `banners`, `market_context` |
 | `history.json` *generated* | `build_history.py` (on every publish) | site: price history, 7D/30D, heat trend, tier review, slab premium line, value chart, holding timing, supply & demand charts; widget; `predict.py`, `outliers.py`, `review_due.py` | per snapshot: `d` time, `m` mode, `i` pokeca index, `p {url: [price, confirmed]}`, `h {url: [PSA10/day, raw/day]}`, `r {url: [PSA10 ask, raw ask, PSA10 sales median, raw sales median, raw A-rank price]}`, `f {url: favorites}` (once a day, when changed), `q {url: [cheap listings, listings read]}` (fresh listing reads), `n {url: [population, gem rate]}` (fresh readings, when changed); plus `tiers {url: {since, i}}` and `tier_log {url: [[since, db, bu, ceil], …]}`. Entries older than 30 days keep one check per JST day |
 | `sales.json` *generated* | `build_history.py` | History tab (loaded when opened) | every PSA10 one-copy sale the checks saw, once each: `{url: [[hour, price], …]}` |
 | `calls.json` *generated* | `build_calls.py` (via `build_history.py`) | Track record, Scored calls | `summary` (closed-window score, early decisions, baseline, return vs the market, Brier scores), `calls[]`, `predictions[]`, `model_odds[]` |
@@ -322,8 +322,6 @@ hands off to `add_snapshot.py`, and ends with the follow-ups (evaluations, seale
 - **Evaluation.** `apply_analysis.py` merges new tiers, peak, verdict and sell tiers into the
   **latest** snapshot (matched by URL, name or set code; it refuses to guess on ambiguous names). It
   stamps `verdict.written`, validates `predictions`, rebuilds history and calls, then commits and pushes.
-- **Email alert.** `email_price_alert.py <id> <price>` applies one lower PSA10 ask from a SNKRDUNK
-  "new listing" email as a new snapshot, with everything else carried.
 - **Stories, insights, events, models:** their own scripts (section 11), all called from the full check.
 
 ### From the site (through GitHub issues)
@@ -1079,7 +1077,6 @@ with a docstring explaining its usage. Open the file and read the top.
 | `full_update.py` | publishing a full check from the compact lines (the skill does it; `--dry-run` to preview, `--skip` only for a step that really failed) |
 | `quick_update.py` | publishing a quick check |
 | `add_snapshot.py` | publishing an assembled snapshot (called by the two above) |
-| `email_price_alert.py` | applying one lower price from a SNKRDUNK email alert |
 | `freshness.py` | listing which data sources are older than their cadence |
 
 **Evaluations and written content**

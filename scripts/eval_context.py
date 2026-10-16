@@ -34,16 +34,16 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 from raw_price import raw_price  # noqa: E402
 from build_history import sale_age_days, sales_per_day  # noqa: E402
-from log_purchase import grading_cost  # noqa: E402
+from log_purchase import grading_cost, GRADE_FEES, PSA_EXTRAS, SELL_FEE, SELL_SHIP  # noqa: E402  (the fee tables)
 import odds_model  # noqa: E402
 import eval_queue  # noqa: E402
 
 JST = timezone(timedelta(hours=9))
-DIY_FEES = 12430          # PSA Japan Standard, one card: ¥9,980 + insurance & shipping ¥1,900 + handling ¥550
+DIY_FEES = GRADE_FEES["standard"] + PSA_EXTRAS     # PSA Standard, one card: ¥9,980 + insurance & shipping ¥1,900 + handling ¥550
 STANDARD_CAP = 150000     # declared value limit on Standard
-PRIORITY_FEES = 14430     # PSA Priority: ¥2,000 more than Standard, declared value up to ¥250,000 (same rule as psaTierFor in app.js)
+PRIORITY_FEES = GRADE_FEES["priority"] + PSA_EXTRAS   # declared value up to ¥250,000 (same rule as psaTierFor in app.js)
 PRIORITY_CAP = 250000
-FEE_RATE, SHIP = 0.095, 1000   # SNKRDUNK Regular rank, seller-paid shipping
+FEE_RATE, SHIP = SELL_FEE, SELL_SHIP   # SNKRDUNK Regular rank, seller-paid shipping
 
 
 def J(name):

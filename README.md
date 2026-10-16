@@ -56,8 +56,7 @@ python3 scripts/add_snapshot.py                    # JSON from the clipboard
 python3 scripts/add_snapshot.py path/to/output.json
 ```
 
-Add `--no-push` to commit locally without pushing yet. A single lower price from a SNKRDUNK
-"new listing" email can be applied with `python3 scripts/email_price_alert.py <id> <price>`.
+Add `--no-push` to commit locally without pushing yet.
 
 ## Adding and removing cards
 

@@ -55,7 +55,9 @@ ROOT = Path(__file__).resolve().parent.parent
 TOP = 40
 NEAR_MAX = 1.25    # "close to cheap": up to 25% above the pre-hype reference
 NEAR_TOP = 20
-GRADE_COST = 12430 # PSA Standard ¥9,980 + insurance/shipping ¥1,900 + handling ¥550 (the user's order screen)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from log_purchase import GRADE_FEES, PSA_EXTRAS  # noqa: E402  (the fee table)
+GRADE_COST = GRADE_FEES["standard"] + PSA_EXTRAS   # PSA Standard ¥9,980 + insurance/shipping ¥1,900 + handling ¥550
 DIY_MIN_GEM = 75   # below this gem rate DIY cost is no floor
 DAILY = 3        # new cards on the Scout page each JST day
 AHEAD = 14       # days scheduled in advance, so new picks appear even without a price check

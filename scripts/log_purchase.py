@@ -232,7 +232,7 @@ def build_pull(issue, sealed):
 
 
 GRADE_TIERS = (("standard", "standard"), ("priority", "priority"), ("express", "express"))
-GRADE_FEES = {"standard": 9980, "priority": 11980, "express": 29980}   # same as GRADE_TIERS in assets/app.js
+GRADE_FEES = {"standard": 9980, "priority": 11980, "express": 29980}   # same as PSA_FEES in assets/app.js
 PSA_EXTRAS = 1900 + 550   # shipping & insurance + handling; an old stored ¥2,000 estimate means this
 
 

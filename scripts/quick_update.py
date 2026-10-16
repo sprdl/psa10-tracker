@@ -56,25 +56,21 @@ LISTING_ARRAYS = ("top20_cheapest_listings", "listings_within_15pct_of_lowest",
                   "count_within_15pct", "count_excluded_over_15pct", "top20_stats")
 
 
-REL_UNIT_DAYS = {"秒": 1 / 86400, "分": 1 / 1440, "時間": 1 / 24, "日": 1, "週間": 7, "ヶ月": 30, "か月": 30}
-
-
 def reage_sales(g, days):
     """Carried completed sales: SNKRDUNK's relative stamps ("20時間前") were read at the earlier check, but every
     reader ages them from this snapshot's time. Restate them as of now (in hours, same midpoint convention as
     saleAgeDays() in app.js and sale_window() in build_history.py) so a carried sale doesn't look newer than it is."""
+    from build_history import sale_age_days   # the one sale-time parser on the Python side
     rows = g.get("recent_completed_sales")
     if not rows or days <= 0:
         return
     for x in rows:
         w = str(x.get("when") or "").strip()
-        if w in ("たった今", "今"):
-            age = 0.0
-        else:
-            m = re.match(r"^(\d+)\s*(秒|分|時間|日|週間|ヶ月|か月)前", w)
-            if not m:
-                continue   # absolute dates ("2026/10/11") don't move
-            age = (int(m.group(1)) + 0.5) * REL_UNIT_DAYS[m.group(2)]
+        if re.match(r"\d{4}/", w):
+            continue   # absolute dates ("2026/10/11") don't move
+        age = sale_age_days(w, None)
+        if age is None:
+            continue
         x["when"] = f"{max(0, round((age + days) * 24 - 0.5))}時間前"
 
 
