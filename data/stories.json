@@ -1,6 +1,6 @@
 {
  "about": "Stories behind the tracked cards' artwork: illustrator, what the art shows, its connections, set context and trivia. Researched from the official card database, Bulbapedia, PokeBeach, Famitsu and card media (sources per card). Shown on each card's Story tab and the Stories page.",
- "updated": "2026-10-14T08:14:38+09:00",
+ "updated": "2026-10-16T21:29:12+09:00",
  "cards": {
   "https://snkrdunk.com/apparels/138599": {
    "illustrator": "Souichirou Gunjima",
@@ -828,6 +828,30 @@
    ],
    "confidence": "medium",
    "written": "2026-10-14T08:14:38+09:00"
+  },
+  "https://snkrdunk.com/apparels/568323": {
+   "illustrator": "Akira Egawa",
+   "illustrator_ja": null,
+   "art": "Team Rocket's Moltres flies over a city backdrop while a Team Rocket figure looks up at it. The scene plays on the idea of the Rocket gang commanding a legendary bird.",
+   "story": "The art alludes to the manga, where Team Rocket controlled all three legendary birds; in the games and anime they never owned any of them.",
+   "set": "Glory of Team Rocket (SV10) is the Japanese set whose English counterpart, Destined Rivals, released on May 30, 2025.",
+   "trivia": [
+    "The English counterpart is the Special Illustration Rare numbered 229/182 in Destined Rivals.",
+    "The set also holds Team Rocket's Mewtwo ex SAR (125/098)."
+   ],
+   "english": "Team Rocket's Moltres ex 229/182 (Destined Rivals)",
+   "sources": [
+    {
+     "title": "Card Codex: Team Rocket's Moltres ex 229/182",
+     "url": "https://cardcodex.com/?p=19151"
+    },
+    {
+     "title": "Collectibles.com listing: Team Rocket's Moltres ex (Akira Egawa)",
+     "url": "https://collectibles.com/collectible-items/40621229"
+    }
+   ],
+   "confidence": "medium",
+   "written": "2026-10-16T21:29:12+09:00"
   }
  }
 }
