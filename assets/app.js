@@ -327,8 +327,18 @@
     const changed = !shown || freshRaw !== cachedRaw;
     // Keep the snapshot the viewer picked while the refresh was running.
     const userPicked = shown && state.currentIndex !== (shown.manifest.snapshots || []).length - 1;
+    const pickedFile = userPicked ? ((shown.manifest.snapshots || [])[state.currentIndex] || {}).file : null;
     if (changed && !userPicked) showBundle(fresh, true);
-    else {
+    else if (changed) {
+      // new data arrived while an older check was picked: take all of it (holdings, limits, the check list), then go
+      // back to the picked check, so the newest check can be picked too
+      showBundle(fresh, true);
+      const i = (fresh.manifest.snapshots || []).findIndex((x) => x.file === pickedFile);
+      if (i >= 0 && i !== state.currentIndex) {
+        els.snapshotSelects.forEach((o) => { o.value = String(i); });
+        loadIndex(i);
+      }
+    } else {
       state.manifest = fresh.manifest; reconcileLimits(); reconcileTargets();
       // Same data as the cached copy already on screen: only re-render if expired local removals change what's hidden.
       const pending = () => JSON.stringify([store.get(RM_KEY, {}), store.get(RS_KEY, {})]);
@@ -338,13 +348,22 @@
     if (changed) cacheWrite(freshRaw);
   }
 
+  let loadToken = 0;
   async function loadIndex(idx) {
-    const snaps = state.manifest.snapshots;
+    const snaps = state.manifest.snapshots, token = ++loadToken;
+    let cur, prev;
+    try {
+      [cur, prev] = await Promise.all([
+        fetchJSON('data/snapshots/' + snaps[idx].file),
+        idx > 0 ? fetchJSON('data/snapshots/' + snaps[idx - 1].file) : null,
+      ]);
+    } catch (e) {
+      if (token === loadToken) els.snapshotSelects.forEach((o) => { o.value = String(state.currentIndex); });   // stay on what's shown
+      return;
+    }
+    if (token !== loadToken) return;   // a later pick won: don't let this older response overwrite it
     state.currentIndex = idx;
-    [state.rawCur, state.rawPrev] = await Promise.all([
-      fetchJSON('data/snapshots/' + snaps[idx].file),
-      idx > 0 ? fetchJSON('data/snapshots/' + snaps[idx - 1].file) : null,
-    ]);
+    state.rawCur = cur; state.rawPrev = prev;
     setShownData();
     render();
   }
@@ -1172,7 +1191,7 @@
   // so this compares the lowest ask, not the representative (sales) price.
   function lowestAsk(card) { const p = card.grades && card.grades.psa10; return p ? p.lowest_price : null; }
   // A limit is a buy signal: it no longer counts once you own the card (the sell target takes over).
-  function limitHit(card) { const l = getLimit(card), a = lowestAsk(card); return l != null && a != null && a <= l && !holdingsFor(card).length; }
+  function limitHit(card) { const l = getLimit(card), a = lowestAsk(card); return l != null && a != null && a <= l && !ownsCard(card); }
 
   // ---------- purchases (data/holdings.json, written by GitHub Actions) ----------
   // "Bought it" / "Remove" open a pre-filled GitHub issue form; .github/workflows/purchases.yml
@@ -1203,6 +1222,22 @@
   // Copies of this card you hold as it trades on the tracker: a slab or a raw copy. A copy that came back from PSA below a
   // 10 (graded_other) isn't the tracked PSA10, so it gets no PSA10 sell or position math (it still shows on Holdings).
   function holdingsFor(card) { return state.holdings.filter((h) => h.card_url === card.url && h.condition !== 'graded_other'); }
+  // Copies of this card you pulled from sealed product and still hold as the tracked card (raw, at PSA, or a PSA10).
+  // They count as owned for everything buy-side (no limit, Buy signal or "closest to a buy"); they get no sell math,
+  // because a pull has no purchase price of its own.
+  function pullsFor(card) {
+    const out = [];
+    for (const sd of state.sealed || []) for (const p of sd.pulls || []) {
+      if (p.card_url === card.url && ['raw', 'grading', 'psa10'].includes(p.status || 'raw')) out.push(Object.assign({ from: sd }, p));
+    }
+    return out;
+  }
+  function pulledChip(card) {
+    const ps = pullsFor(card);
+    if (!ps.length) return '';
+    const st = { raw: 'raw', grading: 'at PSA', psa10: 'PSA10' };
+    return `<span class="vtag pulled" title="${escapeAttr('You pulled this card: ' + ps.map((p) => `${st[p.status || 'raw']} (${p.id})`).join(', ') + '. No buy guidance for cards you own.')}">Pulled</span>`;
+  }
   // GitHub re-applies prefilled form values over what you type, so the price, date and condition are
   // asked here first (Log purchase dialog) and the form opens with exactly those, ready to submit.
   function boughtFormUrl(card, v) {
@@ -1382,7 +1417,7 @@
     const out = [];
     cards.forEach((card, i) => {
       // cards you own get sell guidance only (their sell signals come from sellState), never a buy signal
-      if (lowestAsk(card) == null || holdingsFor(card).length) return;
+      if (lowestAsk(card) == null || ownsCard(card)) return;
       const name = parseCardName(card.card_name_ja).short;
       if (limitHit(card)) {
         out.push({ key: card.url + '|limit', i, card, name, kind: 'limit', rank: 0,
@@ -1410,7 +1445,7 @@
       items.push({ key: card.url + '|sell|' + st.tag, card, name: parseCardName(card.card_name_ja).short, text: st.reasons[0] || '', pill: sellChip(card), rank: -SELL_RANK[st.tag] });
     }
     for (const card of cards) {
-      if (holdingsFor(card).length || !hasMarket(card)) continue;
+      if (ownsCard(card) || !hasMarket(card)) continue;
       const r = tierReview(card);
       if (r && r.due) items.push({ key: card.url + '|review', card, name: parseCardName(card.card_name_ja).short, text: `Buy tiers due for a review: ${r.reasons.join(', ')}`, pill: '<span class="vtag review">Review</span>', rank: 10 });
     }
@@ -1420,7 +1455,7 @@
   function closestBuy(cards) {
     let best = null;
     for (const c of cards) {
-      if (holdingsFor(c).length || !hasMarket(c)) continue;
+      if (ownsCard(c) || !hasMarket(c)) continue;
       const g = limitGap(c), t = c.analysis && c.analysis.tiers, rep = getRep(c);
       const x = g ? { pct: g.pct, what: `above your ${fmtYen(g.lim)} limit` } : t && rep ? { pct: (rep / t.buy_upper - 1) * 100, what: `above its Buy line (${fmtYen(t.buy_upper)})` } : null;
       if (x && x.pct > 0 && (!best || x.pct < best.pct)) best = Object.assign(x, { card: c });
@@ -1434,6 +1469,7 @@
     const out = [];
     for (const c of cards) {
       if (skip.has(c.url) || !hasMarket(c)) continue;
+      if (!holdingsFor(c).length && ownsCard(c)) continue;   // a pull: no buy side, no purchase price for a sell line
       if (holdingsFor(c).length) {
         const t = sellTiersOf(c), p = getRep(c);
         if (t && p && p < t.take_profit_from) out.push({ card: c, own: true, pct: (t.take_profit_from / p - 1) * 100, now: p, line: t.take_profit_from, what: 'Take profit' });
@@ -1473,7 +1509,7 @@
     const items = inboxItems(cards), buys = items.filter((x) => x.buy);
     const tracked = cards.filter((c) => lowestAsk(c) != null).length;
     // name a rule only when it holds back cards on this list (the event rule covers only its release's sets)
-    const evOn = activeEvents().filter((e) => cards.some((c) => eventApplies(e, c) && c.analysis && c.analysis.tiers && !holdingsFor(c).length));
+    const evOn = activeEvents().filter((e) => cards.some((c) => eventApplies(e, c) && c.analysis && c.analysis.tiers && !ownsCard(c)));
     const ruleTxt = correctionState().active ? 'correction rule on: only Definitely-buy and your limits count'
       : evOn.length ? `event rule on for ${[...new Set(evOn.map(eventScope))].join(', ')}: only Definitely-buy and your limits count there` : '';
     const empty = buys.length ? '' : `<div class="ib-quiet"><span class="vtag none">Buy</span><span>No buy signals${ruleTxt ? ` (${escapeHtml(ruleTxt)})` : ''}. ${tracked} cards tracked.</span></div>`;
@@ -1925,7 +1961,8 @@
       const [g, days] = useG;
       const peers = ((state.currentData && state.currentData.cards) || []).filter(hasMarket).map((c) => ({ c, g: marketGap(c, days) })).filter((x) => x.g);
       const rank = peers.sort((a, b) => b.g.gap - a.g.gap).findIndex((x) => x.c.url === card.url);
-      const place = peers.length < 2 ? 'the only card with enough history to compare' : rank === 0 ? `the strongest of the ${peers.length} cards with ${days} days of history` : rank === peers.length - 1 ? `the weakest of the ${peers.length} cards with ${days} days of history` : g.gap > 0 ? `#${rank + 1} of the ${peers.length} cards with ${days} days of history` : `#${peers.length - rank} from the bottom of ${peers.length}`;
+      // a grail isn't in the shown list (Grails page only), so it has no rank among the tracked cards
+      const place = rank < 0 ? `against the ${peers.length} tracked cards with ${days} days of history` : peers.length < 2 ? 'the only card with enough history to compare' : rank === 0 ? `the strongest of the ${peers.length} cards with ${days} days of history` : rank === peers.length - 1 ? `the weakest of the ${peers.length} cards with ${days} days of history` : g.gap > 0 ? `#${rank + 1} of the ${peers.length} cards with ${days} days of history` : `#${peers.length - rank} from the bottom of ${peers.length}`;
       const up = g.gap > 0;
       const lines = [`Over ${days} days the price went ${fmtPct(g.card)} (${fmtYen(g.old)} → ${fmtYen(g.now)}) while the ${g.name} went ${fmtPct(g.market)}: <b>${Math.abs(g.gap).toFixed(1)} points ${up ? 'stronger' : 'weaker'}</b>, ${place}.`];
       const confirm = salesMove != null ? (up ? salesMove > -3 : salesMove < 3) : null;
@@ -2001,7 +2038,7 @@
     }).join('');
   }
   function writtenInsight(card) {
-    if (holdingsFor(card).length) return ''; // written for a buyer (limit, Buy line); not shown once you own the card
+    if (ownsCard(card)) return ''; // written for a buyer (limit, Buy line); not shown once you own the card
     const e = state.insights && state.insights.insights && state.insights.insights[card.url];
     if (!e || !e.text) return '';
     const age = Math.floor(daysBetween(e.written, refTime()));
@@ -2386,7 +2423,7 @@
       body = `<div class="pq-reveal"><div><div class="pq-hint">Model said</div><div class="pq-model">${Math.round(q.model * 100)}%</div></div><div class="pq-status">${r ? `<b class="${r.outcome ? 'yes' : 'no'}">${r.outcome ? 'Yes' : 'No'}</b> before you answered` : Date.parse(wk.close) > Date.now() ? `Answers closed ${escapeHtml(predCutoff(wk))} · resolves ${escapeHtml(predClose(wk.close))}` : 'Closed'} · not scored</div></div>`;
     }
     return `<article class="pq${a ? ' locked' : ''}" style="--i:${i}">
-      <a class="pq-slab" href="#/card/${escapeAttr(cardId(card))}">${slabHtml(card, 'md')}</a>
+      <a class="pq-slab" href="#/card/${escapeAttr(cardId(card))}" aria-label="${escapeAttr(nm)}">${slabHtml(card, 'md')}</a>
       <div class="pq-main">
         <div class="pq-name jp">${escapeHtml(nm)} <small>${escapeHtml(parseCardName(q.name).code)}</small></div>
         <div class="pq-q">Will ${down ? 'a listing drop' : 'the lowest ask climb'} <span class="${down ? 'dn' : 'up'}">to ${fmtYen(q.target)} or ${down ? 'less' : 'more'}</span> by Friday?</div>
@@ -2654,7 +2691,7 @@
       ${list.map((x, i) => `<details class="ins ins-${x.tone}"${i === 0 && !w ? ' open' : ''}><summary>${escapeHtml(x.title)}</summary>${x.lines.map((l) => `<p>${l}</p>`).join('')}</details>`).join('')}${quietBlock}</div>`;
   }
   const INS_ICON = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5l1.6 4.2 4.4.3-3.4 2.8 1.1 4.3L8 10.7l-3.7 2.4 1.1-4.3L2 6l4.4-.3z"/></svg>';
-  function hasInsight(card) { return insightsFor(card).some((x) => x.score >= 1.5) || (!holdingsFor(card).length && !!(state.insights && state.insights.insights && state.insights.insights[card.url])); }
+  function hasInsight(card) { return insightsFor(card).some((x) => x.score >= 1.5) || (!ownsCard(card) && !!(state.insights && state.insights.insights && state.insights.insights[card.url])); }
 
   // ---------- render: banners (human-authored + auto-detected) ----------
 
@@ -3037,7 +3074,7 @@
     default: { label: 'Signals first', dir: 1 },
     name: { label: 'Card name', dir: 1, v: (c) => parseCardName(c.card_name_ja).short },
     price: { label: 'Price', dir: -1, v: (c) => getRep(c) },
-    zone: { label: 'Closest to Buy', dir: 1, v: (c) => { if (holdingsFor(c).length) return null; const t = c.analysis && c.analysis.tiers; const p = getRep(c); return t && p != null ? p / t.buy_upper : null; } },
+    zone: { label: 'Closest to Buy', dir: 1, v: (c) => { if (ownsCard(c)) return null; const t = c.analysis && c.analysis.tiers; const p = getRep(c); return t && p != null ? p / t.buy_upper : null; } },
     // Cards you watch first, closest to your limit first; then cards you own, biggest gain first. The two groups never
     // mix (a distance to a limit and a gain are different things); reversing the order flips each group, not the groups.
     limit: { label: 'Limit: distance to my limit, then gain on owned', dir: 1, group: (c) => (holdingsFor(c).length ? 1 : 0),
@@ -4131,6 +4168,7 @@
   function limitGapCell(card, cls) {
     // Once bought, the column shows how far the price has moved from what you paid instead.
     const bg = boughtGap(card);
+    if (!bg && ownsCard(card)) return `<span class="${cls} muted" title="You pulled this card: no limit">pulled</span>`;
     if (bg) return `<span class="${cls} ${dirClass(bg.pct)}" title="${escapeAttr(boughtGapTitle(bg))}">${bg.pct === 0 ? '±0' : fmtPct(bg.pct)}<small class="chg-sub">${bg.raw ? 'DIY ' + fmtYenShort(bg.basis) : 'paid ' + fmtYenShort(bg.basis)}</small></span>`;
     const g = limitGap(card);
     if (!g) return `<span class="${cls} muted" title="No limit set for this card">—</span>`;
@@ -4172,14 +4210,14 @@
   }
   function wlRowHtml(card) {
     const { short, code, pack } = parseCardName(card.card_name_ja);
-    const owned = holdingsFor(card).length;
+    const owned = ownsCard(card), bought = holdingsFor(card).length;
     return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) || sellHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
         ${slabHtml(card, 'xs')}
         <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
         <span class="wl-price display">${fmtYen(getRep(card))}${rawAskSub(card)}</span>
         ${zoneBarHtml(card)}
         ${limitGapCell(card, 'wl-chg wl-lim')}${changeLastCell(card, 'wl-chg wl-last')}${trendCell(card)}
-        <span class="wl-tag"><span>${owned ? sellChip(card) : tagChip(card)}${!owned ? selfGradeChip(card) : ''}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}</span></span><span class="wl-heat">${marketChip(card)}</span>
+        <span class="wl-tag"><span>${bought ? sellChip(card) : owned ? pulledChip(card) : tagChip(card)}${!owned ? selfGradeChip(card) : ''}${!owned && limitHit(card) ? '<span class="limit-chip">Limit</span>' : ''}</span></span><span class="wl-heat">${marketChip(card)}</span>
       </a>`;
   }
   function renderOverviewList(cards) {
@@ -4187,7 +4225,7 @@
     const list = sortedMarketCards(cards);
     const bar = document.getElementById('wl-filter');
     if (!list.length) { el.innerHTML = `<div class="empty-state">No cards with live market data in this snapshot yet.</div>`; if (bar) bar.innerHTML = ''; return; }
-    const groups = { owned: list.filter((c) => holdingsFor(c).length), watch: list.filter((c) => !holdingsFor(c).length) };
+    const groups = { owned: list.filter((c) => ownsCard(c)), watch: list.filter((c) => !ownsCard(c)) };
     let f = store.get('psa10.ovFilter', 'all');
     if (!OV_FILTERS.some(([k]) => k === f) || (f !== 'all' && !groups[f].length)) f = 'all';
     if (bar) {
@@ -4198,7 +4236,7 @@
     const shown = keys.flatMap((k) => groups[k]);
     if (!state.selectedUrl || !shown.some((c) => c.url === state.selectedUrl)) state.selectedUrl = shown[0].url;
     const note = (k) => {
-      if (k === 'owned') { const n = groups.owned.filter((c) => (sellState(c) || {}).tag !== 'hold').length; return n ? `${n} with a sell signal` : 'No sell signals'; }
+      if (k === 'owned') { const n = groups.owned.filter((c) => sellState(c) && sellState(c).tag !== 'hold').length; return n ? `${n} with a sell signal` : 'No sell signals'; }
       const n = groups.watch.filter((c) => limitHit(c) || ['buy', 'definitely_buy'].includes(displayTagFor(c))).length;
       return n ? `${n} at a buy price` : 'None at a buy price';
     };
@@ -4260,7 +4298,7 @@
 
   // A card you own: bought as a single (Holdings) or pulled from a sealed product (the Sealed section).
   function pulledCard(card) { return (state.sealed || []).some((sd) => (sd.pulls || []).some((p) => p.card_url === card.url)); }
-  function ownsCard(card) { return holdingsFor(card).length > 0 || pulledCard(card); }
+  function ownsCard(card) { return holdingsFor(card).length > 0 || pullsFor(card).length > 0; }
   // A card held only as raw copies: how the raw A-rank price moved against what you paid, and how the PSA10 ask moved
   // against your DIY cost with that price (the same three figures as a raw single on the Holdings page).
   function rawOnlyStats(card) {
@@ -4285,8 +4323,8 @@
       const pickHtml = state.cmpMode ? `<span class="tile-pick${pk >= 0 ? ' on' : ''}" style="${pk >= 0 ? `background:${CMP_COLORS[pk]};border-color:${CMP_COLORS[pk]}` : ''}" aria-hidden="true">${pk >= 0 ? 'AB'[pk] : ''}</span>` : '';
       return `<a class="tile${limitHit(card) || sellHit(card) ? ' hit' : ''}${state.cmpMode ? ' picking' : ''}${pk >= 0 ? ' picked' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}"${state.cmpMode ? ` aria-pressed="${pk >= 0}" style="--pc:${pk >= 0 ? CMP_COLORS[pk] : 'transparent'}"` : ''}>
         <span class="tile-slab">${slabHtml(card, 'lg')}${pickHtml}
-          <span class="tile-chips">${heatChip(card)}${owned ? sellChip(card) : tagChip(card)}</span>
-          ${owned ? (bg ? `<span class="tile-pl ${bg.pct >= 0 ? 'pos' : 'neg'}" title="${escapeAttr(boughtGapTitle(bg))}">${bg.pct === 0 ? '±0%' : fmtPct(bg.pct)} vs ${rs ? 'DIY' : 'paid'}</span>` : '')
+          <span class="tile-chips">${heatChip(card)}${owned ? sellChip(card) : ownsCard(card) ? pulledChip(card) : tagChip(card)}</span>
+          ${ownsCard(card) && !owned ? '' : owned ? (bg ? `<span class="tile-pl ${bg.pct >= 0 ? 'pos' : 'neg'}" title="${escapeAttr(boughtGapTitle(bg))}">${bg.pct === 0 ? '±0%' : fmtPct(bg.pct)} vs ${rs ? 'DIY' : 'paid'}</span>` : '')
             : lim != null ? `<span class="tile-limit">Limit ${fmtYen(lim)}</span>` : ''}
           ${owned ? '<span class="tile-owned">Owned</span>' : pulledCard(card) ? '<span class="tile-owned">Pulled</span>' : ''}
         </span>
@@ -4375,9 +4413,13 @@
     const limit = getLimit(card);
     const ask = lowestAsk(card);
     const owned = holdingsFor(card);
+    const pulls = owned.length ? [] : pullsFor(card);
+    const PULL_ST = { raw: 'raw', grading: 'at PSA', psa10: 'PSA10' };
     const ownedHtml = owned.length
       ? `<span class="owned-note">✓ Owned${owned.length > 1 ? ' ×' + owned.length : ''} · bought ${fmtYen(owned[owned.length - 1].purchase_price_jpy)}</span>`
-      : '';
+      : pulls.length ? `<span class="owned-note">✓ Pulled${pulls.length > 1 ? ' ×' + pulls.length : ''} · ${escapeHtml(pulls.map((p) => PULL_ST[p.status || 'raw']).join(', '))}</span>` : '';
+    // a card you pulled is yours: no limit or Buy signal, and nothing to sell against (a pull has no purchase price)
+    const pulledRowHtml = `<div class="limit-row"><span class="limit-gap">You pulled this card, so there's no limit or Buy signal for it. Its grading is on the Holdings page.</span></div>`;
     const limitRowHtml = `<div class="limit-row">${limit != null
       ? `<span class="limit-lbl">My limit</span> <strong>${fmtYen(limit)}</strong>${limitHit(card)
           ? ` <span class="limit-hit-note">a listing is at or below it (${fmtYen(ask)})</span>`
@@ -4462,10 +4504,11 @@
     } else {
       verdictHtml = `<div class="tier-pending">Tiers not yet established for this card, showing raw stats only.</div>`;
     }
+    if (pulls.length && verdictHtml) verdictHtml = `<div class="verdict-stale">You own this card (pulled from sealed product), so the buy call below is only for reference: no limit or Buy signal for it.</div>` + verdictHtml;
 
     const ov = own ? ownedVerdict(card) : null;
     if (ov) { verdictHtml = ov.html; dv = ov.dv; }
-    if (mode === 'drawer') return drawerHtml(card, { shortName, code, pack, repPrice, deltaHtml, ownedHtml, gaugeHtml, dv, displayTag, peak, own });
+    if (mode === 'drawer') return drawerHtml(card, { shortName, code, pack, repPrice, deltaHtml, ownedHtml, gaugeHtml, dv, displayTag, peak, own, pulled: pulls.length > 0 });
 
     const rep = getRep(card);
     const diy = computeDiyEconomics(card, rep);
@@ -4508,7 +4551,7 @@
             <span class="cd-plabel">${analysis && analysis.representative_price != null ? 'representative PSA10' : 'lowest PSA10 ask'}${flagHtml}</span>
             <span class="cd-off">${offPeakHtml}</span>
             <span class="cd-delta">${deltaHtml}</span>
-            <span class="cd-tags">${own ? sellChip(card) : tagChip(card)}${ownedHtml}</span>
+            <span class="cd-tags">${own ? sellChip(card) : pulls.length ? pulledChip(card) : tagChip(card)}${ownedHtml}</span>
             ${mode === 'page' ? actionsHtml : ''}
           </div>
         </div>
@@ -4521,7 +4564,7 @@
             ${!own && (selfGrade(card) || {}).ok ? `<p class="cd-diy-line">${escapeHtml(selfGradeTip(selfGrade(card)))} <a href="#" data-goto-tab="diy">See the DIY tab →</a></p>` : ''}
             ${verdictHtml}
             ${gaugeHtml}
-            ${own ? sellRowHtml(card) : limitRowHtml}
+            ${own ? sellRowHtml(card) : pulls.length ? pulledRowHtml : limitRowHtml}
           </section>
           ${own ? positionHtml(card) : ''}
           ${gradePanelHtml(card)}
@@ -4592,14 +4635,14 @@
           <span class="cd-meta">${escapeHtml([o.code, o.pack].filter(Boolean).join(' · '))}</span>
           <span class="cd-price display">${fmtYen(o.repPrice)}</span>
           <span class="dw-delta">${o.deltaHtml}</span>
-          <span class="cd-tags">${own ? sellChip(card) : tagChip(card) + selfGradeChip(card)}${heatChip(card)}${o.ownedHtml}</span>
+          <span class="cd-tags">${own ? sellChip(card) : o.pulled ? pulledChip(card) : tagChip(card) + selfGradeChip(card)}${heatChip(card)}${o.ownedHtml}</span>
         </div>
       </div>
       ${verdict}
       ${due && due.due ? `<div class="dw-due">Tiers due for a review: ${escapeHtml(due.reasons.join(', '))}</div>` : ''}
       ${o.gaugeHtml}
       ${ins}
-      <div class="dw-stats">${own ? posTile + netTile + moves + peakTile : limTile + moves + peakTile + holdTile}</div>
+      <div class="dw-stats">${own ? posTile + netTile + moves + peakTile : (o.pulled ? '' : limTile) + moves + peakTile + holdTile}</div>
       ${sellRowHtml(card)}
       <div class="dw-acts">
         <a class="btn btn-primary" href="#/card/${escapeAttr(id)}">Open card page →</a>
@@ -4783,7 +4826,7 @@
       <div class="pl-summary">
         <div class="pl-stat"><div class="lbl">Selected (${picked.length})</div><div class="val">${fmtYen(total)}</div></div>
         ${spent ? `<div class="pl-stat"><div class="lbl">Spent so far</div><div class="val">${fmtYen(spent)}</div></div>` : ''}
-        <div class="pl-stat"><div class="lbl">Budget</div><div class="val"><span class="pl-yen">¥</span><input type="number" class="pl-budget" inputmode="numeric" step="10000" min="0" value="${st.budget}"></div></div>
+        <div class="pl-stat"><div class="lbl">Budget</div><div class="val"><span class="pl-yen">¥</span><input type="number" class="pl-budget" aria-label="Budget (¥)" inputmode="numeric" step="10000" min="0" value="${st.budget}"></div></div>
         <div class="pl-stat"><div class="lbl">${left >= 0 ? 'Left' : 'Over budget'}</div><div class="val ${left >= 0 ? 'pos' : 'neg'}">${fmtYen(Math.abs(left))}</div></div>
         ${st.mode === 'limits' && picked.length ? `<div class="pl-stat"><div class="lbl">vs. buying today</div><div class="val ${totalToday - total >= 0 ? 'pos' : 'neg'}">${totalToday - total >= 0 ? 'saves ' : 'costs '}${fmtYen(Math.abs(totalToday - total))}</div></div>` : ''}
       </div>
@@ -6205,7 +6248,7 @@
     const side = (c, i) => {
       const { short, code, pack } = parseCardName(c.card_name_ja);
       return `<div class="h2h-side h2h-${i ? 'b' : 'a'}">
-        <a class="h2h-slab" href="#/card/${escapeAttr(cardId(c))}" style="--cc:${CMP_COLORS[i]}">${slabHtml(c, 'xl')}</a>
+        <a class="h2h-slab" href="#/card/${escapeAttr(cardId(c))}" aria-label="${escapeAttr(parseCardName(c.card_name_ja).short)}" style="--cc:${CMP_COLORS[i]}">${slabHtml(c, 'xl')}</a>
         <div class="h2h-info">
           <span class="h2h-who" style="color:${CMP_COLORS[i]}"><i style="background:${CMP_COLORS[i]}"></i>Card ${i ? 'B' : 'A'}</span>
           <a class="h2h-name jp" href="#/card/${escapeAttr(cardId(c))}">${escapeHtml(short)}</a>
@@ -6425,7 +6468,7 @@
       const ask = lowestAsk(c), lim = getLimit(c), t = c.analysis && c.analysis.tiers, d = computeDiyEconomics(c, getRep(c));
       const color = CMP_COLORS[i];
       return `<article class="panel du-card" style="border-top-color:${color}">
-        <div class="du-head"><a href="#/card/${escapeAttr(cardId(c))}">${slabHtml(c, 'md')}</a>
+        <div class="du-head"><a href="#/card/${escapeAttr(cardId(c))}" aria-label="${escapeAttr(short)}">${slabHtml(c, 'md')}</a>
           <div class="du-id"><a class="h2h-name jp" href="#/card/${escapeAttr(cardId(c))}">${escapeHtml(short)}</a><span class="h2h-meta">${escapeHtml(code)}</span><span class="h2h-v">${tagChip(c)}<small>${escapeHtml(writtenVerdictText(c))}</small></span></div></div>
         <div class="du-prices">
           <div class="du-p"><span class="lbl">Today's lowest ask</span><span class="display">${fmtYen(ask)}</span><small>${leftTxt(avail - ask)}</small></div>

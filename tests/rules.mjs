@@ -80,7 +80,10 @@ for (let k = Math.max(0, snaps.length - N); k < snaps.length; k++) {
     premium: J('data/premium.json'), insights: J('data/insights.json'), hype: J('data/hype.json'), heldPrices: {},
   });
   const cs = app.state.currentData.cards;
-  const d = { snap: app.state.currentData, limits, hist, ci, events, holdings: hold.holdings || [], targets };
+  const grailIds = Object.keys((J('data/grails.json', {}) || {}).grails || {});
+  const pulled = new Set();
+  for (const sd of hold.sealed || []) for (const p of sd.pulls || []) if (p.card_url && ['raw', 'grading', 'psa10'].includes(p.status || 'raw')) pulled.add(p.card_url);
+  const d = { snap: app.state.currentData, limits, hist, ci, events, holdings: hold.holdings || [], targets, grails: grailIds, pulled };
   const m = wid.buildModel(d);
   const cards = cs.map((c) => {
     const g = c.grades || {}, t = (c.analysis || {}).tiers, ask = app.lowestAsk(c), lim = (limits[c.url] || {}).price;
@@ -101,6 +104,7 @@ for (let k = Math.max(0, snaps.length - N); k < snaps.length; k++) {
   out.push({ file: snaps[k].file, at: snap.collected_at_jst, cards,
     correction: { active: cs0.active, pct: r3(cs0.pct) }, widget_correction: { active: m.corr.on, pct: r3(m.corr.pct) },
     rally: { active: rl.active, pct: r3(rl.pct) }, widget_rally: { active: m.rally.on, pct: r3(m.rally.pct) },
-    events: app.activeEvents().map((e) => e.name), signals, owned: [...new Set((hold.holdings || []).filter((h) => h.condition !== 'graded_other').map((h) => h.card_url))] });
+    events: app.activeEvents().map((e) => e.name), signals, grails: grailIds,
+    owned: [...new Set([...(hold.holdings || []).filter((h) => h.condition !== 'graded_other').map((h) => h.card_url), ...pulled])] });
 }
 process.stdout.write(JSON.stringify(out));

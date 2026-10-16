@@ -10,7 +10,6 @@ then commit and push. The site's Upside tab, Tier check and the combination find
 Rebuild it monthly together with the odds model (price-check step 5b): the builder reuses the
 card histories the odds-model 'grab' step leaves in the browser.
 """
-import glob
 import json
 import re
 import subprocess
@@ -61,7 +60,9 @@ ABOUT = {
 
 
 def tracked_codes():
-    snap = sorted(glob.glob(str(ROOT / "data" / "snapshots" / "*.json")))[-1]
+    # the newest check by its timestamp in the manifest: sorting file names puts "…-2.json" before "….json"
+    m = json.loads((ROOT / "data" / "manifest.json").read_text(encoding="utf-8"))
+    snap = ROOT / "data" / "snapshots" / max(m["snapshots"], key=lambda s: s["collected_at_jst"])["file"]
     d = json.loads(Path(snap).read_text(encoding="utf-8"))
     out = []
     for c in d.get("cards", []):

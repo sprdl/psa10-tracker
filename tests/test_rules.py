@@ -127,7 +127,7 @@ class Rules(unittest.TestCase):
                     self.assertEqual(c["event"], c["widget_event"])
 
     def test_no_buy_signal_for_owned(self):
-        """Cards you own get sell guidance only: never a Buy / Definitely-buy / limit signal in "Needs you"."""
+        """Cards you own (bought, or pulled from sealed product) never get a Buy / Definitely-buy / limit signal in "Needs you"."""
         for s in self.js:
             with self.subTest(snapshot=s["file"]):
                 self.assertEqual(sorted(set(s["signals"]) & set(s["owned"])), [])
@@ -140,8 +140,9 @@ class Rules(unittest.TestCase):
                 self.assertEqual(s["rally"], s["widget_rally"])
             for c in s["cards"]:
                 w = c["widget"]
-                if w is None:   # no PSA10 ask: the widget doesn't list it
-                    self.assertIsNone(c["ask"])
+                if w is None:   # no PSA10 ask, or a grail (Grails page only): the widget doesn't list it
+                    if c["url"].rstrip("/").split("/")[-1] not in s["grails"]:
+                        self.assertIsNone(c["ask"])
                     continue
                 with self.subTest(snapshot=s["file"], card=c["name"][:20]):
                     self.assertEqual(w["sell"], c["sell"])

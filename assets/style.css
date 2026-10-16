@@ -237,6 +237,7 @@ a.kpi:hover { border-color: var(--line-3); color: var(--text); }
 .vtag.watch { color: var(--amber); border-color: var(--amber); }
 .vtag.dont_buy { color: var(--neg); border-color: var(--neg); }
 .vtag.defer, .vtag.none { color: var(--muted); border-color: var(--line-3); }
+.vtag.pulled { color: #7cc4ff; border-color: rgba(124, 196, 255, 0.55); }
 .owned-chip, .limit-chip, .due-chip {
   display: inline-flex; font: 14px var(--display); letter-spacing: 0.08em; line-height: 1; padding: 4px 6px 2px; border-radius: 3px; margin-left: 6px;
 }
@@ -1144,6 +1145,7 @@ a.pl-stat.pl-link:hover { border-color: var(--accent); background: var(--hover);
 .sc-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
 .sc-table th, .sc-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .sc-table td:first-child { white-space: normal; }
+@media (max-width: 599px) { .sc-table th, .sc-table td { white-space: normal; padding: 6px 4px; } .sc-table { table-layout: fixed; word-break: break-word; } }
 .linkish { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }
 @media (max-width: 640px) { .sc-grid { grid-template-columns: 1fr; } .sc-card { grid-template-columns: 88px 1fr; } .sc-img img { width: 88px; } }
 

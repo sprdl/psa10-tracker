@@ -53,7 +53,7 @@ async function getJSON(path, optional) {
 async function loadData() {
   const manifest = await getJSON('data/manifest.json');
   const latest = manifest.snapshots.slice().sort((a, b) => a.collected_at_jst.localeCompare(b.collected_at_jst)).pop();
-  const [snap, limits, hist, ci, events, holdings, targets] = await Promise.all([
+  const [snap, limits, hist, ci, events, holdings, targets, grails] = await Promise.all([
     getJSON('data/snapshots/' + latest.file),
     getJSON('data/limits.json', true),
     getJSON('data/history.json', true),
@@ -61,9 +61,19 @@ async function loadData() {
     getJSON('data/events.json', true),
     getJSON('data/holdings.json', true),
     getJSON('data/sell_targets.json', true),
+    getJSON('data/grails.json', true),
   ]);
   return { snap, limits: (limits && limits.limits) || {}, hist, ci, events,
-    holdings: (holdings && holdings.holdings) || [], targets: (targets && targets.targets) || {} };
+    holdings: (holdings && holdings.holdings) || [], targets: (targets && targets.targets) || {},
+    // cards you pulled from sealed product (raw, at PSA or a PSA10): owned, so no limit or Buy signal (site: pullsFor)
+    pulled: pulledUrls((holdings && holdings.sealed) || []),
+    // long-term grails live on the site's Grails page only, never in the lists or signals (site: setShownData)
+    grails: Object.keys((grails && grails.grails) || {}) };
+}
+function pulledUrls(sealed) {
+  const out = new Set();
+  for (const sd of sealed) for (const p of sd.pulls || []) if (p.card_url && ['raw', 'grading', 'psa10'].includes(p.status || 'raw')) out.add(p.card_url);
+  return out;
 }
 
 // ---------------------------------------------------------------- same rules as the site
@@ -201,22 +211,23 @@ function heat(d, card) {
 
 function buildModel(d) {
   const corr = correctionOn(d);
-  const cards = (d.snap.cards || []).filter((c) => lowestAsk(c) != null).map((c) => {
-    const own = sellState(d, c), ask = lowestAsk(c);
-    const lim = own ? null : limitOf(d, c), tag = own ? 'sell_' + own.tag : displayTag(d, c, corr);
-    return { c, id: cardId(c), name: parseName(c.card_name_ja), price: repPrice(c), ask, lim, tag, own,
+  const grails = new Set(d.grails || []), pulled = d.pulled || new Set();
+  const cards = (d.snap.cards || []).filter((c) => lowestAsk(c) != null && !grails.has(cardId(c))).map((c) => {
+    const own = sellState(d, c), ask = lowestAsk(c), mine = !!own || pulled.has(c.url);
+    const lim = mine ? null : limitOf(d, c), tag = own ? 'sell_' + own.tag : displayTag(d, c, corr);
+    return { c, id: cardId(c), name: parseName(c.card_name_ja), price: repPrice(c), ask, lim, tag, own, mine,
       limitHit: lim != null && ask <= lim, chg7: change7d(d, c), heat: heat(d, c), tiers: (c.analysis || {}).tiers };
   });
   const limitHits = cards.filter((x) => x.limitHit);
   // owned cards with an actionable sell signal, strongest first (the site's sort puts these first too)
   const sells = cards.filter((x) => x.own && ['sell', 'take_profit', 'reassess'].includes(x.own.tag)).sort((a, b) => SELL_RANK[b.own.tag] - SELL_RANK[a.own.tag]);
-  const buys = cards.filter((x) => !x.own && !x.limitHit && (x.tag === 'buy' || x.tag === 'definitely_buy'))
+  const buys = cards.filter((x) => !x.mine && !x.limitHit && (x.tag === 'buy' || x.tag === 'definitely_buy'))
     .sort((a, b) => (a.tag === 'definitely_buy' ? 0 : 1) - (b.tag === 'definitely_buy' ? 0 : 1));
   // closest to a buy: % above your limit, or above the Buy line when there's no limit (cards you don't own)
   const gap = (x) => x.lim != null ? x.ask / x.lim - 1 : x.tiers ? x.price / x.tiers.buy_upper - 1 : Infinity;
   // only cards still above the line: a Buy-zone price held at Watch by the event or correction rule has a negative gap
   // (the site's closestBuy/onDeck filter the same way)
-  const closest = cards.filter((x) => !x.own && !x.limitHit && x.tag !== 'buy' && x.tag !== 'definitely_buy' && gap(x) > 0).sort((a, b) => gap(a) - gap(b));
+  const closest = cards.filter((x) => !x.mine && !x.limitHit && x.tag !== 'buy' && x.tag !== 'definitely_buy' && gap(x) > 0).sort((a, b) => gap(a) - gap(b));
   return { cards, limitHits, sells, buys, closest, gap, corr, rally: rallyOn(d), when: d.snap.collected_at_jst };
 }
 
