@@ -269,7 +269,9 @@ def main():
 
     entries = to_entries(parse_input(read_input(args)), card_arg)
 
-    if not dry:
+    import deferpush   # inside a price-check run: commit now, push once at the run's end (runclock.py end)
+    defer = deferpush.active(root)
+    if not dry and not defer:
         pull = git(root, "pull", "--ff-only", "--quiet", check=False)
         if pull.returncode != 0:
             die("`git pull --ff-only` failed — your local repo has diverged or has uncommitted "
@@ -369,6 +371,9 @@ def main():
     print(f"\nCommitted to {rel}.")
     if no_push:
         print("Skipping push (--no-push).")
+        return
+    if defer:
+        print("Not pushed yet: the run's last step (runclock.py end) pushes all follow-ups at once.")
         return
     push = git(root, "push", check=False)
     if push.returncode != 0:

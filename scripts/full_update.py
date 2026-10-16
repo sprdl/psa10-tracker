@@ -64,6 +64,21 @@ def js_round(x):
     return int(x + 0.5)  # JS Math.round for positive numbers (Python's round() is banker's rounding)
 
 
+def carried_a(sid):
+    """'Rc': the A listings weren't read because the A tile showed the same lowest ask as the last snapshot's list.
+    Carry that list, stamped with when it was really read (listings_as_of), like a quick check does."""
+    snap_path, snap = planmod.latest_snapshot(ROOT)
+    for c in (snap or {}).get("cards", []):
+        if c.get("url", "").rstrip("/").split("/")[-1] == sid:
+            a = (c.get("grades") or {}).get("raw_a_grade") or {}
+            if a.get("top20_cheapest_listings"):
+                out = {k: a.get(k) for k in ("lowest_price", "threshold_115pct_of_lowest", "top20_cheapest_listings",
+                                             "listings_within_15pct_of_lowest", "count_within_15pct", "count_excluded_over_15pct")}
+                out["listings_as_of"] = a.get("listings_as_of") or snap.get("collected_at_jst")
+                return out
+    return {"error": "A listings not read (unchanged tile) and none to carry"}
+
+
 def decode_listing(tok):
     """L=… / Lsg2f=… / L!err  → the snkrdunk_listings.js result shape assemble.py reads."""
     body = tok[1:]
@@ -158,7 +173,7 @@ def parse(text, cards_meta, plan):
         rc = {"base": base}
         if "L" in by or "R" in by:
             rc["psa10"] = decode_listing(by["L"]) if "L" in by else {"error": "listings not collected this run"}
-            rc["a"] = decode_listing(by["R"]) if "R" in by else {"error": "listings not collected this run"}
+            rc["a"] = (carried_a(sid) if by.get("R") == "Rc" else decode_listing(by["R"])) if "R" in by else {"error": "listings not collected this run"}
         elif not base.get("error"):
             rc["psa10"] = tile_listing(by.get("p"), "PSA10")
             rc["a"] = tile_listing(by.get("a"), "A")

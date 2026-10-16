@@ -26,6 +26,9 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import deferpush  # noqa: E402  (one push per price-check run)
+
 JST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 PATH = ROOT / "data" / "stories.json"
@@ -88,7 +91,8 @@ def main():
         die(f"the story isn't valid JSON: {e}")
     entry = validate(d)
     push = "--no-push" not in a
-    if push:
+    defer = deferpush.active(ROOT)   # inside a price-check run: commit now, push once at the run's end
+    if push and not defer:
         subprocess.run(["git", "pull", "--ff-only", "--quiet"], cwd=ROOT)
     data = load()
     data.setdefault("cards", {})[f"https://snkrdunk.com/apparels/{sid}"] = entry
@@ -97,11 +101,11 @@ def main():
     print(f"saved the story for {sid} (illustrator: {entry['illustrator'] or 'unknown'}, {len(entry['sources'])} source(s))")
     if not push:
         return
-    for cmd in (["git", "add", str(PATH)], ["git", "commit", "-q", "-m", f"story: {sid}"], ["git", "push", "-q"]):
+    for cmd in (["git", "add", str(PATH)], ["git", "commit", "-q", "-m", f"story: {sid}"], *([] if defer else [["git", "push", "-q"]])):
         r = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True)
         if r.returncode != 0:
             die(f"{' '.join(cmd)} failed:\n{r.stderr or r.stdout}")
-    print("Pushed.")
+    print("Committed; pushed with the run's last step (runclock.py end)." if defer else "Pushed.")
 
 
 if __name__ == "__main__":

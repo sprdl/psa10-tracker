@@ -159,116 +159,178 @@ def _fresh_listings(g):
     return isinstance(lst, list) and lst and g.get("lowest_price") is not None and not g.get("listings_as_of")
 
 
+CACHE_VERSION = 2   # bump when _extract changes what it returns
+
+
+def _extract(d, s):
+    """What one snapshot contributes, independent of the others (cached per file in data/incoming/)."""
+    idx = (((d.get("pokeca_chart_index") or {}).get("psa10") or {}).get("latest_index_value_jpy"))
+    _pi = d.get("pokeca_chart_index") or {}
+    ridx = ((_pi.get("raw_bihin") or _pi.get("raw") or {}).get("latest_index_value_jpy"))  # raw A-rank index (weekly recap)
+    when = d.get("collected_at_jst", s["collected_at_jst"])
+    tiers, points = [], {}
+    for c in d.get("cards", []):
+        an = c.get("analysis") or {}
+        t = an.get("tiers")
+        if t:
+            made = max([pr.get("made") for pr in ((an.get("verdict") or {}).get("predictions") or []) if pr.get("made")] or [""], key=lambda m: _ts(m) if m else _ts("1970-01-01"))
+            tiers.append([c.get("url"), [t.get("definitely_buy"), t.get("buy_upper"), t.get("ceiling")], made])
+        else:
+            tiers.append([c.get("url"), None, None])
+        psa10 = (c.get("grades") or {}).get("psa10") or {}
+        a = c.get("analysis") or {}
+        # a quick check that couldn't re-read the ask carries the old one: that's not a new reading
+        if carried_ask(c):
+            continue
+        price = a.get("representative_price") if a.get("representative_price") is not None else psa10.get("lowest_price")
+        if price is None:
+            continue
+        points[c.get("url")] = [price, 1 if a.get("price_source") == "sales_confirmed" else 0]
+    heat, prem, favs, depth, pop, srows = {}, {}, {}, {}, {}, {}
+    try:
+        ref = datetime.fromisoformat(when)
+        if ref.tzinfo is None:
+            ref = ref.replace(tzinfo=JST)
+    except ValueError:
+        ref = None
+    if ref:
+        for c in d.get("cards", []):
+            url = c.get("url")
+            g = c.get("grades") or {}
+            a = sales_per_day((g.get("psa10") or {}).get("recent_completed_sales"), ref)
+            b = sales_per_day((g.get("raw_a_grade") or {}).get("recent_completed_sales"), ref)
+            if a is not None or b is not None:
+                heat[url] = [a, b]
+            pl = (g.get("psa10") or {}).get("lowest_price")
+            rl = (g.get("raw_a_grade") or {}).get("lowest_price")
+            ps = sales_median((g.get("psa10") or {}).get("recent_completed_sales"), ref)
+            rs = sales_median((g.get("raw_a_grade") or {}).get("recent_completed_sales"), ref)
+            # 5th value: the raw A-rank price (scripts/raw_price.py), used to value raw pulls over time
+            raw_sales = [x.get("price") for x in reversed((g.get("raw_a_grade") or {}).get("recent_completed_sales") or [])
+                         if x.get("price") and (lambda a: a is not None and a <= 30)(sale_age_days(x.get("when"), ref))]
+            rp = raw_price(rl, raw_sales)[0]
+            if (pl and rl) or (ps and rs) or rp:
+                prem[url] = [pl, rl, ps, rs, rp]
+            if isinstance(c.get("favorite_count"), int):
+                favs[url] = c["favorite_count"]
+            g10 = g.get("psa10") or {}
+            if _fresh_listings(g10):
+                depth[url] = [g10.get("count_within_15pct") or 0, len(g10["top20_cheapest_listings"])]
+            if c.get("psa10_population") is not None and not c.get("population_as_of"):
+                pop[url] = [c["psa10_population"], c.get("psa10_gem_rate_pct")]
+            rows = []
+            for x in g10.get("recent_completed_sales") or []:
+                if x.get("price"):
+                    w = sale_window(x.get("when"), ref)
+                    rows.append([x.get("price"), x.get("when"), w[0].timestamp() if w else None, w[1].timestamp() if w else None])
+            if rows:
+                srows[url] = rows
+    # what build_calls.py reads of each card (it shares this cache)
+    cmin = []
+    for c in d.get("cards", []):
+        g10 = (c.get("grades") or {}).get("psa10") or {}
+        an = c.get("analysis") or {}
+        v = an.get("verdict") or {}
+        cmin.append({"url": c.get("url"), "card_name_ja": c.get("card_name_ja"), "quick_note": c.get("quick_note"),
+                     "grades": {"psa10": {"lowest_price": g10.get("lowest_price"), "quick_note": g10.get("quick_note")}},
+                     "analysis": {"verdict": {"tag": v.get("tag"), "label": v.get("label"), "predictions": v.get("predictions")},
+                                  "sell_verdict": {"predictions": (an.get("sell_verdict") or {}).get("predictions")}}})
+    return {"when": when, "cmin": cmin, "idx": idx, "ridx": ridx, "tiers": tiers, "points": points, "heat": heat, "prem": prem,
+            "favs": favs, "depth": depth, "pop": pop, "ref": ref.timestamp() if ref else None, "sales": srows}
+
+
 def entries(root: Path = ROOT):
-    """Full-resolution entries (one per snapshot, oldest first) plus the tier state, tier log and PSA10 sales."""
+    """Full-resolution entries (one per snapshot, oldest first) plus the tier state, tier log and PSA10 sales.
+    What each snapshot contributes is cached in data/incoming/history-cache.json (keyed by file, size and mtime),
+    so a rebuild reads only new or changed snapshots instead of all of them (2026-10-16)."""
     manifest = json.loads((root / "data" / "manifest.json").read_text(encoding="utf-8"))
     snaps = sorted([s for s in manifest.get("snapshots", []) if s.get("collected_at_jst")],
                    key=lambda s: s["collected_at_jst"])
+    cache_path = root / "data" / "incoming" / "history-cache.json"
+    try:
+        cache = json.loads(cache_path.read_text(encoding="utf-8"))
+        if cache.get("v") != CACHE_VERSION:
+            cache = {}
+    except (OSError, ValueError):
+        cache = {}
+    files, dirty = cache.get("files") or {}, False
+    used = {}
     series = []
     tier_state = {}  # url -> [tiers tuple, changed_at, index_then, reviewed_at]
     tier_log = {}    # url -> [[since, db, bu, ceil], ...]
     seen, sales, last_rows = {}, {}, {}   # url -> [(price, window)] of every sale recorded / url -> [(time, price)] / raw rows
+    utc = timezone.utc
     for s in snaps:
         path = root / "data" / "snapshots" / s["file"]
         try:
-            d = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+            st_ = path.stat()
+        except OSError:
             continue
-        points = {}
-        idx = (((d.get("pokeca_chart_index") or {}).get("psa10") or {}).get("latest_index_value_jpy"))
-        _pi = d.get("pokeca_chart_index") or {}
-        ridx = ((_pi.get("raw_bihin") or _pi.get("raw") or {}).get("latest_index_value_jpy"))  # raw A-rank index (weekly recap)
-        when = d.get("collected_at_jst", s["collected_at_jst"])
-        for c in d.get("cards", []):
-            an = c.get("analysis") or {}
-            t = an.get("tiers")
-            if t:
-                key = (t.get("definitely_buy"), t.get("buy_upper"), t.get("ceiling"))
-                made = max([pr.get("made") for pr in ((an.get("verdict") or {}).get("predictions") or []) if pr.get("made")] or [""], key=lambda m: _ts(m) if m else _ts("1970-01-01"))
-                st = tier_state.get(c.get("url"))
-                if not st or st[0] != key:
-                    tier_state[c.get("url")] = st = [key, when, idx, when]
-                    log = tier_log.setdefault(c.get("url"), [])
-                    if not log or tuple(log[-1][1:]) != key:
-                        log.append([when, *key])
-                if made and _ts(made) > _ts(st[3]):
-                    st[3] = made
-            else:
-                tier_state.pop(c.get("url"), None)
-            psa10 = (c.get("grades") or {}).get("psa10") or {}
-            a = c.get("analysis") or {}
-            # a quick check that couldn't re-read the ask carries the old one: that's not a new reading
-            if carried_ask(c):
+        stamp = f"{st_.st_size}:{st_.st_mtime_ns}"
+        hit = files.get(s["file"])
+        if hit and hit.get("stamp") == stamp:
+            ex = hit["x"]
+        else:
+            try:
+                d = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
                 continue
-            price = a.get("representative_price") if a.get("representative_price") is not None else psa10.get("lowest_price")
-            if price is None:
+            ex = _extract(d, s)
+            dirty = True
+        used[s["file"]] = {"stamp": stamp, "x": ex}
+        when, idx = ex["when"], ex["idx"]
+        for url, key, made in ex["tiers"]:
+            if key is None:
+                tier_state.pop(url, None)
                 continue
-            points[c.get("url")] = [price, 1 if a.get("price_source") == "sales_confirmed" else 0]
-        heat, prem, favs, depth, pop = {}, {}, {}, {}, {}
-        try:
-            ref = datetime.fromisoformat(when)
-            if ref.tzinfo is None:
-                ref = ref.replace(tzinfo=JST)
-        except ValueError:
-            ref = None
-        if ref:
-            for c in d.get("cards", []):
-                url = c.get("url")
-                g = c.get("grades") or {}
-                a = sales_per_day((g.get("psa10") or {}).get("recent_completed_sales"), ref)
-                b = sales_per_day((g.get("raw_a_grade") or {}).get("recent_completed_sales"), ref)
-                if a is not None or b is not None:
-                    heat[url] = [a, b]
-                pl = (g.get("psa10") or {}).get("lowest_price")
-                rl = (g.get("raw_a_grade") or {}).get("lowest_price")
-                ps = sales_median((g.get("psa10") or {}).get("recent_completed_sales"), ref)
-                rs = sales_median((g.get("raw_a_grade") or {}).get("recent_completed_sales"), ref)
-                # 5th value: the raw A-rank price (scripts/raw_price.py), used to value raw pulls over time
-                raw_sales = [x.get("price") for x in reversed((g.get("raw_a_grade") or {}).get("recent_completed_sales") or [])
-                             if x.get("price") and (lambda a: a is not None and a <= 30)(sale_age_days(x.get("when"), ref))]
-                rp = raw_price(rl, raw_sales)[0]
-                if (pl and rl) or (ps and rs) or rp:
-                    prem[url] = [pl, rl, ps, rs, rp]
-                if isinstance(c.get("favorite_count"), int):
-                    favs[url] = c["favorite_count"]
-                g10 = g.get("psa10") or {}
-                if _fresh_listings(g10):
-                    depth[url] = [g10.get("count_within_15pct") or 0, len(g10["top20_cheapest_listings"])]
-                if c.get("psa10_population") is not None and not c.get("population_as_of"):
-                    pop[url] = [c["psa10_population"], c.get("psa10_gem_rate_pct")]
-                rows = [(x.get("price"), x.get("when")) for x in g10.get("recent_completed_sales") or [] if x.get("price")]
-                cur = [(p, sale_window(w, ref)) for p, w in rows]
-                # a list carried over word for word ("57分前" still "57分前" hours later: the 2026-09-27/28 email_alert
-                # snapshots, a quick check that couldn't re-read sales) is the same sales, not new ones
-                if rows and rows == last_rows.get(url):
-                    cur = []
-                elif rows:
-                    last_rows[url] = rows
-                if cur:
-                    mid_p = sorted(p for p, _ in cur)[len(cur) // 2]
-                    # compare with every sale already recorded that could still be in this list, not only the previous
-                    # list: a short list (10 rows) or a quick check's restated times otherwise re-add older sales
-                    known = seen.setdefault(url, [])
-                    starts = [w[0] for _, w in cur if w]
-                    lo = min(starts) - timedelta(hours=1) if starts else None
-                    pool = [k for k in known if lo is None or k[1] is None or k[1][1] >= lo]
-                    fresh = new_sales(pool, cur)
-                    known.extend(fresh)
-                    for price, win in fresh:
-                        # a print far off the rest of the list (¥18,999 among ¥140k PSA10 sales on 2026-10-08) is a
-                        # misread row or a mislabeled grade: keep it out of the sales history
-                        if win and 0.4 * mid_p <= price <= 2.5 * mid_p:
-                            mid = win[0] + (win[1] - win[0]) / 2
-                            sales.setdefault(url, []).append((min(mid, ref), price))
-        entry = {"d": when, "m": s.get("check_mode", "full"), "p": points}
-        for k, v in (("h", heat), ("r", prem), ("f", favs), ("q", depth), ("n", pop)):
-            if v:
-                entry[k] = v
+            key = tuple(key)
+            st = tier_state.get(url)
+            if not st or st[0] != key:
+                tier_state[url] = st = [key, when, idx, when]
+                log = tier_log.setdefault(url, [])
+                if not log or tuple(log[-1][1:]) != key:
+                    log.append([when, *key])
+            if made and _ts(made) > _ts(st[3]):
+                st[3] = made
+        ref = datetime.fromtimestamp(ex["ref"], utc) if ex["ref"] is not None else None
+        for url, rws in ex["sales"].items():
+            rows = [(p, w) for p, w, _, _ in rws]
+            cur = [(p, (datetime.fromtimestamp(a, utc), datetime.fromtimestamp(b, utc)) if a is not None else None) for p, _, a, b in rws]
+            # a list carried over word for word ("57分前" still "57分前" hours later: the 2026-09-27/28 email_alert
+            # snapshots, a quick check that couldn't re-read sales) is the same sales, not new ones
+            if rows == last_rows.get(url):
+                continue
+            last_rows[url] = rows
+            mid_p = sorted(p for p, _ in cur)[len(cur) // 2]
+            # compare with every sale already recorded that could still be in this list, not only the previous
+            # list: a short list (10 rows) or a quick check's restated times otherwise re-add older sales
+            known = seen.setdefault(url, [])
+            starts = [w[0] for _, w in cur if w]
+            lo = min(starts) - timedelta(hours=1) if starts else None
+            pool = [k for k in known if lo is None or k[1] is None or k[1][1] >= lo]
+            fresh = new_sales(pool, cur)
+            known.extend(fresh)
+            for price, win in fresh:
+                # a print far off the rest of the list (¥18,999 among ¥140k PSA10 sales on 2026-10-08) is a
+                # misread row or a mislabeled grade: keep it out of the sales history
+                if win and 0.4 * mid_p <= price <= 2.5 * mid_p:
+                    mid = win[0] + (win[1] - win[0]) / 2
+                    sales.setdefault(url, []).append((min(mid, ref), price))
+        entry = {"d": when, "m": s.get("check_mode", "full"), "p": ex["points"]}
+        for k, src in (("h", "heat"), ("r", "prem"), ("f", "favs"), ("q", "depth"), ("n", "pop")):
+            if ex[src]:
+                entry[k] = ex[src]
         if idx:
             entry["i"] = idx
-        if ridx:
-            entry["ri"] = ridx
+        if ex["ridx"]:
+            entry["ri"] = ex["ridx"]
         series.append(entry)
+    if dirty or len(used) != len(files):
+        try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps({"v": CACHE_VERSION, "files": used}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        except OSError:
+            pass   # a cache, never required
     return series, tier_state, tier_log, sales
 
 

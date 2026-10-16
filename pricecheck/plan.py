@@ -7,7 +7,7 @@ publishes, so the rules below live in one place.
     python3 pricecheck/plan.py
 
 Prints a short summary plus two ready-made JS lines to paste into the in-page scripts:
-    PLAN = [["455596","full",0], ...]            -> pricecheck/scripts/snkrdunk_full.js
+    PLAN = [["455596","full",0,6200], ...]       -> pricecheck/scripts/snkrdunk_full.js
     PSAPOP = [["224087","/pop/tcg-cards/…","090","Greninja"], ...] -> pricecheck/scripts/psa_pop.js
 
 Rules (unchanged from the old step 2/3 of the full check):
@@ -74,6 +74,27 @@ def latest_snapshot(root=ROOT):
     return p, json.loads(p.read_text(encoding="utf-8"))
 
 
+A_CARRY_DAYS = 3
+
+
+def a_carry_price(prev, snap, now, monday):
+    """The A-rank (raw) listings page may be skipped when its grade tile still shows the same lowest ask as the last
+    snapshot's listings: those 20 listings are carried (stamped listings_as_of). Returns that price, or 0 = read it.
+    Always read on Mondays, when the carried list is A_CARRY_DAYS+ days old, or when there's no list to carry."""
+    if monday:
+        return 0
+    a = (prev.get("grades") or {}).get("raw_a_grade") or {}
+    if not a.get("top20_cheapest_listings") or a.get("lowest_price") is None:
+        return 0
+    asof = a.get("listings_as_of") or (snap or {}).get("collected_at_jst")
+    try:
+        if (now - datetime.fromisoformat(asof)).days >= A_CARRY_DAYS:
+            return 0
+    except (TypeError, ValueError):
+        return 0
+    return int(a["lowest_price"])
+
+
 def build_plan(root=ROOT, now=None):
     now = now or datetime.now(JST)
     monday = now.weekday() == 0
@@ -89,7 +110,7 @@ def build_plan(root=ROOT, now=None):
         prev = by_id.get(sid) or {}
         has_market = ((prev.get("grades") or {}).get("psa10") or {}).get("lowest_price") is not None
         mode = "full" if (has_market or monday) else "tile"
-        plan.append([sid, mode, 0 if c.get("image_url") else 1])
+        plan.append([sid, mode, 0 if c.get("image_url") else 1, a_carry_price(prev, snap, now, monday)])
         slug = c.get("pokeca_slug") or pokeca_slug(c.get("card_name_ja", ""))
         if slug and slug != "-":
             tracked_slugs.add(slug)

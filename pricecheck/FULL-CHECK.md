@@ -230,7 +230,7 @@ if it says nothing stands out, skip it.
 
 The snapshot's JSON layout is in `pricecheck/references/output-shape.md` (only when you need it).
 
-**End of the run.** After the last follow-up, one `device_bash` call: `cd "$R" && python3 scripts/runclock.py end`.
+**End of the run.** After the last follow-up, one `device_bash` call: `cd "$R" && python3 scripts/runclock.py end`. It also pushes the follow-ups (analyses, insights, stories, hype readings): during a run those scripts only commit, so the site redeploys once instead of after each one (`scripts/deferpush.py`). Never skip this step; if its line says commits were NOT pushed, tell me.
 It prints how long the run took (with the time it published) and logs it for comparison
 (`python3 scripts/runclock.py history`). Put that line in the chat message with the tokens used.
 

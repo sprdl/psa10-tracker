@@ -60,6 +60,8 @@ def grade_obj(listing, sales, label):
     else:
         for f in LISTING_FIELDS:
             g[f] = listing.get(f)
+        if listing.get("listings_as_of"):   # carried A listings (full_update.carried_a)
+            g["listings_as_of"] = listing["listings_as_of"]
         for extra in ("sort_note", "grade_warning"):
             if listing.get(extra):
                 g[extra] = listing[extra]

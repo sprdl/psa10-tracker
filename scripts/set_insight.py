@@ -19,6 +19,9 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import deferpush  # noqa: E402  (one push per price-check run)
+
 JST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 PATH = ROOT / "data" / "insights.json"
@@ -43,7 +46,8 @@ def main():
     if not sid or not sid.isdigit():
         die("pass the card's SNKRDUNK id first")
     url = f"https://snkrdunk.com/apparels/{sid}"
-    if "--no-push" not in a:
+    defer = deferpush.active(ROOT)   # inside a price-check run: commit now, push once at the run's end
+    if "--no-push" not in a and not defer:
         subprocess.run(["git", "pull", "--ff-only", "--quiet"], cwd=ROOT)
     data = json.loads(PATH.read_text(encoding="utf-8")) if PATH.exists() else {}
     data.setdefault("about", "Analyses written by the full price check for cards that stand out (scripts/outliers.py). "
@@ -75,11 +79,11 @@ def main():
     print(f"saved {PATH.relative_to(ROOT)} ({len(items)} card(s) with an analysis)")
     if "--no-push" in a:
         return
-    for cmd in (["git", "add", str(PATH)], ["git", "commit", "-q", "-m", msg], ["git", "push", "-q"]):
+    for cmd in (["git", "add", str(PATH)], ["git", "commit", "-q", "-m", msg], *([] if defer else [["git", "push", "-q"]])):
         r = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True)
         if r.returncode != 0:
             die(f"{' '.join(cmd)} failed:\n{r.stderr or r.stdout}")
-    print("Pushed.")
+    print("Committed; pushed with the run's last step (runclock.py end)." if defer else "Pushed.")
 
 
 if __name__ == "__main__":

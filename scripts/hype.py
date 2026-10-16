@@ -37,6 +37,9 @@ import subprocess
 import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import deferpush  # noqa: E402  (one push per price-check run)
 from urllib.parse import unquote
 
 JST = timezone(timedelta(hours=9))
@@ -142,12 +145,13 @@ def save(readings, root=ROOT, push=True, note=""):
     hi = [s for s, h in readings.items() if h and cards.get(f"https://snkrdunk.com/apparels/{s}", {}).get("level") == "high"]
     print(f"hype: {sum(1 for h in readings.values() if h)} card(s) scored{note}" + (f" · high exposure: {', '.join(hi)}" if hi else ""))
     if push:
-        for cmd in (["git", "add", str(PATH)], ["git", "commit", "-q", "-m", "hype: exposure readings"], ["git", "push", "-q"]):
+        defer = deferpush.active(root)   # inside a price-check run: push once at the run's end
+        for cmd in (["git", "add", str(PATH)], ["git", "commit", "-q", "-m", "hype: exposure readings"], *([] if defer else [["git", "push", "-q"]])):
             r = subprocess.run(cmd, cwd=root, text=True, capture_output=True)
             if r.returncode != 0 and "nothing to commit" not in (r.stdout + r.stderr):
                 print(f"hype: {' '.join(cmd)} failed: {(r.stderr or r.stdout).strip()}")
                 return
-        print("hype: pushed.")
+        print("hype: committed (pushed at the run's end)." if defer else "hype: pushed.")
 
 
 def tracked(root=ROOT):
@@ -170,7 +174,7 @@ def main():
             print(url.split("/")[-1], e.get("level"), e.get("score"), f"gain {e.get('gain_pct')}% rank {e.get('gain_rank')}", f"trade rank {e.get('trade_rank')}")
         return
     if "--ref" in args or "--seed" in args:
-        if push:
+        if push and not deferpush.active(ROOT):
             subprocess.run(["git", "pull", "--ff-only", "--quiet"], cwd=ROOT)
         files = [a for a in args if not a.startswith("--")]
         if "--ref" in args:

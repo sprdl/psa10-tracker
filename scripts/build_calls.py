@@ -87,10 +87,23 @@ def _load(root):
     manifest = json.loads((root / "data" / "manifest.json").read_text(encoding="utf-8"))
     snaps = sorted([s for s in manifest.get("snapshots", []) if s.get("collected_at_jst")],
                    key=lambda s: s["collected_at_jst"])
+    # build_history.py caches what each snapshot contributes (data/incoming/history-cache.json), including the few
+    # card fields read here: use it for unchanged files instead of parsing every snapshot again
+    try:
+        cache = json.loads((root / "data" / "incoming" / "history-cache.json").read_text(encoding="utf-8"))
+        files = cache.get("files") or {} if cache.get("v", 0) >= 2 else {}
+    except (OSError, ValueError):
+        files = {}
     out = []
     for s in snaps:
+        path = root / "data" / "snapshots" / s["file"]
+        hit = files.get(s["file"])
         try:
-            d = json.loads((root / "data" / "snapshots" / s["file"]).read_text(encoding="utf-8"))
+            st = path.stat()
+            if hit and hit.get("stamp") == f"{st.st_size}:{st.st_mtime_ns}" and "cmin" in hit.get("x", {}):
+                out.append((hit["x"]["when"], hit["x"]["cmin"]))
+                continue
+            d = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
         out.append((d.get("collected_at_jst", s["collected_at_jst"]), d.get("cards", [])))

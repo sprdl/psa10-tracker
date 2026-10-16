@@ -72,6 +72,11 @@ def end():
         f.write(json.dumps({"mode": c["mode"], "start": c["start"], "total_s": round(total),
                             "laps": {lab: round(x) for lab, x in laps}}, ensure_ascii=False) + "\n")
     CUR.unlink(missing_ok=True)
+    try:   # the follow-ups committed locally during the run (scripts/deferpush.py): one push for all of them
+        import deferpush
+        print("⏱ follow-ups: " + deferpush.push_pending(ROOT))
+    except Exception as e:  # noqa: BLE001
+        print(f"⏱ follow-ups: push failed ({e}); run `python3 scripts/deferpush.py`")
 
 
 def history(n=10):

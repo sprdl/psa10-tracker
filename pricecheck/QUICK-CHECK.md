@@ -34,6 +34,6 @@ If a card came back as an `E` line, `quick_update.py` keeps that card's values f
 - Any other block a future version prints names the document to follow; do the same.
 If a step fails (site down, page changed), say so in the chat message instead of retrying repeatedly.
 
-**End of the run.** After the last follow-up, one `device_bash` call: `cd "$R" && python3 scripts/runclock.py end`; it prints how long the run took.
+**End of the run.** After the last follow-up, one `device_bash` call: `cd "$R" && python3 scripts/runclock.py end`; it prints how long the run took. It also pushes the follow-ups (analyses, insights, stories, hype readings): during a run those scripts only commit, so the site redeploys once instead of after each one (`scripts/deferpush.py`). Never skip this step; if its line says commits were NOT pushed, tell me.
 
 **Chat message (quick check):** one or two lines, plus one line per follow-up. Card requests and evaluations as in the skill's "New cards" step 4: every card in `EVALUATE NOW` appears as evaluated or as "NOT evaluated: <name> — <concrete reason>"; being new is never the reason. Say it was published (snapshot time), or why not. Mention any card it couldn't re-check or any tile/sales problem `quick_update.py` printed. Sealed info: "Sealed: added name and picture for <product>". The site's banners already flag cards that crossed a tier line. Finally, report how long the price check took (the `runclock.py end` line) and how many tokens you used.

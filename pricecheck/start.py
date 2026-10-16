@@ -28,7 +28,11 @@ PREFIX = re.compile(r'R=\$\(ls -d "\$HOME"/mnt/\*/psa10-tracker[^;]*;\s*cd "\$R"
 
 
 def local(text):
-    return PREFIX.sub("", text).replace('"$R"/', "").replace("$R/", "") if LOCAL else text
+    if not LOCAL:
+        return text
+    # section 0 (delete permission for the desktop app's mounted folder) doesn't apply on the Mac itself
+    text = re.sub(r"(?ms)^## 0\. .*?(?=^## )", "", text)
+    return PREFIX.sub("", text).replace('"$R"/', "").replace("$R/", "")
 
 
 def sh(*cmd):

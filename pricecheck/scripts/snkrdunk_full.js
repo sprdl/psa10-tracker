@@ -11,6 +11,7 @@
 //   await (async()=>{for(let i=0;i<75&&!window.__pj.done;i++)await (window.__wsleep||(m=>new Promise(r=>setTimeout(r,m))))(500);const q=window.__pj;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}${document.hidden?' (tab hidden)':''}`})()
 // Line: <id> f.. p.. a.. P.. A.. [L..] [R..] [I..]   (decoded by scripts/full_update.py)
 //   f/p/a/P/A: exactly as in snkrdunk_quick.js (favorites, PSA10 tile, A tile, PSA10 sales, A sales)
+//   Rc = A listings not read: the A tile shows the same lowest ask as the last read list (carried by full_update.py)
 //   L / R (PSA10 / A listings): L=<top-20 prices ascending>  with optional flags before '=':
 //        s = order/sold filter not confirmed on the page (sorted in script), g<n> = n tiles show another
 //        grade, f = filter label didn't match the grade;  or  L!<uri-encoded error>
@@ -113,20 +114,23 @@
         Object.getOwnPropertyDescriptor(w.HTMLSelectElement.prototype, 'value').set.call(sel, 'price');
         sel.dispatchEvent(new w.Event('input', { bubbles: true }));
         sel.dispatchEvent(new w.Event('change', { bubbles: true }));
-        await sleep(1200);
       }
-      if (!cb.checked) { cb.click(); await sleep(1200); }
+      if (!cb.checked) cb.click();
+      await sleep(500);   // was 1200 + 1200 fixed (2026-10-16): the settle loop below waits for sorted, unsold listings
       const read = () => [...d.querySelectorAll('li[class*="__listItem"], li.item-list, .item-list')].map((li) => ({
         sold: /sold/i.test(li.className) || /SOLD/.test(li.innerText),   // new and old markup (.item-list.sold)
         price: Number((li.querySelector('[class*="__priceValue"]')?.textContent || li.querySelector('.item-price')?.childNodes[0]?.textContent || '').replace(/[^\d]/g, '')),
         grade: ([...li.querySelectorAll('[class*="__subInfo"]')].pop() || li.querySelector('.item-price span:last-child'))?.innerText.trim(),
       })).filter((x) => x.price);
       let items = [], ok = false;
-      for (let t = 0; t < 15; t++) {                                  // wait for the re-render to settle
+      for (let t = 0; t < 20; t++) {                                  // wait for the re-render to settle
         items = read();
         const asc = items.every((x, i) => i === 0 || x.price >= items[i - 1].price);
-        if (!items.some((x) => x.sold) && asc) { ok = true; if (t >= 1 && (items.length || t >= 5)) break; }
+        // two identical sorted, unsold readings in a row = settled (a stale list can look sorted for one reading)
+        const sig = items.map((x) => x.price).join(',');
+        if (!items.some((x) => x.sold) && asc) { ok = true; if (t >= 1 && items.length && sig === read.last) break; if (t >= 6 && !items.length) break; }
         else if (t === 7 && !cb.checked) cb.click();
+        read.last = sig;
         await sleep(400);
       }
       if (!items.length) return k + '!' + encodeURIComponent('no for-sale listings found for this grade');
@@ -141,13 +145,16 @@
     } finally { f.remove(); }
   }
   (async () => {
-    for (const [id0, mode, img] of PLAN) {
+    for (const [id0, mode, img, aPrev] of PLAN) {
       const id = String(id0);
       const b = await readBase(id, !!img);
       const toks = [id, ...b.toks];
       if (mode === 'full' || (mode === 'tile' && b.psaTile)) {
         await sleep(300); toks.push(await readListings(id, 22, 'L'));
-        await sleep(300); toks.push(await readListings(id, 18, 'R'));
+        // A listings: carried ('Rc') when the A tile still shows the price of the last read list (plan.py a_carry_price)
+        const aTile = Number(((b.toks.find((t) => /^a\d+$/.test(t)) || '').slice(1)));
+        if (aPrev && aTile === Number(aPrev)) toks.push('Rc');
+        else { await sleep(300); toks.push(await readListings(id, 18, 'R')); }
       }
       q.lines.push(toks.join(' ')); q.i++;
       await sleep(400);

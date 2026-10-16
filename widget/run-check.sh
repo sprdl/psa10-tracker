@@ -43,6 +43,8 @@ cleanup() {
   if [ -f "$RUNCLOCK" ] && [ "$RUNCLOCK" -nt "$STATE/run-start" ]; then
     rm -f "$RUNCLOCK"
     date "+%Y-%m-%d %H:%M $mode stopped before the end (run clock cleared)" >> "$STATE/runs.log"
+    # follow-ups committed during the run wait for `runclock.py end` to push them (scripts/deferpush.py): push them now
+    (cd "$REPO" && python3 scripts/deferpush.py >> "$STATE/runs.log" 2>&1)
   fi
 }
 trap cleanup EXIT
