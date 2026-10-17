@@ -120,6 +120,18 @@
    "text": "What's happening: The lowest PSA10 ask is ¥80,000, down from ¥150,000 a week ago, while the My-tier index is up 6.7%. Only one PSA10 listing exists, and there were 2 sales in the last 7 days (about 0.5 a day).\n\nWhy: Most likely the earlier ¥150k ask was a single seller's price and the new ¥80k is another seller's; with one listing the \"price\" is not a market. A search found no news of a reprint, and no usable price data for this card.\n\nFor you: The card has no buy tiers yet, so there is nothing to compare ¥80k with. Treat the move as noise until more listings appear.\n\nWatch: How many PSA10 listings there are at the next check, and whether sales at ¥80k or below repeat.",
    "signals": "7d price -46.7% (¥150,000→¥80,000) vs My-tier index +6.7% = -53.4 pts",
    "sources": []
+  },
+  "https://snkrdunk.com/apparels/91178": {
+   "written": "2026-10-17T09:54:48+09:00",
+   "headline": "PSA10 ask +29% in 30 days against a +6.7% market, sales holding at ¥379,000",
+   "text": "What's happening: the lowest PSA10 ask climbed from ¥293,000 to ¥378,000 over 30 days, while the My-tier index rose 6.7%. The last-7-day sales median is ¥379,000 (5 sales) versus ¥382,000 before, at about 1.8 sales a day, so sales are following the ask rather than lagging it.\n\nWhy: likely a card-specific run: per premium.gamepedia.jp's price page the PSA10 market had already been rising into 2026. My searches found no news of a reprint of the Gengar VMAX high-class deck.\n\nFor you: the ask is above the ¥335,000 ceiling and far over your ¥200,000 limit, so no action.\n\nWatch: whether sales stay near ¥380,000 as supply of ¥395,000+ listings thins, and any deck re-release announcement.",
+   "signals": "30d price +29.0% (¥293,000→¥378,000) vs My-tier index +6.7% = +22.3 pts",
+   "sources": [
+    {
+     "title": "ゲンガーVMAX SAの価格相場",
+     "url": "https://premium.gamepedia.jp/pokeca/archives/19842"
+    }
+   ]
   }
  }
 }
