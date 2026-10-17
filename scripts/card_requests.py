@@ -161,7 +161,6 @@ def cmd_add(args):
     name = flag(args, "--name")
     if not name:
         die("--name is required (use the title SNKRDUNK shows for the card)")
-    # --mode (daily/weekly_until_graded) was altema's cadence; still accepted from old instructions, ignored.
     psa = {k: v for k, v in (("psa_pop_url", flag(args, "--psa-url", "")), ("psa_pop_no", flag(args, "--psa-no", "")),
                               ("psa_pop_name", flag(args, "--psa-name", ""))) if v}
 

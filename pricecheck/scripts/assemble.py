@@ -128,19 +128,19 @@ def main():
         if base.get("error") or base.get("favorite_error"):
             o["favorite_error"] = base.get("error") or base.get("favorite_error")
             warnings.append(f"{sid}: {o['favorite_error']}")
-        alt = r.get("population") or r.get("altema") or {"skipped": "not collected"}   # PSA pop report result
-        if alt.get("skipped"):
-            o["population_note"] = f"population not checked this run ({alt['skipped']})"
-        elif alt.get("error") and alt.get("psa10_population") is None:
-            o["population_error"] = "PSA pop report: " + alt["error"]   # add_snapshot carries the last value forward
+        pop = r.get("population") or {"skipped": "not collected"}   # PSA pop report result
+        if pop.get("skipped"):
+            o["population_note"] = f"population not checked this run ({pop['skipped']})"
+        elif pop.get("error") and pop.get("psa10_population") is None:
+            o["population_error"] = "PSA pop report: " + pop["error"]   # add_snapshot carries the last value forward
         else:
-            o["psa10_population"] = alt.get("psa10_population")
-            o["psa10_gem_rate_pct"] = alt.get("psa10_gem_rate_pct")
-            o["population_source"] = alt.get("source", "psa")
-            if alt.get("psa_total_graded") is not None:
-                o["psa_total_graded"] = alt["psa_total_graded"]
-            if alt.get("error"):
-                o["population_error"] = alt["error"]
+            o["psa10_population"] = pop.get("psa10_population")
+            o["psa10_gem_rate_pct"] = pop.get("psa10_gem_rate_pct")
+            o["population_source"] = pop.get("source", "psa")
+            if pop.get("psa_total_graded") is not None:
+                o["psa_total_graded"] = pop["psa_total_graded"]
+            if pop.get("error"):
+                o["population_error"] = pop["error"]
         sales = base.get("sales", {})
         o["grades"] = {"psa10": grade_obj(r.get("psa10"), sales.get("PSA10"), f"{sid} PSA10"),
                        "raw_a_grade": grade_obj(r.get("a"), sales.get("A"), f"{sid} A")}

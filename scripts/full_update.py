@@ -136,8 +136,6 @@ def parse(text, cards_meta, plan):
         head, _, rest = s.partition(" ")
         if head.isdigit():
             card_lines[head] = s
-        elif head == "ALT":
-            print("  (ignored ALT line: altema is no longer read; population comes from POP lines)")
         elif head == "POP":
             sid, _, r = rest.partition(" ")
             pop_lines[sid] = r

@@ -1,5 +1,5 @@
 {
-  "_about": "Cards tracked in addition to the price-check skill's own references/cards.json. The skill merges this list in at the start of every run. scripts/card_requests.py adds to it (from 'Add card' GitHub issues) and updates fields like image_url / altema_url, so no skill change is needed to track a new card.",
+  "_about": "Cards tracked in addition to the price-check skill's own references/cards.json. The skill merges this list in at the start of every run. scripts/card_requests.py adds to it (from 'Add card' GitHub issues) and updates fields like image_url, so no skill change is needed to track a new card.",
   "cards": [
     {
       "snkrdunk_id": "224087",
