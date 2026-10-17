@@ -93,15 +93,21 @@ class Parser(unittest.TestCase):
         self.assertNotIn("October 6", got[3])
 
 
+# PSA's published readings up to 2026-10-06 (a fixture: the live data/psa_backlog.json keeps growing)
+SAVED = {"threshold_m": 5.0, "readings": [
+    {"d": "2026-07-14", "m": 11.0}, {"d": "2026-07-28", "m": 12.4}, {"d": "2026-08-11", "m": 11.85}, {"d": "2026-08-25", "m": 10.9},
+    {"d": "2026-09-08", "m": 9.9}, {"d": "2026-09-22", "m": 9.0}, {"d": "2026-10-06", "m": 8.2}]}
+LOOK_DAY = date(2026, 10, 23)   # the day the full check reads PSA's page (frozen)
+
+
 class Saving(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp()); (self.tmp / "data").mkdir()
-        shutil.copy(ROOT / "data" / "psa_backlog.json", self.tmp / "data")
-        d = json.loads((self.tmp / "data/psa_backlog.json").read_text())
-        d["readings"] = [r for r in d["readings"] if r["d"] <= "2026-10-06"]
-        pb.save(pb.recompute(d), self.tmp)
+        self.real_today, pb.today = pb.today, lambda: LOOK_DAY
+        pb.save(pb.recompute(json.loads(json.dumps(SAVED))), self.tmp)
 
     def tearDown(self):
+        pb.today = self.real_today
         shutil.rmtree(self.tmp)
 
     def run_page(self, text):
@@ -114,7 +120,7 @@ class Saving(unittest.TestCase):
     def test_nothing_new_records_the_look(self):
         rc, out, d = self.run_page(self.CASE_OLD)
         self.assertEqual(rc, 0); self.assertIn("NO NEW UPDATE", out)
-        self.assertEqual(len(d["readings"]), 7); self.assertEqual(d["check"]["last_checked"], pb.today().isoformat())
+        self.assertEqual(len(d["readings"]), 7); self.assertEqual(d["check"]["last_checked"], LOOK_DAY.isoformat())
 
     CASE_OLD = "October 6, 2026 Update\nOur active grading backlog is now 8.2 million units, down from 9 million reported September 22."
     CASE_NEW = "October 20, 2026 Update\nOur active grading backlog is now 7.4 million units, down from 8.2 million reported October 6."
