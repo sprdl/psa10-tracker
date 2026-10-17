@@ -32,8 +32,8 @@
     "neutral": 0,
     "n": 2,
     "right_pct": 50.0,
-    "rel_pts": 21.6,
-    "edge_pts": -21.6
+    "rel_pts": 21.5,
+    "edge_pts": -21.5
    }
   },
   "early": {
@@ -49,7 +49,7 @@
     "neutral": 0,
     "n": 12,
     "right_pct": 66.7,
-    "rel_pts": 20.7
+    "rel_pts": 20.6
    },
    "watch": {
     "right": 4,
@@ -57,7 +57,7 @@
     "neutral": 0,
     "n": 12,
     "right_pct": 33.3,
-    "rel_pts": 20.7
+    "rel_pts": 20.6
    }
   },
   "odds_resolved": 0,
@@ -141,8 +141,8 @@
    "name": "リザードンVSTAR SAR[s12a 212/172](ハイクラスパック「VSTARユニバース」)",
    "tag": "dont_buy",
    "label": "Don't buy — ask ¥29.5k is above every tier; wait for the Oct 16 card set",
-   "latest_label": "Don't buy — ask ¥29.5k is above every tier; wait for the Oct 16 card set",
-   "reaffirmed": 0,
+   "latest_label": "Don't buy — ask ¥31,500 is above the ¥28,500 ceiling and still rising",
+   "reaffirmed": 1,
    "made": "2026-10-15T09:13:14+09:00",
    "price": 29500,
    "window_end": "2026-11-14T09:13:14+09:00",
@@ -1164,9 +1164,9 @@
    "threshold": 0.05,
    "final": true,
    "ret_pct": 32.6,
-   "mkt_pct": 8.4,
-   "rel_pts": 24.3,
-   "edge_pts": -24.3
+   "mkt_pct": 8.6,
+   "rel_pts": 24.1,
+   "edge_pts": -24.1
   },
   {
    "url": "https://snkrdunk.com/apparels/135232",
