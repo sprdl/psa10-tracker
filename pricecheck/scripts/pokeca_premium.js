@@ -1,6 +1,6 @@
 // Slab premium (PSA10 ÷ raw 美品) per tracked card from pokeca-chart's own card pages, in ONE
 // javascript call. Run it on any https://pokeca-chart.com/ page (step 4 runs it right after
-// pokeca_both.js) with PREM filled in from `python3 pricecheck/plan.py` ("PREM = [...]" line).
+// pokeca_both.js) with PREM filled in by `python3 pricecheck/jsrun.py full` (from pricecheck/plan.py).
 // Each card page opens in a hidden same-origin iframe, one after another; the script reads the
 // price chart's own data (React props: item_status 0 = 美品 raw, 2 = PSA10). No fetch/XHR.
 // Returns at once; poll window.__pj like snkrdunk_full.js. About 2 s per card.

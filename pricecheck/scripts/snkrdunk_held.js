@@ -1,5 +1,5 @@
 // Prices of what you bought but don't track (FULL check only, step 2b), in ONE javascript call. Run it on
-// any https://snkrdunk.com page with HELD filled in from `python3 pricecheck/plan.py` (its "HELD = [...]" line).
+// any https://snkrdunk.com page with HELD filled in by `python3 pricecheck/jsrun.py full` (from pricecheck/plan.py).
 // Each product page opens in a hidden same-origin iframe, one after another, with a pause (the same page a
 // person would open, in the user's own browser; no fetch/XHR). Returns at once; poll with
 //   await (async()=>{for(let i=0;i<75&&!window.__hq.done;i++)await (window.__wsleep||(m=>new Promise(r=>setTimeout(r,m))))(500);const q=window.__hq;return q.done?q.lines.join('\n'):`running ${q.i}/${q.n}`})()

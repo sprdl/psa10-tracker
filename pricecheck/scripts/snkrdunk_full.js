@@ -1,5 +1,5 @@
 // Full-check SNKRDUNK reads, in ONE javascript call. Run it on any https://snkrdunk.com page with PLAN
-// filled in from `python3 pricecheck/plan.py` (its "PLAN = [...]" line). For each card it opens, in a
+// filled in by `python3 pricecheck/jsrun.py full` (from pricecheck/plan.py). For each card it opens, in a
 // hidden same-origin iframe, one after another (the same pages a person would open, in the user's own
 // browser; no fetch/XHR):
 //   - the product page: favorites, grade tiles, 売買履歴 one-copy sales for PSA10 and A

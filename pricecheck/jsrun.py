@@ -107,7 +107,7 @@ def args_for(name, plan=None):
 
 
 def quick_ids():
-    """Same list scripts/check_status.py prints as quick_ids."""
+    """The ids a quick check reads: every card in the latest snapshot plus tracked cards not published yet, minus removed cards."""
     m = json.loads((ROOT / "data" / "manifest.json").read_text(encoding="utf-8"))
     snaps = sorted([s for s in m.get("snapshots", []) if s.get("collected_at_jst")], key=lambda s: s["collected_at_jst"])
     if not snaps:

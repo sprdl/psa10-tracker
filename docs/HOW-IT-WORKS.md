@@ -1125,7 +1125,7 @@ with a docstring explaining its usage. Open the file and read the top.
 
 | Script | You'd run it when… |
 |---|---|
-| `check_status.py` | seeing the latest snapshot, whether today's full check ran, the suggested mode and the ids a quick check reads |
+| `check_status.py` | seeing the latest snapshot, whether today's full check ran and the suggested mode |
 | `../pricecheck/plan.py` | seeing what today's full check will read (also prints the in-page script inputs) |
 | `full_update.py` | publishing a full check from the compact lines (the skill does it; `--dry-run` to preview, `--skip` only for a step that really failed) |
 | `quick_update.py` | publishing a quick check |

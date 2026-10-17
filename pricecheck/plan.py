@@ -6,9 +6,10 @@ publishes, so the rules below live in one place.
 
     python3 pricecheck/plan.py
 
-Prints a short summary plus two ready-made JS lines to paste into the in-page scripts:
-    PLAN = [["455596","full",0,6200], ...]       -> pricecheck/scripts/snkrdunk_full.js
-    PSAPOP = [["224087","/pop/tcg-cards/…","090","Greninja"], ...] -> pricecheck/scripts/psa_pop.js
+Prints a short summary plus the plan lines PLAN, PSAPOP, PREM, HELD and SCOUT for reading (nothing parses or
+pastes them: pricecheck/jsrun.py fills the same values into the in-page scripts' RUN calls), e.g.
+    PLAN = [["455596","full",0,6200], ...]       (id, full|tile, fetch photo, A-carry price)  -> snkrdunk_full.js
+    PSAPOP = [["224087","/pop/tcg-cards/…","090","Greninja"], ...]                            -> psa_pop.js
 
 Rules (unchanged from the old step 2/3 of the full check):
   SNKRDUNK  "full" (product page + PSA10 and A listings) for cards with a PSA10 market in the

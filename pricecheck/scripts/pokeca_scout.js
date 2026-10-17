@@ -1,6 +1,6 @@
 // Scout: candidate cards you don't track yet, from pokeca-chart, in ONE javascript call. Run it on
 // https://pokeca-chart.com/gr/all-card/?sort=newest (step 4, after the My-tier extractor) with SCOUT
-// filled in from `python3 pricecheck/plan.py` ("SCOUT = {...}" line). It reads the card list on the
+// filled in by `python3 pricecheck/jsrun.py full` (from pricecheck/plan.py). It reads the card list on the
 // page, keeps modern secret rares (card number above the set size, released 2021 or later, PSA10
 // ¥5k–150k; the floor was ¥15k until 2026-10-13) that aren't tracked or dismissed, then opens their card
 // pages in hidden same-origin iframes (the ones never read or read longest ago): SCOUT.n of them, or
