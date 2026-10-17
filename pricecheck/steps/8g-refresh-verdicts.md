@@ -6,12 +6,12 @@ Part of the full price check (`pricecheck/FULL-CHECK.md`, which holds the shared
 - `tag`: the live zone of today's ask against the existing tiers, with the guardrails applied (correction or event rule: a Buy-zone price becomes `watch`; keep `defer` only if its reason still holds).
 - `label`: `"<Tag> — <one-line takeaway>"`.
 - `reasoning`: 3–5 sentences with today's numbers: the ask and its move since the old verdict, the recent sales range, depth and activity, the market (My-tier index 30-day move), what changed versus the old text, and what would change the call. Never copy a number from the old text without re-checking it today.
-- `predictions`: only if the reasoning states a probability (each with price and deadline, as in the evaluation skill). Otherwise leave the key out; the old predictions stay on the Track record and keep being scored.
+- `predictions`: **every chance stated in the reasoning must also be a prediction**, or it isn't scored on the Track record. If the reasoning says "about 24% for a listing at ≤¥58k within 30 days", add `{"text": "A PSA10 listing at ≤¥58k within 30 days", "p": 0.24, "type": "touch_below", "price": 58000, "by": "<YYYY-MM-DD, today + 30 days>"}` (`touch_above` for a rise; the odds come from `python3 scripts/eval_context.py <snkrdunk_id>`, its ODDS lines). No chance in the reasoning: leave the key out; the old predictions stay on the Track record and keep being scored. If `apply_analysis.py` warns "reasoning states odds but verdict.predictions is missing", the save went through without them: run it again for that card with the predictions added (or with the odds taken out of the reasoning).
 
 Save each with one `device_bash` call (same credential rules as step 7):
 ```
 cd "$R" && python3 scripts/apply_analysis.py - <<'JSON'
-{"<SNKRDUNK url>": {"verdict": {"tag": "...", "label": "...", "reasoning": "..."}}}
+{"<SNKRDUNK url>": {"verdict": {"tag": "...", "label": "...", "reasoning": "...", "predictions": [{"text": "...", "p": 0.24, "type": "touch_below", "price": 58000, "by": "YYYY-MM-DD"}]}}}
 JSON
 ```
 `apply_analysis.py` dates the new verdict and resets its reference price to today's ask, so the card leaves the list. One line per card in the chat message: "Verdict refreshed: <name> <old tag> → <new tag> (<move>)".

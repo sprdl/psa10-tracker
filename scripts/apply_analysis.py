@@ -150,6 +150,15 @@ def to_entries(data, card_arg: Optional[str]) -> List[Tuple[str, dict]]:
 
 # ---------- validation ----------
 
+# A chance stated in words ("about 24% for a listing at ≤¥58k within 30 days", "odds of 11%"), not a price move
+# ("+16.7% since the verdict", "within 15% of the lowest"): only those need a scored prediction.
+ODDS_RE = re.compile(r"(chance|odds|probabilit|likel)[^.]{0,60}?\d+(\.\d+)?\s*%|\d+(\.\d+)?\s*%\s*(chance|odds|probabilit|for an? (PSA10 )?listing|that )", re.I)
+
+
+def states_odds(text):
+    return bool(ODDS_RE.search(text))
+
+
 def _check_predictions(key, field, preds, warn):
     if not isinstance(preds, list):
         die(f"{key}: {field}.predictions must be a list.")
@@ -210,7 +219,7 @@ def validate(key: str, a: dict) -> List[str]:
         preds = v.get("predictions")
         if preds is not None:
             _check_predictions(key, "verdict", preds, warn)
-        elif v.get("reasoning") and "%" in v.get("reasoning", ""):
+        elif states_odds(v.get("reasoning") or ""):
             warn.append("reasoning states odds but verdict.predictions is missing, so they won't be scored")
     src = a.get("price_source")
     if src is not None and src not in VALID_SOURCES:
