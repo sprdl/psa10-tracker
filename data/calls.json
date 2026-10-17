@@ -10,7 +10,7 @@
    "right": 19,
    "wrong": 2,
    "neutral": 0,
-   "pending": 23
+   "pending": 24
   },
   "calls_scored": 5,
   "closed": {
@@ -40,7 +40,7 @@
    "right": 16,
    "wrong": 0
   },
-  "pending": 23,
+  "pending": 24,
   "next_close": "2026-10-15T16:26:00+09:00",
   "baseline": {
    "buy": {
@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 107,
+  "odds_open": 111,
   "odds_early_yes": 6,
   "model_odds": {
    "logged": 169,
@@ -88,6 +88,30 @@
   }
  },
  "calls": [
+  {
+   "url": "https://snkrdunk.com/apparels/91189",
+   "name": "バンギラスV SR: SA[S5I 077/070](拡張パック「一撃マスター」)",
+   "tag": "watch",
+   "label": "Watch — sales ¥116–135k, but the ¥139k ask is above the ceiling",
+   "latest_label": "Watch — sales ¥116–135k, but the ¥139k ask is above the ceiling",
+   "reaffirmed": 0,
+   "made": "2026-10-18T07:29:21+09:00",
+   "price": 138999,
+   "window_end": "2026-11-17T07:29:21+09:00",
+   "days_in": 0,
+   "low": null,
+   "low_pct": null,
+   "now": null,
+   "now_pct": null,
+   "status": "pending",
+   "why": "",
+   "threshold": 0.1,
+   "final": false,
+   "ret_pct": null,
+   "mkt_pct": null,
+   "rel_pts": null,
+   "edge_pts": null
+  },
   {
    "url": "https://snkrdunk.com/apparels/568323",
    "name": "ロケット団のファイヤーex SAR [SV10 124/098](拡張パック「ロケット団の栄光」)",
@@ -213,8 +237,8 @@
    "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
    "tag": "watch",
    "label": "Watch: above Buy, rally and 30th event on 10/16",
-   "latest_label": "Watch: above Buy, rally and 30th event on 10/16",
-   "reaffirmed": 0,
+   "latest_label": "Watch — ask ¥61k is a step above Buy (¥60k)",
+   "reaffirmed": 1,
    "made": "2026-10-13T14:40:39+09:00",
    "price": 66500,
    "window_end": "2026-11-12T14:40:39+09:00",
@@ -1840,6 +1864,51 @@
    "gap_pct": -10.5
   },
   {
+   "url": "https://snkrdunk.com/apparels/91189",
+   "name": "バンギラスV SR: SA[S5I 077/070](拡張パック「一撃マスター」)",
+   "text": "A PSA10 listing at ≤¥118k within 30 days",
+   "p": 0.22,
+   "type": "touch_below",
+   "price": 118000,
+   "by": "2026-11-17",
+   "made": "2026-10-18T07:29:21+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 138999,
+   "final": false,
+   "gap_pct": -15.1
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A PSA10 listing at ≤¥60k within 30 days",
+   "p": 0.57,
+   "type": "touch_below",
+   "price": 60000,
+   "by": "2026-11-17",
+   "made": "2026-10-18T07:29:21+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 61000,
+   "final": false,
+   "gap_pct": -1.6
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A PSA10 listing at ≤¥55k within 30 days",
+   "p": 0.37,
+   "type": "touch_below",
+   "price": 55000,
+   "by": "2026-11-17",
+   "made": "2026-10-18T07:29:21+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 61000,
+   "final": false,
+   "gap_pct": -9.8
+  },
+  {
    "url": "https://snkrdunk.com/apparels/387059",
    "name": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
    "text": "Reaches Buy (≤¥38k) within 3 months",
@@ -3038,6 +3107,21 @@
    "now": 97000,
    "final": false,
    "gap_pct": -15.5
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/91189",
+   "name": "バンギラスV SR: SA[S5I 077/070](拡張パック「一撃マスター」)",
+   "text": "A PSA10 listing at ≤¥100k within 90 days",
+   "p": 0.18,
+   "type": "touch_below",
+   "price": 100000,
+   "by": "2027-01-16",
+   "made": "2026-10-18T07:29:21+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 138999,
+   "final": false,
+   "gap_pct": -28.1
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
