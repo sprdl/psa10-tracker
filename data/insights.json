@@ -56,16 +56,11 @@
    "sources": []
   },
   "https://snkrdunk.com/apparels/408333": {
-   "written": "2026-10-06T07:17:58+09:00",
-   "headline": "Trading tripled while the ask only crept up to ¥78k",
-   "text": "What's happening: Pikachu ex SAR (SV8) trades about 7 PSA10 copies a day, up from 2 a week ago. 20 sales in the last 7 days cleared at ¥75.0-77.5k, and the lowest ask is ¥78,000 (14 of 20 listings within 15%).\n\nWhy: Likely buyers stepping in after the 30% slide in the My-tier index rather than news: searches for a reprint or a new Pikachu product found nothing dated October 2026 (the reprint roundup I checked was last updated in April).\n\nFor you: The ask is above Buy (¥70k) and your ¥70k limit, and the correction rule still limits Buy to Definitely-buy (¥59.5k). Faster trading at a steady price means sellers are not cutting.\n\nWatch: Whether sales drift down toward ¥70k as volume fades, or whether asks follow sales above ¥80k. A listing at ≤¥70k would be the first real chance.",
-   "signals": "PSA10 sales/day 7.1 vs 2.1 a week ago (+235%)",
-   "sources": [
-    {
-     "title": "MEGAドリームex reprint lottery roundup (last updated Apr 2026)",
-     "url": "https://tinpanblog.com/?p=9168"
-    }
-   ]
+   "written": "2026-10-18T07:30:26+09:00",
+   "headline": "Pikachu ex SAR (SV8) ask up 32% in 30 days vs a 7% market gain, but trading has slowed",
+   "text": "What's happening: The lowest PSA10 ask is ¥96,199, up from ¥72,999 a month ago, while the My-tier index gained 7.3%. All 20 listings sit within 15% of the ask, so depth is good, but sales fell to 2.6 a day from 20.4 a week earlier. The last 7 days' sales median is ¥96,900, below the earlier ¥102,000.\n\nWhy: Likely the same run-up that lifted Pikachu cards across the board in the 10-11 October rally, now cooling; the sales spike a week ago (20 a day) looks like a burst of buying that has passed. My searches found no reprint, new Pikachu print or other news specific to this card, so I can't point to an outside cause.\n\nFor you: The ask is above your Buy tier (¥85,000) and the ¥70,000 limit. A listing at ≤¥85k is the buy, and the fading volume makes a slide toward it more plausible than a further climb.\n\nWatch: Daily sales staying under 3 a day and asks below ¥95k, which would start a drift toward the tiers.",
+   "signals": "30d price +31.8% (¥72,999→¥96,199) vs My-tier index +7.3% = +24.5 pts | PSA10 sales/day 2.6 vs 20.4 a week ago (-87%)",
+   "sources": []
   },
   "https://snkrdunk.com/apparels/96712": {
    "written": "2026-10-05T09:03:37+09:00",
