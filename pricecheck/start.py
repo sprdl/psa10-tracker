@@ -25,6 +25,8 @@ ROOT = Path(__file__).resolve().parent.parent
 # command written with it stops an unattended run for a permission question. Print the procedure without it.
 LOCAL = os.environ.get("PSA10_RUN") == "1"
 PREFIX = re.compile(r'R=\$\(ls -d "\$HOME"/mnt/\*/psa10-tracker[^;]*;\s*cd "\$R"\s*(?:&&|;)\s*')
+# the procedures also write the short form `cd "$R" && …` once $R is set; locally $R is never set, so drop that too
+CD_R = re.compile(r'cd "\$R"\s*(?:&&|;)\s*')
 
 
 def local(text):
@@ -32,7 +34,7 @@ def local(text):
         return text
     # section 0 (delete permission for the desktop app's mounted folder) doesn't apply on the Mac itself
     text = re.sub(r"(?ms)^## 0\. .*?(?=^## )", "", text)
-    return PREFIX.sub("", text).replace('"$R"/', "").replace("$R/", "")
+    return CD_R.sub("", PREFIX.sub("", text)).replace('"$R"/', "").replace("$R/", "")
 
 
 def sh(*cmd):

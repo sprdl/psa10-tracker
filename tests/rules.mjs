@@ -105,6 +105,8 @@ for (let k = Math.max(0, snaps.length - N); k < snaps.length; k++) {
     correction: { active: cs0.active, pct: r3(cs0.pct) }, widget_correction: { active: m.corr.on, pct: r3(m.corr.pct) },
     rally: { active: rl.active, pct: r3(rl.pct) }, widget_rally: { active: m.rally.on, pct: r3(m.rally.pct) },
     events: app.activeEvents().map((e) => e.name), signals, grails: grailIds,
+    // Head to head with a card that has no price history yet (a newly added card): must render the "no history" note.
+    race_no_history: (() => { try { return String(app.raceHtml([cs[0], Object.assign({}, cs[0], { url: 'https://snkrdunk.com/apparels/0' })])); } catch (e) { return 'THROWS ' + e; } })(),
     owned: [...new Set([...(hold.holdings || []).filter((h) => h.condition !== 'graded_other').map((h) => h.card_url), ...pulled])] });
 }
 process.stdout.write(JSON.stringify(out));

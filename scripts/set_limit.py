@@ -86,7 +86,7 @@ def main():
     git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
     # Several limit forms submitted at once run in parallel. Each attempt starts from the
     # latest main, re-applies this one change and pushes, so they never conflict.
-    pushed = changed = False
+    changed = False
     for attempt in range(6):
         git("fetch", "-q", "origin", "main")
         git("reset", "-q", "--hard", "origin/main")
@@ -98,7 +98,7 @@ def main():
             break  # already saved (e.g. a re-run)
         git("commit", "-q", "-m", commit_msg)
         if subprocess.run(["git", "push", "-q", "origin", "HEAD:main"], cwd=ROOT).returncode == 0:
-            pushed = changed = True
+            changed = True
             break
         time.sleep(3 + attempt * 2)
     else:

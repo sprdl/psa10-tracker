@@ -138,6 +138,12 @@ class Rules(unittest.TestCase):
             with self.subTest(snapshot=s["file"]):
                 self.assertEqual(sorted(set(s["signals"]) & set(s["owned"])), [])
 
+    def test_head_to_head_without_history(self):
+        """A card with no history.json entries yet must not break Head to head (a ReferenceError until 2026-10-18)."""
+        for s in self.js:
+            with self.subTest(snapshot=s["file"]):
+                self.assertIn("No price history yet", s["race_no_history"])
+
     def test_site_and_widget(self):
         for s in self.js:
             with self.subTest(snapshot=s["file"], rule="correction"):

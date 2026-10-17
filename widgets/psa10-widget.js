@@ -226,7 +226,7 @@ function buildModel(d) {
   // closest to a buy: % above your limit, or above the Buy line when there's no limit (cards you don't own)
   const gap = (x) => x.lim != null ? x.ask / x.lim - 1 : x.tiers ? x.price / x.tiers.buy_upper - 1 : Infinity;
   // only cards still above the line: a Buy-zone price held at Watch by the event or correction rule has a negative gap
-  // (the site's closestBuy/onDeck filter the same way)
+  // (the site's onDeck filters the same way)
   const closest = cards.filter((x) => !x.mine && !x.limitHit && x.tag !== 'buy' && x.tag !== 'definitely_buy' && gap(x) > 0).sort((a, b) => gap(a) - gap(b));
   return { cards, limitHits, sells, buys, closest, gap, corr, rally: rallyOn(d), when: d.snap.collected_at_jst };
 }
@@ -265,7 +265,6 @@ function mediumWidth() {
   const sw = Math.min(Device.screenSize().width, Device.screenSize().height);
   return sw >= 428 ? 364 : sw >= 414 ? 360 : sw >= 390 ? 338 : sw >= 375 ? 329 : 292;
 }
-const COMPACT = false;
 const MZ = (() => {
   const W = mediumWidth(), pad = 12, gap = 8;
   const tileW = Math.floor((W - 2 * (pad + 2) - 2 * gap) / 3);

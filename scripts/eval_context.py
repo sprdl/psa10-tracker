@@ -23,7 +23,6 @@ What it can't give (read it in the browser, as the evaluation skill says): the p
 history, set/release details, and fresh depth for a card the run only read with a quick check.
 """
 import json
-import math
 import re
 import subprocess
 import sys

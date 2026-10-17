@@ -1470,17 +1470,6 @@
     }
     return items.map((x, i) => Object.assign(x, { i, rank: x.buy ? -100 + i : x.rank })).sort((x, y) => x.rank - y.rank || x.i - y.i);
   }
-  // The non-owned card closest to a buy: smallest gap from the lowest ask to your limit, else to its Buy line.
-  function closestBuy(cards) {
-    let best = null;
-    for (const c of cards) {
-      if (ownsCard(c) || !hasMarket(c)) continue;
-      const g = limitGap(c), t = c.analysis && c.analysis.tiers, rep = getRep(c);
-      const x = g ? { pct: g.pct, what: `above your ${fmtYen(g.lim)} limit` } : t && rep ? { pct: (rep / t.buy_upper - 1) * 100, what: `above its Buy line (${fmtYen(t.buy_upper)})` } : null;
-      if (x && x.pct > 0 && (!best || x.pct < best.pct)) best = Object.assign(x, { card: c });
-    }
-    return best;
-  }
   // "On deck" for the Overview's Needs-you panel: the cards closest to their next signal, so the panel shows what
   // is coming even on a quiet day. Watchlist cards: gap from the lowest ask down to your limit (else the Buy line).
   // Owned cards: gap from the price up to their Take-profit line. Smallest gaps first.
@@ -1992,7 +1981,6 @@
   function insightsForCalc(card) {
     if (!hasMarket(card)) return [];
     const out = [];
-    const name = parseCardName(card.card_name_ja).short;
     const ask = lowestAsk(card);
     const h = heatOf(card);
     const rate = h && h.psa ? h.psa.rate : null;
@@ -2168,7 +2156,7 @@
     el.innerHTML = `
       ${shared.length ? `<p class="st-shared"><span class="lbl">Same artist</span> ${shared.map(([a, v]) => `<b>${escapeHtml(a)}</b> drew ${v.map((c) => { const n = parseCardName(c.card_name_ja); return `${escapeHtml(n.short)} <span class="muted">${escapeHtml(n.code)}</span>`; }).join(' and ')}`).join(' · ')}</p>` : ''}
       <div class="st-grid">${cards.map((c, i) => { const st = storyOf(c), nm = parseCardName(c.card_name_ja), img = bigImg(c);
-        return `<a class="st-tile" href="#/card/${escapeAttr(cardId(c))}" data-story="1" style="--i:${i}">
+        return `<a class="st-tile" href="#/card/${escapeAttr(cardId(c))}" style="--i:${i}">
           <span class="st-pic">${img ? `<img src="${escapeAttr(img)}" alt="" loading="lazy">` : slabHtml(c, 'md')}</span>
           <span class="st-tb"><b class="jp">${escapeHtml(nm.short)}</b><span class="muted">${escapeHtml(nm.code)} · by ${escapeHtml(st.illustrator || 'unknown')}</span><span class="st-teaser">${escapeHtml(st.art.split(/(?<=\.)\s/)[0])}</span></span></a>`; }).join('')}</div>`;
     const toStory = () => { state.cardTab = 'story'; state.cardFrom = 'stories'; };
@@ -4448,7 +4436,6 @@
       }
       const fav = card.favorite_count != null ? card.favorite_count.toLocaleString() : '—';
       const { short, code } = parseCardName(card.card_name_ja);
-      const raw = card.grades && card.grades.raw_a_grade;
       const thumbHtml = card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '';
       return `<a class="watch-row" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">
         <span class="wthumb">${thumbHtml}</span>
@@ -6468,11 +6455,11 @@
     const cutoff = RANGES[range] && last ? new Date(Date.parse(last) - RANGES[range] * 86400000).toISOString().slice(0, 10) : '';
     const start = [cutoff, ...firsts].filter(Boolean).sort().pop();
     const days = allDays.filter((d) => d >= start);
-    if (series.some((sr) => !sr.size)) return controls + `<div class="panel race-box"><div class="hist-empty">No price history yet for one of the cards.</div></div>` + ladderHtml(cards);
     const btn = (k, label, on, dis) => `<button type="button" data-race="${k}" class="${on ? 'on' : ''}"${dis ? ' disabled title="Needs a known peak for both cards"' : ''}>${label}</button>`;
     const controls = `<div class="race-ctl">
       <div class="pl-mode" role="group" aria-label="Scale">${btn('mode:index', 'Indexed to 100', mode === 'index')}${btn('mode:peak', '% below peak', mode === 'peak', !peaks.every(Boolean))}</div>
       <div class="pl-mode" role="group" aria-label="Range">${btn('range:1m', '1M', range === '1m')}${btn('range:3m', '3M', range === '3m')}${btn('range:all', 'All', range === 'all')}</div></div>`;
+    if (series.some((sr) => !sr.size)) return controls + `<div class="panel race-box"><div class="hist-empty">No price history yet for one of the cards.</div></div>` + ladderHtml(cards);
     if (days.length < 2) return controls + `<div class="panel race-box"><div class="hist-empty">Needs at least two checks that include both cards.</div></div>` + ladderHtml(cards);
     const carry = (s) => { let lastV = null; const sorted = [...s.keys()].sort(); return days.map((d) => { for (const k of sorted) { if (k <= d) lastV = s.get(k); else break; } return lastV; }); };
     const raw = series.map(carry);
@@ -6790,7 +6777,7 @@
   // widget twin, and start nothing. Never set in a browser.
   if (window.__PSA10_TEST__) {
     window.__PSA10_TEST__({ state, rawPrice, salesPerDay, heatOf, insightsFor, tierReview, touchOdds, correctionState, rallyState,
-      activeEvents, eventFor, displayTagFor, sellState, limitHit, computeSignals, getRep, lowestAsk, cardAgeMonths, salesMedianOf, renderPsaBacklog, psaBacklogLine });
+      activeEvents, eventFor, displayTagFor, sellState, limitHit, computeSignals, getRep, lowestAsk, cardAgeMonths, salesMedianOf, renderPsaBacklog, psaBacklogLine, raceHtml });
     return;
   }
   init();

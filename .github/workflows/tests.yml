@@ -1,7 +1,8 @@
 name: Rules tests
 
 # The same rules live in the site (assets/app.js), the Python scripts and the widget. tests/test_rules.py runs them
-# on the repo's own data and fails when two versions disagree. Runs when code changes (not on price checks).
+# on the repo's own data and fails when two versions disagree. The other tests cover the price-check tooling
+# (jsrun.py, start.py) and the PSA backlog parser. Runs when code changes (not on price checks).
 on:
   push:
     branches: [main]
@@ -10,6 +11,7 @@ on:
       - 'widgets/**'
       - 'scripts/**'
       - 'tests/**'
+      - 'pricecheck/**'
       - '.github/workflows/tests.yml'
   pull_request:
     paths:
@@ -17,6 +19,7 @@ on:
       - 'widgets/**'
       - 'scripts/**'
       - 'tests/**'
+      - 'pricecheck/**'
   workflow_dispatch:
 
 permissions:
@@ -34,3 +37,9 @@ jobs:
         env:
           RULES_N: '100000'
         run: python3 tests/test_rules.py
+      - name: Browser calls (jsrun.py) run only the stored, untampered scripts
+        run: python3 tests/test_jsrun.py
+      - name: PSA backlog schedule and page parsing
+        run: python3 tests/test_psa_backlog.py
+      - name: Local runs print the procedures without the repo-finding prefix
+        run: python3 tests/test_start.py

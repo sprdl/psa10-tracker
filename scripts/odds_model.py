@@ -18,7 +18,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MODEL = ROOT / "data" / "odds_model.json"
 LOG = ROOT / "data" / "odds_log.json"
 JST = timezone(timedelta(hours=9))
 LOG_EVERY_DAYS = 7

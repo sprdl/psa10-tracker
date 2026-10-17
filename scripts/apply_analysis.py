@@ -39,7 +39,7 @@ import sys
 import unicodedata
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 VALID_TAGS = {"definitely_buy", "buy", "watch", "dont_buy", "defer"}
 VALID_SELL_TAGS = {"hold", "take_profit", "sell", "reassess"}

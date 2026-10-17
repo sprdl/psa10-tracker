@@ -173,6 +173,7 @@ pricecheck/references/         the skill's card list (cards.json), PSA tier stat
 widgets/psa10-widget.js        Scriptable widget for iPhone/iPad (section 12)
 widgets/psa10-loader.js        the loader pasted into Scriptable; downloads psa10-widget.js from the site
 tests/rules.mjs, test_rules.py check that the site, the widget and the Python scripts apply the same rules (section 13)
+tests/test_jsrun.py, test_psa_backlog.py, test_start.py   the price-check tooling and the PSA backlog parser
 docs/schema.md                 exact shape of a snapshot, holdings.json and the other files
 docs/HOW-IT-WORKS.md           this guide
 ```
@@ -650,8 +651,8 @@ in the Tier check, the drawer, the budget duel, the combination finder and You v
 `computeSignals(cards)` collects, in order: a lowest ask at or below your limit (0), Definitely-buy (1) and Buy (2). Cards you
 own (`ownsCard`, pulls included) never give limit or Buy signals; `tests/test_rules.py` checks that on every snapshot. `inboxItems` puts those first, then every owned card whose `sellState`
 isn't Hold (strongest first), then watched cards whose `tierReview` is due. `renderInbox` shows them;
-with no buy signal, `closestBuy` names the card with the smallest gap to your limit (or, without a
-limit, to its Buy line). Buy signals not seen on your previous visit get a **NEW** label (their keys
+`onDeck` lists the cards closest to their next signal (gap from the lowest ask down to your limit, or
+without a limit to its Buy line; owned cards: gap up to Take profit). Buy signals not seen on your previous visit get a **NEW** label (their keys
 are remembered in `psa10.seenSignals`, and only while viewing the latest snapshot).
 
 ### Market today chips ("Automatically detected…")
@@ -1093,9 +1094,11 @@ live to try things before changing the file.
 - **`cards.yml`** → `remove_card.py`: `remove-card` and `restore-card`.
 - **`labels.yml`** → `issue_labels.py --sync`: on a push that changes an issue form (or by hand),
   creates the labels the forms use and processes open issues that arrived unlabeled.
-- **`tests.yml`** → `tests/test_rules.py`: on a push or pull request that changes `assets/app.js`, the widget,
-  `scripts/` or `tests/`, checks on every snapshot that the site, the widget and the Python scripts apply the
-  same rules (section 13). Price checks don't trigger it.
+- **`tests.yml`** → `tests/test_rules.py`, `test_jsrun.py`, `test_psa_backlog.py`, `test_start.py`: on a push or
+  pull request that changes `assets/app.js`, the widget, `scripts/`, `pricecheck/` or `tests/`, checks on every
+  snapshot that the site, the widget and the Python scripts apply the same rules (section 13), that the browser
+  calls run only the stored scripts, the PSA backlog parser, and that local runs get the procedures without the
+  repo-finding prefix. Price checks don't trigger it.
 
 The issue-driven workflows run when an issue is opened or edited, only if it's open and was opened
 by you (`github.repository_owner`). Each uses one concurrency group per issue, so several forms
@@ -1262,7 +1265,8 @@ Several rules live in more than one place, and they must agree:
 | verdict pill, limit hit, sell signal, correction and rally rules | `displayTagFor`, `limitHit`, `sellState`, `correctionState`, `rallyState` | the widget |
 
 `python3 tests/test_rules.py` runs both sides on the repo's own data (the latest 3 snapshots; `RULES_N=100 python3
-tests/test_rules.py` for more) with the clock frozen at each snapshot's time, and fails on any difference.
+tests/test_rules.py` for more: with 3, the tier-review, event and owned-card checks often only compare empty lists,
+so CI runs every snapshot) with the clock frozen at each snapshot's time, and fails on any difference.
 `tests/rules.mjs` loads `app.js` and the widget in Node through their test hooks (`window.__PSA10_TEST__` /
 `globalThis.__PSA10_TEST__`, never set in a browser or in Scriptable). GitHub Actions runs it on every push that
 changes code (`tests.yml`). It needs Node 18+ on your Mac (`brew install node`). When you change one side of a rule,

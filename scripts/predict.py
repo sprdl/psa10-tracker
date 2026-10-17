@@ -205,13 +205,8 @@ def update(root=ROOT, now=None, write=True):
         if w and w["questions"]:
             weeks[key] = w
             made = True
-    backfilled = False
-    for w in weeks.values():                 # weeks written before the cutoff existed
-        if "answer_by" not in w:
-            w["answer_by"] = answer_by(ts(w["close"])).isoformat()
-            backfilled = True
     resolved = sum(resolve(root, w, now) for w in weeks.values())
-    if write and (made or resolved or backfilled or not path.exists()):
+    if write and (made or resolved or not path.exists()):
         data["about"] = "You vs the model: weekly questions, answers and results. See scripts/predict.py."
         path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return made, resolved, data

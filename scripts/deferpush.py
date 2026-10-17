@@ -19,7 +19,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-CLOCK = ROOT / "data" / "incoming" / "runclock.json"
 JST = timezone(timedelta(hours=9))
 MAX_HOURS = 3
 

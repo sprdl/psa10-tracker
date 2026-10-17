@@ -121,17 +121,9 @@ img { display: block; }
 .kpis.market .v[style] { font-size: 26px !important; font-family: var(--display) !important; }
 .kpis.market .d { font-size: 12px; color: var(--muted); }
 
-/* ---------- buy signals + banners ---------- */
-.signals { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.signal {
-  display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 14px; border-radius: 4px; cursor: pointer;
-  background: rgba(69, 212, 131, 0.1); border: 1px solid rgba(69, 212, 131, 0.35); color: var(--text); font-size: 13px; text-align: left;
-}
-.signal:hover { border-color: var(--green); }
+/* ---------- signal pills + banners ---------- */
 .sig-pill.limit { font: 16px var(--display); letter-spacing: 0.08em; line-height: 1; color: var(--on-accent); background: var(--accent); padding: 3px 6px 1px; border-radius: 3px; }
 .sig-new { font: 14px var(--display); letter-spacing: 0.08em; line-height: 1; background: var(--accent); color: var(--on-accent); border-radius: 3px; padding: 3px 5px 1px; }
-.banners { display: flex; flex-direction: column; gap: 10px; }
-.banners:empty { display: none; }
 .banner { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: var(--soft); }
 .banner strong { display: block; font: 18px var(--display); letter-spacing: 0.05em; color: var(--text); margin-bottom: 2px; }
 .banner.warning { border-left-color: var(--amber); }
@@ -1477,10 +1469,6 @@ body.lb-open { overflow: hidden; }
 .hype-v b { color: var(--text); }
 .hype-means { margin: 8px 0 4px; color: var(--soft, var(--text)); }
 .hype-foot { margin: 0; font-size: 11px; color: var(--muted); }
-.hype-chip { font: 11px var(--display); letter-spacing: 0.06em; color: #fff; background: var(--red); padding: 2px 5px 0; border-radius: 3px; margin-left: 4px; white-space: nowrap; flex-shrink: 0; }
-.wl-nline .hype-chip { margin-left: 0; }
-.wl-nline:has(.hype-chip) { flex-wrap: wrap; row-gap: 3px; }
-.wl-nline:has(.hype-chip) b { min-width: 6.5em; }
 @media (max-width: 600px) { .hype-row { grid-template-columns: 1fr; gap: 2px; } .hype-mini { display: none; } }
 
 /* sealed product on the Holdings page */
