@@ -172,7 +172,9 @@
   // The last loaded bundle, for an instant start, lives in IndexedDB: it's ~0.7 MB and grows with every check, and
   // localStorage stops at about 5 MB (Safari). Without IndexedDB (some private modes) it falls back to localStorage,
   // where a write that doesn't fit just isn't kept. v2: shape of 2026-10-09 (calls.json summary, history.json fields).
-  const CACHE_KEY = 'psa10.cache.v2', CACHE_OLD = ['psa10.cache.v1'];
+  // CACHE_OLD: keys of retired versions/features, removed from this browser whenever the cache is saved
+  // (psa10.cbUp.v1: combo results before 2026-10-03; psa10.grails.draft: the Grails draft layouts, dropped 2026-10-11)
+  const CACHE_KEY = 'psa10.cache.v2', CACHE_OLD = ['psa10.cache.v1', 'psa10.cbUp.v1', 'psa10.grails.draft'];
   const idb = {
     db: null,
     open() {
@@ -5093,7 +5095,7 @@
   // other cards are in play, and both the per-card arrays and each combo's result can be cached.
   const cbSimCache = new Map(), cbComboCache = new Map();
   let cbSimFor = null, cbMarket = null, cbSaveTimer = null;
-  // Combo results are also kept in this browser (psa10.cbUp.v1, per value-model build), so reopening
+  // Combo results are also kept in this browser (psa10.cbUp.v2, per value-model build), so reopening
   // the finder or a portfolio rating after a reload doesn't recompute ~1,500 simulations.
   const CB_STORE = 'psa10.cbUp.v2'; // v2: neutral centring fixed 2026-10-03
   function cbLoadStore(vm) {
