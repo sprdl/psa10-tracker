@@ -43,3 +43,5 @@ jobs:
         run: python3 tests/test_psa_backlog.py
       - name: Local runs print the procedures without the repo-finding prefix
         run: python3 tests/test_start.py
+      - name: Price-check pipeline (time codes, line decoders, plan) on fixtures
+        run: python3 tests/test_pipeline.py
