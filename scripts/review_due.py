@@ -34,6 +34,7 @@ ROOT = Path(__file__).resolve().parent.parent
 JST = timezone(timedelta(hours=9))
 sys.path.insert(0, str(ROOT / "scripts"))
 import odds_model  # noqa: E402
+from log_purchase import owned_urls  # noqa: E402  (singles + pulls, same as the site's ownsCard)
 
 MAX_AGE_DAYS, MAX_MOVE, LONGSHOT, LONGSHOT_MIN_DAYS, YOUNG_MONTHS, YOUNG_MIN_DAYS = 30, 10, 0.10, 7, 9, 14
 TEXT_DRIFT, TEXT_PER_RUN, REVIEW_PER_RUN = 5.0, 3, 2   # % move that makes the written verdict stale
@@ -74,10 +75,11 @@ def compute(root=ROOT, latest=None):
     vp = root / "data" / "value_model.json"
     release = json.loads(vp.read_text(encoding="utf-8")).get("release", {}) if vp.exists() else {}
     hp = root / "data" / "holdings.json"
-    owned = {h.get("card_url") for h in json.loads(hp.read_text(encoding="utf-8")).get("holdings", [])} if hp.exists() else set()
+    # bought singles and pulls you still hold (a pull counts as a raw copy you own): no buy-side reviews for them
+    owned = owned_urls(json.loads(hp.read_text(encoding="utf-8"))) if hp.exists() else set()
     due = []
     for c in snap.get("cards", []):
-        if c["url"] in owned:   # owned cards show sell tiers instead (full_update.py sell_due)
+        if c["url"].rstrip("/") in owned:   # owned cards show sell tiers instead (full_update.py sell_due)
             continue
         a = c.get("analysis") or {}
         t = a.get("tiers")
@@ -117,7 +119,7 @@ def compute(root=ROOT, latest=None):
         v = a.get("verdict") or {}
         ask = ((c.get("grades") or {}).get("psa10") or {}).get("lowest_price")
         ref = a.get("representative_price") or a.get("verdict_price_ref")
-        if not v.get("reasoning") or v.get("tag") == "defer" or not ask or not ref or c["url"] in review_urls or c["url"] in owned:
+        if not v.get("reasoning") or v.get("tag") == "defer" or not ask or not ref or c["url"] in review_urls or c["url"].rstrip("/") in owned:
             continue
         w = v.get("written")
         if w and (now - ts(w)).total_seconds() < 24 * 3600:

@@ -102,6 +102,11 @@ def main():
     for h in held:
         print(f"          OWNED {h.get('condition')}: paid {yen(h.get('purchase_price_jpy'))} on {h.get('purchase_date')}"
               f", grading & shipping {yen(grading_cost(h, g10.get('lowest_price')))}" + (" (sent)" if h.get("sent") else ""))
+    for sd in J("holdings.json").get("sealed", []):
+        for p in sd.get("pulls", []):
+            if p.get("card_url", "").rstrip("/") == url and p.get("status", "raw") in ("raw", "grading", "psa10"):
+                print(f"          OWNED pull ({p.get('status', 'raw')}): from {sd.get('snkrdunk_name') or sd.get('name') or sd.get('id')}"
+                      f" on {p.get('date')}, no purchase price of its own; treat it as a raw copy you own (no limit or Buy advice)")
     lim = (J("limits.json").get("limits") or {}).get(url)
     if lim:
         print(f"          your limit {yen(lim.get('price'))} (set {str(lim.get('set'))[:10]})")

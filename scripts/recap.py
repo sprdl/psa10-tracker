@@ -29,6 +29,9 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from log_purchase import owned_urls  # noqa: E402
+
 JST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 PATH = ROOT / "data" / "recaps.json"
@@ -92,7 +95,7 @@ def facts(week, root=ROOT):
     latest = sorted(m["snapshots"], key=lambda s: s["collected_at_jst"])[-1]["file"]
     for c in json.loads((root / "data" / "snapshots" / latest).read_text(encoding="utf-8")).get("cards", []):
         names[c["url"]] = c.get("card_name_ja", c["url"])[:40]
-    held = {x.get("card_url") for x in json.loads((root / "data" / "holdings.json").read_text(encoding="utf-8")).get("holdings", [])}
+    held = owned_urls(json.loads((root / "data" / "holdings.json").read_text(encoding="utf-8")))   # singles + pulls
     rows = []
     for url in names:
         # same picks as the site's recap (recapData in app.js): the start is the price at the last check before the week
@@ -106,7 +109,7 @@ def facts(week, root=ROOT):
             rows.append(((p1[0] / p0[0] - 1) * 100, url, p0[0], p1[0]))
     rows.sort(reverse=True)
     out.append("Card moves (PSA10 price, start → end of week; * = owned):")
-    out += [f"  {pct:+6.1f}%  {'*' if url in held else ' '} {names[url]}  ¥{p0:,} → ¥{p1:,}" for pct, url, p0, p1 in rows]
+    out += [f"  {pct:+6.1f}%  {'*' if url.rstrip('/') in held else ' '} {names[url]}  ¥{p0:,} → ¥{p1:,}" for pct, url, p0, p1 in rows]
     ev = json.loads((root / "data" / "events.json").read_text(encoding="utf-8")).get("events", [])
     nxt = (week + timedelta(days=14)).isoformat()
     out.append("events.json (already shown on the page): " + ("; ".join(f"{e['d']} {e['name']}" for e in ev if e.get("d") and lo <= e["d"] < nxt) or "none"))

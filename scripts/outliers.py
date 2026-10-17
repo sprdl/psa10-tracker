@@ -25,6 +25,9 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from log_purchase import owned_urls  # noqa: E402
+
 JST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 T = {"gap7": 8, "gap30": 12, "move": 8, "askVsSales": 8, "heat": 50, "premium": 20}
@@ -77,7 +80,7 @@ def findings(root=ROOT, upto=None):
     ci = (load("data/custom_index.json", {}) or {}).get("series", [])
     limits = (load("data/limits.json", {}) or {}).get("limits", {})
     prem = (load("data/premium.json", {}) or {}).get("cards", {})
-    owned = {h.get("card_url") for h in (load("data/holdings.json", {}) or {}).get("holdings", [])}
+    owned = owned_urls(load("data/holdings.json", {}) or {})   # singles + pulls (site: ownsCard)
     now_s = cur["collected_at_jst"]
     now = ts(now_s)
 
@@ -171,7 +174,7 @@ def findings(root=ROOT, upto=None):
             hc = (hn / hp - 1) * 100
             if abs(hc) >= T["heat"]:
                 f.append(("heat", abs(hc) / T["heat"] * 0.7, f"PSA10 sales/day {hn:.1f} vs {hp:.1f} a week ago ({hc:+.0f}%)"))
-        own = url in owned
+        own = url.rstrip("/") in owned
         lim = None if own else (limits.get(url) or {}).get("price")
         if lim and ask > lim and (ask / lim - 1) * 100 <= 5:
             f.append(("limit", 1.2, f"lowest ask within {(ask / lim - 1) * 100:.1f}% of your limit ¥{lim:,}"))

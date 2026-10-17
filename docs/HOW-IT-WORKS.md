@@ -630,7 +630,9 @@ browser's local limit for every card you own, because `log_purchase.py` removes 
 purchase is logged (`prune_owned_limits`).
 A limit stops counting once you own the card (`limitHit` checks `ownsCard`: singles from `holdingsFor`, which
 leaves out copies that came back below a 10, plus pulls from `pullsFor` with status raw, grading or PSA10); the
-sell target takes over. `suggestedTarget` offers a starting target: just under the peak, or +25% on what you paid.
+sell target takes over. A pull counts as a raw copy you own everywhere: the site (Needs you, the lists,
+Collection, card page, recap, compare views and Tables) and the scripts (`review_due.py`, `outliers.py`, `recap.py`,
+`eval_context.py` all use `log_purchase.owned_urls`). It gets no sell math, because it has no purchase price. `suggestedTarget` offers a starting target: just under the peak, or +25% on what you paid.
 
 ### Limit odds
 
@@ -1003,7 +1005,8 @@ of its neighbours is left out first (`dropLoneLows`, `RECAP_OUTLIER`; the same r
 `build_calls.py` and `scripts/recap.py`), so one mispriced listing can't produce a "+400%" move. The written part
 (headline, what happened, what's ahead) comes from `data/recaps.json`, which the first full check on a Monday
 writes for the week that just ended (`recap.py facts` prints the same numbers, `recap.py save`).
-`renderRecapCard` shows the latest week on the Overview.
+`renderRecapCard` shows the latest week on the Overview. Cards you own (bought or pulled, `ownsCard`) are listed under
+"Your cards"; the yen figure counts bought copies only, since a pull has no purchase price.
 
 ### Stories (#/stories and the card page's Story tab)
 

@@ -1997,7 +1997,7 @@
     const h = heatOf(card);
     const rate = h && h.psa ? h.psa.rate : null;
     const depth = depthInfo(card.grades.psa10);
-    const own = holdingsFor(card).length > 0;   // owners read these as a seller: no limit lines, sell wording
+    const own = ownsCard(card);   // owners (pulls included) read these as a seller: no limit lines, sell wording
     const lim = own ? null : getLimit(card);
     const sp = salesSplit(card, 7);
     const medRecent = sp.recent.length >= 3 ? median(sp.recent) : null;
@@ -2126,7 +2126,9 @@
       if (pk) parts.push(`${pk.dev >= 0 ? '+' : '−'}${Math.abs(pk.dev).toFixed(0)}% vs its 6-month norm on pokeca-chart${pk.age > 21 ? ` (as of ${pk.asof})` : Math.abs(pk.dev) < PREM_FLAG ? ', in its usual range' : ''}`);
       out.push(['Slab premium', parts.length ? parts.join(' · ') : 'no raw price to compare']);
     }
-    if (holdingsFor(card).length) {
+    if (!holdingsFor(card).length && ownsCard(card)) {
+      out.push(['You own it', 'pulled from sealed product, held raw: no limit']);
+    } else if (holdingsFor(card).length) {
       const t = getTarget(card), pr = getRep(card);
       out.push(['Your sell target', t == null ? 'none set' : pr >= t ? `reached (${fmtYen(t)})` : `${fmtYen(t)}, ${fmtYen(t - pr)} above today's price`]);
     } else if (!fired.has('limit')) {
@@ -2229,7 +2231,7 @@
       if (p0 == null || p1 == null) return null;
       const weekPts = pts.filter((x) => x.t >= W);
       const lo = Math.min(...weekPts.map((x) => x.v)), hi = Math.max(...weekPts.map((x) => x.v));
-      const owned = holdingsFor(c).length > 0;
+      const owned = ownsCard(c);   // bought or pulled (a pull counts as a raw copy you own)
       // buy tiers as they were at each check (history.json tier_log), not today's
       const log = (state.hist && state.hist.tier_log && state.hist.tier_log[c.url]) || [];
       const tiersAt = (T) => { let x = null; for (const e of log) if (Date.parse(e[0]) <= T) x = e; return x ? { definitely_buy: x[1], buy_upper: x[2], ceiling: x[3] } : null; };
@@ -2247,6 +2249,7 @@
         if (hi >= st.sell_from) flags.push({ cls: 'pos', txt: 'Reached Sell from' });
         else if (hi >= st.take_profit_from) flags.push({ cls: 'pos', txt: 'Reached Take profit' });
       }
+      // yen: the move times the copies you bought (a pull alone has no purchase price, so no yen line)
       return { card: c, owned, thin, p0, p1, lo, hi, pct: (p1 / p0 - 1) * 100, yen: (p1 - p0) * (owned ? holdingsFor(c).length : 1), flags, added: priceIn(startSnap, c.url) == null };
     }).filter(Boolean);
     // indices: My-tier (daily), pokeca-chart PSA10 ("i") and raw A ("ri") per check
@@ -2320,6 +2323,7 @@
       for (const c of cards) {
         if (!hasMarket(c)) continue;
         const ask = lowestAsk(c), nm = parseCardName(c.card_name_ja).short;
+        if (!holdingsFor(c).length && ownsCard(c)) continue;   // a pull: no limit, no sell tiers
         if (holdingsFor(c).length) {
           const st = sellTiersOf(c);
           if (st && ask != null && ask < st.take_profit_from && ask >= st.take_profit_from * 0.92) items.push({ now: true, title: `${nm} is ${((st.take_profit_from / ask - 1) * 100).toFixed(0)}% under Take profit`, text: `Lowest ask ${fmtYen(ask)} vs Take profit from ${fmtYen(st.take_profit_from)}.`, card: c });
@@ -3137,7 +3141,7 @@
     zone: { label: 'Closest to Buy', dir: 1, v: (c) => { if (ownsCard(c)) return null; const t = c.analysis && c.analysis.tiers; const p = getRep(c); return t && p != null ? p / t.buy_upper : null; } },
     // Cards you watch first, closest to your limit first; then cards you own, biggest gain first. The two groups never
     // mix (a distance to a limit and a gain are different things); reversing the order flips each group, not the groups.
-    limit: { label: 'Limit: distance to my limit, then gain on owned', dir: 1, group: (c) => (holdingsFor(c).length ? 1 : 0),
+    limit: { label: 'Limit: distance to my limit, then gain on owned', dir: 1, group: (c) => (ownsCard(c) ? 1 : 0),
       v: (c) => { const bg = boughtGap(c); return bg ? -bg.pct : (limitGap(c) || {}).pct ?? null; } },
     chgLast: { label: 'Change since last check', dir: 1, v: (c) => (priceChangeLast(c) || {}).pct ?? null },
     chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeAgo(c, 7) || {}).pct ?? null },
@@ -6342,7 +6346,7 @@
           <a class="h2h-name jp" href="#/card/${escapeAttr(cardId(c))}">${escapeHtml(short)}</a>
           <span class="h2h-meta">${escapeHtml([code, pack].filter(Boolean).join(' · '))}</span>
           <span class="h2h-price display">${fmtYen(getRep(c))}</span>
-          <span class="h2h-v">${holdingsFor(c).length ? sellChip(c) : tagChip(c)}<small>${escapeHtml(holdingsFor(c).length ? `you own it, paid ${fmtYen((boughtGap(c) || {}).paid)}` : writtenVerdictText(c))}</small></span>
+          <span class="h2h-v">${holdingsFor(c).length ? sellChip(c) : ownsCard(c) ? pulledChip(c) : tagChip(c)}<small>${escapeHtml(holdingsFor(c).length ? `you own it, paid ${fmtYen((boughtGap(c) || {}).paid)}` : ownsCard(c) ? 'you pulled it (raw)' : writtenVerdictText(c))}</small></span>
         </div>
       </div>`;
     };
@@ -6377,9 +6381,9 @@
   // Tale of the tape. better: 'low' | 'high' = which value is closer to a good buy; null = context only.
   function tapeHtml(a, b) {
     const name = (c) => parseCardName(c.card_name_ja).short;
-    const buyGap = (c) => { if (holdingsFor(c).length) return null; const t = c.analysis && c.analysis.tiers, p = getRep(c); return t && p != null ? (p / t.buy_upper - 1) * 100 : null; };
+    const buyGap = (c) => { if (ownsCard(c)) return null; const t = c.analysis && c.analysis.tiers, p = getRep(c); return t && p != null ? (p / t.buy_upper - 1) * 100 : null; };
     const offPeak = (c) => { const pk = c.analysis && c.analysis.peak; return pk && pk.price ? (getRep(c) / pk.price - 1) * 100 : null; };
-    const limOdds = (c) => { const l = holdingsFor(c).length ? null : getLimit(c); if (l == null) return null; const o = touchOdds(c, l); return o ? (o.reached ? 100 : o.p30 * 100) : null; };
+    const limOdds = (c) => { const l = ownsCard(c) ? null : getLimit(c); if (l == null) return null; const o = touchOdds(c, l); return o ? (o.reached ? 100 : o.p30 * 100) : null; };
     const chg = (d) => (c) => { const x = priceChangeAgo(c, d); return x ? x.pct : null; };
     const vsMkt = (c) => { const x = priceChangeAgo(c, 7); if (!x) return null; const mv = marketMove(x.from, refTime()); return mv ? x.pct - mv.pct : null; };
     const heat = (c) => { const h = heatOf(c); return h && h.psa ? h.psa.rate : null; };
@@ -6393,7 +6397,7 @@
     const groups = [
       { title: 'Value', leadLabel: 'Closer to buying', rows: [
         ['Above its Buy line', 'lower is closer to Buy', buyGap, fmtPct, 'low'],
-        ['Above my limit', `limit ${holdingsFor(a).length ? 'n/a (owned)' : fmtYen(getLimit(a))} · ${holdingsFor(b).length ? 'n/a (owned)' : fmtYen(getLimit(b))}`, (c) => (holdingsFor(c).length ? null : (limitGap(c) || {}).pct) ?? null, fmtPct, 'low'],
+        ['Above my limit', `limit ${ownsCard(a) ? 'n/a (owned)' : fmtYen(getLimit(a))} · ${ownsCard(b) ? 'n/a (owned)' : fmtYen(getLimit(b))}`, (c) => (ownsCard(c) ? null : (limitGap(c) || {}).pct) ?? null, fmtPct, 'low'],
         ['Chance to reach my limit', 'within 30 days · limit-odds model', limOdds, pctR, 'high'],
         ['Below its peak', `context · peak ${pk(a)} / ${pk(b)}`, offPeak, (x) => (x == null ? '—' : fmtPct(x, 0)), null],
         ...(holdingsFor(a).length || holdingsFor(b).length ? [['Vs. what you paid', 'cards you own only', (c) => (boughtGap(c) || {}).pct ?? null, (x) => (x == null ? '—' : fmtPct(x)), null]] : []),
@@ -6733,7 +6737,7 @@
     body += `<tr><td>${sortableLabel('heat', 'PSA10 sales / day')}</td>${cards.map((c) => { const h = heatOf(c); return `<td>${h && h.psa ? rateTxt(h.psa) + ' ' + heatChip(c) : '—'}</td>`; }).join('')}</tr>`;
 
     body += `<tr class="divider"><td colspan="${cards.length + 1}">PSA10 price tiers</td></tr>`;
-    const tierRow = (label, fn) => `<tr><td>${label}</td>${cards.map((c) => { const t = c.analysis && c.analysis.tiers; return `<td>${holdingsFor(c).length ? '<span class="muted">you own it</span>' : t ? fn(t) : 'Not yet established'}</td>`; }).join('')}</tr>`;
+    const tierRow = (label, fn) => `<tr><td>${label}</td>${cards.map((c) => { const t = c.analysis && c.analysis.tiers; return `<td>${ownsCard(c) ? '<span class="muted">you own it</span>' : t ? fn(t) : 'Not yet established'}</td>`; }).join('')}</tr>`;
     body += tierRow('Definitely-buy', (t) => '≤' + fmtYen(t.definitely_buy));
     body += tierRow('Buy', (t) => fmtYen(t.definitely_buy) + '–' + fmtYen(t.buy_upper));
     body += tierRow('Watch closely', (t) => fmtYen(t.buy_upper) + '–' + fmtYen(t.ceiling));
@@ -6745,6 +6749,7 @@
     }
     body += `<tr><td>${sortableLabel('verdict', 'Verdict')}</td>${cards.map((c) => {
       if (holdingsFor(c).length) return `<td>${sellChip(c)}</td>`;
+      if (ownsCard(c)) return `<td>${pulledChip(c)}</td>`;
       const tag = displayTagFor(c);
       if (tag) {
         return `<td><span class="pill ${tag}">${escapeHtml(tagLabel(tag))}</span></td>`;
