@@ -36,5 +36,7 @@ Everything else in the procedures applies unchanged: paste the `jsrun.py` browse
 one price check at a time, never type credentials, PSA sign-in or a Cloudflare check → ask me.
 Close the tabs you opened when the run ends.
 
-**Finishing.** End with the procedure's chat message and the `runclock.py end` line. You can't see
+**Finishing.** Run `python3 scripts/runclock.py end` after the last follow-up: it also pushes everything the
+follow-ups committed during the run (they don't push on their own while the run clock runs). End with the
+procedure's chat message and the `runclock.py end` line. You can't see
 your own token count here; leave it out (I can run `/cost`).

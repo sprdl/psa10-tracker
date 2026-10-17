@@ -47,7 +47,13 @@ The skill picks one of two modes (`python3 scripts/check_status.py` shows which 
 
 Publishing a snapshot saves `data/snapshots/<timestamp>.json`, updates `data/manifest.json`,
 carries each card's evaluation forward, rebuilds the price history and the track record, commits
-and pushes. GitHub Actions redeploys the site within a minute or two.
+and pushes. GitHub Actions redeploys the site within a minute or two. Follow-ups written during a run
+(evaluations, insights, stories, hype exposure) only commit; `python3 scripts/runclock.py end` at the end
+of the run pushes them all at once, so the site redeploys once instead of after every step.
+
+Snapshots are stored as compact JSON. All of them stay in the repo for the scripts and studies, but the
+deployed site only carries the last 30 days of checks (`scripts/site_bundle.py`); its charts come from
+`data/history.json`, which covers every check.
 
 An assembled snapshot JSON can still be published by hand:
 
@@ -97,7 +103,7 @@ was written at.
 ## Using the app
 
 Open the Pages URL on your computer or phone (bookmark it or add it to your home screen). The
-snapshot dropdown (bottom of the sidebar, top bar on phones) switches between every run you've pushed.
+snapshot dropdown (bottom of the sidebar, top bar on phones) switches between the checks of the last 30 days.
 
 The app has one section per job. On a computer the sidebar groups them by what you're doing:
 **Buy** (Overview, Watching, Scout, Budget planner), **Own** (Holdings, Collection, Submissions) and
@@ -154,15 +160,16 @@ your limit, the card gets a gold outline and moves to the top.
 
 **Needs you** on the overview lists every card that's at your limit, in a Buy / Definitely-buy
 zone, ahead of sell signals and
-tier reviews. Buy signals new since your last visit are marked NEW, and tapping one opens that card. A card you own never gives a
-limit signal; its sell target takes over.
+tier reviews. Buy signals new since your last visit are marked NEW, and tapping one opens that card. A card you own (bought, or
+pulled from sealed product and kept raw, at PSA or graded a 10) never gives a limit or Buy signal; its sell guidance
+takes over. Logging a purchase removes that card's limit (from `data/limits.json` and from the browser's own list).
 
 A new limit is kept in the browser you set it in first ("Only on this device"); **Save to all
 devices** syncs it (see "Limit prices on every device" below).
 
 ## Budget planner
 
-Tick the cards you want to buy and set your budget (default ¥200,000). The planner adds up the
+Tick the cards you want to buy and set your budget (default ¥250,000). The planner adds up the
 selection, subtracts what you've already spent on singles (grading included), shows what's left or
 how far over you are, and marks unticked cards that would still fit ("fits").
 
@@ -192,14 +199,18 @@ nothing runs on your Mac.
 
 - **✓ Bought it** (card page, side panel): a dialog asks for the price (today's lowest ask
   pre-filled), the date, slab or raw (with the grading fee), and notes, then opens the form ready to
-  submit. **+ Bought another** logs a second copy.
+  submit. **+ Bought another** logs a second copy. The Action also removes the card's limit, since a card
+  you own gets sell guidance instead.
 - **+ Add sealed product** (Holdings): a box, set or packs bought at MSRP, with its SNKRDUNK link so
   the next price check fills in its name, picture and lowest ask.
 - **Pulled one of these? / + Add pull** (under a sealed product): a valuable card that came out of it,
   raw, at PSA, PSA10 or graded otherwise. Logging a pull marks the product as opened.
 - **Grading info** (raw singles and pulls): when it was sent to PSA, the service tier, and your own
   chance of a PSA10 for that copy. The site uses it for the "Grade it?" verdict and the return date. The PSA
-  submission planner sends one form for several cards.
+  submission planner sends one form for several cards. When the copy comes back, the same form records
+  **Came back PSA10** (it is then valued as a slab from that day, `graded_on`) or **Came back lower than 10**.
+  Grading counts as money spent once a copy is sent, at the fee of the service it was sent at; unsent copies
+  worth over ¥150,000 assume Priority (or Express above ¥250,000).
 - **✓ Sold it** (owned card page, Holdings rows, unopened sealed products): the sale price (suggested:
   the PSA10 price for a slab, the raw A-rank price for a raw card), date, quantity for sealed lots and
   the real fees if you know them. **Undo sale** puts the item back.
@@ -288,6 +299,8 @@ scripts/log_purchase.py, set_limit.py, set_predictions.py, remove_card.py   run 
 scripts/*.py                    everything else (docs/HOW-IT-WORKS.md §11)
 pricecheck/                     the price-check skill's in-page scripts, plan and procedure
 widgets/psa10-widget.js         iPhone/iPad Home Screen widget (Scriptable)
+widgets/psa10-loader.js         the small loader you paste into Scriptable; it fetches psa10-widget.js
+scripts/site_bundle.py          builds _site/ for the deploy (site files + the last 30 days of snapshots)
 tests/                          checks that the site, the widget and the scripts apply the same rules
 docs/schema.md                  the data shapes: snapshot, analysis overlay, holdings and the other files
 docs/HOW-IT-WORKS.md            guide to how the code works
@@ -377,11 +390,15 @@ no trend assumed), next to the evaluation's own stated odds for a nearby price w
 small = rotates through cards at your limit (first) or in a Buy zone, every ~15 min
 (widget parameter = a SNKRDUNK id pins one card); medium = buy signals + My-tier index;
 large = compact overview. It uses limits and sell targets saved to all devices (`data/limits.json`,
-`data/sell_targets.json`) and knows which cards you own (`data/holdings.json`): those never show a limit or Buy
-signal, but a sell signal (Sell / Take profit / Reassess, ranked after limit hits and before Buy signals) with
-their gain on what you paid.
-Setup: install Scriptable, create a new script, paste the file, then add a Scriptable
-widget to the Home Screen and choose the script. Tapping opens the tracker.
+`data/sell_targets.json`) and knows which cards you own (`data/holdings.json`, pulls included): those never show a
+limit or Buy signal, but a sell signal (Sell / Take profit / Reassess, ranked after limit hits and before Buy signals)
+with their gain on what you paid. Grails (`data/grails.json`) are left out, as on the site.
+
+Setup: install Scriptable, create a new script, paste **`widgets/psa10-loader.js`** (not the widget itself), then
+add a Scriptable widget to the Home Screen and choose the script. Tapping opens the tracker. The loader downloads
+the current `psa10-widget.js` from the site at most once an hour and keeps a copy for offline runs, so widget
+changes reach your devices with the next deploy and you never paste it again. If it can't reach the site and has
+no copy yet, it says so; open Scriptable once while online.
 
 ## Tests
 

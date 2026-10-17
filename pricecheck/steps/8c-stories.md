@@ -12,4 +12,4 @@ cd "$R" && python3 scripts/set_story.py <snkrdunk_id> <<'EOF'
 {"illustrator": "...", "illustrator_ja": null, "art": "...", "story": "...", "set": "...", "trivia": ["..."], "english": "...", "sources": [{"title": "...", "url": "https://..."}], "confidence": "high"}
 EOF
 ```
-It checks the fields, refuses SNKRDUNK/pokeca-chart sources, commits and pushes. Mention each story in the chat message in one line ("Story added: <name>, illustrated by <artist>").
+It checks the fields, refuses SNKRDUNK/pokeca-chart sources and commits (the push follows with `runclock.py end`). Mention each story in the chat message in one line ("Story added: <name>, illustrated by <artist>").

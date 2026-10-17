@@ -1,7 +1,7 @@
 # How the PSA10 Tracker works
 
 A guide to the code, written so you can understand, change and fix the site yourself.
-It describes the repo as of 2026-10-09 (after the analysis, widget and submission-planner update). Function names are
+It describes the repo as of 2026-10-17 (after the audit fixes, the speed and data-growth work and the widget loader). Function names are
 given instead of line numbers, because line numbers move with every edit. Search for
 the name in your editor (Cmd+F, or Cmd+Shift+F across the project in VS Code).
 
@@ -62,8 +62,9 @@ Three things follow from this design, and they explain most of the code:
   `calls.json`) or other sites' history (`odds_model.json`, `value_model.json`, `hype.json`,
   `premium.json`, `scout.json`): those are built by Python scripts and stored.
 - **Publishing = committing to `main`.** Every push to `main` triggers
-  `.github/workflows/deploy.yml`, which republishes the whole repo as the website in
-  about a minute.
+  `.github/workflows/deploy.yml`, which republishes the website in about a minute. It doesn't
+  upload the whole repo: `scripts/site_bundle.py` builds a `_site/` folder with the site files and
+  the last 30 days of snapshots (section 10).
 
 The price checks never use an HTTP client. Claude opens the sites' own pages in hidden
 same-origin iframes of a tab in your browser (the same pages a person would open), only when
@@ -152,7 +153,7 @@ assets/*.png, favicon.ico      icons
 data/manifest.json             list of snapshots (file name, time, full/quick)
 data/snapshots/*.json          one file per price check (the core data)
 data/*.json                    everything else: see the table in section 4
-data/incoming/                 drop folder for price-check output (gitignored)
+data/incoming/                 drop folder for price-check output, run clock, history cache (gitignored)
 
 scripts/*.py                   publishing, Action and maintenance scripts (section 11)
 scripts/odds_model_builder.js  in-browser helper to rebuild the odds model and hype pool (monthly)
@@ -170,6 +171,7 @@ pricecheck/references/         the skill's card list (cards.json), PSA tier stat
 .github/workflows/*.yml        deploy + the Actions behind the site's forms (section 10)
 .github/ISSUE_TEMPLATE/*.yml   the 13 issue forms the site opens
 widgets/psa10-widget.js        Scriptable widget for iPhone/iPad (section 12)
+widgets/psa10-loader.js        the loader pasted into Scriptable; downloads psa10-widget.js from the site
 tests/rules.mjs, test_rules.py check that the site, the widget and the Python scripts apply the same rules (section 13)
 docs/schema.md                 exact shape of a snapshot, holdings.json and the other files
 docs/HOW-IT-WORKS.md           this guide
@@ -184,14 +186,14 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | File | Written by | Read by | What's inside |
 |---|---|---|---|
 | `manifest.json` | `add_snapshot.py` | site, scripts, widget | `{"snapshots": [{"file", "collected_at_jst", "check_mode"}]}`, oldest first |
-| `snapshots/YYYYMMDD-HHMM.json` | `add_snapshot.py` (via `full_update.py` / `quick_update.py`), `apply_analysis.py` | site, widget | `collected_at_jst`, `check_mode`, `notes`, `cards[]`, `pokeca_chart_index`, optional `banners`, `market_context` |
+| `snapshots/YYYYMMDD-HHMM.json` (compact JSON, one line) | `add_snapshot.py` (via `full_update.py` / `quick_update.py`), `apply_analysis.py`, `psa_pop.py` | site (last 30 days), widget, every script | `collected_at_jst`, `check_mode`, `notes`, `cards[]`, `pokeca_chart_index`, optional `banners`, `market_context` |
 | `history.json` *generated* | `build_history.py` (on every publish) | site: price history, 7D/30D, heat trend, tier review, slab premium line, value chart, holding timing, supply & demand charts; widget; `predict.py`, `outliers.py`, `review_due.py` | per snapshot: `d` time, `m` mode, `i` pokeca index, `p {url: [price, confirmed]}`, `h {url: [PSA10/day, raw/day]}`, `r {url: [PSA10 ask, raw ask, PSA10 sales median, raw sales median, raw A-rank price]}`, `f {url: favorites}` (once a day, when changed), `q {url: [cheap listings, listings read]}` (fresh listing reads), `n {url: [population, gem rate]}` (fresh readings, when changed); plus `tiers {url: {since, i}}` and `tier_log {url: [[since, db, bu, ceil], …]}`. Entries older than 30 days keep one check per JST day |
 | `sales.json` *generated* | `build_history.py` | History tab (loaded when opened) | every PSA10 one-copy sale the checks saw, once each: `{url: [[hour, price], …]}` |
 | `calls.json` *generated* | `build_calls.py` (via `build_history.py`) | Track record, Scored calls | `summary` (closed-window score, early decisions, baseline, return vs the market, Brier scores), `calls[]`, `predictions[]`, `model_odds[]` |
 | `custom_index.json` | `add_custom_index.py` | Market page, overview index strip, correction rule, tier review, widget | `meta` (constituents, base prices) + `series[]` of daily `{d, level, prices, pokeca_psa10}` |
 | `events.json` | `events.py` | event rule, release calendar, widget | `window_days`, `events[] {d, name, major, scope}` |
 | `psa_backlog.json` | `psa_backlog.py` | Market page panel, Submissions line | `readings[] {d, m, note}` (PSA's backlog in millions of units), `check {last_checked, result}`, `threshold_m` (5.0), `tiers[]`, `value_prices`, `projection` (3 scenarios, written by the script) |
-| `limits.json` | `set_limit.py` (Action) | site, widget, `predict.py` | `{"limits": {url: {price, set, issue}}}` |
+| `limits.json` | `set_limit.py` (Action); `log_purchase.py` removes a card's entry once you own it | site, widget, `predict.py` | `{"limits": {url: {price, set, issue}}}` |
 | `sell_targets.json` | `set_limit.py` (Action) | sell signals | `{"targets": {url: {price, set, issue}}}` |
 | `holdings.json` | `log_purchase.py` (Action), `add_holding.py` | Holdings, owned views, budget | `holdings[]` (singles), `sealed[]` (with `pulls[]`), `sold[]` |
 | `holdings_prices.json` | `holdings_prices.py` (full check) | Holdings | latest SNKRDUNK price per bought untracked card / unopened sealed product |
@@ -207,6 +209,8 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `scout.json` | `scout.py` (full check, about every 2 days) | Scout page | candidate pool, ranked list, daily picks two weeks ahead |
 | `tracked_cards.json` | `card_requests.py` | price-check skill | cards added with "+ Add card", beyond the skill's own `pricecheck/references/cards.json` |
 | `eval_queue.json` | `card_requests.py`, `remove_card.py` (restore); emptied by `apply_analysis.py` | `eval_queue.py`, `check_status.py`, both update scripts | cards added or restored that the same price check must evaluate (EVALUATE NOW) |
+| `recaps.json` | `recap.py save` (full check step 8j, Mondays) | Weekly recap page and Overview card | written note per week: `{"weeks": {monday: {headline, takeaway, happened[], ahead[], written}}}` |
+| `grails.json` | by hand | Grails page; left out of every list and signal on the site and the widget | `{"grails": {snkrdunk id: {added, note}}}`; target = the card's limit, else its Buy tier |
 | `removed_cards.json` | `remove_card.py` (Action) | site, `plan.py`, `assemble.py`, `add_snapshot.py` | `{"removed": {snkrdunk_id: {name, at}}}` |
 
 **One card inside a snapshot** looks like this, trimmed. The full version is in
@@ -275,12 +279,19 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    and asks for the STORE call, which checks its own pasted text before saving. If a site blocks it,
    `jsrun.py inline <name>` prints the filled-in script to paste directly, as before.
    `tests/test_jsrun.py` checks in Node that what runs is byte-for-byte the filled-in script.
+   `snkrdunk_full.js` waits for two identical sorted, unsold readings instead of fixed pauses. It skips a card's
+   A-rank listings page when the A tile still shows the lowest ask of the last list read (`plan.py`'s
+   `a_carry_price`, the fourth field of a plan line; never on Mondays, never when that list is 3+ days old):
+   the card returns an `Rc` token and `full_update.py` carries the old list, stamped `listings_as_of`.
 3. `python3 scripts/full_update.py -` takes all the lines on stdin. It refuses the run when a planned
    step left no lines (the completeness guard), decodes the lines into the raw JSON shape,
    runs `pricecheck/scripts/assemble.py` against the live snapshot (printing warnings and changes),
    then publishes: `add_snapshot.py`, `add_custom_index.py`, `premium.py` (which also updates
    `hype.json`), `scout.py`, `holdings_prices.py` (which also appends to `portfolio_history.json`).
-   Each of those commits on its own; `full_update.py` pushes them all once at the end.
+   Each of those commits on its own; `full_update.py` pushes them all once at the end. The follow-ups
+   after it (`apply_analysis.py`, `set_insight.py`, `set_story.py`, `hype.py`) only commit while the run
+   clock is running (`scripts/deferpush.py`); `runclock.py end` pushes them in one go, so the site
+   redeploys once. `widget/run-check.sh` pushes leftovers when a menu-bar run stops early.
 4. `full_update.py` ends with three blocks: data that has gone stale (`freshness.py --stale`), the
    **FOLLOW-UPS** (step 8 of FULL-CHECK.md: evaluate new cards, write sell tiers for owned cards,
    stories for new cards, re-evaluate cards whose tiers are due, refresh written verdicts the price has
@@ -301,7 +312,9 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
 4. saves `data/snapshots/<YYYYMMDD-HHMM>.json` and appends it to `manifest.json`;
 5. logs limit-odds forecasts on full checks (`odds_model.log_for_snapshot`) and rebuilds
    `history.json` and `sales.json`, which in turn updates `predict.json` (`predict.update`) and `calls.json`
-   (`build_calls.build`). It refuses a `collected_at_jst` without a time and adds `+09:00` when the offset is
+   (`build_calls.build`). `build_history.py` caches each snapshot's contribution in
+   `data/incoming/history-cache.json` (keyed by file size and mtime, `CACHE_VERSION`), and `build_calls.py`
+   reads the same cache, so a rebuild takes about half a second however many snapshots there are. It refuses a `collected_at_jst` without a time and adds `+09:00` when the offset is
    missing (a date-only timestamp is read as midnight by Python and 09:00 JST by browsers);
 6. commits and pushes. The deploy Action publishes the site.
 
@@ -321,7 +334,9 @@ hands off to `add_snapshot.py`, and ends with the follow-ups (evaluations, seale
 
 - **Evaluation.** `apply_analysis.py` merges new tiers, peak, verdict and sell tiers into the
   **latest** snapshot (matched by URL, name or set code; it refuses to guess on ambiguous names). It
-  stamps `verdict.written`, validates `predictions`, rebuilds history and calls, then commits and pushes.
+  stamps `verdict.written`, validates `predictions`, rebuilds history and calls, then commits and pushes
+  (during a price-check run it leaves the push to `runclock.py end`). It warns when a reasoning text states a
+  chance ("24% for a listing at …") that isn't also a prediction.
 - **Stories, insights, events, models:** their own scripts (section 11), all called from the full check.
 
 ### From the site (through GitHub issues)
@@ -482,20 +497,26 @@ In order:
 function render() {
   renderMarketStrip(data); renderCustomIndex(); renderEvents(); renderHeat();
   renderKpis(data); renderToday(data, state.previousData); renderInbox(cards);
-  renderPortfolio(...); renderOverviewList(cards); renderDrawer(); renderCollection(cards);
-  renderWatchPanel(...); renderPlanner(cards);
-  lazyPending = { record, scout, predict, stories, tables };   // built later
+  renderRecapCard(); renderInbox(cards); renderOverviewList(cards); renderDrawer();
+  lazyPending = { holdings, collection, watching, planner, grails,
+                  record, scout, predict, stories, tables };   // built when opened or when idle
   updateCounts(); applyRoute(); trimImages(document); scheduleLazy();
 }
 ```
 
 **Every view is re-rendered from `state` every time.** When something changes (a new limit, a
 different snapshot), the code updates `state` or localStorage and calls `render()` again. It's
-simple and hard to get out of sync. The pages that aren't on screen at first (Track record, Scout,
-You vs model, Stories, Tables) are built when first opened (`renderLazy`, called from `applyRoute`)
+simple and hard to get out of sync. The pages that aren't on screen at first (Holdings, Collection,
+Watching, Budget planner, Grails, Track record, Scout, You vs model, Stories, Tables) are built when first opened (`renderLazy`, called from `applyRoute`)
 or in the background once the browser is idle (`scheduleLazy`), so the first paint doesn't wait for
 them. Some small interactions redraw only their own piece: `renderPlanner` after ticking a checkbox,
 `setSort` the list and the collection, `renderPredict` after locking in an answer.
+
+Heavier computations are memoized per **data epoch**: `setShownData` bumps `dataEpoch` whenever different data is
+shown, and `portfolioSeries`, `recapData`, `insightsFor`, `heatOf`, `marketGap` and the My-tier lookups keep their
+result until it changes. `history.json` lookups use pre-parsed times and a binary search. The Holdings chart isn't
+drawn while Holdings is hidden, and charts in closed card-page tabs aren't measured (both would force a layout).
+If you add a computation that depends on data, key its cache on `dataEpoch` too.
 
 ### Routing
 
@@ -604,9 +625,12 @@ Both work the same way. There are two stores:
 device · Save to all devices ↗". That link (`limitFormUrl`) opens the pre-filled
 `set-limit` issue. Once the Action has updated `limits.json` and the site reloads,
 `reconcileLimits()` sees that the local and synced values agree and deletes the
-local copy. It only runs against fresh data, never against the cached copy.
-A limit stops counting once you own the card (`limitHit` checks `holdingsFor`); the sell target
-takes over. `suggestedTarget` offers a starting target: just under the peak, or +25% on what you paid.
+local copy. It only runs against fresh data, never against the cached copy. It also deletes this
+browser's local limit for every card you own, because `log_purchase.py` removes the synced one when a
+purchase is logged (`prune_owned_limits`).
+A limit stops counting once you own the card (`limitHit` checks `ownsCard`: singles from `holdingsFor`, which
+leaves out copies that came back below a 10, plus pulls from `pullsFor` with status raw, grading or PSA10); the
+sell target takes over. `suggestedTarget` offers a starting target: just under the peak, or +25% on what you paid.
 
 ### Limit odds
 
@@ -622,7 +646,7 @@ in the Tier check, the drawer, the budget duel, the combination finder and You v
 ### Needs you (buy signals, sell signals, reviews)
 
 `computeSignals(cards)` collects, in order: a lowest ask at or below your limit (0), Definitely-buy (1) and Buy (2). Cards you
-own never give limit signals. `inboxItems` puts those first, then every owned card whose `sellState`
+own (`ownsCard`, pulls included) never give limit or Buy signals; `tests/test_rules.py` checks that on every snapshot. `inboxItems` puts those first, then every owned card whose `sellState`
 isn't Hold (strongest first), then watched cards whose `tierReview` is due. `renderInbox` shows them;
 with no buy signal, `closestBuy` names the card with the smallest gap to your limit (or, without a
 limit, to its Buy line). Buy signals not seen on your previous visit get a **NEW** label (their keys
@@ -864,13 +888,22 @@ for a raw copy.
 
 For every raw copy of a card (a raw single, or a pull with status raw / grading), `gradeCalc`
 compares selling raw now with grading: the expected result is gem rate × net PSA10 price + (1 − gem
-rate) × net raw price, minus the grading cost of the chosen PSA tier (`GRADE_TIERS`: Standard ¥9,980 /
-100 business days, Priority ¥11,980 / 80, Express ¥29,980 / 25, each plus ¥2,450 shipping and
-handling). The gem rate is the card's population rate unless you gave your own on the Grading info
+rate) × net raw price, minus the grading cost of the chosen PSA tier (`GRADE_TIERS`, built from the one fee
+table `PSA_FEES` / `PSA_STD` / `PSA_PRIO` / `PSA_EXP`: Standard ¥9,980 / 100 business days / declared value up to
+¥150,000, Priority ¥11,980 / 80 / up to ¥250,000, Express ¥29,980 / 25, each plus ¥2,450 shipping and
+handling; `scripts/log_purchase.py`'s `GRADE_FEES` / `PSA_EXTRAS` hold the same values for Python). A copy not
+sent yet defaults to the cheapest service whose cap covers its PSA10 price (`psaTierFor`). The gem rate is the card's population rate unless you gave your own on the Grading info
 form. "Grade it" when your chance is 10+ points above break-even, "Don't grade" 10+ below, else
 "Close call". Once a copy is sent (or was bought to grade), the fee is spent: it only shows the
 expected result and the return date (`addBusinessDays`). It warns when the PSA10 price is above
 Standard's ¥150,000 declared-value limit.
+
+The grading fee counts as money spent once a copy is sent (or was bought to grade), at the fee of the
+service it was sent at, on the site, the widget, sold records and `eval_context.py`. When a copy comes back,
+the Grading info form's status records it: **Came back PSA10** sets `condition: psa10`, `graded_from_raw` and
+`graded_on` (the copy keeps its grading cost, is valued as a slab from that day and charted as raw before it);
+**Came back lower than 10** sets `graded_other` (with the same two fields), and the copy gets no PSA10 position or
+sell math. A pull's status changes the same way (`psa10` / `graded_other`). Slabs bought graded refuse grading info.
 
 ### PSA submission planner (#/submit)
 
@@ -880,8 +913,8 @@ result graded vs sold raw (`submitCalc`, the same sums as `gradeCalc`) and the c
 on its own. Tick the cards to send together (by default every priced card that isn't "Don't grade"):
 
 - **Service:** one order uses one service, so **Auto** picks the cheapest whose declared-value cap
-  (`GRADE_TIERS[...].cap`) covers the most valuable card; only Standard's (¥150,000) is known, so a higher
-  service shows a note to check its cap on PSA's order screen. A manual choice warns when a card is over the cap.
+  (`GRADE_TIERS[...].cap`: Standard ¥150,000, Priority ¥250,000, Express no known cap) covers the most
+  valuable card. A manual choice warns when a card is over the cap.
 - **Cost:** grading fee × cards + shipping, insurance and handling **once per order** (an editable estimate,
   ¥2,450 from a 1-card Standard order; the per-order amount for several cards isn't known yet).
 - **Back around:** the send date + the service's business days. The date is typed and shown as `YYYY/MM/DD` (a plain text field: browsers show date pickers in their own locale's format); it is stored and sent to the form as `YYYY-MM-DD`. **Expected 10s** and **grading vs selling raw**
@@ -960,6 +993,18 @@ expanded is remembered in `psa10.trOpen`. Since 2026-10-09:
 `renderScored` (`#/scored`, from the "Buy / Watch calls" tile) lists the scored right / wrong calls and, separately,
 the ones decided early.
 
+### Weekly recap (#/recap and the Overview card)
+
+`recapData(W)` (memoized; `recapDataCalc` does the work) builds any Mon–Sun JST week from `history.json`: each
+card's PSA10 price from the last check before the week to its last check in it, the week's low and high, flags
+(dipped into the Buy zone by the tiers it had then, at your limit, rose above the ceiling, reached a sell tier),
+the three indices, your purchases and the releases in `events.json`. A single reading more than 15% below both
+of its neighbours is left out first (`dropLoneLows`, `RECAP_OUTLIER`; the same rule as `OUTLIER` in
+`build_calls.py` and `scripts/recap.py`), so one mispriced listing can't produce a "+400%" move. The written part
+(headline, what happened, what's ahead) comes from `data/recaps.json`, which the first full check on a Monday
+writes for the week that just ended (`recap.py facts` prints the same numbers, `recap.py save`).
+`renderRecapCard` shows the latest week on the Overview.
+
 ### Stories (#/stories and the card page's Story tab)
 
 `data/stories.json` holds a researched write-up per card (illustrator, what the art shows, its connections, set context, trivia, English release, sources), keyed by SNKRDUNK URL. New cards get theirs in the full check after they're added (FULL-CHECK.md step 8c): `scripts/set_story.py --missing` lists cards without a story, Claude researches them and saves each with `scripts/set_story.py <id>`, which checks the fields and pushes. `storyHtml(card)` renders the Story tab (tap the picture for the big version, `openLightbox`), `renderStories()` the gallery page; tiles open the card on its Story tab.
@@ -1033,9 +1078,11 @@ live to try things before changing the file.
 
 ## 10. The GitHub Actions workflows
 
-- **`deploy.yml`**: on every push to `main` (or when triggered manually), uploads the
-  whole repo to GitHub Pages. `concurrency: pages` cancels an older deploy if a newer
-  one starts.
+- **`deploy.yml`**: on every push to `main` (or when triggered manually), runs `scripts/site_bundle.py`
+  and uploads its `_site/` folder to GitHub Pages: `index.html`, `assets/`, `widgets/`, `data/` with only the
+  snapshots of the last 30 days (`SITE_DAYS`, plus one day so the oldest offered check has its predecessor),
+  and nothing from `scripts/`, `docs/` or `tests/`. Keep `SITE_DAYS` equal in `site_bundle.py` and `app.js`
+  (the check picker). `concurrency: pages` cancels an older deploy if a newer one starts.
 - **`purchases.yml`** → `log_purchase.py`: issues labeled `bought`, `sold`, `remove-purchase`,
   `sealed`, `pull`, `sealed-link` or `grading-info` (or with the matching title prefix).
 - **`limits.yml`** → `set_limit.py`: `set-limit` and `set-sell-target`.
@@ -1078,6 +1125,9 @@ with a docstring explaining its usage. Open the file and read the top.
 | `quick_update.py` | publishing a quick check |
 | `add_snapshot.py` | publishing an assembled snapshot (called by the two above) |
 | `freshness.py` | listing which data sources are older than their cadence |
+| `runclock.py` | the run clock: `start`, `end` (prints the run time and pushes the follow-ups), `history` |
+| `deferpush.py` | (library) commit without pushing while a run clock is running; `runclock.py end` pushes |
+| `site_bundle.py` | building `_site/` for the deploy (run by `deploy.yml`; `python3 scripts/site_bundle.py` to try it) |
 
 **Evaluations and written content**
 
@@ -1090,6 +1140,7 @@ with a docstring explaining its usage. Open the file and read the top.
 | `events.py` | managing the release calendar: `list`, `add`, `date`, `remove`, `window` |
 | `psa_backlog.py` | PSA grading backlog (full check step 8i): `due` (is a look due today?), `from-page -` (saves the newest update from text copied off PSA's page, with sanity checks), `add 2026-10-20 7.4` (by hand), `status`, `recompute`; `print_due` is called by `full_update.py` |
 | `event_study.py` | checking whether prices really dip around releases |
+| `recap.py` | the weekly recap note (FULL-CHECK step 8j): `due`, `facts [MONDAY]`, `save -` |
 
 **Market data and models**
 
@@ -1133,13 +1184,19 @@ token in a script or a command, and never commit one.** `.git-credentials` is in
 
 ## 12. The iPad/iPhone widget
 
+**Installing and updating.** You paste `widgets/psa10-loader.js` into Scriptable once. Each run it downloads
+`https://sprdl.github.io/psa10-tracker/widgets/psa10-widget.js` (at most once an hour, through a `?t=<hour>` query),
+checks that the text is the widget (its first comment line, "PSA10 Tracker widget for Scriptable"; a test checks
+that marker stays), saves it as `psa10-widget-code.js` in Scriptable's local documents and runs it. Offline, it
+runs the saved copy. So a widget change ships with the next deploy; don't rename that first comment line.
+
 `widgets/psa10-widget.js` runs in the Scriptable app. It fetches the public files from
 `https://sprdl.github.io/psa10-tracker/data/...` directly (manifest, the latest
 snapshot, limits, history, custom index, events), keeps the last good copy for offline use,
 and re-implements a small part of the site's logic: zones, the correction, rally and event rules, signals,
 limit hits, the 7-day change and heat, drawn with Scriptable's widget API. Only limits and sell targets saved to
 all devices are visible to it. It also reads `holdings.json` and `sell_targets.json`: like the site, a card you
-own never gives a limit or Buy signal; it gets the site's sell signal instead (`sellState`: Sell / Take profit /
+own (pulls included) never gives a limit or Buy signal, and grails (`grails.json`) are left out; a card you own gets the site's sell signal instead (`sellState`: Sell / Take profit /
 Reassess from the sell tiers, your sell target, Near peak, Rich ask), shown with its gain on what you paid (a raw
 copy against its DIY cost). Actionable sell signals rank after limit hits and before Buy signals in every size;
 the large widget marks owned rows with their gain. If you change a rule in `app.js` (say, the
@@ -1175,7 +1232,7 @@ git push                     # the site updates in ~1 minute
 ### Bump the version after changing app.js or style.css
 
 Browsers keep `app.js` and `style.css` for up to 10 minutes. To make everyone get the
-new file immediately, change the `?v=20261009v11` in **both** places in `index.html`
+new file immediately, change the `?v=20261017a` in **both** places in `index.html`
 (the `<link>` for style.css and the `<script>` for app.js) to today's date, adding a letter
 for a second change on the same day (`?v=20261010`, `?v=20261010b`, …). Data files don't need
 this; they're always revalidated.

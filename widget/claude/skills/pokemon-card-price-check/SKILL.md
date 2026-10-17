@@ -34,10 +34,10 @@ A card the user asked for (an open "Add card" request, a restore) is **added, pu
 3. **Evaluate** it, right after publishing and before every other follow-up: the update script prints an `EVALUATE NOW` block (`scripts/eval_queue.py`) listing queued cards first, whatever their PSA10 market, then cards whose PSA10 market just formed. For each (at most 3 per run):
    - one `device_bash` call: `cd "$R" && python3 scripts/eval_context.py <snkrdunk_id>` (everything this run already has for the card, plus `--odds <prices>` for tier reachability);
    - load the `pokemon-tcg-card-evaluation` skill with the Skill tool and follow it end to end, reusing that output; a card with no PSA10 ask yet gets a `defer` verdict with reasoning, which is a complete evaluation;
-   - apply it with that skill's step 8 (`apply_analysis.py`), which pushes it to the site and takes the card off the queue.
+   - apply it with that skill's step 8 (`apply_analysis.py`), which saves it and takes the card off the queue. During a run it only commits; `runclock.py end` pushes it with the other follow-ups.
    The full rules are in `pricecheck/steps/8b-evaluate.md`.
 4. The chat message says "Added: <name>" and "Evaluated <name>: <verdict>, tiers ¥X / ¥Y / ¥Z, N predictions recorded" (or "Defer: no PSA10 market yet"). If an evaluation genuinely can't finish (a site down, the JSON refused), say "NOT evaluated: <name> — <reason>"; the card stays queued and the next check does it.
 
 ## Finishing
 
-The run is not finished until the `FOLLOW-UPS` line the update script prints last says `none`, or every step it lists is done (8b first). Then one `device_bash` call: `cd "$R" && python3 scripts/runclock.py end`. Write the chat message as the procedure describes, and end it with how long the price check took (the `runclock.py end` line) and how many tokens you used.
+The run is not finished until the `FOLLOW-UPS` line the update script prints last says `none`, or every step it lists is done (8b first). Then one `device_bash` call: `cd "$R" && python3 scripts/runclock.py end`. Never skip it: besides timing the run, it pushes every follow-up committed during the run (evaluations, insights, stories, hype readings), so until then the site doesn't show them. If its line says commits were NOT pushed, say so in the chat. Write the chat message as the procedure describes, and end it with how long the price check took (the `runclock.py end` line) and how many tokens you used.

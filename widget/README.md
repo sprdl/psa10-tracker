@@ -56,7 +56,7 @@ within 2 hours after. Times and windows are at the top of `lib.sh`.
 | `app/PSA10Bar.swift` | the menu bar app: icon and bubble only; all logic is in the scripts |
 | `status.sh` | status lines for the bubble, and whether a prompt is due (the app runs it every minute) |
 | `start.sh` | bubble buttons → new Terminal window running `run-check.sh` (or the run history) |
-| `run-check.sh` | one run: lock, stale git locks, `git pull`, `claude --chrome --model …` |
+| `run-check.sh` | one run: lock, stale git locks, `git pull`, `claude --chrome --model …` with a prompt that gives the exact first command (`python3 pricecheck/start.py --mode <mode>`, no `$(…)`, so it doesn't stop for a permission question); if the run stops early it clears the run clock and pushes commits the run left unpushed |
 | `hooks/` | Claude Code hooks, only active in widget runs (`PSA10_RUN=1`): `stop.sh` (turn finished → the run can close), `notify.sh` (needs you → 🃏❗ + notification), `clear.sh` (you answered → clear 🃏❗) |
 | `history.sh` | recent run times (`scripts/runclock.py history`) |
 | `lib.sh` | settings and shared functions |

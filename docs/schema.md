@@ -1,6 +1,7 @@
 # Snapshot JSON schema
 
-Every file in `data/snapshots/` is one collection run. The app only ever computes
+Every file in `data/snapshots/` is one collection run, stored as compact JSON on one line (since 2026-10-16; read
+it with `python3 -m json.tool` or `jq`). All snapshots stay in the repo; the deployed site carries the last 30 days. The app only ever computes
 derived numbers from raw inputs at render time — nothing derived should be
 hand-written into this JSON. If a number here can be calculated from other fields
 in this same file, it's a bug to store it separately.
@@ -55,7 +56,9 @@ These are written by `scripts/full_update.py` / `quick_update.py` / `add_snapsho
 
 - `check_mode` (top level): `"full"` or `"quick"`; also stored per entry in `data/manifest.json`.
 - `as_of` on each `pokeca_chart_index` object, `listings_as_of` on a grade, `population_as_of` on a
-  card: when a value carried by a quick check was really measured. The site shows them as small
+  card: when a value carried by a quick check was really measured. A full check also stamps `listings_as_of` on
+  `raw_a_grade` when it skipped that card's A-rank listings page because the tile's lowest ask hadn't changed
+  (the `Rc` token; never on Mondays or for a list 3+ days old). The site shows them as small
   "as of 9/26 15:15" labels.
 - `quick_note` on a card or a grade: why a quick check couldn't re-read it (values carried).
 - `population_error` / `population_note` on a card: why the PSA pop report couldn't be read (or wasn't due). `population_source` is `psa` (altema before 2026-10-12); `psa_total_graded` is PSA's total for the row, so gem rate = population ÷ total.
@@ -328,8 +331,11 @@ never hand-write those numbers here.
       "card_name_ja": "...",                             // denormalized label — kept even if
                                                            // the card later drops out of tracking
       "image_url": "https://.../card-photo.jpg",         // optional, used only if card_url stops matching
-      "condition": "psa10",                              // "psa10" (bought already-slabbed) or
-                                                           // "raw_to_grade" (bought raw, paying to grade it)
+      "condition": "psa10",                              // "psa10" (bought already-slabbed),
+                                                           // "raw_to_grade" (bought raw, paying to grade it), or
+                                                           // "graded_other" (a raw copy that came back below a 10)
+      "graded_from_raw": true,                           // set by Grading info "Came back …": keeps its grading cost
+      "graded_on": "2026-12-20",                         // the day it came back; before it the copy counts as raw
       "purchase_price_jpy": 65000,
       "purchase_date": "2026-09-20",
       "grading_fee_jpy": 9980,                            // only used if condition is raw_to_grade
@@ -361,7 +367,9 @@ Raw copies (a pull with status `raw` / `grading`, or a holding with `condition: 
 `"sent": "2026-10-01"` (date sent to PSA), `"tier": "standard|priority|express"` and `"gem_rate_pct": 60` (your own
 chance of a PSA10 for this copy, overriding the card's population gem rate). They are set with the site's
 **Grading info** link (issue form `grading-info.yml`, label `grading-info`, handled by `scripts/log_purchase.py`;
-blank fields remove the value). The PSA submission planner (`#/submit`) sends one form for several copies
+blank fields remove the value). Grading counts as spent once `sent` is set (or `graded_from_raw`), at the fee of
+`tier`; an unsent copy defaults to the cheapest service whose declared-value cap covers its PSA10 price (Standard
+¥150,000, Priority ¥250,000, else Express). The PSA submission planner (`#/submit`) sends one form for several copies
 (`id: "p73, p74, u52"`): the same date, service and status for each, and a blank chance keeps each copy's own. The site uses them for the "Grade it?" verdict, the expected result and the
 return date (sent + 100 / 80 / 25 business days for Standard / Priority / Express). A non-10 is valued at the
 raw A-rank price and everything is net of selling costs; see `gradeCalc` in `assets/app.js`.
@@ -391,7 +399,7 @@ in each row has the details in its docstring.
 | `history.json` (generated, `build_history.py`) | `{"snapshots": [{"d": time, "m": mode, "i": pokeca PSA10 index, "p": {url: [price, confirmed 0/1]}, "h": {url: [PSA10 sales/day, raw A sales/day]}, "r": {url: [PSA10 ask, raw A ask, PSA10 sales median, raw A sales median, raw A-rank price]}, "f": {url: favorites}, "q": {url: [listings within 15%, listings read]}, "n": {url: [population, gem rate]}}], "tiers": {url: {"since": when the tiers were last set or reviewed, "i": index then}}, "tier_log": {url: [[since, definitely_buy, buy_upper, ceiling], …]}}`. `f` is kept on the last check of each JST day and, like `n`, only when it changed (readers carry the last value forward); `q` and `n` only come from fresh reads (no `listings_as_of` / `population_as_of`). Entries older than 30 days keep one check per JST day |
 | `sales.json` (generated, `build_history.py`) | `{"updated", "cards": {url: [[hour, price], …]}}`: every PSA10 one-copy sale the checks saw, once each; hour = hours since 1970-01-01 UTC (the middle of the window the SNKRDUNK timestamp allows) |
 | `calls.json` (generated, `build_calls.py`) | `{"as_of", "window_days", "threshold", "confirm_readings", "summary", "calls": [{url, name, tag, label, made, price, window_end, status: right/wrong/neutral/pending/unscored, final, low, now, why, threshold, ret_pct, mkt_pct, rel_pts, edge_pts, …}], "predictions": [{…, p, type, price, by, status: yes/no/open/void, final}], "model_odds": [{url, kind, price, days: 30/90, p, made, by, status, final}]}`. `final` = the window or deadline is over; only final items are scored. `summary`: `closed` (right/wrong/neutral of final calls, and per kind `buy` / `watch`: right_pct, rel_pts, edge_pts), `early` (decided, not final), `pending`, `next_close`, `baseline` (`buy` / `watch`: the same rules for a call on every day), `odds_resolved`/`brier`/`expected_yes`/`actual_yes` (final stated odds), `odds_open`, `odds_early_yes`, `model_odds` (`h30`, `h90`: n, brier, expected_yes, actual_yes, early_yes, open) |
-| `limits.json` / `sell_targets.json` (`set_limit.py`) | `{"limits": {url: {"price", "set", "issue"}}}` / `{"targets": {…same…}}` |
+| `limits.json` / `sell_targets.json` (`set_limit.py`) | `{"limits": {url: {"price", "set", "issue"}}}` / `{"targets": {…same…}}`. `log_purchase.py` removes a card's limit once you own it (a holding, or a pull kept raw, at PSA or a 10) |
 | `custom_index.json` (`add_custom_index.py`) | `{"meta": {name, base_date, base_level, method, selection, constituents: [{code, name, base}], backfill, revisions, next_review}, "series": [{"d", "level", "n", "prices": {code: price}, "carried": [codes], "pokeca_psa10", "backfill"}]}` |
 | `events.json` (`events.py`) | `{"window_days": 3, "events": [{"d": "2026-10-16" or null, "name", "major", "scope": "all" or [set codes], "kind", "source", "note"}]}` |
 | `psa_backlog.json` (`psa_backlog.py`) | `{"about", "threshold_m": 5.0, "source", "updated_jst", "check": {"last_checked" (JST date the full check last looked at PSA's page), "result"}, "readings": [{"d", "m" (millions of units), "note"}], "tiers": [{name, status paused/open, since, fee, cap, days, note}], "value_prices": {as_of, note, rows: [{name, cap, fee, days, was_fee, was_days, new}]}, "projection": {as_of, backlog_m, gap_m, next_update, drops_m, avg_drop_m, last_drop_m, drop_step_m, scenarios: [{key, label, rule, under_on or null, floor_m, path: [{d, m}]}]}}` |
@@ -423,4 +431,5 @@ Written by `scripts/recap.py save` (FULL-CHECK step 8j, the first full check on 
 that just ended: `{"about": …, "weeks": {"<Monday YYYY-MM-DD>": {"headline", "takeaway"?, "happened": [{d, title,
 text?, source?}], "ahead": [{d|null, title, text?, source?}], "written"}}}`. The Weekly recap page (`#/recap`,
 `renderRecap` in `assets/app.js`) computes everything else itself from `history.json` (card prices, the PSA10 index
-`i` and raw A-rank index `ri` per check), `custom_index.json`, the holdings and `events.json`.
+`i` and raw A-rank index `ri` per check), `custom_index.json`, the holdings and `events.json`. A single price reading
+more than 15% below both neighbours is ignored there and in `recap.py facts` (one mispriced listing).
