@@ -166,8 +166,7 @@ def parse(text, cards_meta, plan):
         toks = line.split()[1:]
         by = {t[0]: t for t in toks}
         base = decoded[sid]["base"]
-        tiles = decoded[sid]["tiles"]
-        # the tile values stay inside base for the tile-only rule below; assemble.py doesn't read them
+        # the grade tiles (decoded[sid]["tiles"]) aren't passed on: assemble.py doesn't read them
         rc = {"base": base}
         if "L" in by or "R" in by:
             rc["psa10"] = decode_listing(by["L"]) if "L" in by else {"error": "listings not collected this run"}

@@ -123,7 +123,7 @@ def main():
     else:
         print("          depth: not read yet (a quick check only reads the tile): read the listings page if it matters")
     allsales = g10.get("recent_completed_sales") or []
-    print(f"          sales (newest first, 1枚): " + (", ".join(f"{yen(s['price'])} {s.get('when')}" for s in allsales[::-1][:10]) or "none"))
+    print("          sales (newest first, 1枚): " + (", ".join(f"{yen(s['price'])} {s.get('when')}" for s in allsales[::-1][:10]) or "none"))
     if s10:
         ps = sorted(p for _, p, _ in s10)
         spd = sales_per_day(allsales, ref)

@@ -12,7 +12,7 @@ the lowest ask (you can't buy under it). Fewer than 3 such sales: the lowest ask
 """
 from statistics import median
 
-N, DAYS, MIN = 5, 30, 3
+N, MIN = 5, 3   # the 30-day window is applied by the callers (build_history, eval_context, holdings_prices)
 
 
 def raw_price(ask, recent_sales):
