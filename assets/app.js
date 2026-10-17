@@ -871,9 +871,13 @@
   }
   function reconcileLimits() {
     let changed = false;
+    // a card you own has no limit (scripts/log_purchase.py removes the saved one): drop this device's copy too, so it
+    // doesn't come back as a Buy signal if you sell the card
+    const own = new Set([...(state.holdings || []).map((h) => h.card_url),
+      ...(state.sealed || []).flatMap((sd) => (sd.pulls || []).filter((p) => ['raw', 'grading', 'psa10'].includes(p.status || 'raw')).map((p) => p.card_url))]);
     Object.keys(limits).forEach((url) => {
       const local = limits[url], synced = syncedLimit(url);
-      if ((local === 0 && synced == null) || (local > 0 && local === synced)) { delete limits[url]; changed = true; }
+      if (own.has(url) || (local === 0 && synced == null) || (local > 0 && local === synced)) { delete limits[url]; changed = true; }
     });
     if (changed) store.set('psa10.limits', limits);
   }
@@ -2200,6 +2204,10 @@
     if (!recapMemo.has(key)) { if (recapMemo.size > 20) recapMemo.clear(); recapMemo.set(key, recapDataCalc(W)); }
     return recapMemo.get(key);
   }
+  const RECAP_OUTLIER = 0.15;   // same as OUTLIER in scripts/build_calls.py and scripts/recap.py
+  function dropLoneLows(pts) {
+    return pts.filter((x, i) => !(i > 0 && i < pts.length - 1 && x.v < pts[i - 1].v * (1 - RECAP_OUTLIER) && x.v < pts[i + 1].v * (1 - RECAP_OUTLIER)));
+  }
   function recapDataCalc(W) {
     const E = W + WEEK_MS;
     const snaps = ((state.hist && state.hist.snapshots) || []).map((e) => ({ ...e, t: Date.parse(e.d) })).sort((a, b) => a.t - b.t);
@@ -2214,9 +2222,9 @@
     const priceIn = (s, url) => (s.p && s.p[url] ? s.p[url][0] : null);
     const cards = ((state.currentData && state.currentData.cards) || []).filter(hasMarket);
     const rows = cards.map((c) => {
-      let p0 = priceIn(startSnap, c.url);
-      const pts = series.map((s) => ({ t: s.t, v: priceIn(s, c.url) })).filter((x) => x.v != null);
-      if (p0 == null && pts.length) p0 = pts[0].v;   // added during the week: from its first check
+      // a single mispriced listing between normal readings is left out, as in the track record (build_calls.OUTLIER)
+      const pts = dropLoneLows(series.map((s) => ({ t: s.t, v: priceIn(s, c.url) })).filter((x) => x.v != null));
+      const p0 = pts.length ? pts[0].v : null;   // the last check before the week, or (added during the week) its first
       const p1 = pts.length ? pts[pts.length - 1].v : null;
       if (p0 == null || p1 == null) return null;
       const weekPts = pts.filter((x) => x.t >= W);

@@ -563,6 +563,33 @@ def apply(issue, labels, store, dry=False):
     return msg, f"holdings: {'update' if replaced else 'add'} {h['card_name_ja']} (#{issue['number']})"
 
 
+LIMITS = ROOT / "data" / "limits.json"
+
+
+def owned_urls(store):
+    """Cards you hold: bought singles (any condition) and pulls you still have."""
+    urls = {h.get("card_url") for h in store.get("holdings", [])}
+    urls |= {p.get("card_url") for sd in store.get("sealed", []) for p in sd.get("pulls", []) if p.get("status", "raw") in ("raw", "grading", "psa10")}
+    return {(u or "").rstrip("/") for u in urls if u}
+
+
+def prune_owned_limits(store):
+    """A limit is a buy price: once you own the card it's dead weight, and it would come back as a Buy signal you
+    never set for the new situation if you sell the card. Remove the limits of every card you own (2026-10-17).
+    Returns [(url, price)] removed."""
+    if not LIMITS.exists():
+        return []
+    d = json.loads(LIMITS.read_text(encoding="utf-8"))
+    lim = d.get("limits") or {}
+    own = owned_urls(store)
+    gone = [(u, (lim[u] or {}).get("price")) for u in list(lim) if u.rstrip("/") in own]
+    if gone:
+        for u, _ in gone:
+            del lim[u]
+        LIMITS.write_text(json.dumps(d, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return gone
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     dry = "--dry-run" in sys.argv
@@ -603,7 +630,8 @@ def main():
             finish(issue, f"Couldn't record this: {e}", False, dry)
             return
         save_holdings(store)
-        git("add", "data/holdings.json")
+        gone = prune_owned_limits(store)
+        git("add", "data/holdings.json", "data/limits.json")
         if subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode == 0:
             break  # already recorded (e.g. a re-run)
         git("commit", "-q", "-m", commit_msg)
@@ -613,6 +641,9 @@ def main():
         time.sleep(3 + attempt * 2)
     else:
         raise RuntimeError("git push failed six times")
+    if changed and gone:
+        msg += "\n\nRemoved your limit" + ("s" if len(gone) > 1 else "") + " for " + ", ".join(
+            f"{u.rstrip('/').split('/')[-1]}" + (f" (¥{p:,})" if isinstance(p, int) else "") for u, p in gone) + ": you own " + ("these cards" if len(gone) > 1 else "this card") + " now."
     if changed:
         # Pushes made with the Actions token don't start other workflows, so start the Pages deploy explicitly.
         gh("POST", "/actions/workflows/deploy.yml/dispatches", {"ref": "main"})

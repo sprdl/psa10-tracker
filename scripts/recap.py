@@ -60,6 +60,14 @@ def due(root=ROOT, now=None):
     return last if any(lo <= s["d"][:10] < hi for s in snaps) else None
 
 
+OUTLIER = 0.15   # same as build_calls.OUTLIER
+
+
+def drop_lone_lows(vals):
+    """Drop a reading more than OUTLIER below both its neighbours (one mispriced listing between normal ones)."""
+    return [v for i, v in enumerate(vals) if not (0 < i < len(vals) - 1 and v < vals[i - 1] * (1 - OUTLIER) and v < vals[i + 1] * (1 - OUTLIER))]
+
+
 def facts(week, root=ROOT):
     """Plain-text numbers for the week (what the page will show), to write the note against."""
     h = json.loads((root / "data" / "history.json").read_text(encoding="utf-8"))
@@ -87,9 +95,13 @@ def facts(week, root=ROOT):
     held = {x.get("card_url") for x in json.loads((root / "data" / "holdings.json").read_text(encoding="utf-8")).get("holdings", [])}
     rows = []
     for url in names:
-        p0 = next(((s.get("p") or {}).get(url) for s in reversed(before) if (s.get("p") or {}).get(url)), None) or next(((s.get("p") or {}).get(url) for s in inw if (s.get("p") or {}).get(url)), None)
+        # same picks as the site's recap (recapData in app.js): the start is the price at the last check before the week
+        # (not an older one: a lone ¥12,980 ask from 9/18 made M6a Pikachu "+400%" in the week of 10/5), else the
+        # first check in the week; single mispriced readings are dropped like in the track record (build_calls.OUTLIER)
+        pts = drop_lone_lows([p[0] for p in ((s.get("p") or {}).get(url) for s in [a, *[x for x in inw if x is not a]]) if p])
+        p0 = [pts[0]] if pts else None
         # the last price the week has for the card (the week's last check may have skipped it: a carried ask)
-        p1 = next(((s.get("p") or {}).get(url) for s in reversed(inw) if (s.get("p") or {}).get(url)), None)
+        p1 = [pts[-1]] if pts else None
         if p0 and p1 and p0[0] and p1[0]:
             rows.append(((p1[0] / p0[0] - 1) * 100, url, p0[0], p1[0]))
     rows.sort(reverse=True)

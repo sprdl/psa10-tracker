@@ -126,6 +126,12 @@ class Rules(unittest.TestCase):
                 with self.subTest(snapshot=s["file"], card=c["name"][:20], what="widget"):
                     self.assertEqual(c["event"], c["widget_event"])
 
+    def test_widget_loader_marker(self):
+        """widgets/psa10-loader.js only runs fetched code that carries this marker (a 404 page must never replace it)."""
+        code = (ROOT / "widgets" / "psa10-widget.js").read_text(encoding="utf-8")
+        self.assertIn("PSA10 Tracker widget for Scriptable", code)
+        self.assertIn("PSA10 Tracker widget for Scriptable", (ROOT / "widgets" / "psa10-loader.js").read_text(encoding="utf-8"))
+
     def test_no_buy_signal_for_owned(self):
         """Cards you own (bought, or pulled from sealed product) never get a Buy / Definitely-buy / limit signal in "Needs you"."""
         for s in self.js:
