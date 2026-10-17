@@ -101,11 +101,16 @@
    "sources": []
   },
   "https://snkrdunk.com/apparels/146897": {
-   "written": "2026-10-17T09:54:52+09:00",
-   "headline": "Ask ¥400,000 sits 20% under the ¥498,500 sales median, but only 5 of 20 listings are near the low",
-   "text": "What's happening: the lowest PSA10 ask is ¥400,000 against a recent sales median of ¥498,500. Only 5 of 20 listings sit within 15% of the low, and about 2.9 sales a day are going through, with ¥489,000–¥525,000 clearing this week.\n\nWhy: likely a single seller pricing below the market, since the rest of the book sits near ¥490,000–¥510,000. My searches found no news of a reprint or re-release of the Van Gogh promo.\n\nFor you: ¥400,000 is in the ceiling zone of the tiers (¥340,000 / ¥390,000 / ¥450,000) and double your ¥200,000 limit, so there is no action unless your limit changes.\n\nWatch: whether the ¥400,000 listing sells and the low jumps back to about ¥420,000+, and whether sales slow below 2 a day.",
-   "signals": "lowest ask ¥400,000 is -20% vs recent sales median ¥498,500",
-   "sources": []
+   "written": "2026-10-18T07:30:26+09:00",
+   "headline": "Pikachu Van Gogh promo asks ¥400k, 20% under the ¥498k sales median",
+   "text": "What's happening: The lowest PSA10 ask is ¥399,999 while 20 sales in 7 days (about 2.9 a day) have a median of ¥498,000. Only 5 of 20 listings are within 15% of the ask; the next ones start near ¥400–420k and most sit at ¥480–510k.\n\nWhy: Most likely a single seller pricing below the market rather than a drop: the ask below the sales band is the lone cheap listing, and the ¥489–520k prints show the going price. The price-history article I found (per premium.gamepedia.jp) only covers 2023–2025, and I found no news of a reprint of this promo.\n\nFor you: At ¥400k the ask is at your Definitely-buy tier of ¥340k plus about 18%, so still above your tiers and your ¥200k limit, and above the PSA Express threshold, so grading yourself isn't a route.\n\nWatch: Whether the ¥400k listing sells and the asks reset to ¥480k+, or the sales median slides toward the ask.",
+   "signals": "lowest ask ¥399,999 is -20% vs recent sales median ¥498,000",
+   "sources": [
+    {
+     "title": "ポケカ ゴッホ展ピカチュウ 相場解説",
+     "url": "https://premium.gamepedia.jp/pokeca/archives/18448"
+    }
+   ]
   },
   "https://snkrdunk.com/apparels/103079": {
    "written": "2026-10-17T09:54:48+09:00",
