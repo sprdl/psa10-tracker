@@ -172,7 +172,7 @@ def main():
     hy = (J("hype.json").get("cards") or {}).get(url)
     print()
     if pr and not pr.get("error"):
-        print(f"CONTEXT   slab premium (pokeca-chart PSA10 ÷ raw 美品) {pr.get('prem')}x vs its 6-month norm {pr.get('norm')}x ({pr.get('dev'):+}%), as of {pr.get('asof')}")
+        print(f"CONTEXT   slab premium (pokeca-chart PSA10 ÷ raw 美品) {pr.get('prem')}x vs its 6-month norm {pr.get('norm')}x ({'n/a' if pr.get('dev') is None else format(pr['dev'], '+')}%), as of {pr.get('asof')}")
     else:
         print(f"CONTEXT   slab premium: {(pr or {}).get('error', 'not available')}")
     if hy and hy.get("level"):
