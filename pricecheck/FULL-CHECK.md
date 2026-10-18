@@ -125,7 +125,7 @@ Order:
    (one per card). Then, only if the setup printed a `snkrdunk_held` block (step 2b: `HELD` lists what the
    Holdings page needs a price for but the tracked cards don't cover: bought raw cards and raw/at-PSA
    pulls that aren't tracked (raw A-rank ask plus the last 30 days of one-copy A sales, turned into the
-   raw A-rank price by `scripts/raw_price.py`), and sealed products with no pull logged (lowest ask)), paste
+   raw A-rank price by `scripts/raw_price.py`), and sealed products with no pull logged (lowest ask); on Mondays also the Binder's cards, see step 6c), paste
    the `snkrdunk_held` RUN call on tab S and POLL it for its `H` / `HE` lines (about 5 s per item). A
    sealed product with a pull is opened and no longer listed; its stored price is deleted by the
    publish step. Full checks only, never the quick check.
@@ -216,8 +216,9 @@ if it says nothing stands out, skip it.
 |---|---|---|
 | 1b | open card requests | `pricecheck/steps/1b-add-cards.md` |
 | 1c | `PSAPOP MISSING` printed | `pricecheck/steps/1c-psa-pop-pages.md` |
+| 2c | `BINDER IDS NEEDED` printed | `pricecheck/steps/2c-binder-ids.md` |
 | 5b | `REBUILD DUE` printed | `pricecheck/steps/5b-models.md` |
-| 6, 6b | Mondays | `pricecheck/steps/6-monday.md` |
+| 6, 6b, 6c | Mondays (6c: Binder prices ride along in step 2b) | `pricecheck/steps/6-monday.md` |
 | 7b | `outliers.py` lists cards | `pricecheck/steps/7b-outliers.md` |
 | 8b | `EVALUATE NOW` / `SELL TIERS NOW` have cards (required, first) | `pricecheck/steps/8b-evaluate.md` |
 | 8c | `WRITE STORIES NOW` has cards (required) | `pricecheck/steps/8c-stories.md` |

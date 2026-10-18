@@ -15,3 +15,5 @@ Put the result on one line: `TIER <the psa_tier_status JSON>`.
    The script commits and pushes each change (same credential rules as step 7).
 4. Only add official dates. Trademark filings and leaks stay undated and never trigger the rule; never give them a date.
 If nothing new was announced, change nothing. In the chat message, mention any calendar change in one line ("Calendar: added 拡張パック「…」 on 11/27"), and whether the event rule is on right now (`python3 scripts/events.py window`).
+
+**6c. Monday only: Binder prices.** Nothing extra to run: `plan.py` adds the Binder's cards to the step 2b HELD list on Mondays, and `full_update.py` saves them to `data/binder.json` (A-rank raw rule, previous price kept for the ▲/▼ indicator). Cards without a SNKRDUNK id are listed under FOLLOW-UPS `2c` (`pricecheck/steps/2c-binder-ids.md`). Mention one line in the chat message, e.g. "Binder: ¥xx,xxx (+3.1% vs 10/19)" from the `binder:` line the update prints.

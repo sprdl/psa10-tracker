@@ -169,6 +169,13 @@ def build_plan(root=ROOT, now=None):
         held = [[k, v] for k, v in holdings_prices.needed(root, {c["snkrdunk_id"] for c in load_cards(root)}).items()]
     except Exception as e:  # never break a price check over this
         print(f"(holdings prices skipped: {e})")
+    try:   # the Binder's raw cards: read on Mondays only, in the same step 2b (scripts/binder.py)
+        sys.path.insert(0, str(root / "scripts"))
+        import binder
+        have = {k for k, _ in held}
+        held += [[i, "card"] for i in binder.due_ids(root, now) if i not in have]
+    except Exception as e:
+        print(f"(binder prices skipped: {e})")
     return {
         "held": held, "now": now, "monday": monday, "scout": scout, "latest": snap_path.name if snap_path else None,
         "plan": plan, "psapop": psapop, "psapop_missing": pmiss, "pop_skipped": skipped, "premium": prem,

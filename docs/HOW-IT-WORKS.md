@@ -199,6 +199,7 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `holdings.json` | `log_purchase.py` (Action) | Holdings, owned views, budget | `holdings[]` (singles), `sealed[]` (with `pulls[]`), `sold[]` |
 | `holdings_prices.json` | `holdings_prices.py` (full check) | Holdings | latest SNKRDUNK price per bought untracked card / unopened sealed product |
 | `portfolio_history.json` | `holdings_prices.py` (full check) | Holdings value chart | daily readings of the same, one entry per day |
+| `binder.json` | `binder.py` (full check, Mondays only) | Binder | the raw cards from the physical binder with their A-rank raw price, the previous price (for ▲/▼) and the SNKRDUNK id |
 | `odds_model.json` | `save_odds_model.py` (monthly) | limit odds, tier check, predictions, `odds_model.py` | per-card volatilities, pooled z-curves, calibration factors |
 | `odds_log.json` | `odds_model.py` (via `add_snapshot.py`, full checks) | `build_calls.py` | the model's logged forecasts, for scoring |
 | `value_model.json` | `save_value_model.py` (monthly) | Upside tab, Hold value, combination finder, tier review | 12/24-month market and card-part outcome samples, swing per card, age curve, release months |
@@ -1158,6 +1159,7 @@ with a docstring explaining its usage. Open the file and read the top.
 | `hype.py` | rebuilding the hype reference pool (monthly) or showing readings |
 | `scout.py` | saving / re-ranking Scout candidates |
 | `holdings_prices.py` | listing / saving prices of bought items that aren't tracked |
+| `binder.py` | the Binder: Monday gate, saving prices with the previous reading, `set-id` for SNKRDUNK ids |
 | `sealed_info.py` | reading names and pictures of sealed products from SNKRDUNK |
 | `odds_model.py` / `save_odds_model.py` | printing today's odds / saving a rebuilt odds model |
 | `save_value_model.py` | saving a rebuilt value model |
@@ -1361,3 +1363,20 @@ Open DevTools with **Cmd+Option+I**.
 | Card photos too small or offset | trim measurement cached from a bad load | delete `psa10.imgTrim.v1` in Local Storage |
 | The "Rules tests" workflow fails | a rule was changed on one side only (site, widget or script) | run `python3 tests/test_rules.py`; the failure names the snapshot, the card and both values |
 | The site shows data in an old shape after an update | an old cached bundle | bump `CACHE_KEY` (section 13); to clear it by hand: DevTools → Application → IndexedDB → `psa10` → delete |
+
+
+## The Binder (added 2026-10-18)
+
+`data/binder.json` lists the raw cards from Philipp's physical binder (scanned once from photos; no weekly scanning).
+Each entry has name, set, number, rarity (`null` for older cards reprinted in the 30th set), `qty`, the SNKRDUNK id
+and, after a reading, `price` (per copy), `basis`, `ask`, `sales`, `date` and the reading before it (`prev_price`,
+`prev_date`). The price is the A-rank raw price (`raw_price.py`, same rule as everywhere).
+
+- **Weekly reading, Mondays only (JST), inside the full check.** `plan.py` adds the binder's ids to `HELD` on Mondays,
+  so the existing step 2b reads them with `snkrdunk_held.js` (H lines); `full_update.py` hands the same lines to
+  `binder.save()`. On other days nothing is read. A failed read keeps the last price.
+- **SNKRDUNK ids** are looked up once in the browser (`pricecheck/steps/2c-binder-ids.md`, `binder.py set-id`).
+  Until then FOLLOW-UPS lists `2c`.
+- **Site:** the Binder page (Own group) shows the binder value, the ▲/▼ change since the last reading, and one row
+  per card. Binder cards are owned: no limit, no Buy signal, no sell tiers, and they are not part of the Holdings value.
+- **Not included:** a "Remove" form like Holdings has; edit `data/binder.json` instead.

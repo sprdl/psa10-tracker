@@ -294,6 +294,8 @@ def main():
         sealed_info.print_due(ROOT)
         import psa_backlog
         psa_backlog.print_due(ROOT)
+        import binder
+        binder.print_due(ROOT)
         import recap
         recap.print_due(ROOT)
         print_followups()
@@ -370,6 +372,9 @@ def main():
     if plan.get("held") or held:   # also prunes items that were opened since the last run
         print()
         holdings_prices.save(held, ROOT, push=sub_push)
+    if held:      # Monday: the Binder's cards ride along in the same H lines
+        import binder
+        binder.save(held, ROOT, push=sub_push)
     if sc:
         print()
         scout.update(*sc, root=ROOT, push=sub_push)
@@ -386,6 +391,8 @@ def main():
     sealed_info.print_due(ROOT)
     import psa_backlog
     psa_backlog.print_due(ROOT)
+    import binder
+    binder.print_due(ROOT)
     import recap
     recap.print_due(ROOT)
     print_followups()
@@ -456,6 +463,7 @@ def print_followups():
         ("8g", "refresh verdicts (pricecheck/steps/8g-refresh-verdicts.md)", lambda: min(review_due.TEXT_PER_RUN, len(review_due.compute(ROOT)[1]))),
         ("8h", "sealed info (pricecheck/steps/8h-sealed.md)", lambda: len(sealed_info.due(ROOT))),
         ("8i", "PSA backlog (pricecheck/steps/8i-psa-backlog.md)", lambda: psa_backlog.due_count(ROOT)),
+        ("2c", "binder SNKRDUNK ids (pricecheck/steps/2c-binder-ids.md)", lambda: __import__("binder").due_count(ROOT)),
         ("8j", "weekly recap note (pricecheck/steps/8j-recap.md)", lambda: 1 if __import__("recap").due(ROOT) else 0),
     ):
         try:

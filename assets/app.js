@@ -28,6 +28,8 @@
     psaBacklog: null, // data/psa_backlog.json — PSA's grading backlog and when the Value tiers could reopen (scripts/psa_backlog.py)
     sold: [], // data/holdings.json "sold" — what was sold, for what, and the profit
     portHist: [], // data/portfolio_history.json — daily readings of untracked cards / sealed items
+    binder: null, // data/binder.json — raw cards from the physical binder, priced weekly on Mondays (scripts/binder.py)
+    binderSort: 'value',
     heldPrices: {}, // data/holdings_prices.json — latest SNKRDUNK price per bought untracked card / unopened sealed item
     holdings: [], // data/holdings.json — purchases you've actually made (see docs/schema.md)
     grails: {}, // data/grails.json — SNKRDUNK id → { added, note } for the long-term grails
@@ -164,7 +166,7 @@
   }
 
   const OPTIONAL_DATA = {
-    holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', portHist: 'data/portfolio_history.json', sellTargets: 'data/sell_targets.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
+    holdings: 'data/holdings.json', heldPrices: 'data/holdings_prices.json', binder: 'data/binder.json', portHist: 'data/portfolio_history.json', sellTargets: 'data/sell_targets.json', calls: 'data/calls.json', customIndex: 'data/custom_index.json',
     events: 'data/events.json', psaBacklog: 'data/psa_backlog.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json', recaps: 'data/recaps.json',
     valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', grails: 'data/grails.json', hype: 'data/hype.json',
@@ -256,6 +258,7 @@
     state.sold = (b.holdings && b.holdings.sold) || []; // sales recorded with the Sold form (data/holdings.json "sold")
     state.sealed = (b.holdings && b.holdings.sealed) || []; // boxes/sets/packs bought at MSRP, with their pulls
     state.heldPrices = (b.heldPrices && b.heldPrices.prices) || {};
+    state.binder = b.binder || null;
     state.portHist = (b.portHist && b.portHist.points) || [];
     state.calls = b.calls || null;
     state.customIndex = b.customIndex || null;
@@ -2840,7 +2843,7 @@
   // #/compare/<id>,<id> (head to head), #/duel/<id>,<id>,… (budget duel), #/combos (combination finder)
   // and #/rate/<id>,<id>,… (rate my portfolio).
   const VIEWS = {
-    overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings',
+    overview: 'Overview', collection: 'The collection', watching: 'Watching', holdings: 'Holdings', binder: 'Binder',
     planner: 'Budget planner', grails: 'Grails', record: 'Track record', market: 'Market & notes', tables: 'Tables', more: 'More', card: '',
     compare: 'Head to head', duel: 'Budget duel', combos: 'Combination finder', rate: 'Rate my portfolio', scored: 'Scored calls', submit: 'PSA submission planner', scout: 'Scout', predict: 'You vs the model', stories: 'Stories', recap: 'Weekly recap',
   };
@@ -2868,7 +2871,7 @@
     const navView = view === 'card' ? (state.cardFrom || 'overview') : PARENT[view] || view;
     document.querySelectorAll('#nav a, .tabbar a').forEach((a) => a.classList.toggle('on', a.dataset.view === navView));
     const tab = document.querySelector('.tabbar a[data-view="more"]');
-    if (tab && ['watching', 'planner', 'grails', 'collection', 'submit', 'record', 'market', 'tables', 'predict', 'stories', 'recap'].includes(navView)) tab.classList.add('on');
+    if (tab && ['watching', 'planner', 'grails', 'collection', 'binder', 'submit', 'record', 'market', 'tables', 'predict', 'stories', 'recap'].includes(navView)) tab.classList.add('on');
 
     const back = document.getElementById('back-link');
     back.hidden = view !== 'card' && !PARENT[view];
@@ -2961,6 +2964,7 @@
       case 'collection': return `${market} cards with a PSA10 market. Limit hits and Buy zones come first; cards you own sort by their sell signal.`;
       case 'watching': return `${cards.length - market} cards without a PSA10 market yet. They move to the overview once PSA10 listings appear.`;
       case 'holdings': return 'Cards and sealed product you bought, valued at today\'s prices';
+      case 'binder': return binderSubtitle();
       case 'planner': return 'Tick cards to see what a shortlist costs against your budget';
       case 'grails': return grailsSubtitle();
       case 'record': return 'How past calls and stated odds turned out';
@@ -2994,6 +2998,7 @@
       predict: predOpenCount(),
       submit: rawCopies().filter((c) => !c.sent).length || '',
       grails: grailsCount(),
+      binder: binderCount() || '',
     };
     document.querySelectorAll('em[data-count]').forEach((em) => { em.textContent = counts[em.dataset.count] || ''; });
   }
@@ -3083,7 +3088,7 @@
     // Pages that aren't on screen are built when first opened, or in the background once the
     // browser is idle, so the first paint doesn't wait for them.
     lazyPending = {
-      holdings: () => renderPortfolio(state.holdings, cards), collection: () => renderCollection(cards),
+      holdings: () => renderPortfolio(state.holdings, cards), binder: renderBinder, collection: () => renderCollection(cards),
       watching: () => renderWatchPanel(cards.filter((c) => !hasMarket(c)), prevCards), planner: () => renderPlanner(cards), grails: renderGrails,
       record: renderTrackRecord, scout: renderScout, predict: renderPredict, stories: renderStories, tables: () => renderTables(cards, prevCards),
     };
@@ -4030,6 +4035,75 @@
           </div>`}
         </div>`;
     }).join('');
+  }
+
+  // ---------- render: Binder (raw cards from the physical binder, A-rank raw prices read on Mondays) ----------
+  function binderCards() { return (state.binder && state.binder.cards) || []; }
+  function binderCount() { return binderCards().reduce((n, c) => n + (c.qty || 1), 0); }
+  function binderStats() {
+    const cs = binderCards();
+    let worth = 0, prevWorth = 0, priced = 0, both = 0, lastDate = null;
+    cs.forEach((c) => {
+      const q = c.qty || 1;
+      if (c.price != null) { worth += c.price * q; priced++; if (c.date && (!lastDate || c.date > lastDate)) lastDate = c.date; }
+      if (c.price != null && c.prev_price != null) { both++; prevWorth += c.prev_price * q; }
+    });
+    const bothNow = cs.reduce((n, c) => n + (c.price != null && c.prev_price != null ? c.price * (c.qty || 1) : 0), 0);
+    return { worth, priced, total: cs.length, both, change: both ? bothNow - prevWorth : null, changePct: both && prevWorth ? ((bothNow - prevWorth) / prevWorth) * 100 : null, lastDate };
+  }
+  function nextMonday(from) {
+    const d = new Date(from || Date.now());
+    const jst = new Date(d.getTime() + 9 * 3600e3);
+    const add = ((8 - jst.getUTCDay()) % 7) || 7;
+    jst.setUTCDate(jst.getUTCDate() + add);
+    return jst.toISOString().slice(0, 10).replace(/-/g, '/');
+  }
+  function binderSubtitle() {
+    const st = binderStats();
+    return st.priced ? `${binderCount()} raw cards from your binder at A-rank raw prices, read every Monday` : `${binderCount()} raw cards from your binder. Prices start with the first Monday check.`;
+  }
+  function renderBinder() {
+    const el = document.getElementById('binder-page');
+    if (!el) return;
+    const cs = binderCards();
+    if (!cs.length) { el.innerHTML = '<div class="empty-state">No binder cards yet.</div>'; return; }
+    const st = binderStats();
+    const missing = cs.filter((c) => !c.snkrdunk_id).length;
+    const sorts = { value: 'Value', change: 'Change', set: 'Set' };
+    const delta = (c) => (c.price != null && c.prev_price ? ((c.price - c.prev_price) / c.prev_price) * 100 : null);
+    const rows = cs.slice().sort((a, b) => {
+      if (state.binderSort === 'set') return (a.set + a.number).localeCompare(b.set + b.number);
+      if (state.binderSort === 'change') return (delta(b) ?? -1e9) - (delta(a) ?? -1e9);
+      return (b.price ?? -1) * (b.qty || 1) - (a.price ?? -1) * (a.qty || 1);
+    });
+    const arrow = (v) => (v == null ? '' : v > 0.05 ? '▲' : v < -0.05 ? '▼' : '–');
+    el.innerHTML = `
+      <div class="pf-summary">
+        <div class="pf-stat"><div class="lbl">Binder value</div><div class="val">${st.priced ? fmtYen(st.worth) : '—'}</div>
+          <div class="kpi-d ${st.change == null ? 'muted' : dirClass(st.change)}">${st.change == null ? 'change shows after the second Monday reading' : `${arrow(st.change)} ${st.change >= 0 ? '+' : '−'}${fmtYen(Math.abs(st.change))} (${fmtPct(st.changePct)}) since the last reading`}</div></div>
+        <div class="pf-stat"><div class="lbl">Next price update</div><div class="val">Mon ${nextMonday()}</div><div class="kpi-d muted">${st.lastDate ? 'last read ' + st.lastDate.replace(/-/g, '/') : 'no reading yet'}${missing ? ` · ${missing} card${missing === 1 ? '' : 's'} not matched on SNKRDUNK yet` : ''}</div></div>
+      </div>
+      <p class="muted" style="margin:8px 0 12px">Prices are A-rank raw copies: the median of the last 5 one-copy A-rank sales within 30 days, never below the lowest ask (fewer than 3 sales: the lowest ask). They are owned cards, so there are no limits or Buy signals.</p>
+      <div class="wl-bar"><div class="seg wl-filter" role="tablist" aria-label="Sort binder">${Object.entries(sorts).map(([k, v]) => `<button type="button" data-bsort="${k}" class="${state.binderSort === k ? 'on' : ''}">${v}</button>`).join('')}</div></div>
+      <div class="pf-list">${rows.map((c) => {
+        const q = c.qty || 1, d = delta(c);
+        const img = c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : `<span class="muted" style="font-size:11px;text-align:center;padding:4px">${escapeHtml(c.set)}</span>`;
+        const basis = c.price == null ? (c.snkrdunk_id ? 'no price yet' : 'not matched on SNKRDUNK yet')
+          : c.basis === 'sales' ? `median of ${Math.min(5, (c.sales || []).length)} recent A-rank sales` : 'lowest A-rank ask';
+        return `
+        <div class="pf-row">
+          <span class="pf-thumb">${img}</span>
+          <div class="pf-info">
+            <div class="pf-name">${escapeHtml(c.name_en || c.name_ja)}${q > 1 ? ` <span class="muted">×${q}</span>` : ''}</div>
+            <div class="pf-meta">${escapeHtml(c.name_ja || '')} · ${escapeHtml(c.set)} ${escapeHtml(c.number)}/${escapeHtml(c.total || '')}${c.rarity ? ' · ' + escapeHtml(c.rarity) : c.reprint_30th ? ' · 30th reprint' : ''} · A-rank raw · ${escapeHtml(basis)}</div>
+          </div>
+          <div class="pf-current">
+            <div class="val">${c.price != null ? fmtYen(c.price) : '—'}</div>
+            <div class="pf-pnl">${d != null ? `<span class="${dirClass(d)}">${arrow(d)} ${fmtPct(d)}</span>` : '<span class="muted">–</span>'}${q > 1 && c.price != null ? ` <span class="muted">· ${fmtYen(c.price * q)} for ${q}</span>` : ''}</div>
+          </div>
+        </div>`;
+      }).join('')}</div>`;
+    el.querySelectorAll('[data-bsort]').forEach((b) => b.addEventListener('click', () => { state.binderSort = b.dataset.bsort; renderBinder(); trimImages(el); }));
   }
 
   // ---------- render: overview list + detail drawer ----------

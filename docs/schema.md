@@ -431,3 +431,11 @@ text?, source?}], "ahead": [{d|null, title, text?, source?}], "written"}}}`. The
 `renderRecap` in `assets/app.js`) computes everything else itself from `history.json` (card prices, the PSA10 index
 `i` and raw A-rank index `ri` per check), `custom_index.json`, the holdings and `events.json`. A single price reading
 more than 15% below both neighbours is ignored there and in `recap.py facts` (one mispriced listing).
+
+
+## data/binder.json
+
+`{"about", "updated", "cards": [...]}`. Card: `id` (`<set>-<number>`), `name_ja`, `name_en`, `set`, `number`, `total`,
+`rarity` (string or `null`), `reprint_30th` (optional), `qty`, `condition` (`"A"`), `snkrdunk_id` (string or `null`),
+`image_url` (optional), and once read: `price` (yen per copy), `basis` (`"sales"` or `"ask"`), `ask`, `sales`,
+`date`, `prev_price`, `prev_date`. Written by `scripts/binder.py` (Mondays, full check).
