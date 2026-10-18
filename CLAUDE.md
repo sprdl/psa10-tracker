@@ -18,6 +18,7 @@ clone fallback: the repo is right here.
 | `navigate` | `mcp__claude-in-chrome__navigate` |
 | `ToolSearch select:mcp__remote-devices__Claude_Browser__…` | load the `mcp__claude-in-chrome__` equivalents instead, if they're deferred |
 | "load the `pokemon-tcg-card-evaluation` skill with the Skill tool" | same: it's a project skill here |
+| a command with a heredoc (`… <<'EOF'` + lines + `EOF`), e.g. publishing with `quick_update.py -` / `full_update.py -`, `hype.py --ref -`, `set_insight.py`, `set_story.py` | **never a heredoc here.** First save the lines with the **Write** tool to `data/incoming/<step>-in.txt` (e.g. `data/incoming/quick-in.txt`; the folder is git-ignored, and Write needs no confirmation), then run the same command reading that file: `python3 scripts/quick_update.py - < data/incoming/quick-in.txt 2>&1 \| tee data/incoming/quick-update.log \| tail -50`. A long heredoc is too long for Claude Code's command checker ("Parser aborted … over-length"), so it can't be matched against the allow list and asks for confirmation every run |
 | delete permission / stale `.git/*.lock` files | not an issue locally: git removes its own locks. If git says a lock file exists and no other git is running, `rm -f` that lock |
 
 **Tabs (full check).** Open the three tabs (S, P, K) right at the start: `tabs_context_mcp` with
