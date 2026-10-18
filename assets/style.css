@@ -1924,39 +1924,19 @@ div.rc-spark { font-size: 11px; height: auto; }
 
 /* ================= Ghost Bid theme, 2026-10-18 =================
    Same markup and features as before; this block restyles them:
-   - from 900 px up the sidebar becomes a top bar with every page one click away (Buy / Own / Learn groups);
+   - the sidebar keeps its layout, in the new colours with a holo edge;
    - Overview panels get a header band; Focus "Near limit" and buy windows get the holo finish;
    - watchlist rows fade with their distance to your limit (--fade, set in wlRowHtml). */
 body { font-variant-numeric: tabular-nums; }
-@media (min-width: 900px) {
-  .app { flex-direction: column; }
-  .sidebar {
-    position: relative; top: auto; height: auto; width: auto; overflow: visible;
-    flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 24px;
-    padding: calc(14px + env(safe-area-inset-top)) 28px 10px; border-right: 0; background: var(--bg);
-  }
-  .sidebar::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--holo-line); }
-  .sidebar .brand { padding: 0; order: 1; }
-  .side-foot { order: 2; margin: 0 0 0 auto; flex-direction: row; align-items: center; gap: 10px; padding: 0; }
-  .side-foot .lbl { font-size: 14px; }
-  .side-foot .snap-select { min-height: 38px; }
-  .side-foot .btn { min-height: 38px; padding: 0 14px; font-size: 17px; }
-  .side-foot .card-requests { max-width: 220px; }
-  .nav { order: 3; flex-basis: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 26px; padding-bottom: 4px; }
-  .nav-group { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px; }
-  .nav-h { padding: 0 6px 0 2px; }
-  .nav-group:nth-child(1) .nav-h { color: var(--accent); }
-  .nav-group:nth-child(2) .nav-h { color: var(--ghost-soft); }
-  .nav-group:nth-child(3) .nav-h { color: #5eead4; }
-  .nav a { min-height: 38px; padding: 0 9px; gap: 5px; border-radius: 999px; font: 600 13px var(--sans); letter-spacing: 0; color: var(--muted); }
-  .nav a svg { display: none; }
-  .nav a span { flex-grow: 0; }
-  .nav a em:empty { display: none; }
-  .nav a.on { background: var(--hover); color: var(--text); box-shadow: none; }
-  .nav a.on em { color: var(--accent); }
-  .main { width: 100%; max-width: 1480px; margin: 0 auto; box-sizing: border-box; }
-  .drawer { top: 16px; max-height: calc(100vh - 32px); }
-}
+/* sidebar in the Ghost Bid colours: group labels in the brand colours, a holo edge, the current page as a yellow-marked pill */
+.sidebar { background: var(--side); border-right: 0; box-shadow: inset -2px 0 0 0 transparent; }
+.sidebar::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, #ff7eb6, #ffd23f 25%, #5eead4 50%, #7aa2ff 75%, #b48bff); opacity: 0.85; pointer-events: none; }
+.nav-group:nth-child(1) .nav-h { color: var(--accent); }
+.nav-group:nth-child(2) .nav-h { color: var(--ghost-soft); }
+.nav-group:nth-child(3) .nav-h { color: #5eead4; }
+.nav a:hover { background: var(--panel); }
+.nav a.on { background: var(--hover); color: var(--text); box-shadow: inset 3px 0 0 var(--accent); }
+.nav a.on em { color: var(--accent); }
 /* header bands on the Overview's panels */
 .inbox > .section-title:first-child, .focus-watch > .section-title:first-child, .notes > .section-title:first-child, .custom-index > .section-title:first-child {
   margin: -16px -20px 12px; padding: 9px 20px 7px; background: var(--band); border-radius: 9px 9px 0 0; font-size: 21px; }
@@ -1978,3 +1958,5 @@ body { font-variant-numeric: tabular-nums; }
 .money > .mn-head:first-child { margin: -16px -20px 10px; padding: 9px 20px 7px; background: var(--band); border-radius: 11px 11px 0 0; align-items: center; }
 .money > .mn-head:first-child .section-title { font-size: 21px; }
 @media (max-width: 899px) { .money > .mn-head:first-child { margin: -12px -14px 8px; padding: 8px 14px 6px; } .inbox > .section-title:first-child { margin: -12px -14px 10px; padding: 8px 14px 6px; } }
+.sidebar .brand { padding: 0 6px; }
+.sidebar .brand-word { font-size: 26px; }
