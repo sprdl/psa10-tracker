@@ -92,15 +92,6 @@ PLIST
   fi
 fi
 
-# 6. Retire the SwiftBar plugin from the first version, if it's there.
-PLUGDIR=$(defaults read com.ameba.SwiftBar PluginDirectory 2>/dev/null || true)
-PLUGDIR="${PLUGDIR/#\~/$HOME}"
-if [ -n "$PLUGDIR" ] && [ -f "$PLUGDIR/psa10.1m.sh" ]; then
-  rm -f "$PLUGDIR/psa10.1m.sh"
-  open -g "swiftbar://refreshallplugins" 2>/dev/null || true
-  ok "old SwiftBar plugin removed (you can quit or uninstall SwiftBar if you don't use it otherwise)"
-fi
-
 echo
 echo "Remaining one-time steps (see widget/README.md):"
 echo "  • claude, then /login with your claude.ai account (Chrome needs it), then /chrome → Enabled check."
