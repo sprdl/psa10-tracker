@@ -5,7 +5,6 @@ Hype exposure per tracked card → data/hype.json (the site's "Hype exposure" pa
     python3 scripts/hype.py --ref - <<'EOF'      # HREF lines from __oddsBuilder('hype') (monthly, FULL-CHECK 5b)
     HREF sv8a%20217%2F187 69255:68248:74.3:250926:260926
     EOF
-    python3 scripts/hype.py --seed               # tracked cards found in the reference pool (first build only)
     python3 scripts/hype.py --show               # print the tracked cards' readings
 
 Daily readings come from the full check's pokeca_premium.js lines (g token), saved by premium.save().
@@ -173,26 +172,25 @@ def main():
         for url, e in sorted(load().get("cards", {}).items(), key=lambda kv: -(kv[1].get("score") or -1)):
             print(url.split("/")[-1], e.get("level"), e.get("score"), f"gain {e.get('gain_pct')}% rank {e.get('gain_rank')}", f"trade rank {e.get('trade_rank')}")
         return
-    if "--ref" in args or "--seed" in args:
+    if "--ref" in args:
         if push and not deferpush.active(ROOT):
             subprocess.run(["git", "pull", "--ff-only", "--quiet"], cwd=ROOT)
         files = [a for a in args if not a.startswith("--")]
-        if "--ref" in args:
-            lines = (sys.stdin.read() if not files or files[0] == "-" else Path(files[0]).read_text(encoding="utf-8")).splitlines()
-            data = load()
-            data["ref"] = build_ref(lines)
-            data["ref_lines"] = [l.strip() for l in lines if l.startswith("HREF")]   # kept for --seed
-            PATH.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
-            print(f"hype: reference pool {data['ref']['n']} cards (+{len(data['ref']['trade']) - data['ref']['n']} too young for the 12-month part)")
-        if "--seed" in args or "--ref" in args:
-            tr = tracked()
-            seen = {}
-            for l in load().get("ref_lines", []):
-                p = l.split(" ")
-                sid = tr.get(unquote(p[1]).lower())
-                if sid:
-                    seen[sid] = parse_g(p[2])
-            save(seen, push=push, note=" from the reference pool (the next full check reads every tracked card)")
+        lines = (sys.stdin.read() if not files or files[0] == "-" else Path(files[0]).read_text(encoding="utf-8")).splitlines()
+        data = load()
+        data["ref"] = build_ref(lines)
+        data.pop("ref_lines", None)   # was kept for a first-build --seed (removed 2026-10-18); the site never read it
+        PATH.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+        print(f"hype: reference pool {data['ref']['n']} cards (+{len(data['ref']['trade']) - data['ref']['n']} too young for the 12-month part)")
+        # tracked cards found in the reference pool get a reading now (the next full check reads every one)
+        tr = tracked()
+        seen = {}
+        for l in (l.strip() for l in lines if l.startswith("HREF")):
+            p = l.split(" ")
+            sid = tr.get(unquote(p[1]).lower())
+            if sid:
+                seen[sid] = parse_g(p[2])
+        save(seen, push=push, note=" from the reference pool (the next full check reads every tracked card)")
         return
     print(__doc__)
 
