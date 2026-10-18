@@ -99,11 +99,21 @@ def args_for(name, plan=None):
         import add_custom_index
         return {"CODES": [c["code"] for c in add_custom_index.load()["meta"]["constituents"]]}
     if name == "snkrdunk_quick":
-        return {"IDS": ONLY_IDS if ONLY_IDS is not None else quick_ids()}
+        return {"IDS": with_focus(ONLY_IDS if ONLY_IDS is not None else quick_ids())}
     if name == "snkrdunk_sealed":
         import sealed_info
         return {"SEALED": [list(x) for x in sealed_info.due(ROOT)]}
     return {}
+
+
+def with_focus(ids):
+    """Cards in Focus watch (data/focus.json) are written "<id>:L": the quick script also reads their PSA10 listings."""
+    fp = ROOT / "data" / "focus.json"
+    try:
+        focus = {u.rstrip("/").split("/")[-1] for u in (json.loads(fp.read_text(encoding="utf-8")).get("cards") or {})}
+    except (OSError, ValueError):
+        focus = set()
+    return [f"{i}:L" if i in focus else i for i in ids]
 
 
 def quick_ids():

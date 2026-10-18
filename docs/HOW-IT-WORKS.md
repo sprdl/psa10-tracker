@@ -677,7 +677,7 @@ For a card whose buy window you don't want to miss. `python3 scripts/focus.py ad
 puts it in `data/focus.json`; `focus.py remove <id>` takes it out. On every publish `build_history.py` calls
 `focus.build()`, which writes `data/focus_report.json` from `history.json`, `sales.json`, the latest snapshot's
 listings and `limits.json`. `full_update.py` and `quick_update.py` print it as a `FOCUS WATCH` block after
-publishing, and the procedures put those lines in the run's chat message, so every check reports the card.
+publishing, and the procedures put those lines in the run's chat message, so every check reports the card. Quick checks also re-read a focus card's PSA10 listings (`jsrun.py` writes its id as `<id>:L` in the `snkrdunk_quick` call; `quick_update.py` saves the `L=` token as a fresh listings read), so its book depth updates on every check, not only on full checks.
 
 Status, first that applies (thresholds at the top of `focus.py`): **Buy window** (lowest ask ≤ target; target =
 your limit, else the Buy tier) · **Near limit** (ask within 2% of the target, or a sale at/under it in the last

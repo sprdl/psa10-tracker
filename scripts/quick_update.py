@@ -157,6 +157,12 @@ def decode_compact(text):
         for key, grade in (("P", "PSA10"), ("A", "A")):
             if key in by:
                 base["sales"][grade] = _sales(by[key], grade)
+        if "L" in by:   # Focus watch card: its PSA10 listings were read too (snkrdunk_quick.js "<id>:L")
+            import full_update
+            try:
+                base["psa10_listings"] = full_update.decode_listing(by["L"])
+            except ValueError as e:
+                base["psa10_listings"] = {"error": str(e)}
         if by.get("p") == "p!" or by.get("a") == "a!":
             tiles = {"error": "grade tiles not found"}
         else:
@@ -229,7 +235,7 @@ def main():
         out["cards"].append(card)
         new_cards.append(t["card_name_ja"])
 
-    updated, not_checked, problems = [], [], []
+    updated, not_checked, problems, depth_read = [], [], [], []
     seen_ids = set()
     for card in out.get("cards", []):
         sid = snkrdunk_id(card.get("url"))
@@ -279,6 +285,18 @@ def main():
                 g["quick_note"] = f"grade tile not read ({tile.get('error') or tile.get('note')}); lowest ask carried from {base_ts}"
                 problems.append(f"{name} {label}: {tile.get('error') or tile.get('note')}")
 
+            lst = base_res.get("psa10_listings") if label == "PSA10" else None
+            if lst and not lst.get("error"):
+                # a fresh read: no listings_as_of (the site, history.json and focus.py treat it as measured now)
+                for k in LISTING_ARRAYS:
+                    g.pop(k, None)
+                for k in ("top20_cheapest_listings", "listings_within_15pct_of_lowest", "count_within_15pct", "count_excluded_over_15pct"):
+                    g[k] = lst[k]
+                g.pop("listings_as_of", None)
+                depth_read.append(name)
+            elif lst:
+                problems.append(f"{name} PSA10 listings: {lst['error']}")
+
             s = sales_all.get(label)
             if s and not s.get("error"):
                 g["recent_completed_sales"] = s.get("recent_completed_sales", [])
@@ -302,6 +320,8 @@ def main():
 
     print(f"Quick check built on {base_file} ({base_ts}) → {out['collected_at_jst']}")
     print(f"  re-checked: {len(updated)} card(s)")
+    if depth_read:
+        print(f"  PSA10 listings (book depth) re-read for Focus watch: {', '.join(depth_read)}")
     if not_checked:
         print("  NOT re-checked (values carried):")
         for n in not_checked:
