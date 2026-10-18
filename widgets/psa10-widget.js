@@ -22,13 +22,14 @@ const BASE = 'https://sprdl.github.io/psa10-tracker/';
 const ROTATE_MINUTES = 15; // one card per slot; iOS decides the exact refresh time
 
 const C = {
-  bg: new Color('#0b0b0d'), panel: new Color('#16161a'), line: new Color('#26262b'),
-  text: new Color('#f4f4f5'), soft: new Color('#d4d4d8'), muted: new Color('#8e8e96'),
+  // Ghost Bid palette (2026-10-18), the same as the site's style.css tokens
+  bg: new Color('#100c18'), panel: new Color('#1a1426'), line: new Color('#2e2443'),
+  text: new Color('#f1edf9'), soft: new Color('#d6cfe8'), muted: new Color('#9d93b6'), ghost: new Color('#7c5cc4'),
   accent: new Color('#ffd23f'), green: new Color('#45d483'), greenStrong: new Color('#1f9d61'),
   amber: new Color('#f5a524'), red: new Color('#ff6b63'), ice: new Color('#8fd3ff'),
   zoneRed: new Color('#f0524d'), slab: new Color('#e9e9ec'), psaRed: new Color('#b8322c'), white: new Color('#ffffff'),
 };
-// The web app uses Bebas Neue for display type; DIN Condensed (built into iOS) is the closest match.
+// The web app uses Barlow Condensed for numbers and titles; DIN Condensed (built into iOS) is the closest match.
 const display = (size) => new Font('DINCondensed-Bold', size);
 
 // ---------------------------------------------------------------- data
@@ -290,7 +291,7 @@ function slabImage(art, w, h) {
   d.setFillColor(C.white); d.fillRect(new Rect(2, 2, w - 4, lh));
   d.setFillColor(C.psaRed); d.fillRect(new Rect(2, 2, w - 4, 1.2));
   const ay = 2 + lh + 2, aw = w - 4, ah = h - ay - 2;
-  d.setFillColor(new Color('#26262b')); d.fillRect(new Rect(2, ay, aw, ah));
+  d.setFillColor(C.line); d.fillRect(new Rect(2, ay, aw, ah));
   if (art) {
     const r = Math.min(aw / art.size.width, ah / art.size.height);
     const iw = art.size.width * r, ih = art.size.height * r;
@@ -490,7 +491,7 @@ if (globalThis.__PSA10_TEST__) {
 
 // ---------------------------------------------------------------- main
 const w = new ListWidget();
-const bgGrad = new LinearGradient(); bgGrad.colors = [new Color('#141417'), C.bg]; bgGrad.locations = [0, 1];
+const bgGrad = new LinearGradient(); bgGrad.colors = [new Color('#1d1530'), C.bg]; bgGrad.locations = [0, 1];
 w.backgroundGradient = bgGrad;
 w.setPadding(12, 12, 10, 12);
 try {
