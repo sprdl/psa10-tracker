@@ -1,6 +1,6 @@
-// PSA10Bar: the 🃏 menu bar icon for the PSA10 tracker's price checks.
+// PSA10Bar: the 👻 menu bar icon for Ghost Bid's price checks (the app was called PSA10 Tracker until 2026-10-18).
 //
-// Icon: 🃏 idle · 🃏⏳ a check is running · 🃏❗ the running check needs you (permission, sign-in…).
+// Icon: 👻 idle · 👻⏳ a check is running · 👻❗ the running check needs you (permission, sign-in…).
 // Click the icon: a small bubble drops from it with Quick / Full and the status.
 // At the prompt times (widget/lib.sh) the same bubble opens by itself with "Start a new price check?"
 // and Skip; it closes on its own after 15 minutes or when you click elsewhere.
@@ -77,7 +77,7 @@ struct Panel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(m.prompting ? "Start a new price check?" : "PSA10 price check")
+            Text(m.prompting ? "Start a new price check?" : "Ghost Bid price check")
                 .font(.headline)
 
             if m.st.running {
@@ -160,7 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.title = "🃏"
+        item.button?.title = "👻"
         item.button?.target = self
         item.button?.action = #selector(iconClicked)
 
@@ -183,7 +183,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             let st = Status(runScript("status.sh"))
             DispatchQueue.main.async {
                 self.model.st = st
-                self.item.button?.title = st.running ? (st.attention ? "🃏❗" : "🃏⏳") : "🃏"
+                self.item.button?.title = st.running ? (st.attention ? "👻❗" : "👻⏳") : "👻"
                 if st.due && !self.popover.isShown {
                     self.showPrompt()
                 } else if self.popover.isShown {
@@ -239,7 +239,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             popover.performClose(nil)
             model.st.running = true
             model.st.runningMode = a
-            item.button?.title = "🃏⏳"
+            item.button?.title = "👻⏳"
             // The run window opens minimized; if Terminal still grabbed the focus, hand it back.
             let previous = NSWorkspace.shared.frontmostApplication
             _ = runScript("start.sh", [a], wait: false)

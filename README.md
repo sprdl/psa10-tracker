@@ -1,4 +1,9 @@
-# PSA10 Tracker
+# Ghost Bid
+
+<img src="assets/logo.svg" width="72" alt="Ghost Bid mark: a graded slab holding a holo ghost card">
+
+*Formerly PSA10 Tracker; renamed 2026-10-18. The repo name and the site address (`sprdl.github.io/psa10-tracker`) stay the same, so links, the widget and the scripts keep working.*
+
 
 A small personal, non-commercial web app for tracking JPY prices of PSA10 and raw
 A-rank Japanese Pokémon TCG cards on SNKRDUNK, deciding when to buy, and following what

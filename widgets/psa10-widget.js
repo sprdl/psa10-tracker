@@ -2,7 +2,8 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: yellow; icon-glyph: chart-line;
 
-// PSA10 Tracker widget for Scriptable (iPhone / iPad Home Screen)
+// PSA10 Tracker widget for Scriptable (iPhone / iPad Home Screen) — the app is called Ghost Bid since 2026-10-18;
+// keep the words "PSA10 Tracker widget for Scriptable" in this line: the pasted loader checks for them.
 // Reads the public data of https://sprdl.github.io/psa10-tracker/ (published by the price checks).
 //
 // Small:  rotates through cards at your personal limit (they always come first),
@@ -330,13 +331,12 @@ function sparkImage(ci, w, h) {
   return d.getImage();
 }
 
-function header(w, m, ci, z) {
+// Ghost Bid mark (assets/logo-mark.png on the site, cached like the card pictures); text-only when it can't load
+function header(w, m, ci, z, mark) {
   z = z || MZ;
   const head = w.addStack(); head.centerAlignContent();
-  const logo = head.addStack(); logo.backgroundColor = C.accent; logo.cornerRadius = 3; logo.setPadding(1, 4, 0, 4);
-  dtxt(logo, 'PSA10', z.logo, C.bg);
-  head.addSpacer(4);
-  dtxt(head, 'TRACKER', z.logo, C.text);
+  if (mark) { const i = head.addImage(mark); i.imageSize = new Size(z.logo + 5, z.logo + 5); head.addSpacer(4); }
+  dtxt(head, 'GHOSTBID', z.logo, C.text);
   head.addSpacer();
   if (m.corr.level != null) {
     const sp = sparkImage(ci, z.spark[0], z.spark[1]);
@@ -402,7 +402,7 @@ async function medium(w, m, ci) {
   const z = MZ;
   w.setPadding(z.pad, z.pad + 2, z.pad - 2, z.pad + 2);
   w.url = openLink('#/overview');
-  header(w, m, ci, z);
+  header(w, m, ci, z, await cardImage(BASE + 'assets/logo-mark.png'));
   w.addSpacer(5);
   const sig = m.limitHits.concat(m.sells, m.buys);
   // signals first; free slots are filled with the cards closest to a buy
@@ -448,7 +448,7 @@ async function medium(w, m, ci) {
 // ---------------------------------------------------------------- large: overview list
 async function large(w, m, ci) {
   w.url = openLink('#/overview');
-  header(w, m, ci);
+  header(w, m, ci, null, await cardImage(BASE + 'assets/logo-mark.png'));
   w.addSpacer(8);
   const list = m.limitHits.concat(m.sells, m.buys, m.cards.filter((x) => !m.limitHits.includes(x) && !m.sells.includes(x) && !m.buys.includes(x)));
   for (const x of list.slice(0, 10)) {
@@ -501,7 +501,7 @@ try {
   else if (fam === 'large' || fam === 'extraLarge') await large(w, m, data.ci);
   else await medium(w, m, data.ci);
 } catch (e) {
-  txt(w, 'PSA10 Tracker', 12, C.accent, true);
+  txt(w, 'Ghost Bid', 12, C.accent, true);
   txt(w, "Couldn't load the tracker data: " + e.message, 10, C.soft, false, 4);
 }
 if (config.runsInWidget) Script.setWidget(w);

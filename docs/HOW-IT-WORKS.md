@@ -1,4 +1,9 @@
-# How the PSA10 Tracker works
+# How Ghost Bid works
+
+*Ghost Bid is the app's name since 2026-10-18 (before: PSA10 Tracker). Only the name and mark changed: the repo, the site address,
+file names (`psa10-widget.js`, `PSA10Bar`) and the `psa10.*` browser storage keys keep their old names on purpose.
+The mark is `assets/logo.svg` (header); `favicon.ico`, `assets/favicon-16/32.png`, `assets/apple-touch-icon.png` and
+`assets/logo-mark.png` (widget header) are renders of it. The menu-bar icon is 👻 (rebuilt by `widget/install.sh`).*
 
 A guide to the code, written so you can understand, change and fix the site yourself.
 It describes the repo as of 2026-10-17 (after the audit fixes, the speed and data-growth work and the widget loader). Function names are

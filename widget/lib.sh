@@ -80,7 +80,7 @@ clear_stale_git_locks() {
 }
 
 notify() {  # notify "message"
-  osascript -e "display notification \"$1\" with title \"PSA10 price check\"" >/dev/null 2>&1
+  osascript -e "display notification \"$1\" with title \"Ghost Bid\"" >/dev/null 2>&1
 }
 
 # Opens a Terminal window running the check, minimized and without taking the focus. It closes by

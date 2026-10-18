@@ -1,4 +1,4 @@
-/* PSA10 Tracker — app shell (sidebar / tab bar), overview list + detail drawer,
+/* Ghost Bid (formerly PSA10 Tracker) — app shell (sidebar / tab bar), overview list + detail drawer,
    display case, card pages. Bebas Neue for display type, Montserrat for text,
    Noto Sans JP (bold) as the fallback for Japanese card names. */
 
@@ -66,8 +66,11 @@ img { display: block; }
 }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px; color: var(--text); }
 .brand:hover { color: var(--text); }
-.brand-tag { font: 22px var(--display); letter-spacing: 0.04em; background: var(--accent); color: var(--on-accent); padding: 5px 7px 2px; border-radius: 4px; line-height: 1; }
-.brand-word { font: 30px var(--display); letter-spacing: 0.06em; line-height: 1; }
+.brand { gap: 6px; }
+.brand-mark { width: 34px; height: 34px; flex: 0 0 auto; margin-right: 2px; }
+.brand-word { font: 28px var(--display); letter-spacing: 0.04em; line-height: 1; white-space: nowrap; }
+.brand-ten { align-self: flex-start; margin-top: 2px; font: 13px var(--display); line-height: 1; padding: 3px 4px 1px; border-radius: 3px; color: var(--on-accent);
+  background: linear-gradient(135deg, #ff7eb6, #ffd23f 30%, #5eead4 60%, #b48bff); }
 .nav { display: flex; flex-direction: column; gap: 16px; }
 .nav-group { display: flex; flex-direction: column; gap: 1px; }
 .nav-h { padding: 0 12px 4px; font: 700 10px var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted-2); }
@@ -600,8 +603,9 @@ td em { color: var(--muted-2); font-style: normal; }
     background: rgba(11, 11, 13, 0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
   }
   .mobile-bar .brand { padding: 0; }
-  .mobile-bar .brand-tag { font-size: 18px; }
+  .mobile-bar .brand-mark { width: 28px; height: 28px; }
   .mobile-bar .brand-word { font-size: 24px; }
+  .mobile-bar .brand-ten { font-size: 11px; }
   .mobile-bar .snap-select { min-height: 36px; font-size: 12px; min-width: 0; max-width: 52%; }
   .tabbar {
     display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;

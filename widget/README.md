@@ -1,6 +1,6 @@
 # PSA10 menu bar app (macOS)
 
-A 🃏 in the menu bar that starts a price check with one click, and asks at **08:00, 14:00 and 19:00**
+A 👻 in the menu bar that starts a price check with one click, and asks at **08:00, 14:00 and 19:00**
 whether to start one, in a small bubble that drops from the icon. Runs use **Claude Code** on the
 Mac (not the desktop app):
 
@@ -9,7 +9,7 @@ Mac (not the desktop app):
   **closes it by itself** when the run is done: the run clock was started and ended (`runclock.py end`)
   and Claude finished its last message. A notification then says how long it took; **Open last run** in
   the bubble reopens the session (`claude --resume`) to read Claude's summary
-- If the run needs you first (a permission question, PSA sign-in, an error), the icon turns **🃏❗**,
+- If the run needs you first (a permission question, PSA sign-in, an error), the icon turns **👻❗**,
   a notification says why, and **Show window** in the bubble brings the window up
 - Git runs natively on the Mac, so no delete-permission prompts and no stale `.git/*.lock` files;
   `run-check.sh` also clears locks older than 5 minutes (only when no git is running) before each run
@@ -18,10 +18,10 @@ Mac (not the desktop app):
 
 ## The bubble
 
-Click 🃏 (🃏⏳ while a check runs):
+Click 👻 (👻⏳ while a check runs):
 
 ```
- PSA10 price check
+ Ghost Bid price check
  ⏳ Quick check is running…   Show window   ← only while a check runs
  [Quick · Haiku] [Full · Sonnet]      ← the suggested mode is highlighted
  ───────────────────────────────
@@ -57,7 +57,7 @@ within 2 hours after. Times and windows are at the top of `lib.sh`.
 | `status.sh` | status lines for the bubble, and whether a prompt is due (the app runs it every minute) |
 | `start.sh` | bubble buttons → new Terminal window running `run-check.sh` (or the run history) |
 | `run-check.sh` | one run: lock, stale git locks, `git pull`, `claude --chrome --model …` with a prompt that gives the exact first command (`python3 pricecheck/start.py --mode <mode>`, no `$(…)`, so it doesn't stop for a permission question); if the run stops early it clears the run clock and pushes commits the run left unpushed |
-| `hooks/` | Claude Code hooks, only active in widget runs (`PSA10_RUN=1`): `stop.sh` (turn finished → the run can close), `notify.sh` (needs you → 🃏❗ + notification), `clear.sh` (you answered → clear 🃏❗) |
+| `hooks/` | Claude Code hooks, only active in widget runs (`PSA10_RUN=1`): `stop.sh` (turn finished → the run can close), `notify.sh` (needs you → 👻❗ + notification), `clear.sh` (you answered → clear 👻❗) |
 | `history.sh` | recent run times (`scripts/runclock.py history`) |
 | `lib.sh` | settings and shared functions |
 | `install.sh` | one-time setup; safe to re-run |
@@ -69,7 +69,7 @@ the repo, so the procedures' `$HOME/mnt/...` commands work unchanged).
 
 **Permissions.** `widget/claude/settings.json` (linked as `.claude/settings.json` by the installer)
 lets the run use python3, read-only git, the lock cleanup and Claude in Chrome without asking, and
-registers the hooks. Anything else still asks in the Terminal window (and turns the icon 🃏❗).
+registers the hooks. Anything else still asks in the Terminal window (and turns the icon 👻❗).
 
 **Skills.** `widget/claude/skills/` (linked as `.claude/skills/`) holds copies of the claude.ai skills
 `pokemon-card-price-check` and `pokemon-tcg-card-evaluation`; `CLAUDE.md` maps their desktop-app tool

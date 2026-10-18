@@ -24,7 +24,7 @@ try {
 if (!code && lfm.fileExists(codeFile)) code = lfm.readString(codeFile);
 if (!code) {
   const w = new ListWidget();
-  w.addText("PSA10 Tracker: couldn't load the widget code yet. Open Scriptable once while online.");
+  w.addText("Ghost Bid: couldn't load the widget code yet. Open Scriptable once while online.");
   Script.setWidget(w);
   Script.complete();
 } else {

@@ -7,7 +7,7 @@
 # The window closes by itself when the run is done: the run clock (data/incoming/runclock.json)
 # appeared and was removed again by `runclock.py end`, and Claude then finished its last message
 # (the Stop hook, hooks/stop.sh). If the run needs you before that (a permission question, PSA
-# sign-in, an error), the Notification hook shows a notice and the icon turns 🃏❗; the window stays.
+# sign-in, an error), the Notification hook shows a notice and the icon turns 👻❗; the window stays.
 set -u
 . "$(dirname "$0")/lib.sh"
 
@@ -85,7 +85,7 @@ if [ -f "$STATE/done" ]; then
   summary=$(python3 -c 'import json,sys
 r=json.loads(open(sys.argv[1]).read().splitlines()[-1]); t=r["total_s"]
 print(r["mode"].capitalize()+" check done in %dm%02ds" % (t//60, t%60))' "$REPO/data/incoming/run_times.jsonl" 2>/dev/null || echo "Price check done")
-  notify "$summary. Details: Open last run in the 🃏 bubble."
+  notify "$summary. Details: Open last run in the 👻 bubble."
   rm -f "$PIDFILE" "$STATE/attention"
   # Close this window a moment after this script has exited (no "terminate processes?" question).
   nohup /bin/bash -c "sleep 1; . '$WIDGET_DIR/lib.sh'; run_window close '$me_tty'" >/dev/null 2>&1 &

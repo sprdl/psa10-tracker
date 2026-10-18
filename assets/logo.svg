@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Ghost Bid">
+  <!-- Ghost Bid mark (2026-10-18, design option B2 "Holo slab"): a graded slab holding a holo ghost card. -->
+  <defs>
+    <linearGradient id="gb-holo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff7eb6"/>
+      <stop offset="0.25" stop-color="#ffd23f"/>
+      <stop offset="0.5" stop-color="#5eead4"/>
+      <stop offset="0.75" stop-color="#7aa2ff"/>
+      <stop offset="1" stop-color="#b48bff"/>
+    </linearGradient>
+    <linearGradient id="gb-art" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a2d5d"/>
+      <stop offset="1" stop-color="#7c5cc4"/>
+    </linearGradient>
+  </defs>
+  <rect x="20" y="6" width="60" height="88" rx="6" fill="#ffffff" fill-opacity="0.04" stroke="#f4f4f5" stroke-width="2.6"/>
+  <rect x="25" y="11" width="50" height="13" rx="2" fill="#ffd23f"/>
+  <rect x="29" y="15" width="19" height="2.2" rx="1" fill="#0b0b0d" opacity="0.55"/>
+  <rect x="29" y="19" width="12" height="2.2" rx="1" fill="#0b0b0d" opacity="0.55"/>
+  <rect x="30" y="29" width="40" height="58" rx="3" fill="url(#gb-holo)"/>
+  <rect x="32.5" y="31.5" width="35" height="44" rx="1.5" fill="url(#gb-art)"/>
+  <path d="M37.5 72 V50 C37.5 43 43 38 50 38 C57 38 62.5 43 62.5 50 V72 Q59.4 68 56.25 72 Q53.1 76 50 72 Q46.9 68 43.75 72 Q40.6 76 37.5 72 Z" fill="#f4f4f5"/>
+  <ellipse cx="45" cy="52" rx="2.6" ry="3.8" fill="#0b0b0d"/>
+  <ellipse cx="55" cy="52" rx="2.6" ry="3.8" fill="#0b0b0d"/>
+  <path d="M41 80.5 L42 83 L44.6 83.2 L42.6 84.8 L43.3 87.3 L41 85.9 L38.7 87.3 L39.4 84.8 L37.4 83.2 L40 83 Z" fill="#0b0b0d"/>
+  <path d="M48 80.5 L49 83 L51.6 83.2 L49.6 84.8 L50.3 87.3 L48 85.9 L45.7 87.3 L46.4 84.8 L44.4 83.2 L47 83 Z" fill="#0b0b0d"/>
+</svg>

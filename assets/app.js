@@ -3015,7 +3015,7 @@
     document.getElementById('page-title').textContent = title;
     document.getElementById('page-sub').textContent = sub;
     renderHoldingsAside();
-    document.title = view === 'overview' ? 'PSA10 Tracker' : `${title} · PSA10 Tracker`;
+    document.title = view === 'overview' ? 'Ghost Bid' : `${title} · Ghost Bid`;
     if (view !== 'collection' && state.cmpMode) { state.cmpMode = false; state.cmpPick = []; }
 
     if (view === 'scout') { store.set('psa10.scout.seen', jstDayIndex()); updateCounts(); }
