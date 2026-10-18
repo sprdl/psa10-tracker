@@ -952,7 +952,7 @@
   }
   // ---------- owned cards: position, sell tiers, sell verdict ----------
   // Sell tiers are written by the evaluation skill like the buy tiers (analysis.sell_tiers:
-  // reassess_below (optional) ≤ take_profit_from ≤ sell_from; analysis.sell_verdict: {tag, reasoning, written}).
+  // take_profit_from ≤ sell_from; analysis.sell_verdict: {tag, reasoning, written}).
   // Everything else here is arithmetic on what you paid and the live price.
   function ownedOf(card) {
     const hs = holdingsFor(card);
@@ -983,11 +983,10 @@
     if (!t || price == null) return null;
     if (price >= t.sell_from) return 'sell';
     if (price >= t.take_profit_from) return 'take_profit';
-    if (typeof t.reassess_below === 'number' && price < t.reassess_below) return 'reassess';
     return 'hold';
   }
   // null for a card you don't own; else { tag, reasons: [...], target, tierTag }
-  const SELL_RANK = { sell: 5, take_profit: 4, reassess: 3, peak: 2, rich: 1, hold: 0 };
+  const SELL_RANK = { sell: 5, take_profit: 4, peak: 2, rich: 1, hold: 0 };
   const sellCache = new WeakMap();
   function sellState(card) {
     if (!holdingsFor(card).length) return null;
@@ -1002,7 +1001,6 @@
     const tierTag = liveSellTag(tiers, price);
     if (tierTag === 'sell') { up('sell'); reasons.push(`Price ${fmtYen(price)} is in the Sell zone (from ${fmtYen(tiers.sell_from)})`); }
     else if (tierTag === 'take_profit') { up('take_profit'); reasons.push(`Price ${fmtYen(price)} is in the Take-profit zone (from ${fmtYen(tiers.take_profit_from)})`); }
-    else if (tierTag === 'reassess') { up('reassess'); reasons.push(`Price ${fmtYen(price)} fell below ${fmtYen(tiers.reassess_below)}, where the evaluation says to rethink holding`); }
     if (target != null && price != null && price >= target) { up('sell'); reasons.push(`Price ${fmtYen(price)} reached your sell target ${fmtYen(target)}`); }
     if (peak && price != null && price >= peak * SELL_NEAR_PEAK) { up('peak'); reasons.push(`Within ${Math.round((1 - SELL_NEAR_PEAK) * 100)}% of the peak ${fmtYen(peak)}`); }
     const ref = salesMedianOf(((card.grades || {}).psa10 || {}).recent_completed_sales);
@@ -1016,7 +1014,7 @@
     sellCache.set(card, { key, v });
     return v;
   }
-  const SELL_LABELS = { sell: 'Sell', take_profit: 'Take profit', reassess: 'Reassess', peak: 'Near peak', rich: 'Rich ask', hold: 'Hold' };
+  const SELL_LABELS = { sell: 'Sell', take_profit: 'Take profit', peak: 'Near peak', rich: 'Rich ask', hold: 'Hold' };
   function sellChip(card) {
     const st = sellState(card);
     if (!st) return '';
@@ -1076,8 +1074,7 @@
   function sellSegments(card, scale) {
     const t = sellTiersOf(card), w = (x) => Math.min(100, Math.max(0, (x / scale) * 100));
     if (!t) return '<i class="z-sh" style="flex-grow:1"></i>';
-    const r = typeof t.reassess_below === 'number' ? t.reassess_below : 0;
-    return `${r ? `<i class="z-sr" style="width:${w(r)}%"></i>` : ''}<i class="z-sh" style="width:${w(t.take_profit_from - r)}%"></i><i class="z-st" style="width:${w(t.sell_from - t.take_profit_from)}%"></i><i class="z-ss"></i>`;
+    return `<i class="z-sh" style="width:${w(t.take_profit_from)}%"></i><i class="z-st" style="width:${w(t.sell_from - t.take_profit_from)}%"></i><i class="z-ss"></i>`;
   }
   function sellGaugeHtml(card) {
     const own = ownedOf(card), a = card.analysis || {}, t = sellTiersOf(card), peak = a.peak && a.peak.price, price = getRep(card), target = getTarget(card);
@@ -1093,7 +1090,7 @@
         <div class="marker${edge(pct(price))}" style="left:${pct(price)}%"><div class="tag">${fmtYenShort(price)}</div><div class="stem"></div></div>
         ${peak ? `<div class="marker peak${edge(pct(peak))}" style="left:${pct(peak)}%"><div class="tag">Peak ${fmtYenShort(peak)}</div><div class="stem"></div></div>` : ''}
       </div>
-      <div class="gauge-legend sg-legend">${t ? `${typeof t.reassess_below === 'number' ? `<span><i class="z-sr"></i>Reassess &lt;${fmtYenShort(t.reassess_below)}</span>` : ''}<span><i class="z-sh"></i>Hold</span><span><i class="z-st"></i>Take profit ≥${fmtYenShort(t.take_profit_from)}</span><span><i class="z-ss"></i>Sell ≥${fmtYenShort(t.sell_from)}</span>` : ''}
+      <div class="gauge-legend sg-legend">${t ? `<span><i class="z-sh"></i>Hold</span><span><i class="z-st"></i>Take profit ≥${fmtYenShort(t.take_profit_from)}</span><span><i class="z-ss"></i>Sell ≥${fmtYenShort(t.sell_from)}</span>` : ''}
         <span><i class="sg-dot cost"></i>${own.toGrade ? 'DIY cost' : 'Paid'} ${fmtYenShort(own.basis)}</span><span><i class="sg-dot be"></i>Break-even ${fmtYenShort(be)}</span>${target != null ? `<span><i class="sg-dot target"></i>Target ${fmtYenShort(target)}</span>` : ''}</div>
     </div>`;
   }
@@ -1129,15 +1126,15 @@
     if (!st || !ps) return { html: '', dv: null };
     const price = ps.price, lines = [];
     const heads = { sell: `Sell: ${fmtYen(price)} is in the Sell zone or at your target`, take_profit: `Take profit: ${fmtYen(price)} is in the Take-profit zone`,
-      reassess: `Reassess: ${fmtYen(price)} is below ${t ? fmtYen(t.reassess_below) : ''}`, peak: `Hold, near the peak: ${fmtYen(price)} is within 5% of ${fmtYen(a.peak && a.peak.price)}`,
+      peak: `Hold, near the peak: ${fmtYen(price)} is within 5% of ${fmtYen(a.peak && a.peak.price)}`,
       rich: 'Hold, but the ask looks rich against recent sales', hold: t ? `Hold: ${fmtYen(t.take_profit_from - price)} to the Take-profit zone` : 'Hold' };
     const head = st.tag === 'hold' && st.target != null && !t ? `Hold: ${fmtYen(st.target - price)} to your sell target` : heads[st.tag];
     lines.push(ps.own.toGrade
       ? `You paid ${fmtYen(ps.own.paid)} for the raw card (${fmtYen(ps.own.cost)} with grading). Getting a PSA10 out of it is expected to cost ${fmtYen(ps.own.basis)} (${ps.own.gem != null ? Math.round(ps.own.gem * 10) / 10 + '% gem rate' : 'no gem rate yet'}). A PSA10 sells for ${fmtYen(price)}: ${signedYen(ps.gross)} over that, ${signedYen(ps.net)} after selling costs.`
       : `You paid ${fmtYen(ps.own.paid)}; it is worth ${fmtYen(price)} now (${signedYen(ps.gross)}), ${signedYen(ps.net)} after selling costs.`);
-    if (t) lines.push(`Sell tiers: ${typeof t.reassess_below === 'number' ? `reassess below ${fmtYen(t.reassess_below)}, ` : ''}take profit from ${fmtYen(t.take_profit_from)}, sell from ${fmtYen(t.sell_from)}.`);
+    if (t) lines.push(`Sell tiers: take profit from ${fmtYen(t.take_profit_from)}, sell from ${fmtYen(t.sell_from)}.`);
     if (st.target != null) lines.push(price >= st.target ? `Your sell target ${fmtYen(st.target)} is reached.` : `Your sell target is ${fmtYen(st.target)}, ${fmtYen(st.target - price)} away.`);
-    st.reasons.filter((r) => !/sell target|Sell zone|Take-profit zone|fell below/.test(r)).forEach((r) => lines.push(r + '.'));
+    st.reasons.filter((r) => !/sell target|Sell zone|Take-profit zone/.test(r)).forEach((r) => lines.push(r + '.'));
     let writtenHtml = '';
     if (sv && sv.reasoning) {
       const wd = sv.written ? jstWeekday(sv.written) : '';
@@ -3136,7 +3133,7 @@
     chgLast: { label: 'Change since last check', dir: 1, v: (c) => (priceChangeLast(c) || {}).pct ?? null },
     chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeAgo(c, 7) || {}).pct ?? null },
     chg30: { label: '30-day change', dir: 1, v: (c) => (priceChangeAgo(c, 30) || {}).pct ?? null },
-    verdict: { label: 'Verdict', dir: 1, v: (c) => { const st = sellState(c); if (st) return st.tag === 'sell' || st.tag === 'take_profit' ? -1 : st.tag === 'reassess' ? 2.5 : 5; return limitHit(c) ? -1 : VERDICT_RANK[displayTagFor(c)] ?? 5; } },
+    verdict: { label: 'Verdict', dir: 1, v: (c) => { const st = sellState(c); if (st) return st.tag === 'sell' || st.tag === 'take_profit' ? -1 : 5; return limitHit(c) ? -1 : VERDICT_RANK[displayTagFor(c)] ?? 5; } },
     heat: { label: 'Trading activity', dir: -1, v: (c) => { const h = heatOf(c); return h && h.psa ? h.psa.rate : null; } },
   };
   let sortState = store.get('psa10.sort', { key: 'default', dir: 1 });
@@ -3145,7 +3142,7 @@
   function sortCardsBy(cards, defs, st) {
     const rank = (c) => {
       const st = sellState(c);   // owned cards sort by their sell signal, buy cards by their buy zone
-      if (st) return ['sell', 'take_profit', 'reassess'].includes(st.tag) ? 0 : 5;
+      if (st) return ['sell', 'take_profit'].includes(st.tag) ? 0 : 5;
       return (limitHit(c) ? 0 : 3) + ({ definitely_buy: 0, buy: 1 }[displayTagFor(c)] ?? 2);
     };
     const base = cards.map((card, i) => ({ card, i }));
@@ -4673,7 +4670,7 @@
   // Overview side panel: only what's needed to decide "act or wait"; the card page has the rest.
   function drawerHtml(card, o) {
     const id = cardId(card), lim = getLimit(card), ask = lowestAsk(card), own = o.own;
-    const tone = own ? (o.dv && ['sell', 'take_profit'].includes(o.dv.tag) ? 'buyzone' : o.dv && o.dv.tag === 'reassess' ? 'dontbuy' : '') : o.displayTag === 'definitely_buy' || o.displayTag === 'buy' ? 'buyzone' : o.displayTag === 'dont_buy' ? 'dontbuy' : '';
+    const tone = own ? (o.dv && ['sell', 'take_profit'].includes(o.dv.tag) ? 'buyzone' : '') : o.displayTag === 'definitely_buy' || o.displayTag === 'buy' ? 'buyzone' : o.displayTag === 'dont_buy' ? 'dontbuy' : '';
     const verdict = o.dv
       ? `<div class="dw-verdict ${o.dv.held ? 'buyzone' : tone}">${o.dv.headline && !o.dv.held ? `<b>${escapeHtml(o.dv.headline)}.</b> ` : ''}${escapeHtml(o.dv.line)}</div>`
       : `<div class="dw-verdict muted">No written verdict yet${o.displayTag ? ': the zone comes from the live price vs. the tiers' : ''}.</div>`;
@@ -6734,7 +6731,7 @@
 
     if (cards.some((c) => holdingsFor(c).length)) {
       body += `<tr class="divider"><td colspan="${cards.length + 1}">Sell tiers (cards you own)</td></tr>`;
-      body += `<tr><td>Reassess / take profit / sell</td>${cards.map((c) => { const t = sellTiersOf(c); return `<td>${!holdingsFor(c).length ? '—' : t ? `${typeof t.reassess_below === 'number' ? '<' + fmtYen(t.reassess_below) + ' · ' : ''}≥${fmtYen(t.take_profit_from)} · ≥${fmtYen(t.sell_from)}` : 'Not yet written'}</td>`; }).join('')}</tr>`;
+      body += `<tr><td>Take profit / sell</td>${cards.map((c) => { const t = sellTiersOf(c); return `<td>${!holdingsFor(c).length ? '—' : t ? `≥${fmtYen(t.take_profit_from)} · ≥${fmtYen(t.sell_from)}` : 'Not yet written'}</td>`; }).join('')}</tr>`;
     }
     body += `<tr><td>${sortableLabel('verdict', 'Verdict')}</td>${cards.map((c) => {
       if (holdingsFor(c).length) return `<td>${sellChip(c)}</td>`;

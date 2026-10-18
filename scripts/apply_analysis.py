@@ -42,7 +42,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 
 VALID_TAGS = {"definitely_buy", "buy", "watch", "dont_buy", "defer"}
-VALID_SELL_TAGS = {"hold", "take_profit", "sell", "reassess"}
+VALID_SELL_TAGS = {"hold", "take_profit", "sell"}
 VALID_SOURCES = {"sales_confirmed", "ask_depth", "ask_unconfirmed", "unconfirmed"}  # schema.md: ask_unconfirmed
 TAG_LABELS = {"definitely_buy": "Definitely buy", "buy": "Buy", "watch": "Watch",
               "dont_buy": "Don't buy", "defer": "Defer"}
@@ -196,12 +196,11 @@ def validate(key: str, a: dict) -> List[str]:
         for k in ("take_profit_from", "sell_from"):
             if not isinstance(st.get(k), (int, float)):
                 die(f"{key}: sell_tiers.{k} is missing or not a number.")
-        r = st.get("reassess_below")
-        if r is not None and not isinstance(r, (int, float)):
-            die(f"{key}: sell_tiers.reassess_below must be a number (or left out).")
-        if not ((r if r is not None else 0) <= st["take_profit_from"] <= st["sell_from"]):
-            die(f"{key}: sell tiers must satisfy reassess_below ≤ take_profit_from ≤ sell_from "
-                f"(got {r} / {st['take_profit_from']} / {st['sell_from']}).")
+        if "reassess_below" in st:
+            die(f"{key}: sell_tiers.reassess_below isn't used any more (removed 2026-10-18); send take_profit_from and sell_from only.")
+        if not (0 <= st["take_profit_from"] <= st["sell_from"]):
+            die(f"{key}: sell tiers must satisfy take_profit_from ≤ sell_from "
+                f"(got {st['take_profit_from']} / {st['sell_from']}).")
     sv = a.get("sell_verdict")
     if sv is not None:
         if sv.get("tag") not in VALID_SELL_TAGS:
@@ -353,7 +352,7 @@ def main():
                   f"({TAG_LABELS[z]}) — the site will show the zone and flag the difference")
         sti = merged.get("sell_tiers")
         if sti:
-            print(f"    sell tiers reassess<{fmt_yen(sti.get('reassess_below'))} / take profit ≥{fmt_yen(sti['take_profit_from'])} / sell ≥{fmt_yen(sti['sell_from'])}"
+            print(f"    sell tiers take profit ≥{fmt_yen(sti['take_profit_from'])} / sell ≥{fmt_yen(sti['sell_from'])}"
                   f"   sell verdict {(merged.get('sell_verdict') or {}).get('tag', '—')}")
         for w in warns:
             print(f"    warning: {w}")

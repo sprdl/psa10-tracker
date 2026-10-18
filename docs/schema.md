@@ -132,13 +132,12 @@ gauge positions, tier zone math — all computed client-side from these inputs, 
                                            // site says the verdict is out of date once the price moves 5% from it.
 
         "sell_tiers": {                    // optional, only used for cards you own (data/holdings.json);
-          "reassess_below": 62000,         // optional: below this, rethink holding (the "Reassess" zone)
           "take_profit_from": 85000,       // from here on: start taking profit
-          "sell_from": 105000              // from here on: sell. reassess_below <= take_profit_from <= sell_from.
-          // below take_profit_from (and above reassess_below) is "Hold"
+          "sell_from": 105000              // from here on: sell. take_profit_from <= sell_from.
+          // below take_profit_from is "Hold" (no stop-loss line)
         },
         "sell_verdict": {                  // optional, the written reasoning behind the sell tiers
-          "tag": "hold",                   // "hold" | "take_profit" | "sell" | "reassess"
+          "tag": "hold",                   // "hold" | "take_profit" | "sell"
           "label": "Hold for the peak",
           "reasoning": "..."               // `written` (date) is added by apply_analysis.py
         },

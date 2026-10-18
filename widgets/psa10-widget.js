@@ -138,7 +138,7 @@ function displayTag(d, card, corr) {
 const limitOf = (d, card) => { const e = d.limits[card.url]; return e && typeof e.price === 'number' ? e.price : null; };
 
 // ---- cards you own: the site's sellState (assets/app.js), with the synced sell target
-const SELL_RANK = { sell: 5, take_profit: 4, reassess: 3, peak: 2, rich: 1, hold: 0 };
+const SELL_RANK = { sell: 5, take_profit: 4, peak: 2, rich: 1, hold: 0 };
 const ASK_VS_SALES = 8, NEAR_PEAK = 0.95;
 const REL_S = { '秒': 1 / 86400, '分': 1 / 1440, '時間': 1 / 24, '日': 1, '週間': 7, 'ヶ月': 30, 'か月': 30 };
 function saleAge(when, ref) {
@@ -180,7 +180,6 @@ function sellState(d, card) {
   if (t && price != null) {
     if (price >= t.sell_from) up('sell');
     else if (price >= t.take_profit_from) up('take_profit');
-    else if (typeof t.reassess_below === 'number' && price < t.reassess_below) up('reassess');
   }
   if (target != null && price != null && price >= target) up('sell');
   if (peak && price != null && price >= peak * NEAR_PEAK) up('peak');
@@ -220,7 +219,7 @@ function buildModel(d) {
   });
   const limitHits = cards.filter((x) => x.limitHit);
   // owned cards with an actionable sell signal, strongest first (the site's sort puts these first too)
-  const sells = cards.filter((x) => x.own && ['sell', 'take_profit', 'reassess'].includes(x.own.tag)).sort((a, b) => SELL_RANK[b.own.tag] - SELL_RANK[a.own.tag]);
+  const sells = cards.filter((x) => x.own && ['sell', 'take_profit'].includes(x.own.tag)).sort((a, b) => SELL_RANK[b.own.tag] - SELL_RANK[a.own.tag]);
   const buys = cards.filter((x) => !x.mine && !x.limitHit && (x.tag === 'buy' || x.tag === 'definitely_buy'))
     .sort((a, b) => (a.tag === 'definitely_buy' ? 0 : 1) - (b.tag === 'definitely_buy' ? 0 : 1));
   // closest to a buy: % above your limit, or above the Buy line when there's no limit (cards you don't own)
@@ -237,7 +236,7 @@ const pct = (v) => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '±') + Ma
 const pctColor = (v) => v == null ? C.muted : v > 0 ? C.green : v < 0 ? C.red : C.muted;
 const TAG = { definitely_buy: ['DEF. BUY', C.greenStrong, true], buy: ['BUY', C.green, true], watch: ['WATCH', C.amber, false],
   dont_buy: ["DON'T BUY", C.red, false], defer: ['DEFER', C.muted, false],
-  sell_sell: ['SELL', C.accent, true], sell_take_profit: ['TAKE PROFIT', C.green, true], sell_reassess: ['REASSESS', C.red, false],
+  sell_sell: ['SELL', C.accent, true], sell_take_profit: ['TAKE PROFIT', C.green, true],
   sell_peak: ['NEAR PEAK', C.accent, false], sell_rich: ['RICH ASK', C.accent, false], sell_hold: ['HOLD', C.muted, false] };
 const ownTxt = (x) => x.own && x.own.pct != null ? `${pct(x.own.pct)} vs ${x.own.raw ? 'DIY' : 'paid'}` : '';
 

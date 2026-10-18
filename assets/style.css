@@ -230,7 +230,6 @@ img { display: block; }
 .vtag.sell-sell { background: var(--accent); color: var(--on-accent); }
 .vtag.sell-peak, .vtag.sell-rich { color: var(--accent); border-color: var(--accent); }
 .vtag.sell-take_profit { background: var(--green); color: #06170d; }
-.vtag.sell-reassess { color: var(--neg); border-color: var(--neg); }
 .vtag.sell-hold { color: var(--muted); border-color: var(--line-3); }
 .tile-chips .vtag.sell-hold { background: var(--bg); }
 .sell-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid #2c2c32; border-radius: var(--radius); padding: 10px 12px; font-size: 13px; margin-top: 8px; }
@@ -1547,7 +1546,6 @@ a.sl-icon:hover { border-color: var(--accent); }
 .bd-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
 /* ---------- owned cards: sell zones, gauge markers ---------- */
-.z-sr { background: var(--red); }
 .z-sh { background: var(--line-3); }
 .z-st { background: var(--amber); }
 .z-ss { background: var(--green-strong); flex-grow: 1; }
