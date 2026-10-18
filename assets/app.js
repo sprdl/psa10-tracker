@@ -3546,7 +3546,8 @@
     };
     const awayHtml = away.length ? `<h2 class="section-title sub-h">At PSA now <span class="muted">${away.length}</span></h2><div class="pf-list">${away.map((c) => {
       const t = GRADE_TIERS[c.item.tier] || GRADE_TIERS[psaTierFor(c.card ? getRep(c.card) : null)], nm = parseCardName((c.card && c.card.card_name_ja) || c.name);
-      return `<div class="pf-row"><div class="pf-info"><div class="pf-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.id)}</span></div>
+      const img = (c.card && c.card.image_url) || c.item.image_url;
+      return `<div class="pf-row"><span class="wthumb sub-away-th">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span><div class="pf-info"><div class="pf-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.id)}</span></div>
         <div class="pf-meta">${c.item.sent ? `Sent ${escapeHtml(c.item.sent)} · ${escapeHtml(t.label)}${GRADE_TIERS[c.item.tier] ? '' : ' (assumed)'} · back around <b>${escapeHtml(addBusinessDays(c.item.sent, t.days))}</b>` : 'At PSA, no send date saved'} · <a class="pf-remove" href="${escapeAttr(gradingFormUrl({ id: c.id, item: c.item }, nm.short))}" target="_blank" rel="noopener">Grading info</a></div></div></div>`;
     }).join('')}</div>` : '';
     const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeAttr(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(slash(date))} ↗</a>` : '';
