@@ -3,21 +3,27 @@
    Noto Sans JP (bold) as the fallback for Japanese card names. */
 
 :root {
-  --bg: #0b0b0d;
-  --side: #111114;
-  --panel: #151518;
-  --panel-2: #1c1c20;
-  --hover: #1f1f24;
-  --line: #26262b;
-  --line-2: #34343b;
-  --line-3: #3f3f47;
-  --text: #f4f4f5;
-  --soft: #d4d4d8;
-  --muted: #a1a1aa;
-  --muted-2: #8e8e98;   /* captions and labels: #71717a was too faint at 11–12 px */
+  /* Ghost Bid theme (2026-10-18): violet ground, ghost purple, yellow for prices and actions, holo for the strongest signal */
+  --bg: #100c18;
+  --side: #140f1f;
+  --panel: #1a1426;
+  --panel-2: #221a32;
+  --hover: #2a2140;
+  --band: #2a2140;
+  --line: #2e2443;
+  --line-2: #3a2e55;
+  --line-3: #4a3d68;
+  --text: #f1edf9;
+  --soft: #d6cfe8;
+  --muted: #b9b0cf;
+  --muted-2: #9d93b6;   /* captions and labels */
   --accent: #ffd23f;
   --accent-2: #ffe07a;
-  --on-accent: #0b0b0d;
+  --on-accent: #100c18;
+  --ghost: #7c5cc4;
+  --ghost-soft: #c9bdf0;
+  --holo: linear-gradient(135deg, #ff7eb6, #ffd23f 30%, #5eead4 60%, #b48bff);
+  --holo-line: linear-gradient(90deg, #ff7eb6, #ffd23f 25%, #5eead4 50%, #7aa2ff 75%, #b48bff);
   --green-strong: #1f9d61;
   --green: #45d483;
   --amber: #f5a524;
@@ -25,7 +31,9 @@
   --red: #f0524d;
   --neg: #ff6b63;
   --psa-red: #b8322c;
-  --display: "Bebas Neue", "Noto Sans JP", "Arial Narrow", sans-serif;
+  /* numbers, titles and labels: Barlow Condensed (only weight 600 is loaded, so every weight renders as 600) */
+  --display: "Barlow Condensed", "Noto Sans JP", "Arial Narrow", sans-serif;
+  --logo: "Bebas Neue", "Arial Narrow", sans-serif;
   --sans: Montserrat, "Noto Sans JP", system-ui, -apple-system, sans-serif;
   --radius: 8px;
   color-scheme: dark;
@@ -68,8 +76,8 @@ img { display: block; }
 .brand:hover { color: var(--text); }
 .brand { gap: 6px; }
 .brand-mark { width: 34px; height: 34px; flex: 0 0 auto; margin-right: 2px; }
-.brand-word { font: 28px var(--display); letter-spacing: 0.04em; line-height: 1; white-space: nowrap; }
-.brand-ten { align-self: flex-start; margin-top: 2px; font: 13px var(--display); line-height: 1; padding: 3px 4px 1px; border-radius: 3px; color: var(--on-accent);
+.brand-word { font: 28px var(--logo); letter-spacing: 0.04em; line-height: 1; white-space: nowrap; }
+.brand-ten { align-self: flex-start; margin-top: 2px; font: 13px var(--logo); line-height: 1; padding: 3px 4px 1px; border-radius: 3px; color: var(--on-accent);
   background: linear-gradient(135deg, #ff7eb6, #ffd23f 30%, #5eead4 60%, #b48bff); }
 .nav { display: flex; flex-direction: column; gap: 16px; }
 .nav-group { display: flex; flex-direction: column; gap: 1px; }
@@ -600,7 +608,7 @@ td em { color: var(--muted-2); font-style: normal; }
   .mobile-bar {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     position: sticky; top: 0; z-index: 20; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top));
-    background: rgba(11, 11, 13, 0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+    background: rgba(16, 12, 24, 0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
   }
   .mobile-bar .brand { padding: 0; }
   .mobile-bar .brand-mark { width: 28px; height: 28px; }
@@ -610,7 +618,7 @@ td em { color: var(--muted-2); font-style: normal; }
   .tabbar {
     display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
     height: calc(64px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
-    background: rgba(17, 17, 20, 0.96); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--line);
+    background: rgba(20, 15, 31, 0.96); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--line);
   }
   .tabbar a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted-2); font: 14px var(--display); letter-spacing: 0.08em; }
   .tabbar a.on { color: var(--accent); }
@@ -680,7 +688,7 @@ td em { color: var(--muted-2); font-style: normal; }
   .cd-page .cd-price { font-size: 40px; }
   .cd-page .cd-actions {
     position: fixed; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 15;
-    padding: 10px 16px; background: rgba(11, 11, 13, 0.95); border-top: 1px solid var(--line);
+    padding: 10px 16px; background: rgba(16, 12, 24, 0.95); border-top: 1px solid var(--line);
   }
   .card-page { padding-bottom: 70px; }
   .watch-row { grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: "thumb name raw" "thumb heat meta" "thumb state state"; gap: 2px 12px; }
@@ -1913,3 +1921,60 @@ div.rc-spark { font-size: 11px; height: auto; }
 .fw-tb small { font-size: 10px; color: var(--muted-2); }
 @media (max-width: 900px) { .fw-depth { grid-template-columns: 1fr 1fr; } .fw-dladder { grid-column: 1 / -1; order: 3; } }
 @media (max-width: 560px) { .fw-depth { grid-template-columns: 1fr; } }
+
+/* ================= Ghost Bid theme, 2026-10-18 =================
+   Same markup and features as before; this block restyles them:
+   - from 900 px up the sidebar becomes a top bar with every page one click away (Buy / Own / Learn groups);
+   - Overview panels get a header band; Focus "Near limit" and buy windows get the holo finish;
+   - watchlist rows fade with their distance to your limit (--fade, set in wlRowHtml). */
+body { font-variant-numeric: tabular-nums; }
+@media (min-width: 900px) {
+  .app { flex-direction: column; }
+  .sidebar {
+    position: relative; top: auto; height: auto; width: auto; overflow: visible;
+    flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px 24px;
+    padding: calc(14px + env(safe-area-inset-top)) 28px 10px; border-right: 0; background: var(--bg);
+  }
+  .sidebar::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--holo-line); }
+  .sidebar .brand { padding: 0; order: 1; }
+  .side-foot { order: 2; margin: 0 0 0 auto; flex-direction: row; align-items: center; gap: 10px; padding: 0; }
+  .side-foot .lbl { font-size: 14px; }
+  .side-foot .snap-select { min-height: 38px; }
+  .side-foot .btn { min-height: 38px; padding: 0 14px; font-size: 17px; }
+  .side-foot .card-requests { max-width: 220px; }
+  .nav { order: 3; flex-basis: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 4px 26px; padding-bottom: 4px; }
+  .nav-group { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px; }
+  .nav-h { padding: 0 6px 0 2px; }
+  .nav-group:nth-child(1) .nav-h { color: var(--accent); }
+  .nav-group:nth-child(2) .nav-h { color: var(--ghost-soft); }
+  .nav-group:nth-child(3) .nav-h { color: #5eead4; }
+  .nav a { min-height: 38px; padding: 0 9px; gap: 5px; border-radius: 999px; font: 600 13px var(--sans); letter-spacing: 0; color: var(--muted); }
+  .nav a svg { display: none; }
+  .nav a span { flex-grow: 0; }
+  .nav a em:empty { display: none; }
+  .nav a.on { background: var(--hover); color: var(--text); box-shadow: none; }
+  .nav a.on em { color: var(--accent); }
+  .main { width: 100%; max-width: 1480px; margin: 0 auto; box-sizing: border-box; }
+  .drawer { top: 16px; max-height: calc(100vh - 32px); }
+}
+/* header bands on the Overview's panels */
+.inbox > .section-title:first-child, .focus-watch > .section-title:first-child, .notes > .section-title:first-child, .custom-index > .section-title:first-child {
+  margin: -16px -20px 12px; padding: 9px 20px 7px; background: var(--band); border-radius: 9px 9px 0 0; font-size: 21px; }
+.notes > .section-title:first-child { margin: -20px -22px 12px; padding-left: 22px; }
+.custom-index > .section-title:first-child { margin: -18px -20px 12px; }
+.focus-watch > .section-title:first-child { background: var(--accent); color: var(--on-accent); }
+.focus-watch > .section-title:first-child .fw-asof { color: rgba(16, 12, 24, 0.75); }
+.focus-watch { border-color: var(--line-2); }
+.wl-sec-h { padding: 9px 18px 7px; background: var(--band); }
+.wl-sec.wl-owned .wl-sec-h { background: var(--ghost); }
+.wl-sec.wl-owned .wl-sec-h .muted, .wl-sec.wl-owned .wl-sec-note { color: rgba(255, 255, 255, 0.8); }
+.panel { border-radius: 12px; }
+/* holo: the strongest signal only */
+.fw-status.close, .fw-status.go { background: var(--holo); color: var(--on-accent); border-color: transparent; }
+.vtag.definitely_buy { background: var(--holo); color: var(--on-accent); }
+/* watchlist rows fade in as they near your price */
+.wl-row { opacity: var(--fade, 1); transition: opacity 0.15s; }
+.wl-row:hover, .wl-row.sel, .wl-row:focus-visible { opacity: 1; }
+.money > .mn-head:first-child { margin: -16px -20px 10px; padding: 9px 20px 7px; background: var(--band); border-radius: 11px 11px 0 0; align-items: center; }
+.money > .mn-head:first-child .section-title { font-size: 21px; }
+@media (max-width: 899px) { .money > .mn-head:first-child { margin: -12px -14px 8px; padding: 8px 14px 6px; } .inbox > .section-title:first-child { margin: -12px -14px 10px; padding: 8px 14px 6px; } }

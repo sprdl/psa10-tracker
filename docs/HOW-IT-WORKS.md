@@ -1080,6 +1080,13 @@ is unreachable, nothing is shown.
 
 ## 9. Styling: style.css
 
+*Ghost Bid theme (2026-10-18): the colour tokens at the top of `style.css` are the violet palette (`--bg #100c18`,
+`--panel`, `--band`, `--ghost #7c5cc4`, `--holo`, `--holo-line`); `--display` is now Barlow Condensed (numbers, titles, labels;
+only weight 600 is loaded) and `--logo` is Bebas Neue for the wordmark. The block at the end of the file turns the sidebar into a
+top bar from 900 px up (same markup, every page one click away), adds the panel header bands, keeps the holo finish for the
+strongest signals, and fades watchlist rows by `--fade` (`wlFade()` in `app.js`: distance from the lowest ask to your limit, else
+the Buy line). Phones keep the mobile bar and bottom tab bar.*
+
 - **Tokens first.** The `:root` block at the top defines every colour, both fonts and
   the corner radius. To change the accent colour, change `--accent` (and `--accent-2`
   for hover) there. `widgets/psa10-widget.js` has its own copy of the colours in `C`.

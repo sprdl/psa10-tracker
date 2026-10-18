@@ -4473,10 +4473,19 @@
     const b = (key, label, cls, tip) => `<button type="button" class="${cls || ''}" data-sort="${key}"${tip ? ` title="${escapeAttr(tip)}"` : ''}>${label}</button>`;
     return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chgLast', 'Last', 'r', 'Change since the previous check (quick or full)')}${b('chg7', '7D', 'r', '7-day change, 30 days underneath')}${b('verdict', h.verdict, '', h.verdict === 'Verdict' ? 'Buy verdict, plus Self-grade / Limit flags' : 'Sell signal')}${b('heat', 'Market', 'wl-mkt', 'How the card trades: activity (PSA10 sales a day) and a red Hype end when it swings harder than most with the market')}</div>`;
   }
+  // Ghost Bid: a watchlist card fades with its distance above your price (limit, else the Buy line), solid within ~5%.
+  function wlFade(card) {
+    if (ownsCard(card)) return 1;
+    const a = lowestAsk(card), t = getLimit(card) || (card.analysis && card.analysis.tiers && card.analysis.tiers.buy_upper);
+    if (!a || !t || a <= t) return 1;
+    const pct = (a / t - 1) * 100;
+    return Math.max(0.45, Math.min(1, 1 - (pct - 5) / 30));
+  }
   function wlRowHtml(card) {
     const { short, code, pack } = parseCardName(card.card_name_ja);
     const owned = ownsCard(card), bought = holdingsFor(card).length;
-    return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) || sellHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}">
+    const fade = wlFade(card);
+    return `<a class="wl-row${card.url === state.selectedUrl ? ' sel' : ''}${limitHit(card) || sellHit(card) ? ' hit' : ''}" href="#/card/${escapeAttr(cardId(card))}" data-url="${escapeAttr(card.url)}"${fade < 1 ? ` style="--fade:${fade.toFixed(2)}"` : ''}>
         ${slabHtml(card, 'xs')}
         <span class="wl-name"><span class="wl-nline"><b class="jp">${escapeHtml(short)}</b>${hasInsight(card) ? `<span class="ins-pill" title="Insight: something stands out, see What stands out on the card" aria-label="Insight">${INS_ICON}</span>` : ''}</span><small>${escapeHtml([code, pack].filter(Boolean).join(' · '))}</small></span>
         <span class="wl-price display">${fmtYen(getRep(card))}${rawAskSub(card)}</span>
