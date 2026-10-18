@@ -333,6 +333,8 @@ def main():
         import runclock
         runclock.lap("published")
         sys.path.insert(0, str(root / "scripts"))
+        import focus
+        focus.print_report(root)
         import sealed_info
         sealed_info.print_due(root)
         todo = [f"{lbl}: {n}" for lbl, n in (("sealed info (pricecheck/steps/8h-sealed.md)", len(sealed_info.due(root))),) if n]

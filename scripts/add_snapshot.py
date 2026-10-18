@@ -492,7 +492,7 @@ def main():
         print(f"warning: couldn't log limit odds: {e}")
     import build_history
     build_history.build(root)
-    extra = [f for f in ("data/odds_log.json", "data/predict.json", "data/sales.json") if (root / f).exists()]
+    extra = [f for f in ("data/odds_log.json", "data/predict.json", "data/sales.json", "data/focus_report.json") if (root / f).exists()]
     subprocess.run(["git", "add", "data/manifest.json", "data/history.json", "data/calls.json", *extra, str(dest.relative_to(root))], cwd=root, check=True)
     commit_msg = f"snapshot: {data.get('collected_at_jst', filename)}"
     commit = subprocess.run(["git", "commit", "-m", commit_msg], cwd=root)

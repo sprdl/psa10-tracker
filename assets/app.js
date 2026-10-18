@@ -170,6 +170,7 @@
     events: 'data/events.json', psaBacklog: 'data/psa_backlog.json', hist: 'data/history.json', limits: 'data/limits.json', oddsModel: 'data/odds_model.json',
     insights: 'data/insights.json', premium: 'data/premium.json', scout: 'data/scout.json', predict: 'data/predict.json', stories: 'data/stories.json', recaps: 'data/recaps.json',
     valueModel: 'data/value_model.json', removed: 'data/removed_cards.json', grails: 'data/grails.json', hype: 'data/hype.json',
+    focus: 'data/focus_report.json',
   };
   // The last loaded bundle, for an instant start, lives in IndexedDB: it's ~0.7 MB and grows with every check, and
   // localStorage stops at about 5 MB (Safari). Without IndexedDB (some private modes) it falls back to localStorage,
@@ -276,6 +277,7 @@
     state.scout = b.scout || null; // data/scout.json — untracked candidates (scripts/scout.py)
     state.hype = b.hype || null; // data/hype.json — hype exposure per card (scripts/hype.py)
     state.premium = b.premium || null; // data/premium.json — pokeca-chart slab premium per card (scripts/premium.py)
+    state.focus = b.focus || null; // data/focus_report.json — Focus watch (scripts/focus.py, rebuilt on every publish)
     state.insights = b.insights || null; // data/insights.json — analyses written by the full check (scripts/set_insight.py)
     if (fresh) { reconcileLimits(); reconcileTargets(); } // only against fresh data, never a cached copy
 
@@ -1509,6 +1511,79 @@
           <span class="od-bar"><i style="width:${fill.toFixed(0)}%"></i></span>
           <span class="od-gap"><em>${x.own ? 'Sell side' : 'Buy side'}</em>${x.own ? '+' : '−'}${Math.abs(x.pct).toFixed(1)}% to go</span></span></a>`;
     }).join('')}</div></div>`;
+  }
+  // Overview "Focus watch": the cards put in focus with scripts/focus.py (data/focus.json). data/focus_report.json is
+  // rebuilt on every publish: lowest-ask moves, sales since the previous check, the cheap end of the book, a status
+  // (BUY WINDOW / CLOSE / TURNING / DRIFTING DOWN / FLAT) and flags. The same lines go into each price check's chat
+  // message. Always shows the latest check, whichever check is picked. A status that changed since your last visit
+  // is marked NEW.
+  const FOCUS_STATUS = { buy_window: ['Buy window', 'go'], close: ['Near limit', 'close'], turning: ['Turning', 'turn'],
+    drifting: ['Drifting down', 'drift'], flat: ['Flat', 'flat'], no_data: ['No data', 'flat'] };
+  function focusSpark(c) {
+    const snaps = (state.hist && state.hist.snapshots) || [];
+    const end = c.checked ? Date.parse(c.checked) : Date.now();
+    const pts = [];
+    for (const s of snaps) {
+      const t = Date.parse(s.d);
+      if (t < end - 10 * 864e5 || t > end) continue;
+      const r = (s.r || {})[c.url], p = (s.p || {})[c.url];
+      const v = r && r[0] ? r[0] : (p ? p[0] : null);
+      if (v) pts.push([t, v]);
+    }
+    if (pts.length < 2) return '';
+    const W = 260, H = 56, pad = 4;
+    const vals = pts.map((x) => x[1]).concat(c.target ? [c.target] : []);
+    const lo = Math.min(...vals) * 0.99, hi = Math.max(...vals) * 1.01;
+    const x = (t) => pad + (t - pts[0][0]) / (pts[pts.length - 1][0] - pts[0][0] || 1) * (W - 2 * pad);
+    const y = (v) => H - pad - (v - lo) / (hi - lo || 1) * (H - 2 * pad);
+    const line = pts.map(([t, v], i) => `${i ? 'L' : 'M'}${x(t).toFixed(1)},${y(v).toFixed(1)}`).join('');
+    const last = pts[pts.length - 1];
+    const ty = c.target ? y(c.target) : null;
+    const tgt = c.target ? `<line class="fw-tgt" x1="${pad}" x2="${W - pad}" y1="${ty.toFixed(1)}" y2="${ty.toFixed(1)}"/>` : '';
+    const lbl = c.target ? `<span class="fw-tgt-l" style="top:${(ty / H * 100).toFixed(1)}%">${escapeHtml(c.target_is === 'limit' ? 'limit' : 'Buy')} ${fmtYenShort(c.target)}</span>` : '';
+    return `<div class="fw-spark-w"><svg class="fw-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${escapeAttr('Lowest PSA10 ask, last 10 days')}">${tgt}<path class="fw-line" d="${line}"/><line class="fw-dot" x1="${x(last[0]).toFixed(1)}" x2="${x(last[0]).toFixed(1)}" y1="${y(last[1]).toFixed(1)}" y2="${y(last[1]).toFixed(1)}"/></svg>${lbl}<span class="fw-sp-cap">lowest ask, last 10 days</span></div>`;
+  }
+  function renderFocus(cards) {
+    const el = document.getElementById('focus');
+    if (!el) return;
+    const rep = state.focus;
+    if (!rep || !(rep.cards || []).length) { el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    const seen = store.get('psa10.focusSeen', {}) || {};
+    const pct = (a, b) => (a && b ? `${a / b - 1 >= 0 ? '+' : '−'}${Math.abs((a / b - 1) * 100).toFixed(1)}%` : '–');
+    el.innerHTML = `<h2 class="section-title">Focus watch <small class="fw-asof">latest check ${escapeHtml(rep.updated ? fmtDateShort(rep.updated) : '')} JST</small></h2>
+      ${rep.cards.map((c) => {
+        const [lbl, cls] = FOCUS_STATUS[c.status] || [c.status, 'flat'];
+        const isNew = seen[c.url] && seen[c.url] !== c.status;
+        const s = c.sales || {}, d = c.depth, h24 = s.h24 || {}, d7 = s.d7 || {};
+        const sp = s.since_prev || [];
+        const gap = c.target && c.ask ? (c.ask <= c.target ? `at/under your ${c.target_is}` : `${pct(c.ask, c.target)} to your ${c.target_is}`) : '';
+        return `<article class="fw-card fw-${cls}">
+          <a class="fw-head" href="#/card/${escapeAttr(c.id)}" data-fw="${escapeAttr(c.url)}">
+            <span class="wthumb fw-th">${c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+            <span class="fw-name"><b class="jp">${escapeHtml(c.short || c.name)}</b><small>${c.until ? `in focus until ${escapeHtml(c.until.slice(5).replace('-', '/'))}` : 'in focus'}</small></span>
+            <span class="fw-status ${cls}">${escapeHtml(lbl)}</span>${isNew ? '<span class="sig-new">NEW</span>' : ''}
+          </a>
+          <div class="fw-grid">
+            <div class="fw-stat"><span class="lbl">Lowest ask</span><b>${fmtYen(c.ask)}</b><small>${pct(c.ask, c.ask_prev)} since last check · ${pct(c.ask, c.ask_7d)} 7d</small></div>
+            <div class="fw-stat"><span class="lbl">Target</span><b>${c.target ? fmtYen(c.target) : '–'}</b><small>${escapeHtml(gap)}</small></div>
+            <div class="fw-stat"><span class="lbl">Sales</span><b>${sp.length} <em>since last check</em></b><small>${h24.n || 0} in 24 h${h24.min ? ` (low ${fmtYen(h24.min)})` : ''} · ${d7.n || 0} in 7 d</small></div>
+          </div>
+          ${focusSpark(c)}
+          ${sp.length ? `<p class="fw-sales">Sold since last check: ${sp.map((p) => `<span class="${c.target && p <= c.target ? 'hit' : ''}">${fmtYen(p)}</span>`).join(' ')}</p>` : ''}
+          ${d ? `<p class="fw-book">Book: <b>${d.within3}</b> of ${d.n} cheapest asks within 3%${d.prev_within3 != null ? ` (was ${d.prev_within3})` : ''} · ${d.at_target} at/under target</p>` : ''}
+          ${(c.flags || []).length ? `<ul class="fw-flags">${c.flags.map((f) => `<li class="${escapeAttr(f.level)}">${escapeHtml(f.text)}</li>`).join('')}</ul>` : ''}
+          ${c.note ? `<p class="fw-note">${escapeHtml(c.note)}</p>` : ''}
+        </article>`;
+      }).join('')}`;
+    el.querySelectorAll('[data-fw]').forEach((a) => a.addEventListener('click', (e) => {
+      const card = cards.find((x) => x.url === a.dataset.fw);
+      if (!card || !DESKTOP.matches) return;
+      e.preventDefault();
+      openCard(card);
+    }));
+    const isLatest = state.currentIndex === (state.manifest.snapshots || []).length - 1;
+    if (isLatest) store.set('psa10.focusSeen', Object.fromEntries(rep.cards.map((c) => [c.url, c.status])));
   }
   function renderInbox(cards) {
     const el = document.getElementById('inbox');
@@ -3081,6 +3156,7 @@
     renderKpis(data);
     renderToday(data, state.previousData);
     renderRecapCard();
+    renderFocus(cards);
     renderInbox(cards);
     els.notesBody.textContent = data.notes || '';
     renderOverviewList(cards);

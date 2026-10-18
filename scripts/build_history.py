@@ -415,6 +415,12 @@ def build(root: Path = ROOT) -> Path:
                  "[hour, price], hour = hours since 1970-01-01 UTC, the middle of the window the sale's timestamp allows.",
         "updated": series[-1]["d"] if series else None, "cards": sales_out},
         ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    # Focus watch (data/focus_report.json): the cards whose buy window you don't want to miss (scripts/focus.py).
+    try:
+        import focus
+        focus.build(root)
+    except Exception as e:  # never block publishing a price check over it
+        print(f"warning: couldn't rebuild data/focus_report.json: {e}")
     # "You vs the model" (data/predict.json): make this week's questions, resolve open ones.
     try:
         import predict

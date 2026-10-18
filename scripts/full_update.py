@@ -383,6 +383,8 @@ def main():
         push_once()
     import runclock
     runclock.lap("published")
+    import focus
+    focus.print_report(ROOT)
     print_eval_due()
     import review_due
     review_due.print_review_due(ROOT)

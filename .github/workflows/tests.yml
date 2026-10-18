@@ -45,3 +45,5 @@ jobs:
         run: python3 tests/test_start.py
       - name: Price-check pipeline (time codes, line decoders, plan) on fixtures
         run: python3 tests/test_pipeline.py
+      - name: Focus watch status rules
+        run: python3 tests/test_focus.py

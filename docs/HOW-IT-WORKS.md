@@ -212,6 +212,8 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `tracked_cards.json` | `card_requests.py` | price-check skill | cards added with "+ Add card", beyond the skill's own `pricecheck/references/cards.json` |
 | `eval_queue.json` | `card_requests.py`, `remove_card.py` (restore); emptied by `apply_analysis.py` | `eval_queue.py`, `check_status.py`, both update scripts | cards added or restored that the same price check must evaluate (EVALUATE NOW) |
 | `recaps.json` | `recap.py save` (full check step 8j, Mondays) | Weekly recap page and Overview card | written note per week: `{"weeks": {monday: {headline, takeaway, happened[], ahead[], written}}}` |
+| `focus.json` | `focus.py add/remove` | `focus.py` | the Focus watch cards: `{"cards": {url: {since, until, note}}}` |
+| `focus_report.json` *generated* | `focus.py` (via `build_history.py`, on every publish) | Overview "Focus watch" panel; the update scripts' `FOCUS WATCH` block | per focus card: ask now / previous check / 24 h / 7 d, sales since the previous check, 24 h and 7 d, the cheap end of the book (asks within 3%, previous read), target (limit, else Buy tier), status, flags. Absent when no card is in focus |
 | `grails.json` | by hand | Grails page; left out of every list and signal on the site and the widget | `{"grails": {snkrdunk id: {added, note}}}`; target = the card's limit, else its Buy tier |
 | `removed_cards.json` | `remove_card.py` (Action) | site, `plan.py`, `assemble.py`, `add_snapshot.py` | `{"removed": {snkrdunk_id: {name, at}}}` |
 
@@ -663,6 +665,24 @@ correction rule, the rally rule, any hand-written `banners` from the snapshot JS
 `computeAutoFlags()`. Those flags compare with the previous snapshot: depth down 30%+, a zone
 crossing, or favorites ±5%. `renderToday` draws the chips; clicking one shows its full text
 underneath (`state.todayOpen`, one at a time).
+
+### Focus watch (added 2026-10-18)
+
+For a card whose buy window you don't want to miss. `python3 scripts/focus.py add <id> --until YYYY-MM-DD --note "…"`
+puts it in `data/focus.json`; `focus.py remove <id>` takes it out. On every publish `build_history.py` calls
+`focus.build()`, which writes `data/focus_report.json` from `history.json`, `sales.json`, the latest snapshot's
+listings and `limits.json`. `full_update.py` and `quick_update.py` print it as a `FOCUS WATCH` block after
+publishing, and the procedures put those lines in the run's chat message, so every check reports the card.
+
+Status, first that applies (thresholds at the top of `focus.py`): **Buy window** (lowest ask ≤ target; target =
+your limit, else the Buy tier) · **Near limit** (ask within 2% of the target, or a sale at/under it in the last
+24 h) · **Turning** (ask ≥3% above its 7-day low and the 24 h sales median ≥ the prior week's) · **Drifting down**
+(ask ≥2% under its level 7 days ago) · **Flat**. Flags: sales at/under the target, the cheap end thinning (asks within
+3% of the lowest down ≥40% vs the previous fresh listings read), a deep wall (≥10 within 3%), the event-rule window
+for the card's set, the focus ending. The Overview panel (`renderFocus`) sits above Needs you, always shows the
+latest check, draws the last 10 days of lowest asks against the target, and marks a status that changed since your
+last visit NEW (localStorage `psa10.focusSeen`). It's a heads-up, not a forecast: verdicts and the odds model stay
+the judges of price.
 
 ### Overview list: Owned and Watchlist
 

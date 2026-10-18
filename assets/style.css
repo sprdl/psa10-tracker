@@ -1833,3 +1833,43 @@ div.rc-spark { font-size: 11px; height: auto; }
 .mkt-chip.has-hype .heat-chip { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: 0; }
 .mkt-hype { display: inline-flex; align-items: center; font: 13px var(--display); letter-spacing: 0.08em; line-height: 1; padding: 4px 7px 2px; color: #fff; background: var(--red); border-radius: 0 4px 4px 0; }
 .mkt-chip > .mkt-hype:first-child { border-radius: 4px; }
+
+/* Focus watch (scripts/focus.py → data/focus_report.json): Overview panel above Needs you */
+.focus-watch { padding: 16px 20px; margin-bottom: 16px; border-color: var(--accent); }
+.focus-watch .section-title { margin: 0 0 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.fw-asof { font: 500 12px var(--sans); color: var(--muted-2); letter-spacing: 0; }
+.fw-card + .fw-card { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; }
+.fw-head { display: flex; align-items: center; gap: 12px; color: var(--text); }
+.fw-head:hover { color: var(--text); }
+.fw-th { width: 40px; flex: 0 0 auto; }
+.fw-name { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.fw-name b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fw-name small { color: var(--muted-2); font-size: 12px; }
+.fw-status { flex: 0 0 auto; padding: 4px 10px; border-radius: 999px; font: 700 12px var(--sans); text-transform: uppercase; letter-spacing: .04em; background: var(--panel-2); color: var(--soft); border: 1px solid var(--line-2); }
+.fw-status.go { background: var(--green-strong); color: #fff; border-color: transparent; }
+.fw-status.close { background: var(--accent); color: var(--on-accent); border-color: transparent; }
+.fw-status.turn { background: var(--amber); color: #1a1000; border-color: transparent; }
+.fw-status.drift { color: var(--neg); border-color: var(--neg); background: transparent; }
+.fw-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 12px 0 6px; }
+.fw-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fw-stat b { font: 400 26px/1 var(--display); letter-spacing: .02em; }
+.fw-stat b em { font: 500 12px var(--sans); font-style: normal; color: var(--muted); }
+.fw-stat small { color: var(--muted); font-size: 12px; }
+.fw-spark-w { position: relative; margin: 6px 0 14px; }
+.fw-spark { display: block; width: 100%; height: 56px; }
+.fw-sp-cap { position: absolute; left: 0; bottom: -14px; font-size: 10px; color: var(--muted-2); }
+.fw-line { fill: none; stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.fw-dot { stroke: var(--accent); stroke-width: 7; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.fw-tgt { stroke: var(--green); stroke-width: 1; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.fw-tgt-l { position: absolute; left: 0; transform: translateY(-120%); color: var(--green); font: 600 10px var(--sans); }
+.fw-sales, .fw-book, .fw-note { margin: 4px 0; font-size: 13px; color: var(--soft); }
+.fw-sales span { display: inline-block; margin-right: 6px; color: var(--muted); }
+.fw-sales span.hit { color: var(--green); font-weight: 700; }
+.fw-note { color: var(--muted); font-style: italic; }
+.fw-flags { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.fw-flags li { padding-left: 16px; position: relative; color: var(--soft); }
+.fw-flags li::before { content: "·"; position: absolute; left: 4px; color: var(--muted-2); }
+.fw-flags li.go::before, .fw-flags li.warn::before { content: "!"; font-weight: 700; }
+.fw-flags li.go::before { color: var(--green); }
+.fw-flags li.warn::before { color: var(--amber); }
+@media (max-width: 640px) { .fw-grid { grid-template-columns: 1fr 1fr; } .fw-stat b { font-size: 22px; } }

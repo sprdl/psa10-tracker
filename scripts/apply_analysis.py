@@ -370,7 +370,7 @@ def main():
     # a buy verdict (any tag, defer included) is the card's evaluation: it leaves the new-card queue
     import eval_queue
     eval_queue.remove([c["url"] for c, n, _ in planned if isinstance(n.get("verdict"), dict)], root)
-    git(root, "add", rel, "data/history.json", "data/calls.json", *[f for f in ("data/predict.json", "data/sales.json", "data/eval_queue.json") if (root / f).exists()])
+    git(root, "add", rel, "data/history.json", "data/calls.json", *[f for f in ("data/predict.json", "data/sales.json", "data/eval_queue.json", "data/focus_report.json") if (root / f).exists()])
     names = ", ".join(re.sub(r"[\[(].*$", "", c["card_name_ja"]).strip() for c, _, _ in planned)
     commit = git(root, "commit", "-m", f"analysis: update {names}", check=False)
     if commit.returncode != 0:
