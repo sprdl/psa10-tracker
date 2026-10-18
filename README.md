@@ -217,7 +217,7 @@ nothing runs on your Mac.
 - **Remove** fixes a mistake. You can also edit an issue before it's processed.
 - If a form can't be read (e.g. the price isn't a number), the Action comments what's wrong and
   leaves the issue open. The site links to it. Edit the issue and it retries.
-- Only issues you open are processed. `scripts/add_holding.py` still works for bulk entry from the Mac.
+- Only issues you open are processed.
 
 ## Holdings
 

@@ -196,7 +196,7 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `psa_backlog.json` | `psa_backlog.py` | Market page panel, Submissions line | `readings[] {d, m, note}` (PSA's backlog in millions of units), `check {last_checked, result}`, `threshold_m` (5.0), `tiers[]`, `value_prices`, `projection` (3 scenarios, written by the script) |
 | `limits.json` | `set_limit.py` (Action); `log_purchase.py` removes a card's entry once you own it | site, widget, `predict.py` | `{"limits": {url: {price, set, issue}}}` |
 | `sell_targets.json` | `set_limit.py` (Action) | sell signals | `{"targets": {url: {price, set, issue}}}` |
-| `holdings.json` | `log_purchase.py` (Action), `add_holding.py` | Holdings, owned views, budget | `holdings[]` (singles), `sealed[]` (with `pulls[]`), `sold[]` |
+| `holdings.json` | `log_purchase.py` (Action) | Holdings, owned views, budget | `holdings[]` (singles), `sealed[]` (with `pulls[]`), `sold[]` |
 | `holdings_prices.json` | `holdings_prices.py` (full check) | Holdings | latest SNKRDUNK price per bought untracked card / unopened sealed product |
 | `portfolio_history.json` | `holdings_prices.py` (full check) | Holdings value chart | daily readings of the same, one entry per day |
 | `odds_model.json` | `save_odds_model.py` (monthly) | limit odds, tier check, predictions, `odds_model.py` | per-card volatilities, pooled z-curves, calibration factors |
@@ -1180,7 +1180,6 @@ with a docstring explaining its usage. Open the file and read the top.
 | `card_requests.py` | handling Add-card issues: `list`, `add`, `set`, `reject` |
 | `eval_queue.py` | the EVALUATE NOW list (new/restored cards first); `add <id> "why"` / `drop <id>` by hand |
 | `eval_context.py` | everything the repo knows about one card for an evaluation (`--odds <prices>` for limit-odds) |
-| `add_holding.py` | bulk-entering purchases from the Mac |
 | `../tests/test_rules.py` | checking that the site, the widget and the scripts still apply the same rules (needs Node) |
 
 Scripts that push use the credential file configured for the repo. **Never put a

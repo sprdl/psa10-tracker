@@ -383,9 +383,8 @@ full check. Quick checks never read these.
 
 Removing uses the same Remove form with an `s…` (product and its pulls) or `u…` (one pull) id.
 
-Normally purchases are logged from the site (✓ Bought it → GitHub issue → `scripts/log_purchase.py` in Actions; see README). For bulk entry, add holdings with `python3 scripts/add_holding.py` (same clipboard-or-file-argument
-pattern as `add_snapshot.py`) rather than hand-editing the file, so the commit
-message and validation stay consistent. With no entries, the Holdings page shows an empty state
+Purchases are logged from the site (✓ Bought it → GitHub issue → `scripts/log_purchase.py` in Actions; see README),
+which gives each holding its `p…` id and clears the card's limit; don't hand-edit the file. With no entries, the Holdings page shows an empty state
 and the owned-card views never appear.
 
 ## Other data files
