@@ -281,6 +281,9 @@ def apply_grading_info(issue, store):
         items.append((gid, item))
     multi = len(items) > 1
     sent = optional_date(field(form, "date sent", "sent"))
+    registered = optional_date(field(form, "registered at psa", "registered"))
+    if sent and registered and registered < sent:
+        raise FormError(f"The registration date {registered} is before the send date {sent}.")
     tier = next((k for key, k in GRADE_TIERS if key in field(form, "psa service", "service").lower()), None)
     chance_txt = field(form, "your chance", "chance").replace("%", "").strip()
     chance = None
@@ -294,9 +297,9 @@ def apply_grading_info(issue, store):
     st = field(form, "status").lower()
     changed = []
     for gid, item in items:
-        for key, val in (("sent", sent), ("tier", tier), ("gem_rate_pct", int(chance) if chance is not None and chance.is_integer() else chance)):
-            if key == "gem_rate_pct" and val is None and multi:
-                continue   # several cards: an empty chance keeps each card's own
+        for key, val in (("sent", sent), ("registered", registered), ("tier", tier), ("gem_rate_pct", int(chance) if chance is not None and chance.is_integer() else chance)):
+            if key in ("gem_rate_pct", "registered") and val is None and multi:
+                continue   # several cards: an empty chance / registration date keeps each card's own
             if val is None:
                 item.pop(key, None)
             else:
@@ -318,7 +321,7 @@ def apply_grading_info(issue, store):
                     item["graded_from_raw"] = True   # keeps its grading cost in the cost basis
     conds = {"psa10": "now a PSA10", "graded_other": "came back lower than a 10", "raw_to_grade": "raw"}
     st_bit = conds.get(changed[0], "") if changed else ""
-    bits = [x for x in (st_bit, f"sent {sent}" if sent else "", f"{tier} service" if tier else "", f"your PSA10 chance {int(chance) if chance.is_integer() else chance}%" if chance is not None else "") if x]
+    bits = [x for x in (st_bit, f"sent {sent}" if sent else "", f"registered at PSA {registered}" if registered else "", f"{tier} service" if tier else "", f"your PSA10 chance {int(chance) if chance.is_integer() else chance}%" if chance is not None else "") if x]
     if multi:
         names = ", ".join(f"**{gid}** ({item.get('card_name_ja', gid)})" for gid, item in items)
         return (f"Saved grading info for {len(items)} cards: {names}: {', '.join(bits) if bits else 'date and service cleared'}. The site updates in about a minute.",

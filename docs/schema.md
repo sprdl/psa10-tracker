@@ -363,7 +363,7 @@ page by the next price check (`scripts/sealed_info.py`, FULL-CHECK step 8h); the
 price, see `rawPrice`, or the PSA10 price once `status` is psa10); an untracked raw pull from `holdings_prices.json`;
 `value_jpy` (optional) covers the rest.
 Raw copies (a pull with status `raw` / `grading`, or a holding with `condition: raw_to_grade`) can also carry
-`"sent": "2026-10-01"` (date sent to PSA), `"tier": "standard|priority|express"` and `"gem_rate_pct": 60` (your own
+`"sent": "2026-10-01"` (date sent to PSA), `"registered": "2026-10-08"` (the day PSA registered the card; its business days count from here, else the site assumes 5 business days after `sent`), `"tier": "standard|priority|express"` and `"gem_rate_pct": 60` (your own
 chance of a PSA10 for this copy, overriding the card's population gem rate). They are set with the site's
 **Grading info** link (issue form `grading-info.yml`, label `grading-info`, handled by `scripts/log_purchase.py`;
 blank fields remove the value). Grading counts as spent once `sent` is set (or `graded_from_raw`), at the fee of

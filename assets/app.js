@@ -3381,6 +3381,23 @@
     for (let left = n; left > 0;) { d.setUTCDate(d.getUTCDate() + 1); const w = d.getUTCDay(); if (w !== 0 && w !== 6) left--; }
     return d.toISOString().slice(0, 10);
   }
+  // PSA's turnaround (100 / 80 / 25 business days) counts from the day PSA registers the card, not the day it was posted.
+  // With a registration date (Grading info form, "registered") the return date counts from it; without one the
+  // site assumes PSA_REG_LAG business days (about a week: the Gengar pull took one in Oct 2026) after the send date.
+  const PSA_REG_LAG = 5;
+  function psaReturn(it, tier) {
+    if (!it || !(it.registered || it.sent)) return null;
+    const reg = it.registered || addBusinessDays(it.sent, PSA_REG_LAG);
+    return { date: addBusinessDays(reg, tier.days), reg, regAssumed: !it.registered, days: tier.days };
+  }
+  // "Sent 2026-10-17 · registered ~2026-10-24 (assumed) · Standard · back around …"
+  function psaReturnTxt(it, tier, tierAssumed) {
+    const r = psaReturn(it, tier);
+    if (!r) return '';
+    const sent = it.sent && it.sent !== it.registered ? `Sent ${escapeHtml(it.sent)} · ` : '';
+    const reg = r.regAssumed ? `<span title="PSA counts its business days from the day it registers the card. No registration date saved yet, so about a week after sending is assumed: add the real date in Grading info when PSA shows it.">registered ~${escapeHtml(r.reg)} (assumed)</span>` : `Registered ${escapeHtml(r.reg)}`;
+    return `${sent}${reg} · ${escapeHtml(tier.label)}${tierAssumed ? ' (assumed)' : ''} · back around <b>${escapeHtml(r.date)}</b> (${r.days} business days)`;
+  }
   // Raw copies of a card: { kind, id, item, sunk }.
   function gradeCopies(card) {
     const out = [];
@@ -3394,7 +3411,7 @@
     const it = c.item, psa = getRep(card), tierKey = GRADE_TIERS[it.tier] ? it.tier : psaTierFor(psa), tier = GRADE_TIERS[tierKey];
     const raw = rawPriceV(card);
     const own = it.gem_rate_pct != null, gem = own ? it.gem_rate_pct : card.psa10_gem_rate_pct;
-    const ret = it.sent ? { date: addBusinessDays(it.sent, tier.days), days: tier.days, assumed: !GRADE_TIERS[it.tier] } : null;
+    const ret = psaReturn(it, tier) ? Object.assign(psaReturn(it, tier), { assumed: !GRADE_TIERS[it.tier], txt: psaReturnTxt(it, tier, !GRADE_TIERS[it.tier]) }) : null;
     if (!raw || !psa || gem == null || !gem) return { missing: !psa ? 'no PSA10 price yet' : !raw ? 'no raw A-rank price to compare with' : 'no gem rate yet (give your own chance of a 10 in the grading info)', ret, tierKey };
     const fee = tier.fee + PSA_STD.ship + PSA_STD.handling;
     const n10 = sellNet(psa), nraw = sellNet(raw), p = gem / 100;
@@ -3411,6 +3428,7 @@
     const it = c.item;
     const q = { template: 'grading-info.yml', title: 'Grading: ' + name, id: c.id };
     if (it.sent) q.sent = it.sent;
+    if (it.registered) q.registered = it.registered;
     if (it.tier && GRADE_TIERS[it.tier]) q.service = GRADE_TIERS[it.tier].label;
     if (it.gem_rate_pct != null) q.chance = String(it.gem_rate_pct);
     return `${REPO_URL}/issues/new?${new URLSearchParams(q)}`;
@@ -3419,7 +3437,7 @@
     if (!card) return '';
     const g = gradeCalc(card, c), name = parseCardName(card.card_name_ja).short;
     const link = `<a class="pf-remove" href="${escapeAttr(gradingFormUrl(c, name))}" target="_blank" rel="noopener">${c.item.sent || c.item.gem_rate_pct != null || c.item.tier ? 'Edit grading info' : 'Grading info'}</a>`;
-    const retTxt = g.ret ? `Sent ${escapeHtml(c.item.sent)} · ${GRADE_TIERS[g.tierKey].label}${g.ret.assumed ? ' (assumed)' : ''} · back around <b>${escapeHtml(g.ret.date)}</b> (${g.ret.days} business days)` : '';
+    const retTxt = g.ret ? g.ret.txt : '';
     if (g.missing) return `<div class="grade-line muted">Grading: ${escapeHtml(g.missing)}.${retTxt ? ' ' + retTxt + '.' : ''} ${link}</div>`;
     const chance = `${Math.round(g.gem)}% chance of a 10${g.own ? ' (your estimate)' : ' (population gem rate)'}`;
     const net = `<span title="After SNKRDUNK selling costs. A PSA10 sells at ${fmtYen(g.psa)}, anything else is valued at the raw price ${fmtYen(g.raw)}.">`;
@@ -3434,7 +3452,7 @@
     const name = parseCardName(card.card_name_ja).short, it = c.item;
     const tierKey = GRADE_TIERS[it.tier] ? it.tier : psaTierFor(getRep(card)), tier = GRADE_TIERS[tierKey];
     const link = `<a class="pf-remove" href="${escapeAttr(gradingFormUrl(c, name))}" target="_blank" rel="noopener">${it.sent || it.gem_rate_pct != null || it.tier ? 'Edit grading info' : 'Grading info'}</a>`;
-    const ret = it.sent ? `Sent ${escapeHtml(it.sent)} · ${tier.label}${GRADE_TIERS[it.tier] ? '' : ' (assumed)'} · back around <b>${escapeHtml(addBusinessDays(it.sent, tier.days))}</b> (${tier.days} business days) · ` : 'Not sent yet · ';
+    const ret = it.sent || it.registered ? psaReturnTxt(it, tier, !GRADE_TIERS[it.tier]) + ' · ' : 'Not sent yet · ';
     return `<div class="grade-line muted">${ret}${link}</div>`;
   }
   // The card page: one block per raw copy of this card.
@@ -3511,7 +3529,7 @@
     const ev = priced.reduce((a, c) => a + c.k.ev, 0), nraw = priced.reduce((a, c) => a + c.k.nraw, 0);
     const gain = ev - nraw - cost, tens = priced.reduce((a, c) => a + c.k.p, 0);
     const over = tier.cap != null ? picked.filter((c) => c.card && getRep(c.card) > tier.cap) : [];
-    const back = picked.length ? addBusinessDays(date, tier.days) : null;
+    const back = picked.length ? addBusinessDays(addBusinessDays(date, PSA_REG_LAG), tier.days) : null;
     const tierBtn = (k, l) => `<button type="button" data-tier="${k}" class="${st.tier === k ? 'on' : ''}">${l}</button>`;
     const top = `<div class="pl-top">
         <div class="pl-mode" role="group" aria-label="PSA service">${tierBtn('auto', `Auto (${GRADE_TIERS[autoKey].label})`)}${Object.entries(GRADE_TIERS).map(([k, t]) => tierBtn(k, t.label)).join('')}</div>
@@ -3521,7 +3539,7 @@
     const summary = `<div class="pl-summary">
         <div class="pl-stat"><div class="lbl">Cards</div><div class="val">${picked.length}</div><div class="tr-hint">of ${todo.length} raw cop${todo.length === 1 ? 'y' : 'ies'} not sent</div></div>
         <div class="pl-stat"><div class="lbl">${escapeHtml(tier.label)} service</div><div class="val">${fmtYen(cost)}</div><div class="tr-hint">${picked.length} × ${fmtYen(tier.fee)} + ${fmtYen(st.ship)} per order${picked.length ? ` · ${fmtYen(cost / picked.length)} a card` : ''}</div></div>
-        <div class="pl-stat"><div class="lbl">Back around</div><div class="val">${back ? escapeHtml(back.slice(5).replace('-', '/')) : '—'}</div><div class="tr-hint">${tier.days} business days from ${escapeHtml(slash(date))}</div></div>
+        <div class="pl-stat"><div class="lbl">Back around</div><div class="val">${back ? escapeHtml(back.slice(5).replace('-', '/')) : '—'}</div><div class="tr-hint">~1 week until PSA registers it, then ${tier.days} business days</div></div>
         <div class="pl-stat"><div class="lbl">Expected 10s</div><div class="val">${priced.length ? tens.toFixed(1) : '—'}</div><div class="tr-hint">${priced.length ? `of ${priced.length} priced card${priced.length === 1 ? '' : 's'}` : 'no priced card ticked'}</div></div>
         <div class="pl-stat"><div class="lbl">Grading vs selling raw</div><div class="val ${priced.length ? (gain >= 0 ? 'pos' : 'neg') : ''}">${priced.length ? signedYen(gain) : '—'}</div><div class="tr-hint">expected, after selling costs and this order's cost</div></div>
       </div>`;
@@ -3548,12 +3566,12 @@
       const t = GRADE_TIERS[c.item.tier] || GRADE_TIERS[psaTierFor(c.card ? getRep(c.card) : null)], nm = parseCardName((c.card && c.card.card_name_ja) || c.name);
       const img = (c.card && c.card.image_url) || c.item.image_url;
       return `<div class="pf-row"><span class="wthumb sub-away-th">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span><div class="pf-info"><div class="pf-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.id)}</span></div>
-        <div class="pf-meta">${c.item.sent ? `Sent ${escapeHtml(c.item.sent)} · ${escapeHtml(t.label)}${GRADE_TIERS[c.item.tier] ? '' : ' (assumed)'} · back around <b>${escapeHtml(addBusinessDays(c.item.sent, t.days))}</b>` : 'At PSA, no send date saved'} · <a class="pf-remove" href="${escapeAttr(gradingFormUrl({ id: c.id, item: c.item }, nm.short))}" target="_blank" rel="noopener">Grading info</a></div></div></div>`;
+        <div class="pf-meta">${c.item.sent || c.item.registered ? psaReturnTxt(c.item, t, !GRADE_TIERS[c.item.tier]) : 'At PSA, no send date saved'} · <a class="pf-remove" href="${escapeAttr(gradingFormUrl({ id: c.id, item: c.item }, nm.short))}" target="_blank" rel="noopener">Grading info</a></div></div></div>`;
     }).join('')}</div>` : '';
     const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeAttr(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(slash(date))} ↗</a>` : '';
     el.innerHTML = psaBacklogLine() + top + summary + warn +`<div class="sub-acts">${sendBtn}<span class="muted">${picked.length ? 'opens one GitHub form for all ticked cards; submit it after you post them' : 'tick the cards to send'}</span></div>`
       + (todo.length ? `<div class="pl-list">${base.map(row).join('')}</div>` : '<div class="empty-state">Every raw copy is at PSA.</div>') + awayHtml
-      + `<p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)} and Priority (¥2,000 more per card) up to ${fmtYen(GRADE_TIERS.priority.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are business days from the send date. Ticks, service and shipping are saved in this browser.</p>`;
+      + `<p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)} and Priority (¥2,000 more per card) up to ${fmtYen(GRADE_TIERS.priority.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are PSA's business days counted from the day PSA registers the card (add it in Grading info once PSA shows it); until then about a week after sending is assumed. Ticks, service and shipping are saved in this browser.</p>`;
     trimImages(el);
     el.querySelectorAll('[data-tier]').forEach((b) => b.addEventListener('click', () => save({ tier: b.dataset.tier })));
     el.querySelectorAll('[data-sub]').forEach((cb) => cb.addEventListener('change', () => {

@@ -358,7 +358,7 @@ hands off to `add_snapshot.py`, and ends with the follow-ups (evaluations, seale
 | + Add sealed product | `sealed.yml` (`sealed`) | same | product `s<issue#>` in `sealed[]` |
 | Pulled one of these? / + Add pull | `pull.yml` (`pull`) | same | pull `u<issue#>` under its product |
 | Add / Change SNKRDUNK link | `sealed-link.yml` (`sealed-link`) | same | product's `url` set |
-| Grading info / Mark N as sent (PSA submission planner) | `grading-info.yml` (`grading-info`) | same | `sent`, `tier`, `gem_rate_pct` (and a pull's status), for one card or several |
+| Grading info / Mark N as sent (PSA submission planner) | `grading-info.yml` (`grading-info`) | same | `sent`, `registered` (PSA's registration date: return dates count from it, else ~1 week after `sent` is assumed, `PSA_REG_LAG`), `tier`, `gem_rate_pct` (and a pull's status), for one card or several |
 | Save to all devices (limit) | `set-limit.yml` (`set-limit`) | Action `limits.yml` → `set_limit.py` | `limits.json` |
 | Save to all devices (sell target) | `set-sell-target.yml` (`set-sell-target`) | same | `sell_targets.json` |
 | Save to all devices (You vs model) | `predict.yml` (`predict`) | Action `predictions.yml` → `set_predictions.py` | answers in `predict.json` |

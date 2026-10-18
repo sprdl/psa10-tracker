@@ -14,7 +14,12 @@ body:
     id: sent
     attributes:
       label: Date sent to PSA
-      description: YYYY-MM-DD. Leave empty if it hasn't been sent (this removes a saved date).
+      description: YYYY-MM-DD, the day you posted it. Leave empty if it hasn't been sent (this removes a saved date).
+  - type: input
+    id: registered
+    attributes:
+      label: Registered at PSA on (optional)
+      description: YYYY-MM-DD, the day PSA logged the card into its system. PSA's 100 (Standard) or 80 (Priority) business days count from this day. Until you fill it in, the site assumes about a week after the send date.
   - type: dropdown
     id: service
     attributes:
