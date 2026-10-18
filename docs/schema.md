@@ -447,6 +447,6 @@ more than 15% below both neighbours is ignored there and in `recap.py facts` (on
 in focus): `{"about", "updated", "cards": [...]}`. Card: `url`, `id`, `name`, `short`, `image_url`, `since`, `until`, `note`,
 `limit`, `tiers`, `target`, `target_is` (`"limit"` / `"Buy tier"`), `checked`, `ask`, `ask_prev`, `prev_checked`, `ask_24h`,
 `ask_7d`, `low_7d`, `high_7d`, `sales {since_prev: [prices], h24 {n, min, median}, d7 {n, per_day, median, min},
-prior7_median, last: [[iso, price], …]}`, `depth {as_of, n, within3, within15, at_target, prev_as_of?, prev_within3?,
-prev_lowest?}` or null, `status` (`buy_window` / `close` / `turning` / `drifting` / `flat` / `no_data`), `gap_pct`,
+prior7_median, last: [[iso, price], …]}`, `depth {as_of, n, within3, within15, at_target, listings (the 20 cheapest, sorted), trend [{as_of, lowest, within3}] (last 8
+fresh reads, oldest first), read (deep|normal|thin), prev_as_of?, prev_within3?, prev_lowest?}` or null, `status` (`buy_window` / `close` / `turning` / `drifting` / `flat` / `no_data`), `gap_pct`,
 `flags [{level: go|warn|info, text}]`, `headline`.

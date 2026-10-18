@@ -679,7 +679,10 @@ your limit, else the Buy tier) · **Near limit** (ask within 2% of the target, o
 24 h) · **Turning** (ask ≥3% above its 7-day low and the 24 h sales median ≥ the prior week's) · **Drifting down**
 (ask ≥2% under its level 7 days ago) · **Flat**. Flags: sales at/under the target, the cheap end thinning (asks within
 3% of the lowest down ≥40% vs the previous fresh listings read), a deep wall (≥10 within 3%), the event-rule window
-for the card's set, the focus ending. The Overview panel (`renderFocus`) sits above Needs you, always shows the
+for the card's set, the focus ending. The Overview panel (`renderFocus`) sits above Needs you and leads with **book depth** (`focusDepthHtml`,
+added 2026-10-18 evening): the count of the 20 cheapest asks within 3% of the lowest, its change vs the previous
+fresh listings read, a deep (≥10) / normal / thin (≤4) reading, a ladder of the 20 asks in 0.5% steps with the 3% zone
+and the target, and the count across the last 8 reads (`depth.trend`). It always shows the
 latest check, draws the last 10 days of lowest asks against the target, and marks a status that changed since your
 last visit NEW (localStorage `psa10.focusSeen`). It's a heads-up, not a forecast: verdicts and the odds model stay
 the judges of price.

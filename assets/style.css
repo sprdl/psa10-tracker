@@ -1873,3 +1873,39 @@ div.rc-spark { font-size: 11px; height: auto; }
 .fw-flags li.go::before { color: var(--green); }
 .fw-flags li.warn::before { color: var(--amber); }
 @media (max-width: 640px) { .fw-grid { grid-template-columns: 1fr 1fr; } .fw-stat b { font-size: 22px; } }
+
+/* Focus watch: book depth, the panel's lead block */
+.fw-depth { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 1.6fr) minmax(150px, .9fr); gap: 20px; align-items: end;
+  margin: 12px 0 4px; padding: 14px 16px; background: var(--panel-2); border: 1px solid var(--line-2); border-left: 4px solid var(--muted-2); border-radius: var(--radius); }
+.fw-depth.fw-d-deep { border-left-color: var(--neg); }
+.fw-depth.fw-d-thin { border-left-color: var(--green); }
+.fw-depth.fw-d-normal { border-left-color: var(--accent); }
+.fw-dmain { display: flex; flex-direction: column; gap: 4px; align-self: start; }
+.fw-dnum { display: flex; align-items: center; gap: 10px; }
+.fw-dnum b { font: 400 56px/0.9 var(--display); color: var(--text); }
+.fw-dnum span { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.fw-ddelta { font: 700 12px var(--sans); color: var(--muted); }
+.fw-ddelta.down { color: var(--green); }
+.fw-ddelta.up { color: var(--neg); }
+.fw-dread { margin: 4px 0 0; font-size: 13px; color: var(--soft); }
+.fw-dasof { color: var(--muted-2); font-size: 11px; }
+.fw-ladder { position: relative; height: calc(var(--rows) * 11px + 4px); min-height: 70px; display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 3px; align-items: end; padding-top: 4px; }
+.fw-col { display: flex; flex-direction: column-reverse; gap: 2px; position: relative; z-index: 1; }
+.fw-col i { display: block; height: 9px; border-radius: 1px; background: var(--line-3); }
+.fw-col i.in { background: var(--neg); }
+.fw-zone { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(240, 82, 77, .10); border-right: 1px dashed rgba(240, 82, 77, .5); }
+.fw-zone span { position: absolute; top: -2px; left: 4px; font: 600 10px var(--sans); color: var(--neg); transform: translateY(-100%); white-space: nowrap; }
+.fw-ltgt { position: absolute; top: 0; bottom: 0; border-left: 2px dashed var(--green); z-index: 2; }
+.fw-ltgt span { position: absolute; top: -2px; left: 4px; transform: translateY(-100%); font: 600 10px var(--sans); color: var(--green); }
+.fw-laxis { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted-2); margin-top: 4px; border-top: 1px solid var(--line-2); padding-top: 3px; }
+.fw-lnote { margin: 6px 0 0; font-size: 12px; color: var(--green); }
+.fw-trend { align-self: stretch; display: flex; flex-direction: column; }
+.fw-tbars { flex: 1; min-height: 70px; display: flex; gap: 4px; align-items: stretch; margin-top: 6px; }
+.fw-tb { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; min-width: 0; }
+.fw-tb i { display: block; width: 100%; background: var(--line-3); border-radius: 2px 2px 0 0; min-height: 2px; }
+.fw-tb.now i { background: var(--accent); }
+.fw-tb b { font: 600 11px var(--sans); color: var(--muted); }
+.fw-tb.now b { color: var(--text); }
+.fw-tb small { font-size: 10px; color: var(--muted-2); }
+@media (max-width: 900px) { .fw-depth { grid-template-columns: 1fr 1fr; } .fw-dladder { grid-column: 1 / -1; order: 3; } }
+@media (max-width: 560px) { .fw-depth { grid-template-columns: 1fr; } }

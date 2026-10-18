@@ -1543,6 +1543,45 @@
     const lbl = c.target ? `<span class="fw-tgt-l" style="top:${(ty / H * 100).toFixed(1)}%">${escapeHtml(c.target_is === 'limit' ? 'limit' : 'Buy')} ${fmtYenShort(c.target)}</span>` : '';
     return `<div class="fw-spark-w"><svg class="fw-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${escapeAttr('Lowest PSA10 ask, last 10 days')}">${tgt}<path class="fw-line" d="${line}"/><line class="fw-dot" x1="${x(last[0]).toFixed(1)}" x2="${x(last[0]).toFixed(1)}" y1="${y(last[1]).toFixed(1)}" y2="${y(last[1]).toFixed(1)}"/></svg>${lbl}<span class="fw-sp-cap">lowest ask, last 10 days</span></div>`;
   }
+  // Focus watch: the cheap end of the book (the strongest sign of a turn). A ladder of the 20 cheapest PSA10 asks,
+  // stacked in 0.5% steps above the lowest ask with the 3% zone shaded and the target marked, next to the "within 3%"
+  // count across the last fresh listings reads (focus.py depth.trend).
+  const FOCUS_DEPTH_READ = { deep: ['Deep wall', 'Sellers are undercutting each other: expect a slow drift, no hurry.'],
+    normal: ['Normal depth', 'Neither a wall nor a gap.'], thin: ['Thin wall', 'Few sellers near the lowest ask: a turn can come quickly.'] };
+  function focusDepthHtml(c) {
+    const d = c.depth;
+    if (!d) return '';
+    const lst = d.listings || [], lo = lst.length ? lst[0] : null;
+    const [rd, rdTxt] = FOCUS_DEPTH_READ[d.read] || ['', ''];
+    const delta = d.prev_within3 != null ? d.within3 - d.prev_within3 : null;
+    const dTxt = delta == null ? '' : delta === 0 ? 'same as the previous read' : `${delta > 0 ? '▲' : '▼'} ${Math.abs(delta)} vs the previous read (${d.prev_within3})`;
+    // ladder: buckets of 0.5% from the lowest ask to just past the 20th-cheapest ask (at least +5%)
+    const STEP = 0.5, SPAN = lo ? Math.max(5, Math.ceil((lst[lst.length - 1] / lo - 1) * 100 + 0.5)) : 5, NB = SPAN / STEP;
+    const buckets = Array.from({ length: NB }, () => []);
+    lst.forEach((p) => { const b = Math.min(NB - 1, Math.floor(((p / lo - 1) * 100) / STEP + 1e-9)); buckets[b].push(p); });
+    const tall = Math.max(4, ...buckets.map((b) => b.length));
+    const tgtPct = c.target && lo ? (c.target / lo - 1) * 100 : null;
+    const ladder = lo ? `<div class="fw-ladder" style="--rows:${tall};--cols:${NB}">
+        <div class="fw-zone" style="width:${(3 / (STEP * NB) * 100).toFixed(2)}%"><span>3% zone</span></div>
+        ${buckets.map((b, i) => `<div class="fw-col" title="${escapeAttr(`+${(i * STEP).toFixed(1)}–${((i + 1) * STEP).toFixed(1)}%: ${b.length} ask(s)${b.length ? ' · ' + b.map(fmtYen).join(', ') : ''}`)}">${b.map(() => `<i class="${i * STEP < 3 ? 'in' : ''}"></i>`).join('')}</div>`).join('')}
+        ${tgtPct != null && tgtPct >= 0 && tgtPct <= STEP * NB ? `<div class="fw-ltgt" style="left:${(tgtPct / (STEP * NB) * 100).toFixed(2)}%"><span>${escapeHtml(c.target_is === 'limit' ? 'limit' : 'Buy')}</span></div>` : ''}
+      </div>
+      <div class="fw-laxis"><span>${fmtYen(lo)}</span><span>+${SPAN / 2}%</span><span>+${SPAN}%</span></div>
+      ${tgtPct != null && tgtPct < 0 ? `<p class="fw-lnote">← your ${escapeHtml(c.target_is)} ${fmtYen(c.target)} is ${Math.abs(tgtPct).toFixed(1)}% under the lowest ask: ${d.at_target ? d.at_target + ' ask(s) there' : 'no asks there yet'}</p>` : ''}` : '';
+    const tr = d.trend || [], tmax = Math.max(20, ...tr.map((x) => x.within3));
+    const trend = tr.length > 1 ? `<div class="fw-trend"><span class="lbl">Within 3%, last ${tr.length} reads</span>
+        <div class="fw-tbars">${tr.map((x, i) => `<div class="fw-tb${i === tr.length - 1 ? ' now' : ''}" title="${escapeAttr(`${fmtDateShort(x.as_of)}: ${x.within3} within 3% of ${fmtYen(x.lowest)}`)}"><b>${x.within3}</b><i style="height:${(x.within3 / tmax * 100).toFixed(0)}%"></i><small>${escapeHtml(x.as_of.slice(8, 10))}</small></div>`).join('')}</div></div>` : '';
+    return `<div class="fw-depth fw-d-${escapeAttr(d.read || 'normal')}">
+        <div class="fw-dmain"><span class="lbl">Book depth</span>
+          <div class="fw-dnum"><b>${d.within3}</b><span>of ${d.n} cheapest asks<br>within 3% of the lowest</span></div>
+          ${dTxt ? `<small class="fw-ddelta ${delta < 0 ? 'down' : delta > 0 ? 'up' : ''}">${escapeHtml(dTxt)}</small>` : ''}
+          <p class="fw-dread"><b>${escapeHtml(rd)}.</b> ${escapeHtml(rdTxt)}</p>
+          <small class="fw-dasof">listings read ${escapeHtml(fmtDateShort(d.as_of))} · ${d.within15} within 15%</small>
+        </div>
+        <div class="fw-dladder">${ladder}</div>
+        ${trend}
+      </div>`;
+  }
   function renderFocus(cards) {
     const el = document.getElementById('focus');
     if (!el) return;
@@ -1564,6 +1603,7 @@
             <span class="fw-name"><b class="jp">${escapeHtml(c.short || c.name)}</b><small>${c.until ? `in focus until ${escapeHtml(c.until.slice(5).replace('-', '/'))}` : 'in focus'}</small></span>
             <span class="fw-status ${cls}">${escapeHtml(lbl)}</span>${isNew ? '<span class="sig-new">NEW</span>' : ''}
           </a>
+          ${focusDepthHtml(c)}
           <div class="fw-grid">
             <div class="fw-stat"><span class="lbl">Lowest ask</span><b>${fmtYen(c.ask)}</b><small>${pct(c.ask, c.ask_prev)} since last check · ${pct(c.ask, c.ask_7d)} 7d</small></div>
             <div class="fw-stat"><span class="lbl">Target</span><b>${c.target ? fmtYen(c.target) : '–'}</b><small>${escapeHtml(gap)}</small></div>
@@ -1571,7 +1611,6 @@
           </div>
           ${focusSpark(c)}
           ${sp.length ? `<p class="fw-sales">Sold since last check: ${sp.map((p) => `<span class="${c.target && p <= c.target ? 'hit' : ''}">${fmtYen(p)}</span>`).join(' ')}</p>` : ''}
-          ${d ? `<p class="fw-book">Book: <b>${d.within3}</b> of ${d.n} cheapest asks within 3%${d.prev_within3 != null ? ` (was ${d.prev_within3})` : ''} · ${d.at_target} at/under target</p>` : ''}
           ${(c.flags || []).length ? `<ul class="fw-flags">${c.flags.map((f) => `<li class="${escapeAttr(f.level)}">${escapeHtml(f.text)}</li>`).join('')}</ul>` : ''}
           ${c.note ? `<p class="fw-note">${escapeHtml(c.note)}</p>` : ''}
         </article>`;

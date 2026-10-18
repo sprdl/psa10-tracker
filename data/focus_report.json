@@ -87,9 +87,74 @@
     "within3": 13,
     "within15": 20,
     "at_target": 0,
+    "listings": [
+     61000,
+     61000,
+     61500,
+     61500,
+     61800,
+     61900,
+     61900,
+     62000,
+     62000,
+     62490,
+     62500,
+     62500,
+     62600,
+     62999,
+     63000,
+     63000,
+     63000,
+     63100,
+     63199,
+     63799
+    ],
+    "trend": [
+     {
+      "as_of": "2026-10-13T14:40:39+09:00",
+      "lowest": 66500,
+      "within3": 17
+     },
+     {
+      "as_of": "2026-10-14T08:13:23+09:00",
+      "lowest": 65990,
+      "within3": 14
+     },
+     {
+      "as_of": "2026-10-14T19:23:25+09:00",
+      "lowest": 65500,
+      "within3": 13
+     },
+     {
+      "as_of": "2026-10-15T09:13:14+09:00",
+      "lowest": 65400,
+      "within3": 20
+     },
+     {
+      "as_of": "2026-10-16T09:23:08+09:00",
+      "lowest": 64300,
+      "within3": 16
+     },
+     {
+      "as_of": "2026-10-16T21:27:54+09:00",
+      "lowest": 64000,
+      "within3": 14
+     },
+     {
+      "as_of": "2026-10-17T09:53:53+09:00",
+      "lowest": 63980,
+      "within3": 17
+     },
+     {
+      "as_of": "2026-10-18T07:29:21+09:00",
+      "lowest": 61000,
+      "within3": 13
+     }
+    ],
     "prev_as_of": "2026-10-17T09:53:53+09:00",
     "prev_within3": 17,
-    "prev_lowest": 63980
+    "prev_lowest": 63980,
+    "read": "deep"
    },
    "status": "close",
    "gap_pct": 2.3,
@@ -97,10 +162,6 @@
     {
      "level": "go",
      "text": "1 sale(s) at ≤¥60,000 in the last 24 h (lowest ¥59,900)"
-    },
-    {
-     "level": "info",
-     "text": "Deep wall: 13 of 20 cheapest asks within 3% of the lowest"
     }
    ],
    "headline": "¥61,390 lowest ask (+0.6% since the last check, -9.4% over 7 days); +2.3% to your limit ¥60,000. 4 sale(s) since the last check (¥61,000, ¥61,000, ¥59,900, ¥61,400); 76 in 7 days."

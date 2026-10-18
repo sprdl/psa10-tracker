@@ -37,6 +37,7 @@ CLOSE_PCT = 2.0
 TURN_PCT = 3.0
 DRIFT_PCT = 2.0
 THIN_DROP = 0.4
+DEPTH_READS = 8
 STATUS_TEXT = {"buy_window": "BUY WINDOW", "close": "CLOSE", "turning": "TURNING", "drifting": "DRIFTING DOWN",
                "flat": "FLAT", "no_data": "NO DATA"}
 
@@ -165,17 +166,28 @@ def card_report(root, url, meta, hist, sales_all, manifest, limits):
         depth = {"as_of": as_of or (latest_d or {}).get("collected_at_jst"), "n": len(lst),
                  "within3": sum(1 for p in lst if p <= lo * 1.03), "within15": sum(1 for p in lst if p <= lo * 1.15),
                  "at_target": sum(1 for p in lst if target and p <= target)}
-        cur_as_of = depth["as_of"]
-        for f in reversed(files[:-1]):
+        depth["listings"] = sorted(lst)
+        # the last few distinct fresh listings reads (oldest first): is the wall building or thinning?
+        trend, seen = [], set()
+        for f in reversed(files):
             d, cs = _snap_cards(root, f)
             pl, pas = _listings(cs.get(url))
             pas = pas or (d or {}).get("collected_at_jst")
-            if pl and pas != cur_as_of:
-                plo = min(pl)
-                depth["prev_as_of"] = pas
-                depth["prev_within3"] = sum(1 for p in pl if p <= plo * 1.03)
-                depth["prev_lowest"] = plo
+            if not pl or pas in seen:
+                continue
+            seen.add(pas)
+            plo = min(pl)
+            trend.append({"as_of": pas, "lowest": plo, "within3": sum(1 for p in pl if p <= plo * 1.03)})
+            if len(trend) >= DEPTH_READS:
                 break
+        trend.reverse()
+        depth["trend"] = trend
+        if len(trend) > 1:
+            depth["prev_as_of"] = trend[-2]["as_of"]
+            depth["prev_within3"] = trend[-2]["within3"]
+            depth["prev_lowest"] = trend[-2]["lowest"]
+        w = depth["within3"]
+        depth["read"] = ("deep" if w >= 10 else "thin" if w <= 4 else "normal")
     out["depth"] = depth
 
     # status
@@ -197,8 +209,6 @@ def card_report(root, url, meta, hist, sales_all, manifest, limits):
         flags.append({"level": "go", "text": f"{len(sold_at_target)} sale(s) at ≤¥{target:,} in the last 24 h (lowest ¥{min(sold_at_target):,})"})
     if depth and depth.get("prev_within3", 0) >= 5 and depth["within3"] <= depth["prev_within3"] * (1 - THIN_DROP):
         flags.append({"level": "warn", "text": f"Cheap end thinning: {depth['within3']} asks within 3% of the lowest, down from {depth['prev_within3']}"})
-    if depth and depth["within3"] >= 10:
-        flags.append({"level": "info", "text": f"Deep wall: {depth['within3']} of {depth['n']} cheapest asks within 3% of the lowest"})
     flags += _event_flags(root, set_code(name), now_t)
     if meta.get("until"):
         left = (date.fromisoformat(meta["until"]) - now_t.date()).days
@@ -247,13 +257,14 @@ def print_report(root=ROOT, rep=None):
     rep = rep if rep is not None else _load(root, REPORT, None)
     if not rep or not rep.get("cards"):
         return
-    print("\nFOCUS WATCH (put one line per card in the chat message, status first; flags marked ! too):")
+    print("\nFOCUS WATCH (put one line per card in the chat message, status first, then the BOOK DEPTH line; flags marked ! too):")
     for c in rep["cards"]:
         print(f"  [{STATUS_TEXT.get(c.get('status'), c.get('status'))}] {c['short']}: {c.get('headline', '')}")
         d = c.get("depth")
         if d:
-            prev = f" (previous read {d['prev_within3']})" if d.get("prev_within3") is not None else ""
-            print(f"      book: {d['within3']} asks within 3%{prev}, {d['within15']} within 15%, {d['at_target']} at/under target")
+            tr = " → ".join(str(x["within3"]) for x in d.get("trend", []))
+            print(f"      BOOK DEPTH: {d['within3']} of {d['n']} cheapest asks within 3% of the lowest ({d['read']} wall)"
+                  f"{f'; last reads {tr}' if tr else ''}; {d['within15']} within 15%; {d['at_target']} at/under target")
         for f in c.get("flags", []):
             print(f"      {'!' if f['level'] in ('go', 'warn') else '·'} {f['text']}")
 
