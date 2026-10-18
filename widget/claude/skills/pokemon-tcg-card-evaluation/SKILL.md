@@ -5,6 +5,8 @@ description: "Evaluate a Japanese PSA10 Pokemon card for the PSA10 tracker: buy 
 
 # Pokémon TCG (JP) Card Evaluation Method
 
+*Local copy for Claude Code runs on the Mac (menu bar): commands are written without the repo-finding prefix, and JSON goes through a file in `data/incoming/` instead of a heredoc, so nothing stops for a permission question. Keep the rest in step with the claude.ai skill.*
+
 A repeatable process for evaluating any PSA10 Japanese Pokémon card as a display-plus-investment piece. Built from the Umbreon ex SAR / Pikachu VMAX CSR / Pikachu ex SAR analysis, September 2026, validated on Gengar VMAX SA (SGG 020/019), and extended in October 2026 with sell tiers for owned cards.
 
 **Two kinds of evaluation:**
@@ -13,13 +15,13 @@ A repeatable process for evaluating any PSA10 Japanese Pokémon card as a displa
 
 Check ownership first. With the computer linked, one `device_bash` call:
 ```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && git pull --ff-only -q; python3 -c "import json;[print(h['id'],h['card_url'],h['condition'],h['purchase_price_jpy'],h.get('grading_fee_jpy',0)+h.get('shipping_insurance_jpy',0),h['purchase_date']) for h in json.load(open('data/holdings.json'))['holdings']]"
+python3 -c "import json;[print(h['id'],h['card_url'],h['condition'],h['purchase_price_jpy'],h.get('grading_fee_jpy',0)+h.get('shipping_insurance_jpy',0),h['purchase_date']) for h in json.load(open('data/holdings.json'))['holdings']]"
 ```
 A copy with condition `graded_other` came back below a 10 and isn't a PSA10 position: it needs no sell tiers. For break-even, `eval_context.py` prints the cost basis the site uses (grading counts once a copy is sent). An owned card gets the sell evaluation; do the buy part too only when the price check also asks for it (EVALUATE NOW / review due / verdict refresh), or the user wants to buy another copy.
 
 **Inside a price check (EVALUATE NOW, SELL TIERS NOW, REVIEW DUE NOW).** The price check calls this skill for new cards (added or restored in that same run), cards whose PSA10 market just formed, and cards due for review. It must finish in that run: don't stop to ask whether to evaluate, and don't hand it back as an optional next step. Start with one `device_bash` call:
 ```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && python3 scripts/eval_context.py <snkrdunk_id>
+python3 scripts/eval_context.py <snkrdunk_id>
 ```
 It prints what the run already collected and what the repo knows: lowest asks, depth, one-copy sales and sales per day for PSA10 and raw A, the raw A-rank price (the rule below), population and gem rate, DIY cost, ownership with the cost basis and break-even, slab premium, hype exposure, age and age-curve drift, our tracked price range, the current analysis, the My-tier index (7- and 30-day change, correction rule, rally flag), the pokeca-chart index, the event window, and limit-odds for the current tiers. Add `--odds <price> <price>…` to get 30/90-day odds for candidate tier prices. Use it for steps 2–4 and the reachability check instead of reading those pages again. Only fetch what it can't give: the peak-month median and longer price history (SNKRDUNK 売買履歴, pokeca-chart), set and release details, and, for a card a quick check just added, its listing depth (`pricecheck/scripts/snkrdunk_listings.js` on the listings page) and its PSA pop page (FULL-CHECK step 1c). Then go through steps 1–8 as usual; step 8 applies the result and takes the card off the evaluation queue.
 
@@ -47,7 +49,7 @@ Population counts only reflect what's already graded and returned — not true s
 - **Anniversary/event calendar** — is a hype-driving event (anniversary, new set, regulation news) approaching or just passed? Check whether unrelated cards/sets peaked in the same month — that pattern signals a single speculative narrative rather than card-specific fundamentals. If a card's own drawdown is *steeper* than the broad index's, say so explicitly — it means the card ran up harder than the market or is a bigger target for profit-taking. The tracker's `data/events.json` lists dated releases.
 - **My-tier index** (the tracker's own equal-weighted index of 22 modern SAR/alt-art PSA10s, the tier actually being bought) — its 30-day change feeds the correction rule and its 7-day change the rally flag in step 7. `eval_context.py` prints both; without it, one `device_bash` call reads the 30-day change:
   ```
-  R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && git pull --ff-only -q; python3 -c "import json,datetime as D;s=json.load(open('data/custom_index.json'))['series'];l=s[-1];t=(D.date.fromisoformat(l['d'])-D.timedelta(30)).isoformat();o=[e for e in s if e['d']<=t];print(l['d'],l['level'],'30d:',f\"{(l['level']/o[-1]['level']-1)*100:+.1f}%\" if o else 'n/a (under 30 days of data)')"
+  python3 -c "import json,datetime as D;s=json.load(open('data/custom_index.json'))['series'];l=s[-1];t=(D.date.fromisoformat(l['d'])-D.timedelta(30)).isoformat();o=[e for e in s if e['d']<=t];print(l['d'],l['level'],'30d:',f\"{(l['level']/o[-1]['level']-1)*100:+.1f}%\" if o else 'n/a (under 30 days of data)')"
   ```
 - **Upcoming events in the next ~3 days** — a major set or anniversary product release, a Pokémon Presents / product announcement, a PSA service or price change. Needed for the event rule in step 7 (confirmed on our own snapshots on 2026-10-02: keep it).
 - **Historical analog** — for anniversary-driven moves, the prior cycle (e.g. 25th anniversary → 30th anniversary) is a useful calibration tool: typical peak-to-trough give-back and typical time-to-floor
@@ -175,10 +177,9 @@ Field rules — get these right, since the app trusts this JSON as human judgmen
 
 **If the linked computer is available** (the `mcp__remote-devices__*` tools work), one `device_bash` call. Key the JSON by the card's **SNKRDUNK URL**, not its name, since similar names collide (V CSR vs. VMAX CSR, ゲッコウガ vs. メガゲッコウガ); several cards go in one object. Build the JSON with `json.dumps` or check it with `python3 -m json.tool` before applying (hand-typed JSON has lost a closing brace before), and preview with `--dry-run` when it's a new card or new sell tiers:
 ```
-R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | head -1); cd "$R" && python3 scripts/apply_analysis.py - <<'JSON' 2>&1 | tail -30
-{"https://snkrdunk.com/apparels/<id>": {<Part B>}}
-JSON
+python3 scripts/apply_analysis.py - < data/incoming/apply_analysis-in.txt 2>&1 | tail -30
 ```
+after saving `{"https://snkrdunk.com/apparels/<id>": {<Part B>}}` with the **Write** tool to `data/incoming/apply_analysis-in.txt` (never a heredoc in a local run: a long command can't be pre-approved and would stop the run for a permission question).
 `apply_analysis.py` pulls, matches by URL, validates the tiers, sell tiers, tags and predictions, and merges over the existing analysis, keeping fields you didn't send (a sell-only evaluation leaves the buy tiers and buy verdict alone). It dates new verdicts, rebuilds the price-history index and the track record, takes the card off the evaluation queue (`data/eval_queue.json`) when a buy verdict was applied, and commits and pushes, using the repo's own credential file. Inside a price-check run (the run clock is running) it only commits, and the price check's `runclock.py end` pushes everything at once; run on its own, it pushes right away. Never put a token in a command. It stops rather than guessing if the card isn't on the tracker or the JSON is invalid. If it warns that the reasoning states odds but `predictions` is missing, add them and re-run. If git fails with a `.lock` "File exists" / "Operation not permitted" error, call `device_request_delete_permission` for the connected folder once, remove the stale lock and re-run.
 
 In the chat, give one line per card with the result, including how many predictions were recorded, e.g. "Applied: Watch → Buy (live zone: Buy), 2 predictions recorded" or "Sell tiers for Umbreon: take profit ≥¥95k, sell ≥¥120k (Hold, +¥3k net today)". If it printed a note that the written verdict differs from the live price zone, pass that on. If the card isn't in the latest snapshot yet, `apply_analysis.py` stops: a card added by a request appears once a price check publishes it (the price check does that before it evaluates). For a card that isn't tracked at all, point to the site's **+ Add card** button; the next price check adds it and evaluates it in the same run.

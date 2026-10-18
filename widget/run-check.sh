@@ -77,9 +77,14 @@ export PSA10_RUN=1   # the hooks only act inside widget runs
   done
 ) &
 
-prompt="Run a $mode price check on my tracked cards with the pokemon-card-price-check skill. This is a local Claude Code run in the repo root, already pulled: follow CLAUDE.md for how the skill's tools map here. Your first Bash call is exactly: python3 pricecheck/start.py --mode $mode   Write every later command the same way, without the skill's R=\$(ls -d …); cd \"\$R\" && prefix (a command with \$(…) stops the run for a permission question). Don't ask whether to start; the run was requested from the menu bar."
+prompt="Run a $mode price check on my tracked cards with the pokemon-card-price-check skill. This is a local Claude Code run in the repo root, already pulled: follow CLAUDE.md for how the skill's tools map here. Your first Bash call is exactly: python3 pricecheck/start.py --mode $mode   Write every later command the same way, without the skill's R=\$(ls -d …); cd \"\$R\" && prefix (a command with \$(…) stops the run for a permission question). Don't ask whether to start; the run was requested from the menu bar. Unattended: never ask me anything unless the check genuinely can't go on (PSA sign-in, a Cloudflare check, a site down); a tool call answered with a permission denial is not allowed here, so don't retry it in another form: use the way CLAUDE.md describes, or skip that step and name it in the chat message."
 
-"$CLAUDE_BIN" --chrome --model "$model" --permission-mode acceptEdits --session-id "$session" "$prompt"
+# dontAsk: anything .claude/settings.json doesn't allow is refused instead of asked, so a run you started never stops
+# for a permission question; the run reports a refused step in its chat message. Older Claude Code versions without
+# that mode fall back to acceptEdits (file edits in the repo go through, other unlisted actions still ask).
+perm=acceptEdits
+"$CLAUDE_BIN" --help 2>/dev/null | grep -q dontAsk && perm=dontAsk
+"$CLAUDE_BIN" --chrome --model "$model" --permission-mode "$perm" --session-id "$session" "$prompt"
 
 if [ -f "$STATE/done" ]; then
   summary=$(python3 -c 'import json,sys

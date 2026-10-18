@@ -35,6 +35,19 @@ class LocalProcedure(unittest.TestCase):
                 self.assertNotIn('"$R"/', text)
                 self.assertIn("python3 scripts/runclock.py end", text)   # the command itself survives
 
+    def test_local_run_has_no_heredoc(self):
+        # a long heredoc can't be pre-approved (Claude Code's checker gives up: "Parser aborted … over-length"),
+        # so locally the lines go to data/incoming/<script>-in.txt and the command reads them with `< file`
+        start = self.load("1")
+        files = [ROOT / "pricecheck" / n for n in ("FULL-CHECK.md", "QUICK-CHECK.md")] + sorted((ROOT / "pricecheck" / "steps").glob("*.md"))
+        for f in files:
+            text = start.local(f.read_text(encoding="utf-8"))
+            with self.subTest(file=f.name):
+                self.assertNotIn("<<'", text)
+                self.assertNotIn("$(", text)
+        q = start.local((ROOT / "pricecheck" / "QUICK-CHECK.md").read_text(encoding="utf-8"))
+        self.assertIn("python3 scripts/quick_update.py - < data/incoming/quick_update-in.txt 2>&1 | tee", q)
+
     def test_desktop_run_unchanged(self):
         start = self.load("")
         text = (ROOT / "pricecheck" / "FULL-CHECK.md").read_text(encoding="utf-8")

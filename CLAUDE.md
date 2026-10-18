@@ -18,7 +18,8 @@ clone fallback: the repo is right here.
 | `navigate` | `mcp__claude-in-chrome__navigate` |
 | `ToolSearch select:mcp__remote-devices__Claude_Browser__…` | load the `mcp__claude-in-chrome__` equivalents instead, if they're deferred |
 | "load the `pokemon-tcg-card-evaluation` skill with the Skill tool" | same: it's a project skill here |
-| a command with a heredoc (`… <<'EOF'` + lines + `EOF`), e.g. publishing with `quick_update.py -` / `full_update.py -`, `hype.py --ref -`, `set_insight.py`, `set_story.py` | **never a heredoc here.** First save the lines with the **Write** tool to `data/incoming/<step>-in.txt` (e.g. `data/incoming/quick-in.txt`; the folder is git-ignored, and Write needs no confirmation), then run the same command reading that file: `python3 scripts/quick_update.py - < data/incoming/quick-in.txt 2>&1 \| tee data/incoming/quick-update.log \| tail -50`. A long heredoc is too long for Claude Code's command checker ("Parser aborted … over-length"), so it can't be matched against the allow list and asks for confirmation every run |
+| a command with a heredoc (`… <<'EOF'` + lines + `EOF`), e.g. publishing with `quick_update.py -` / `full_update.py -`, `apply_analysis.py -`, `hype.py --ref -`, `set_insight.py`, `set_story.py`, `recap.py save -` | **never a heredoc here.** First save the lines with the **Write** tool to `data/incoming/<script>-in.txt` (git-ignored), then run the same command reading that file: `python3 scripts/quick_update.py - < data/incoming/quick_update-in.txt 2>&1 \| tee data/incoming/quick-update.log \| tail -50`. A long heredoc is too long for Claude Code's command checker ("Parser aborted … over-length"; anything over 10,000 characters always), so it can't be pre-approved. `start.py` prints the procedures already rewritten this way; read step files with `python3 pricecheck/start.py --show pricecheck/steps/<file>` to get them rewritten too |
+| `WebSearch` / `WebFetch` (stories, insights, Monday calendar, PSA backlog, weekly recap) | allowed as they are |
 | delete permission / stale `.git/*.lock` files | not an issue locally: git removes its own locks. If git says a lock file exists and no other git is running, `rm -f` that lock |
 
 **Tabs (full check).** Open the three tabs (S, P, K) right at the start: `tabs_context_mcp` with
@@ -36,6 +37,8 @@ in case the old markup comes back), commit, then re-print the calls with
 Everything else in the procedures applies unchanged: paste the `jsrun.py` browser calls verbatim,
 one price check at a time, never type credentials, PSA sign-in or a Cloudflare check → ask me.
 Close the tabs you opened when the run ends.
+
+**Unattended: nothing may ask.** The menu bar starts the run with `--permission-mode dontAsk` (`acceptEdits` on an older Claude Code): every tool call `.claude/settings.json` doesn't allow is refused instead of asked. A refused call means the command has a form the run doesn't use (a heredoc, `$(…)`, `"$HOME"`, `find … -delete`, `curl`): don't retry it in another shape; use the form above, or skip that step and name it in the chat message. Don't use AskUserQuestion. Stop and say what you need only when the check genuinely can't go on (PSA sign-in, a Cloudflare check, a site down). To wait, use the POLL calls, not `sleep`.
 
 **Finishing.** Run `python3 scripts/runclock.py end` after the last follow-up: it also pushes everything the
 follow-ups committed during the run (they don't push on their own while the run clock runs). End with the

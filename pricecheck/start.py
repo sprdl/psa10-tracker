@@ -29,12 +29,37 @@ PREFIX = re.compile(r'R=\$\(ls -d "\$HOME"/mnt/\*/psa10-tracker[^;]*;\s*cd "\$R"
 CD_R = re.compile(r'cd "\$R"\s*(?:&&|;)\s*')
 
 
+# A heredoc (`cmd <<'EOF'` + lines + `EOF`) makes the command long and hard to parse: Claude Code's permission check gives
+# up on it ("Parser aborted … over-length", always above 10,000 characters), so it can't match the allow list and asks.
+# Locally the lines go into a file with the Write tool and the command reads it with `< file` (2026-10-18).
+FENCED_HEREDOC = re.compile(r"(?ms)^```[a-z]*\n(?P<cmd>[^\n]*?)\s*<<'(?P<tag>\w+)'(?P<rest>[^\n]*)\n(?P<body>.*?)\n(?P=tag)\n```")
+INLINE_HEREDOC = re.compile(r"`(?P<cmd>[^`]*?(?P<stem>\w+)\.py[^`]*?)\s*<<'(?P<tag>\w+)'`")
+
+
+def _stem(cmd):
+    m = re.findall(r"(\w+)\.py", cmd)
+    return m[-1] if m else "input"
+
+
+def no_heredocs(text):
+    def fenced(m):
+        f = f"data/incoming/{_stem(m['cmd'])}-in.txt"
+        return (f"First save these lines, verbatim, with the **Write** tool to `{f}`:\n```\n{m['body']}\n```\n"
+                f"then run (one Bash call):\n```\n{m['cmd'].rstrip()} < {f}{m['rest']}\n```")
+    text = FENCED_HEREDOC.sub(fenced, text)
+    text = INLINE_HEREDOC.sub(lambda m: f"`{m['cmd'].rstrip()} < data/incoming/{m['stem']}-in.txt` (save the lines to that file with the Write tool first)", text)
+    # the leftover "+ the lines verbatim + `EOF`" / "… `EOF`" after an inline heredoc
+    text = re.sub(r"\s*(?:\+ the lines verbatim \+|…)\s*`(?:EOF|JSON)`", "", text)
+    return text.replace("into a heredoc", "into a file (Write tool)").replace("with a heredoc", "with the Write tool")
+
+
 def local(text):
     if not LOCAL:
         return text
     # section 0 (delete permission for the desktop app's mounted folder) doesn't apply on the Mac itself
     text = re.sub(r"(?ms)^## 0\. .*?(?=^## )", "", text)
-    return CD_R.sub("", PREFIX.sub("", text)).replace('"$R"/', "").replace("$R/", "")
+    text = CD_R.sub("", PREFIX.sub("", text)).replace('"$R"/', "").replace("$R/", "")
+    return no_heredocs(text)
 
 
 def sh(*cmd):
@@ -47,6 +72,9 @@ def sh(*cmd):
 
 def main():
     a = sys.argv[1:]
+    if a[:1] == ["--show"] and len(a) == 2:   # a step file, as a local run should read it
+        print(local((ROOT / a[1]).read_text(encoding="utf-8")).rstrip("\n"))
+        return
     asked = None
     for i, x in enumerate(a):
         if x == "--mode" and i + 1 < len(a):
@@ -73,8 +101,11 @@ def main():
     if LOCAL:
         print("LOCAL RUN (menu bar widget): the working directory is the repo root and was just pulled. Run every command "
               "exactly as printed here, one plain command per Bash call: no R=$(ls -d …); cd \"$R\" && prefix, no $(…), no \"$HOME\". "
-              "When a step file or skill shows that prefix, leave it out. Those forms can't be pre-approved, so each one "
-              "stops the run for a permission question.\n")
+              "When a step file or skill shows that prefix, leave it out. Never use a heredoc (<<'EOF' … EOF): save the lines "
+              "with the Write tool to data/incoming/<script>-in.txt and run the command with `< data/incoming/<script>-in.txt`. "
+              "Read a step file through the same filter: python3 pricecheck/start.py --show pricecheck/steps/<file>. "
+              "This run can't ask for permission: anything not pre-approved is refused, so a refused call means "
+              "the command has the wrong form, not that you should retry it differently.\n")
     print(local(doc.read_text(encoding="utf-8").rstrip("\n")))
     print("\n======== today's setup output ========\n")
     if mode == "full":
