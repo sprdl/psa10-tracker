@@ -1084,8 +1084,7 @@ is unreachable, nothing is shown.
 `--panel`, `--band`, `--ghost #7c5cc4`, `--holo`, `--holo-line`); `--display` is now Barlow Condensed (numbers, titles, labels;
 only weight 600 is loaded) and `--logo` is Bebas Neue for the wordmark. The block at the end of the file restyles the sidebar (brand-coloured group labels, a holo
 right edge), adds the panel header bands, keeps the holo finish for the
-strongest signals, and fades watchlist rows by `--fade` (`wlFade()` in `app.js`: distance from the lowest ask to your limit, else
-the Buy line). Phones keep the mobile bar and bottom tab bar.*
+strongest signals. Phones keep the mobile bar and bottom tab bar.*
 
 - **Tokens first.** The `:root` block at the top defines every colour, both fonts and
   the corner radius. To change the accent colour, change `--accent` (and `--accent-2`
