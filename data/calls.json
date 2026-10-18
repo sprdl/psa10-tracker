@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 111,
+  "odds_open": 113,
   "odds_early_yes": 8,
   "model_odds": {
    "logged": 193,
@@ -429,8 +429,8 @@
    "name": "カイリューV SR: SA[S7R 074/067](拡張パック「蒼空ストリーム」)",
    "tag": "dont_buy",
    "label": "Don't buy: at a new high after a +50% fortnight",
-   "latest_label": "Don't buy: at a new high after a +50% fortnight",
-   "reaffirmed": 0,
+   "latest_label": "Don't buy — ask ¥169k, sales ¥147-170k, above the ¥155k ceiling",
+   "reaffirmed": 1,
    "made": "2026-10-10T22:58:10+09:00",
    "price": 148000,
    "window_end": "2026-11-09T22:58:10+09:00",
@@ -1909,6 +1909,21 @@
    "gap_pct": -8.3
   },
   {
+   "url": "https://snkrdunk.com/apparels/91166",
+   "name": "カイリューV SR: SA[S7R 074/067](拡張パック「蒼空ストリーム」)",
+   "text": "A PSA10 listing at ≤¥140k (Buy) within 30 days",
+   "p": 0.18,
+   "type": "touch_below",
+   "price": 140000,
+   "by": "2026-11-18",
+   "made": "2026-10-19T08:04:19+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 169000,
+   "final": false,
+   "gap_pct": -17.2
+  },
+  {
    "url": "https://snkrdunk.com/apparels/387059",
    "name": "ゲンガー&ミミッキュGX RR [SM9 038/095](拡張パック「タッグボルト」)",
    "text": "Reaches Buy (≤¥38k) within 3 months",
@@ -3122,6 +3137,21 @@
    "now": 143000,
    "final": false,
    "gap_pct": -30.1
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/91166",
+   "name": "カイリューV SR: SA[S7R 074/067](拡張パック「蒼空ストリーム」)",
+   "text": "A PSA10 listing at ≤¥125k (Definitely buy) within 90 days",
+   "p": 0.16,
+   "type": "touch_below",
+   "price": 125000,
+   "by": "2027-01-17",
+   "made": "2026-10-19T08:04:19+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 169000,
+   "final": false,
+   "gap_pct": -26.0
   },
   {
    "url": "https://snkrdunk.com/apparels/776365",
