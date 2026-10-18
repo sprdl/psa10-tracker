@@ -1,6 +1,6 @@
 {
  "about": "Raw cards from the physical binder (scanned once on 2026-10-18), priced weekly on Mondays as A-rank raw copies (scripts/raw_price.py). Owned cards: no limit, no Buy signal. Written by scripts/binder.py; see its docstring.",
- "updated": null,
+ "updated": "2026-10-18T17:20:48+09:00",
  "cards": [
   {
    "id": "sv2a-168",
@@ -12,8 +12,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "128084",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 4200,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 4200,
+   "sales": [
+    4000,
+    4000,
+    4000,
+    4500,
+    4500
+   ]
   },
   {
    "id": "sv2a-170",
@@ -25,8 +38,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "128086",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 3500,
+   "date": "2026-10-18",
+   "basis": "sales",
+   "ask": 3333,
+   "sales": [
+    3500,
+    3400,
+    3400,
+    3500,
+    4000
+   ]
   },
   {
    "id": "sv2a-166",
@@ -38,8 +64,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "128082",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 3000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 3000,
+   "sales": [
+    2980,
+    3000,
+    2950,
+    3000,
+    3000
+   ]
   },
   {
    "id": "sv2a-175",
@@ -51,8 +90,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "128091",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 3400,
+   "date": "2026-10-18",
+   "basis": "sales",
+   "ask": 3350,
+   "sales": [
+    3500,
+    3400,
+    3300,
+    3500,
+    3000
+   ]
   },
   {
    "id": "sv8a-222",
@@ -64,8 +116,18 @@
    "rarity": "SAR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "466511",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1250,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1250,
+   "sales": [
+    1600,
+    1000
+   ]
   },
   {
    "id": "sv8a-218",
@@ -77,8 +139,17 @@
    "rarity": "SAR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "466510",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 2700,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 2700,
+   "sales": [
+    3000
+   ]
   },
   {
    "id": "m6a-151",
@@ -91,8 +162,21 @@
    "qty": 1,
    "condition": "A",
    "reprint_30th": true,
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "892649",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1180,
+    1150
+   ]
   },
   {
    "id": "m6a-163",
@@ -105,8 +189,21 @@
    "qty": 1,
    "condition": "A",
    "reprint_30th": true,
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "886018",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1700,
+   "date": "2026-10-18",
+   "basis": "sales",
+   "ask": 1600,
+   "sales": [
+    1700,
+    1700,
+    1800,
+    1650,
+    1800
+   ]
   },
   {
    "id": "m6a-161",
@@ -119,8 +216,21 @@
    "qty": 1,
    "condition": "A",
    "reprint_30th": true,
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "892658",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-055",
@@ -132,8 +242,17 @@
    "rarity": "RR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "892589",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000
+   ]
   },
   {
    "id": "m6a-076",
@@ -145,8 +264,19 @@
    "rarity": "RR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "892610",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-081",
@@ -158,8 +288,15 @@
    "rarity": "RR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "892615",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": []
   },
   {
    "id": "m6a-110",
@@ -171,8 +308,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "891187",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-117",
@@ -184,8 +334,21 @@
    "rarity": "AR",
    "qty": 2,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "892717",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-118",
@@ -197,8 +360,18 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "891190",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-104",
@@ -210,8 +383,20 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "891182",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-123",
@@ -223,8 +408,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "891191",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-106",
@@ -236,8 +434,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "882272",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-105",
@@ -249,8 +460,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "891183",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-107",
@@ -262,8 +486,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "891184",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000
+   ]
   },
   {
    "id": "m6a-108",
@@ -275,8 +512,21 @@
    "rarity": "AR",
    "qty": 1,
    "condition": "A",
-   "snkrdunk_id": null,
-   "image_url": null
+   "snkrdunk_id": "891185",
+   "image_url": null,
+   "prev_price": null,
+   "prev_date": null,
+   "price": 1000,
+   "date": "2026-10-18",
+   "basis": "ask",
+   "ask": 1000,
+   "sales": [
+    1000,
+    1000,
+    1000,
+    1000,
+    1000
+   ]
   }
  ]
 }
