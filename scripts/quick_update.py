@@ -171,10 +171,21 @@ def decode_compact(text):
     return {"mode": "quick", "cards": cards}
 
 
+DIFF = {"base": None, "seen": False}   # the sales-diff base to save once the run is published (scripts/salesdiff.py)
+
+
 def load_raw(path):
     text = sys.stdin.read() if path == "-" else Path(path).read_text(encoding="utf-8")
     if text.lstrip().startswith("{"):
         return json.loads(text), None
+    import salesdiff   # the POLL sends lists as a diff against the previous run, ending with a #B line: rebuild them
+    try:
+        text, DIFF["base"], DIFF["seen"], notes = salesdiff.process(text, Path(__file__).resolve().parent.parent)
+    except salesdiff.DiffError as e:
+        die(f"the SNKRDUNK lines' diff can't be rebuilt ({e}); nothing was published.\n"
+            + salesdiff.FALLBACK.format(name="snkrdunk_quick"))
+    for n in notes:
+        print(f"note: {n}")
     decoded = decode_compact(text)
     return decoded, text
 
@@ -350,6 +361,8 @@ def main():
     r = subprocess.run([sys.executable, str(root / "scripts" / "add_snapshot.py"), str(built), *passthrough], cwd=root)
     if r.returncode == 0:
         sys.path.insert(0, str(root / "scripts"))
+        import salesdiff
+        salesdiff.save(root, DIFF["base"], DIFF["seen"])
         import runclock
         runclock.lap("published")
         sys.path.insert(0, str(root / "scripts"))

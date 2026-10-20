@@ -295,6 +295,19 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    and asks for the STORE call, which checks its own pasted text before saving. If a site blocks it,
    `jsrun.py inline <name>` prints the filled-in script to paste directly, as before.
    `tests/test_jsrun.py` checks in Node that what runs is byte-for-byte the filled-in script.
+   Since 2026-10-20 the runner doing those checks (`pricecheck/runner.js`) is cached as well (`pc:run`,
+   `jsrun.py store runner` once per site and version, answered by `NEED_RUNNER`), so a RUN call is a short
+   prefix that checks the runner's SHA-256 plus today's argument values, hashes go as 16 hex digits, and
+   the POLL is `await globalThis.__pcpoll('<global>')`. For `snkrdunk_quick` / `snkrdunk_full` the POLL
+   sends each card's sales and listing lists as a diff against the previous run's lines (runs of entries
+   that stand in the previous list become `<start>.<count>`), ending with `#B <mode> <base> <hash>`:
+   `scripts/salesdiff.py` rebuilds the exact lines inside `quick_update.py` / `full_update.py`, checks
+   them against that hash and keeps the base in `data/incoming/snk-base.json` (the page keeps the same
+   in `pc:base`; jsrun.py passes the file's hash, so the page only diffs when both match, and anything
+   that doesn't add up makes the next run send whole lines and start over). A diff that can't be rebuilt
+   publishes nothing; `jsrun.py poll <name> --full` then returns the lines undiffed. On the last 16 runs
+   the diffed lines were about 31% of the whole ones, the text Claude retypes into the publish step.
+   `tests/test_salesdiff.py` runs the page side in Node against real data and checks the round trip.
    `snkrdunk_full.js` waits for two identical sorted, unsold readings instead of fixed pauses. It skips a card's
    A-rank listings page when the A tile still shows the lowest ask of the last list read (`plan.py`'s
    `a_carry_price`, the fourth field of a plan line; never on Mondays, never when that list is 3+ days old):
@@ -1176,6 +1189,7 @@ with a docstring explaining its usage. Open the file and read the top.
 | `add_snapshot.py` | publishing an assembled snapshot (called by the two above) |
 | `freshness.py` | listing which data sources are older than their cadence |
 | `runclock.py` | the run clock: `start`, `end` (prints the run time and pushes the follow-ups; `quick_update.py` calls it itself when no follow-ups or retries are left, and a repeated `end` repeats the line), `history` |
+| `salesdiff.py` | (library) rebuilds the SNKRDUNK lines the POLL sends as a diff against the previous run, checks them, keeps the base (`data/incoming/snk-base.json`) |
 | `deferpush.py` | (library) commit without pushing while a run clock is running; `runclock.py end` pushes |
 | `site_bundle.py` | building `_site/` for the deploy (run by `deploy.yml`; `python3 scripts/site_bundle.py` to try it) |
 

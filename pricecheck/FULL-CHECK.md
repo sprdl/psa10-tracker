@@ -69,8 +69,14 @@ The scripts' text is kept in each site's own browser storage (`localStorage`, ke
 a run pastes short RUN calls instead of the scripts. Every RUN call checks the cached text's SHA-256
 against the repo version, fills in today's arguments, checks the SHA-256 of the filled-in script
 against the one `jsrun.py` computed, and only then runs it. What runs is therefore byte-for-byte the
-script the old procedure pasted, or nothing runs. Responses:
+script the old procedure pasted, or nothing runs. Since 2026-10-20 the runner that does these checks
+is cached too (key `pc:run`), so a RUN call is a short prefix plus today's arguments, and the POLL call
+is a one-liner. Responses:
 - `started …` or result lines: it ran. Carry on.
+- `NEED_RUNNER (…)`: nothing ran (first run on this site since the change, a new runner version, or cleared
+  site data). One `device_bash` call: `cd "$R" && python3 pricecheck/jsrun.py store runner`, paste the STORE
+  call it prints on the same tab (`stored runner …`), then the same RUN call again (it may then answer
+  `NEED_SCRIPT`, below). With `(site storage unavailable …)` or `EVAL_BLOCKED runner`: as `EVAL_BLOCKED` below.
 - `NEED_SCRIPT <name> (…)`: nothing ran (first use on this site, a new script version, or cleared site
   data). One `device_bash` call: `cd "$R" && python3 pricecheck/jsrun.py store <name>`, paste the STORE
   call it prints into `javascript_tool` on the same tab (it answers `stored <name> …`), then paste the
@@ -82,6 +88,14 @@ script the old procedure pasted, or nothing runs. Responses:
 - `RUNNER ERROR …`: the call was altered or the repo changed under it. Re-print the calls
   (`python3 pricecheck/jsrun.py full`) and use the new ones; never edit a call by hand.
 - `SCRIPT ERROR …`: the script itself failed; treat it like a failed script (step 7, "If a whole script fails").
+
+**SNKRDUNK lines come as a diff.** The `snkrdunk_full` (and the quick check's `snkrdunk_quick`) POLL writes each
+card's sales and listing lists against the previous run's lines (e.g. `P^3.10,39480@261015,14.6`) and ends
+with one `#B <mode> <base> <hash>` line. Pass them along exactly like the other lines, the `#B` line included,
+in the order returned: `scripts/salesdiff.py` (inside the publish step) rebuilds the full lines and checks them
+against the page's hash. If the publish step says the diff can't be rebuilt, print the full POLL with
+`python3 pricecheck/jsrun.py poll snkrdunk_full --full`, paste it on tab S (it returns the same lines undiffed,
+plus the `#B` line) and publish with those lines instead.
 
 ## 2–4. Browser reads: the three sites at the same time, one tab each
 
@@ -165,7 +179,7 @@ a line `VOL psa10 {"volume_trend": "...", "volume_note": "..."}` (or `VOL raw �
 
 ## 7. Publish (one `device_bash` call)
 
-Paste every line from steps 2, 2b, 3 and 4 (including the `PREM`, `SCP` and `SC` lines; plus `TIER`, `VOL` and a `NOTE <text>` line for anything
+Paste every line from steps 2, 2b, 3 and 4 (including SNKRDUNK's `#B` line and the `PREM`, `SCP` and `SC` lines; plus `TIER`, `VOL` and a `NOTE <text>` line for anything
 unusual worth recording, all optional) verbatim into a heredoc:
 
 ```

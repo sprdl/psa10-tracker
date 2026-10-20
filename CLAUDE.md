@@ -40,7 +40,8 @@ SNKRDUNK and the run took 22 minutes. Say in the chat message that only two tabs
 **A page script that reads nothing** (every listing empty, a "not found" error on every card): the site
 changed its markup. Fix the selectors in `pricecheck/scripts/`, keeping the old ones as a fallback
 in case the old markup comes back), commit, then re-print the calls with
-`python3 pricecheck/jsrun.py full` (new hashes; the RUN answers `NEED_SCRIPT`, so STORE it first).
+`python3 pricecheck/jsrun.py full` (new hashes; the RUN answers `NEED_SCRIPT`, so STORE it first). A changed
+`pricecheck/runner.js` likewise answers `NEED_RUNNER` once per site: `python3 pricecheck/jsrun.py store runner`.
 
 Everything else in the procedures applies unchanged: paste the `jsrun.py` browser calls verbatim,
 one price check at a time, never type credentials, PSA sign-in or a Cloudflare check → ask me.

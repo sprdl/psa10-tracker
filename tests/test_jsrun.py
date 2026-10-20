@@ -4,7 +4,9 @@ Checks pricecheck/jsrun.py's browser calls in Node (a VM context standing in for
 - a RUN call with nothing cached runs nothing and asks for the STORE call;
 - a STORE call with a damaged text is refused; the real one is stored;
 - a RUN call then evaluates exactly the filled-in script `jsrun.py inline <name>` prints (byte for byte);
-- a cached copy of another version is not run; a corrupted argument line is not run.
+- a cached copy of another version is not run; a corrupted argument line is not run;
+- (since 2026-10-20) the runner itself is cached: a RUN call with no runner, or another runner version, asks
+  for `jsrun.py store runner`, and the POLL call answers like the old inline one.
 
     python3 tests/test_jsrun.py        (needs node)
 """
@@ -24,14 +26,17 @@ const store = new Map();
 const evaluated = [];
 const ctx = vm.createContext({
   localStorage: { getItem: k => store.has(k) ? store.get(k) : null, setItem: (k, v) => store.set(k, String(v)) },
-  location: { host: 'test.example' }, crypto: globalThis.crypto, TextEncoder,
-  eval: src => { evaluated.push(src); return 'ran'; },
+  location: { host: 'test.example' }, crypto: globalThis.crypto, TextEncoder, setTimeout,
+  __wsleep: () => Promise.resolve(),   // the POLL's wait, instant here
+  // the cached runner is really evaluated; a script is only recorded (what would have run)
+  eval: src => src.startsWith('/*pc-runner*/') ? vm.runInContext(src, ctx) : (evaluated.push(src), 'ran'),
 });
 const run = (code) => vm.runInContext('(async()=>{ return ' + code + ' })()', ctx);
 (async () => {
   const out = [];
   for (const c of calls) {
-    if (c.op === 'tamper') { store.set('pc:js:' + c.name, store.get('pc:js:' + c.name) + ' '); out.push('tampered'); continue; }
+    if (c.op === 'tamper') { const k = c.name === 'runner' ? 'pc:run' : 'pc:js:' + c.name; store.set(k, store.get(k) + ' '); out.push('tampered'); continue; }
+    if (c.op === 'fake') { vm.runInContext(`globalThis.${c.g} = ${JSON.stringify(c.q)}`, ctx); out.push('faked'); continue; }
     if (c.op === 'evaluated') { out.push(evaluated.length ? evaluated[evaluated.length - 1] : null); continue; }
     out.push(String(await run(c.code)));
   }
@@ -52,16 +57,19 @@ def corrupt_arg(run, name):
     if not args:
         return run
     a = args[0]
-    assert run.count(f"const {a} = ") == 1, "argument line should appear once in a RUN call"
-    return run.replace(f"const {a} = ", f"const {a} = 1||", 1)
+    assert run.count(f'["{a}",\'') == 1, "argument value should appear once in a RUN call"
+    return run.replace(f'["{a}",\'', f'["{a}",\'1||', 1)
 
 
 def check(name):
     run, store, inline = jsrun.run_call(name), jsrun.store_call(name), jsrun.filled(name)[2]
     base = jsrun.base_text(name)   # a paste with one character changed in the script text
     bad_store = f"{jsrun.STORE}({jsrun.js_str(name)},{jsrun.js_str(jsrun.sha(base))},{jsrun.js_str(base.replace('const ', 'const  ', 1))})"
+    g = jsrun.REGISTRY[name][2]
     out = node([
-        {"code": run},                       # 0 nothing cached
+        {"code": run},                       # 0 nothing cached: the runner first
+        {"code": jsrun.store_call("runner")},
+        {"code": run},                       # 0 now the script
         {"code": bad_store},                 # 1 damaged paste
         {"code": run},                       # 2 still nothing cached
         {"code": store},                     # 3 real store
@@ -71,7 +79,17 @@ def check(name):
         {"code": run},                       # 7 other version
         {"code": store},                     # 8 re-store
         {"code": corrupt_arg(run, name)},    # 9 corrupted arg line
+        {"op": "tamper", "name": "runner"},  # 10
+        {"code": run},                       # 11 other runner version
+        {"code": jsrun.store_call("runner")},
+        {"op": "fake", "g": g or "__none", "q": {"done": False, "i": 2, "n": 5, "lines": []}},
+        {"code": jsrun.poll_call(name) or "'no poll'"},  # 14 running
+        {"op": "fake", "g": g or "__none", "q": {"done": True, "i": 5, "n": 5, "lines": ["H 1", "H 2"]}},
+        {"code": jsrun.poll_call(name) or "'no poll'"},  # 16 lines (non-card lines are never diffed)
     ])
+    assert out[0].startswith("NEED_RUNNER"), out[0]
+    assert out[1].startswith("stored runner"), out[1]
+    out = out[2:]
     assert out[0].startswith(f"NEED_SCRIPT {name}"), out[0]
     assert out[1].startswith(f"STORE REFUSED {name}"), out[1]
     assert out[2].startswith(f"NEED_SCRIPT {name}"), out[2]
@@ -86,6 +104,13 @@ def check(name):
         assert out[9].startswith(f"RUNNER ERROR {name}"), out[9]
     for a, line in jsrun.filled(name)[1]:
         assert line in out[5], f"{name}: argument line for {a} missing"
+    assert out[11].startswith("NEED_RUNNER") and "another version" in out[11], out[11]
+    if g:
+        assert out[14] == "running 2/5", out[14]
+        assert out[16].split("\n")[:2] == ["H 1", "H 2"], out[16]
+        assert (name in jsrun.SALES_DIFF) == (len(out[16].split("\n")) == 3), out[16]   # + the #B line
+    n_prefix = len(jsrun.PREFIX % '"0123456789abcdef"')
+    assert len(run) < n_prefix + 300 + sum(len(l) for _, l in jsrun.filled(name)[1]), f"{name}: RUN call longer than expected"
     print(f"ok  {name}")
 
 

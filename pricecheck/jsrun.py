@@ -22,12 +22,21 @@ reading plus ~10k tokens of writing (the slowest part of a full check), and a ha
 The scripts themselves are unchanged and still make no fetch/XHR requests; caching only changes how
 their text reaches the page.
 
+Since 2026-10-20 the runner itself (pricecheck/runner.js) is cached too ("pc:run", `jsrun.py store runner`,
+once per site and runner version): a RUN call is a ~400-character prefix that checks the cached runner's
+SHA-256 and calls it, hashes are passed as their first 16 hex digits, and the POLL call is
+`await globalThis.__pcpoll(...)`, defined by the runner. A RUN call that finds no runner answers
+`NEED_RUNNER (…)`: paste the `jsrun.py store runner` STORE call on that tab, then the RUN call again.
+For snkrdunk_quick / snkrdunk_full the POLL sends the lines as a diff against the previous run
+(scripts/salesdiff.py); `jsrun.py poll <name> --full` prints a POLL that returns them whole.
+
     python3 pricecheck/jsrun.py full                 # full-check setup: RUN + POLL calls for today's plan
     python3 pricecheck/jsrun.py quick [--ids a,b]    # quick check: RUN + POLL call for snkrdunk_quick (--ids: retry only those)
     python3 pricecheck/jsrun.py run <name>           # one RUN call (args filled from today's data)
     python3 pricecheck/jsrun.py store <name>         # STORE call, only after a RUN call said NEED_SCRIPT
+    python3 pricecheck/jsrun.py store runner         # STORE call for the runner, after a RUN call said NEED_RUNNER
     python3 pricecheck/jsrun.py inline <name>        # the filled-in script as plain text (fallback)
-    python3 pricecheck/jsrun.py poll <name>          # the POLL call for a script that runs in the background
+    python3 pricecheck/jsrun.py poll <name> [--full] # the POLL call (--full: lines undiffed, after salesdiff refused a diff)
     python3 pricecheck/jsrun.py list                 # names, sites and hashes
 
 Names: snkrdunk_full, snkrdunk_held, snkrdunk_quick, snkrdunk_sealed (snkrdunk.com) · psa_pop
@@ -148,28 +157,31 @@ def filled(name, plan=None):
     return base, subs, text
 
 
-# The in-page runner. Kept short: it is part of every RUN call. Same rules as filled() above.
-RUNNER = (
-    "await (async(n,h,subs,hf,pre)=>{"
-    "const sha=async t=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,'0')).join('');"
-    "let s;try{s=localStorage.getItem('pc:js:'+n)}catch(e){return 'NEED_SCRIPT '+n+' (site storage unavailable: '+e.message+'; use jsrun.py inline '+n+')'}"
-    "if(!s)return 'NEED_SCRIPT '+n+' (not cached on '+location.host+' yet)';"
-    "if(await sha(s)!==h)return 'NEED_SCRIPT '+n+' (cached copy is another version)';"
-    "for(const[k,l]of subs){const re=new RegExp('^[ \\\\t]*const '+k+' = .*;[ \\\\t]*$','gm');const m=s.match(re);"
-    "if(!m||m.length!==1)return 'RUNNER ERROR '+n+': '+(m?m.length:0)+' lines for '+k;s=s.replace(re,()=>l)}"
-    "if(await sha(s)!==hf)return 'RUNNER ERROR '+n+': filled-in script differs from the repo build; nothing ran';"
-    "let r;try{r=(0,eval)(s.replace(/^\\s*await\\s+/,''))}catch(e){return(e instanceof EvalError?'EVAL_BLOCKED ':'SCRIPT ERROR ')+n+': '+e.message}"
-    "r=await r;if(!pre)return r;"
-    "if(r&&typeof r==='object'&&r.error)return pre.trim()+'! '+r.error;"
-    "return pre+(typeof r==='string'?r:JSON.stringify(r))"
-    "})"
+RUNNER_FILE = ROOT / "pricecheck" / "runner.js"
+SALES_DIFF = {"snkrdunk_quick", "snkrdunk_full"}   # their POLL sends the lines as a diff (scripts/salesdiff.py)
+
+
+def runner_text():
+    """The runner as cached in "pc:run": runner.js without its top-of-file `//` comment lines."""
+    raw = RUNNER_FILE.read_text(encoding="utf-8")
+    return "\n".join(ln for ln in raw.split("\n") if not ln.startswith("//")).strip("\n") + "\n"
+
+
+# Part of every RUN call: checks the cached runner's SHA-256 (first 16 hex digits) and returns it as a function.
+PREFIX = (
+    "await (await (async H=>{let s;try{s=localStorage.getItem('pc:run')}catch(e){return()=>'NEED_RUNNER (site storage unavailable: '+e.message+'; use jsrun.py inline <name>)'}"
+    "if(!s)return()=>'NEED_RUNNER (no runner cached on '+location.host+' yet)';"
+    "const d=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');"
+    "if(!d.startsWith(H))return()=>'NEED_RUNNER (the cached runner is another version)';"
+    "try{return(0,eval)(s)}catch(e){return()=>'EVAL_BLOCKED runner: '+e.message}})(%s))"
 )
 
+
 STORE = (
-    "await (async(n,h,s)=>{"
+    "await (async(n,h,s)=>{const key=n==='runner'?'pc:run':'pc:js:'+n;"
     "const d=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');"
     "if(d!==h)return 'STORE REFUSED '+n+': the pasted text differs from the repo version (hash mismatch); paste the STORE call again verbatim';"
-    "try{localStorage.setItem('pc:js:'+n,s)}catch(e){return 'STORE FAILED '+n+' ('+e.message+'); use jsrun.py inline '+n}"
+    "try{localStorage.setItem(key,s)}catch(e){return 'STORE FAILED '+n+' ('+e.message+'); use jsrun.py inline '+n}"
     "return 'stored '+n+' '+h.slice(0,12)+' on '+location.host+': now repeat the RUN call'"
     "})"
 )
@@ -179,25 +191,42 @@ def js_str(s):
     return json.dumps(s, ensure_ascii=False)
 
 
+def js_sq(s):
+    """A single-quoted JS string literal: an argument's JSON text needs no escaping of its double quotes this way."""
+    return "'" + s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r") + "'"
+
+
+def sales_base(name):
+    """The base hash for the POLL's diff ('' = no diff; '+' = a retry run: whole lines, base updated)."""
+    if name not in SALES_DIFF:
+        return ""
+    if ONLY_IDS is not None:
+        return "+"
+    import salesdiff
+    return salesdiff.base_hash(ROOT)
+
+
 def run_call(name, plan=None):
     base, subs, text = filled(name, plan)
     pre = REGISTRY[name][4]
-    return (f"{RUNNER}({js_str(name)},{js_str(sha(base))},"
-            f"{json.dumps([list(x) for x in subs], ensure_ascii=False)},{js_str(sha(text))},{js_str(pre) if pre else 'null'})")
+    vals = "[" + ",".join(f"[{js_str(a)},{js_sq(line.split(' = ', 1)[1][:-1])}]" for a, line in subs) + "]"
+    g = REGISTRY[name][2]
+    return (PREFIX % js_str(sha(runner_text())[:16])
+            + f"({js_str(name)},{js_str(sha(base)[:16])},{vals},{js_str(sha(text)[:16])},"
+              f"{js_str(pre) if pre else 'null'},{js_str(g) if g else 'null'},{js_str(sales_base(name))})")
 
 
 def store_call(name):
-    base = base_text(name)
+    base = runner_text() if name == "runner" else base_text(name)
     return f"{STORE}({js_str(name)},{js_str(sha(base))},{js_str(base)})"
 
 
-def poll_call(name):
+def poll_call(name, full=False):
     g = REGISTRY[name][2]
     if not g:
         return None
-    return ("await (async()=>{for(let i=0;i<75&&!window.%s?.done;i++)await (window.__wsleep||(m=>new Promise(r=>setTimeout(r,m))))(500);"
-            "const q=window.%s;if(!q)return 'NOT STARTED (no window.%s on this tab)';"
-            "return q.done?q.lines.join('\\n'):`running ${q.i}/${q.n}${document.hidden?' (tab hidden)':''}`})()") % (g, g, g)
+    return (f"await (globalThis.__pcpoll?globalThis.__pcpoll('{g}'{',1' if full else ''})"
+            f":'NOT STARTED (no runner on this tab; RUN first)')")
 
 
 def block(name, plan=None, note=""):
@@ -213,7 +242,8 @@ def cmd_full():
     import plan as planmod
     p = planmod.build_plan(ROOT)
     print("JS CALLS (pricecheck/jsrun.py). Paste each RUN line verbatim into javascript_tool on a tab of the named site.")
-    print("RUN returns `started …` (then POLL) or the result lines. NEED_SCRIPT → `python3 pricecheck/jsrun.py store <name>`,")
+    print("RUN returns `started …` (then POLL) or the result lines. NEED_RUNNER → `python3 pricecheck/jsrun.py store runner`,")
+    print("paste that STORE call, then the same RUN call again. NEED_SCRIPT → `python3 pricecheck/jsrun.py store <name>`,")
     print("paste that STORE call, then the same RUN call again. EVAL_BLOCKED / STORE FAILED → `jsrun.py inline <name>`.")
     print()
     print(block("snkrdunk_full", p, "tab S"))
@@ -257,7 +287,10 @@ def main():
     if cmd == "list":
         for n, (site, *_r) in REGISTRY.items():
             print(f"{n:16} {site:17} {sha(base_text(n))[:12]}")
+        print(f"{'runner':16} {'(every site)':17} {sha(runner_text())[:12]}")
         return
+    if cmd == "store" and name == "runner":
+        return print(store_call("runner"))
     if name not in REGISTRY:
         sys.exit(f"ERROR: unknown script {name!r}; one of: {', '.join(REGISTRY)}")
     if cmd == "run":
@@ -267,7 +300,7 @@ def main():
     elif cmd == "inline":
         print(filled(name)[2])
     elif cmd == "poll":
-        print(poll_call(name) or f"{name} returns its result directly; no POLL needed")
+        print(poll_call(name, "--full" in a) or f"{name} returns its result directly; no POLL needed")
     else:
         sys.exit(f"ERROR: unknown command {cmd!r}")
 

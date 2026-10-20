@@ -305,6 +305,12 @@ def main():
     files = [a for i, a in enumerate(args) if not a.startswith("--") and not (i and args[i - 1] == "--skip")]
     dry = "--dry-run" in args
     text = sys.stdin.read() if not files or files[0] == "-" else Path(files[0]).read_text(encoding="utf-8")
+    import salesdiff   # the SNKRDUNK POLL sends lists as a diff against the previous run, ending with a #B line
+    try:
+        text, diff_base, diff_seen, diff_notes = salesdiff.process(text, ROOT)
+    except salesdiff.DiffError as e:
+        die(f"the SNKRDUNK lines' diff can't be rebuilt ({e}); nothing was published.\n"
+            + salesdiff.FALLBACK.format(name="snkrdunk_full"))
     incoming = ROOT / "data" / "incoming"
     incoming.mkdir(parents=True, exist_ok=True)
     (incoming / "full-raw.txt").write_text(text, encoding="utf-8")
@@ -329,7 +335,7 @@ def main():
     skipped_note = [f"step skipped on purpose this run: {STEP_NAMES[m]}" for m in sorted(skip) if m in STEP_NAMES]
     cards_meta = {c["snkrdunk_id"]: c for c in planmod.load_cards(ROOT)}
     raw, mytier, notes = parse(text, cards_meta, plan)
-    notes = skipped_note + notes
+    notes = skipped_note + diff_notes + notes
     for sid, name in plan.get("psapop_missing", []):
         notes.append(f"{sid}: PSA10 ask but no PSA pop page on file ({name[:24]}) — find it (FULL-CHECK step 1c)")
     prem = raw.pop("_premium", {})
@@ -361,6 +367,7 @@ def main():
     sub_push = False if no_push else "commit"
     if run([sys.executable, "scripts/add_snapshot.py", str(out_path), "--no-push"]) != 0:
         die("add_snapshot.py failed (see above)")
+    salesdiff.save(ROOT, diff_base, diff_seen)
     if mytier:
         ci = incoming / "custom-index.json"
         ci.write_text(json.dumps(mytier, ensure_ascii=False), encoding="utf-8")
