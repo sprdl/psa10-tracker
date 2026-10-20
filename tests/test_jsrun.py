@@ -24,9 +24,11 @@ const vm = require('vm');
 const calls = JSON.parse(require('fs').readFileSync(0, 'utf8'));
 const store = new Map();
 const evaluated = [];
+const page = { text: null };
 const ctx = vm.createContext({
   localStorage: { getItem: k => store.has(k) ? store.get(k) : null, setItem: (k, v) => store.set(k, String(v)) },
   location: { host: 'test.example' }, crypto: globalThis.crypto, TextEncoder, setTimeout,
+  document: { createElement: () => ({}), body: { replaceChildren: (el) => { page.text = el.textContent; } } },
   __wsleep: () => Promise.resolve(),   // the POLL's wait, instant here
   // the cached runner is really evaluated; a script is only recorded (what would have run)
   eval: src => src.startsWith('/*pc-runner*/') ? vm.runInContext(src, ctx) : (evaluated.push(src), 'ran'),
@@ -37,6 +39,7 @@ const run = (code) => vm.runInContext('(async()=>{ return ' + code + ' })()', ct
   for (const c of calls) {
     if (c.op === 'tamper') { const k = c.name === 'runner' ? 'pc:run' : 'pc:js:' + c.name; store.set(k, store.get(k) + ' '); out.push('tampered'); continue; }
     if (c.op === 'fake') { vm.runInContext(`globalThis.${c.g} = ${JSON.stringify(c.q)}`, ctx); out.push('faked'); continue; }
+    if (c.op === 'page') { out.push(String(page.text)); continue; }
     if (c.op === 'evaluated') { out.push(evaluated.length ? evaluated[evaluated.length - 1] : null); continue; }
     out.push(String(await run(c.code)));
   }
@@ -86,6 +89,9 @@ def check(name):
         {"code": jsrun.poll_call(name) or "'no poll'"},  # 14 running
         {"op": "fake", "g": g or "__none", "q": {"done": True, "i": 5, "n": 5, "lines": ["H 1", "H 2"]}},
         {"code": jsrun.poll_call(name) or "'no poll'"},  # 16 lines (non-card lines are never diffed)
+        {"op": "fake", "g": g or "__none", "q": {"done": True, "i": 5, "n": 5, "lines": ["H %03d %s" % (i, "y" * 40) for i in range(40)]}},
+        {"code": jsrun.poll_call(name) or "'no poll'"},  # 18 too long: becomes the page
+        {"op": "page"},                                  # 19 what the page holds
     ])
     assert out[0].startswith("NEED_RUNNER"), out[0]
     assert out[1].startswith("stored runner"), out[1]
@@ -109,6 +115,9 @@ def check(name):
         assert out[14] == "running 2/5", out[14]
         assert out[16].split("\n")[:2] == ["H 1", "H 2"], out[16]
         assert (name in jsrun.SALES_DIFF) == (len(out[16].split("\n")) == 3), out[16]   # + the #B line
+        long = ["H %03d %s" % (i, "y" * 40) for i in range(40)]
+        assert out[18].startswith("PAGE ") and len(out[18]) < 300, out[18]
+        assert out[19].split("\n")[:40] == long, out[19][:200]
     n_prefix = len(jsrun.PREFIX % '"0123456789abcdef"')
     assert len(run) < n_prefix + 300 + sum(len(l) for _, l in jsrun.filled(name)[1]), f"{name}: RUN call longer than expected"
     print(f"ok  {name}")

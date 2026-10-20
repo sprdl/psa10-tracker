@@ -18,7 +18,7 @@ runs need are in their own files; read one only when its trigger appears (the in
 
 ## Tool pitfalls (read before the first browser call)
 
-- **Browser JavaScript tool.** The browser tools are often deferred (and again after a context compaction). Before the first call, load them with `ToolSearch` (`select:mcp__remote-devices__Claude_Browser__browser_batch,...javascript_tool,...navigate,...tabs_create,...tabs_context,...tabs_close`, all in one call: the run uses three tabs and batches its browser steps) and read the schema. `javascript_tool` takes `action: "javascript_exec"` and `text` (the code). A call with wrong parameter names does not fail: it prints `undefined`. A correct call that returns nothing prints a value or an error, so **if you see `undefined` twice, stop retrying and check the tool's parameters** (the old "extra no-op call" trick only applies to a correct call). The code is a REPL expression: no `return` at top level; wrap async work as `await (async () => {...})()`.
+- **Browser JavaScript tool.** The browser tools are often deferred (and again after a context compaction). Before the first call, load them with `ToolSearch` (`select:mcp__remote-devices__Claude_Browser__browser_batch,...javascript_tool,...get_page_text,...navigate,...tabs_create,...tabs_context,...tabs_close`, all in one call: the run uses three tabs and batches its browser steps) and read the schema. `javascript_tool` takes `action: "javascript_exec"` and `text` (the code). A call with wrong parameter names does not fail: it prints `undefined`. A correct call that returns nothing prints a value or an error, so **if you see `undefined` twice, stop retrying and check the tool's parameters** (the old "extra no-op call" trick only applies to a correct call). The code is a REPL expression: no `return` at top level; wrap async work as `await (async () => {...})()`.
 - **Pasting browser calls.** Paste the RUN / STORE / POLL calls exactly as `jsrun.py` printed them, never a shortened stand-in or a hand-edited argument. They carry today's arguments and the scripts' SHA-256 hashes, so a call that was altered refuses to run instead of reading wrong data.
 - **JSON for `apply_analysis.py` / `set_story.py`.** Build it with `python3 -c`/`json.dumps` or write it to a file and run `python3 -m json.tool file` before applying; hand-written JSON lost a closing brace on 2026-10-04 (nothing was saved; the script rejects bad JSON). Also include `predictions` whenever the reasoning states odds (price + deadline), or the warning "reasoning states odds but verdict.predictions is missing" appears.
 
@@ -89,13 +89,20 @@ is a one-liner. Responses:
   (`python3 pricecheck/jsrun.py full`) and use the new ones; never edit a call by hand.
 - `SCRIPT ERROR …`: the script itself failed; treat it like a failed script (step 7, "If a whole script fails").
 
+**Long results.** Claude in Chrome's JavaScript tool cuts a result at about 1,000 characters. So when a
+script's lines are longer than that, the RUN or POLL call doesn't return them: it puts them on the tab as
+its page and answers `PAGE <n> lines, <m> chars: …`. Then call `get_page_text` on that tab (in a batch
+with whatever comes next on it) and use every line after its `---` line exactly as shown. Never read long
+results in pieces by hand: that's slow and invites slips. The tab stays on the site, so its next scripts
+still run there.
+
 **SNKRDUNK lines come as a diff.** The `snkrdunk_full` (and the quick check's `snkrdunk_quick`) POLL writes each
 card's sales and listing lists against the previous run's lines (e.g. `P^3.10,39480@261015,14.6`) and ends
 with one `#B <mode> <base> <hash>` line. Pass them along exactly like the other lines, the `#B` line included,
 in the order returned: `scripts/salesdiff.py` (inside the publish step) rebuilds the full lines and checks them
 against the page's hash. If the publish step says the diff can't be rebuilt, print the full POLL with
 `python3 pricecheck/jsrun.py poll snkrdunk_full --full`, paste it on tab S (it returns the same lines undiffed,
-plus the `#B` line) and publish with those lines instead.
+plus the `#B` line, as the page again: `get_page_text`) and publish with those lines instead.
 
 ## 2–4. Browser reads: the three sites at the same time, one tab each
 
@@ -113,7 +120,7 @@ tab you are working in) and wait on the Worker timer, so a background tab is fin
 Order. SNKRDUNK is the slowest site (about 4 minutes), so it starts first, and the steps you can
 predict go into one `browser_batch` call each (its items run one after another on the tabs you name;
 every item takes the same input as the tool alone, with an explicit `tabId`; item names: `navigate`,
-`javascript_tool` with `action: "javascript_exec"`, `tabs_create_mcp` / `tabs_close_mcp` in Claude in
+`javascript_tool` with `action: "javascript_exec"`, `get_page_text`, `tabs_create_mcp` / `tabs_close_mcp` in Claude in
 Chrome, `tabs_create` / `tabs_close` in the built-in browser). A batch stops only on a tool error, not
 on a script's answer: read every item's output, and handle a `NEED_SCRIPT` / `MYTIER!` / sign-in answer
 as below before going on (a POLL item after a RUN that didn't start answers `NOT STARTED`; ignore it).
@@ -132,21 +139,25 @@ as below before going on (a POLL item after a RUN that didn't start answers `NOT
    - `navigate` tab K to `https://pokeca-chart.com/gr/all-card/?sort=newest`, then the `mytier` RUN call on
      tab K. It returns one line, `MYTIER {…}`. If it returns `MYTIER! <error>`, leave that line out and
      mention it (the My-tier index is skipped this run);
-   - the `pokeca_premium` RUN call on tab K, then its POLL call on tab K (about 2 s per card). The `PREM …`
-     lines carry each card's slab premium (PSA10 ÷ raw 美品) and its 6-month norm; `full_update.py` saves
-     them to `data/premium.json`. A `PREM <id> !…` line (the card has no pokeca-chart page) is expected
-     for a few cards; pass it along like the others. If the POLL item still says `running i/N`, POLL
-     again with a plain `javascript_tool` call.
+   - last, on tab K: the `pokeca_scout` RUN call when Scout is due (step 3), otherwise the `pokeca_premium`
+     RUN call (step 3 too). Scout goes first because it reads the all-card list on the tab itself, and a
+     long result replaces the tab's page (see "Long results" above).
    If a batch ever fails with a timeout, send its remaining items as separate calls.
-3. **Scout (step 4.4)** runs about every other day: when the setup printed `SCOUT = null`, skip this;
-   otherwise it's required (don't `--skip scout` to save time; `scripts/freshness.py` flags a stale Scout
-   page). Once the `PREM` lines are in, one batch on tab K: `navigate` to
-   `https://pokeca-chart.com/gr/all-card/?sort=newest` only if the tab is elsewhere, the `pokeca_scout` RUN
-   call, then its POLL (about 1 minute: the list, then up to 20 card pages; POLL again if needed). One
-   `SCP …` line lists today's candidates, then one `SC {…}` (or `SC! …`) line per card page read.
-   `full_update.py` saves them to `data/scout.json`, which feeds the site's Scout page (cards you don't
-   track yet that fit your criteria and look cheap).
-4. **Tab P, collect the PSA pop report.** POLL tab P until it returns its `POP …` lines.
+3. **Tab K: Scout, then the slab premiums.**
+   - **Scout (step 4.4)** runs about every other day: when the setup printed `SCOUT = null`, skip it;
+     otherwise it's required (don't `--skip scout` to save time; `scripts/freshness.py` flags a stale Scout
+     page). POLL tab K with the `pokeca_scout` POLL call until it's done (about 1 minute: the list, then up
+     to 20 card pages); its `PAGE …` answer means one batch: `get_page_text` on tab K (the lines), then the
+     `pokeca_premium` RUN call on tab K. One `SCP …` line lists today's candidates, then one `SC {…}` (or
+     `SC! …`) line per card page read. `full_update.py` saves them to `data/scout.json`, which feeds the
+     site's Scout page (cards you don't track yet that fit your criteria and look cheap).
+   - **Slab premiums:** POLL tab K with the `pokeca_premium` POLL call until it's done (about 2 s per card),
+     then `get_page_text` on tab K for the lines when it answered `PAGE …`. The `PREM …` lines carry each
+     card's slab premium (PSA10 ÷ raw 美品) and its 6-month norm; `full_update.py` saves them to
+     `data/premium.json`. A `PREM <id> !…` line (the card has no pokeca-chart page) is expected for a few
+     cards; pass it along like the others.
+4. **Tab P, collect the PSA pop report.** POLL tab P until it returns its `POP …` lines (or `PAGE …`:
+   then `get_page_text` on tab P).
    Gem rate = PSA 10s ÷ total graded on the card's row. If the lines say `PSA sign-in page`, ask the
    user to sign in to psacard.com in the browser pane and re-run; if they say `Cloudflare check`, ask the user
    to turn the VPN off. Never type credentials and never try to pass a "verify you are human" check. If PSA
@@ -154,8 +165,8 @@ as below before going on (a POLL item after a RUN that didn't start answers `NOT
    is carried forward. Same precautions as SNKRDUNK: the user's own browser, only when a check is asked for,
    one page load per set. (PSA's pop report is the only source of PSA10 population and gem rate since
    2026-10-12; it needs a signed-in PSA account, and the browser pane keeps the login.)
-5. **Tab S, collect SNKRDUNK.** POLL tab S with the `snkrdunk_full` POLL call until it returns lines
-   (one per card). Then one batch: `tabs_close` tabs P and K (their lines are in), and, only if the setup
+5. **Tab S, collect SNKRDUNK.** POLL tab S with the `snkrdunk_full` POLL call until it's done; it answers
+   `PAGE …` (the lines are long), so the next batch starts with `get_page_text` on tab S. That batch: `tabs_close` tabs P and K (their lines are in), and, only if the setup
    printed a `snkrdunk_held` block, the `snkrdunk_held` RUN call on tab S followed by its POLL for the `H` /
    `HE` lines (about 5 s per item). Step 2b: `HELD` lists what the Holdings page needs a price for but the
    tracked cards don't cover: bought raw cards and raw/at-PSA pulls that aren't tracked (raw A-rank ask plus

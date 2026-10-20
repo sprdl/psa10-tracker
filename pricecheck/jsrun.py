@@ -245,6 +245,7 @@ def cmd_full():
     print("RUN returns `started …` (then POLL) or the result lines. NEED_RUNNER → `python3 pricecheck/jsrun.py store runner`,")
     print("paste that STORE call, then the same RUN call again. NEED_SCRIPT → `python3 pricecheck/jsrun.py store <name>`,")
     print("paste that STORE call, then the same RUN call again. EVAL_BLOCKED / STORE FAILED → `jsrun.py inline <name>`.")
+    print("A long result answers `PAGE …`: its lines are now that tab's page; read them with get_page_text on that tab.")
     print()
     print(block("snkrdunk_full", p, "tab S"))
     if p.get("held"):
@@ -257,12 +258,12 @@ def cmd_full():
         print("--- psa_pop: PSAPOP = [] → skip step 3")
     print(block("pokeca_both", p, "tab K on https://pokeca-chart.com/gr/chart-index/ (returns the two IDX lines)"))
     print(block("mytier", p, "tab K on https://pokeca-chart.com/gr/all-card/?sort=newest (returns the MYTIER line)"))
-    if p.get("premium"):
-        print(block("pokeca_premium", p, "tab K, still on pokeca-chart"))
-    if p.get("scout"):
-        print(block("pokeca_scout", p, "tab K on https://pokeca-chart.com/gr/all-card/?sort=newest, after pokeca_premium is done"))
+    if p.get("scout"):   # before the premiums: it reads the all-card list on the tab, and a long result replaces the page
+        print(block("pokeca_scout", p, "tab K, right after mytier (still on the all-card page)"))
     else:
         print("--- pokeca_scout: SCOUT = null → skip step 4.4")
+    if p.get("premium"):
+        print(block("pokeca_premium", p, "tab K, after pokeca_scout is done (or right after mytier when Scout isn't due)"))
 
 
 def main():

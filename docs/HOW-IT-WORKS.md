@@ -308,6 +308,10 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    publishes nothing; `jsrun.py poll <name> --full` then returns the lines undiffed. On the last 16 runs
    the diffed lines were about 31% of the whole ones, the text Claude retypes into the publish step.
    `tests/test_salesdiff.py` runs the page side in Node against real data and checks the round trip.
+   Claude in Chrome's JavaScript tool cuts a result at about 1,000 characters (noticed 2026-10-20), so the
+   runner returns a longer result as the tab's page (a `<pre>`, answer `PAGE …`) and Claude reads it with
+   `get_page_text`, which returns a whole page. The tab stays on the site for its next scripts; Scout,
+   which reads the all-card list on its tab, therefore runs before the slab premiums.
    `snkrdunk_full.js` waits for two identical sorted, unsold readings instead of fixed pauses. It skips a card's
    A-rank listings page when the A tile still shows the lowest ask of the last list read (`plan.py`'s
    `a_carry_price`, the fourth field of a plan line; never on Mondays, never when that list is 3+ days old):

@@ -24,16 +24,20 @@ HARNESS = r"""
 const vm = require('vm');
 const inp = JSON.parse(require('fs').readFileSync(0, 'utf8'));
 const store = new Map(Object.entries(inp.store));
+const page = { text: null };
 const ctx = vm.createContext({
   localStorage: { getItem: k => store.has(k) ? store.get(k) : null, setItem: (k, v) => store.set(k, String(v)) },
-  location: { host: 'test.example' }, crypto: globalThis.crypto, TextEncoder, setTimeout, __wsleep: () => Promise.resolve(),
+  location: { host: 'test.example' }, crypto: globalThis.crypto, TextEncoder, setTimeout,
+  document: { createElement: () => ({}), body: { replaceChildren: (el) => { page.text = el.textContent; } } }, __wsleep: () => Promise.resolve(),
 });
 (async () => {
   const runner = vm.runInContext(inp.runner, ctx);
   await runner('none', 'x', [], 'y', null, null, '');       // defines __pcpoll (and answers NEED_SCRIPT)
   vm.runInContext(`globalThis.__pcB = {__pq: ${JSON.stringify(inp.B)}}; globalThis.__pq = ${JSON.stringify({ done: true, i: inp.lines.length, n: inp.lines.length, lines: inp.lines })}`, ctx);
-  const out = await vm.runInContext("globalThis.__pcpoll('__pq')", ctx);
-  const full = await vm.runInContext("globalThis.__pcpoll('__pq', 1)", ctx);
+  // a long result becomes the page (PAGE …), read with get_page_text: take what the page holds
+  const read = async (code) => { const r = await vm.runInContext(code, ctx); return r.startsWith('PAGE ') ? page.text : r; };
+  const out = await read("globalThis.__pcpoll('__pq')");
+  const full = await read("globalThis.__pcpoll('__pq', 1)");
   process.stdout.write(JSON.stringify({ out, full, store: Object.fromEntries(store) }));
 })().catch(e => { console.error(e); process.exit(1); });
 """

@@ -7,10 +7,24 @@
 // POLL sends each card's sales and listing lists as a diff against the previous run's lines (kept in localStorage
 // "pc:base", mirrored in data/incoming/snk-base.json by scripts/salesdiff.py) and ends with a `#B <mode> <new base>
 // <lines>` line; scripts/salesdiff.py rebuilds the exact lines and checks them against that hash.
+// Claude in Chrome's javascript_tool cuts a result at about 1,000 characters (seen 2026-10-20), but get_page_text
+// returns a whole page: a result longer than SHOW_MAX replaces the tab's page with the lines (a <pre>) and answers
+// `PAGE …`, and the lines are then read with get_page_text. The tab stays on the site, so later scripts on it (hidden
+// same-origin iframes) still work; a script that reads the page itself (the Scout list) must run before that.
 /*pc-runner*/(async (n, h, subs, hf, pre, g, B) => {
   const G = globalThis;
   const sha = async (t) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map((b) => b.toString(16).padStart(2, '0')).join('');
   const LIST = /^[PALR][^=^\s]*=/;
+  const SHOW_MAX = 900;
+  const show = (text) => {
+    if (typeof text !== 'string' || text.length <= SHOW_MAX || !G.document?.body) return text;
+    const pre = G.document.createElement('pre');
+    pre.id = 'pc-out';
+    pre.textContent = text;
+    G.document.body.replaceChildren(pre);
+    return 'PAGE ' + text.split('\n').length + ' lines, ' + text.length + ' chars: too long for this tool, so they are now this tab\'s page. '
+      + 'Read them with get_page_text on this tab and use every line after its --- line exactly as shown.';
+  };
   const canon = (o) => Object.keys(o).sort().map((k) => k + '\t' + o[k] + '\n').join('');
   // one line against its base line: in a list token (P/A sales, L/R listings), each run of entries that also stands in
   // the base line's list of the same letter becomes <start>.<count>; the token becomes <letter><flags>^<items>
@@ -65,9 +79,9 @@
     if (!q) return 'NOT STARTED (no window.' + gg + ' on this tab)';
     if (!q.done) return `running ${q.i}/${q.n}${G.document?.hidden ? ' (tab hidden)' : ''}`;
     const bm = (G.__pcB || {})[gg];
-    if (!bm) return q.lines.join('\n');
+    if (!bm) return show(q.lines.join('\n'));
     if (!q.__pc) q.__pc = await pack(q.lines, bm);   // once per run: it also stores the new base
-    return (full ? q.lines.join('\n') : q.__pc.out) + '\n' + q.__pc.tr;
+    return show((full ? q.lines.join('\n') : q.__pc.out) + '\n' + q.__pc.tr);
   };
   let s;
   try { s = localStorage.getItem('pc:js:' + n); } catch (e) { return 'NEED_SCRIPT ' + n + ' (site storage unavailable: ' + e.message + '; use jsrun.py inline ' + n + ')'; }
@@ -84,7 +98,7 @@
   let r;
   try { r = (0, eval)(s.replace(/^\s*await\s+/, '')); } catch (e) { return (e instanceof EvalError ? 'EVAL_BLOCKED ' : 'SCRIPT ERROR ') + n + ': ' + e.message; }
   r = await r;
-  if (!pre) return r;
+  if (!pre) return show(r);
   if (r && typeof r === 'object' && r.error) return pre.trim() + '! ' + r.error;
-  return pre + (typeof r === 'string' ? r : JSON.stringify(r));
+  return show(pre + (typeof r === 'string' ? r : JSON.stringify(r)));
 })
