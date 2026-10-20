@@ -231,8 +231,9 @@ pricecheck/start.py --mode full`, using the RUN calls it prints), then write the
 `python3 scripts/add_snapshot.py ~/Downloads/latest-run.json`.
 
 **If a whole script fails** (it reports that a page's structure changed), read the affected cards
-by hand with the single-page scripts in `pricecheck/scripts/` (`snkrdunk_base.js`, `grade_tiles.js`,
-`snkrdunk_listings.js`, `pokeca_index.js`; PSA pop by hand, never a hand-edited `psa_pop.js` call) per
+by hand with the single-page scripts (`python3 pricecheck/jsrun.py run <name>` for `snkrdunk_base`, `grade_tiles`,
+`snkrdunk_listings` or `pokeca_index`, on the page each reads; a long result answers `PAGE …`, read with
+`get_page_text`; PSA pop by hand, never a hand-edited `psa_pop.js` call) per
 `pricecheck/references/manual-fallback.md`, and flag it at the end so the script can be fixed. The
 old raw-JSON path still works: `python3 pricecheck/scripts/assemble.py RAW.json --out
 data/incoming/latest-run.json --prev <latest snapshot>`, then

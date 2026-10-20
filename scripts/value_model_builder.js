@@ -11,6 +11,16 @@
 //  - age curve = average monthly change vs the mature market, by card age
 //  - 12/24-month outcome = mature-market move (every historical start month) + the card's own
 //    part (card vs market, pooled over cards 9+ months old), combined pair by pair
+// A result longer than ~900 characters goes on the page (the JavaScript tool cuts results at about 1,000
+// characters): the call answers `PAGE …` and the text is read with get_page_text (2026-10-20). Storage-only steps after
+// it are unaffected; the page's own content isn't needed again.
+window.__pcPage = (text) => {
+  if (typeof text !== 'string' || text.length <= 900) return text;
+  const pre = document.createElement('pre');
+  pre.textContent = text;
+  document.body.replaceChildren(pre);
+  return `PAGE ${text.split('\n').length} lines, ${text.length} chars: read them with get_page_text on this tab (everything after its --- line).`;
+};
 window.__valueBuilder = async () => {
   const LS = localStorage, g = (k) => JSON.parse(LS.getItem(k));
   const cards = g('ci_cards') || {};
@@ -77,10 +87,10 @@ window.__valueBuilder = async () => {
   const keep = (o) => (want.length ? Object.fromEntries(Object.entries(o).filter(([k]) => want.includes(k))) : o);
   const mktPath = Object.fromEntries(T.map((t) => [lab(t), +Math.exp(Mm[t]).toFixed(3)]));
   const rel = Object.fromEntries(Object.entries(cards).filter(([, v]) => v && v.date).map(([k, v]) => [k.toLowerCase(), v.date]));
-  return JSON.stringify({
+  return window.__pcPage(JSON.stringify({
     built: lab(T[T.length - 1]), source: `pokeca-chart PSA10 price history, ${codes.length} modern cards, ${lab(T[0])} to ${lab(T[T.length - 1])}`,
     horizons: res, age_curve: ageCurve, swing_pool: +(allSw.sort((x, y) => x - y)[Math.floor(allSw.length / 2)]).toFixed(4), swing: keep(swing),
     market_path: mktPath, release: keep(rel),
-  });
+  }));
 };
 'ready';

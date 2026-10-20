@@ -41,6 +41,8 @@ For snkrdunk_quick / snkrdunk_full the POLL sends the lines as a diff against th
 
 Names: snkrdunk_full, snkrdunk_held, snkrdunk_quick, snkrdunk_sealed (snkrdunk.com) · psa_pop
 (psacard.com) · pokeca_both, mytier, pokeca_premium, pokeca_scout (pokeca-chart.com).
+Single-page scripts, run on the page they read (`jsrun.py run <name>`): snkrdunk_base, grade_tiles (a card's
+product page), snkrdunk_listings (its /used?conditionIds=22 or 18 page), pokeca_index (a chart-index page).
 """
 import hashlib
 import json
@@ -65,6 +67,12 @@ REGISTRY = {
     "mytier":          ("pokeca-chart.com", None,                 None,   ["CODES"], "MYTIER "),
     "pokeca_premium":  ("pokeca-chart.com", "pokeca_premium.js",  "__pj", ["PREM"], None),
     "pokeca_scout":    ("pokeca-chart.com", "pokeca_scout.js",    "__pj", ["SCOUT"], None),
+    # single-page scripts (adding a card, an evaluation's listing depth, the manual fallback): run on the page itself,
+    # result as one prefixed JSON line, so a long one comes back through the runner's PAGE answer (2026-10-20)
+    "snkrdunk_base":     ("snkrdunk.com",     "snkrdunk_base.js",     None, [], "BASE "),
+    "grade_tiles":       ("snkrdunk.com",     "grade_tiles.js",       None, [], "TILES "),
+    "snkrdunk_listings": ("snkrdunk.com",     "snkrdunk_listings.js", None, [], "LISTINGS "),
+    "pokeca_index":      ("pokeca-chart.com", "pokeca_index.js",      None, [], "INDEX "),
 }
 
 

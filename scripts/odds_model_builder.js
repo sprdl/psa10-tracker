@@ -8,6 +8,16 @@
 // Hype exposure measure (kept identical in pricecheck/scripts/pokeca_premium.js): from PSA10 points
 // [date, price, volume], the median price of the last 30 days, the median 335–395 days before the latest
 // point, and the PSA10 volume of the last 120 days ÷ 4. Returns "<base>:<now>:<vol>:<base date>:<latest date>" or null.
+// A result longer than ~900 characters goes on the page (the JavaScript tool cuts results at about 1,000
+// characters): the call answers `PAGE …` and the text is read with get_page_text (2026-10-20). Storage-only steps after
+// it are unaffected; the page's own content isn't needed again.
+window.__pcPage = (text) => {
+  if (typeof text !== 'string' || text.length <= 900) return text;
+  const pre = document.createElement('pre');
+  pre.textContent = text;
+  document.body.replaceChildren(pre);
+  return `PAGE ${text.split('\n').length} lines, ${text.length} chars: read them with get_page_text on this tab (everything after its --- line).`;
+};
 window.__hypeOf = (rows) => {
   const pts = (rows || []).filter((r) => r[1] > 0).map((r) => [Date.parse(r[0]) / 864e5, r[1], r[2] || 0, r[0]]).sort((a, b) => a[0] - b[0]);
   if (!pts.length) return null;
@@ -114,8 +124,8 @@ window.__oddsBuilder = async (step) => {
     const cards = {};
     for (const code of Object.keys(series)) { const a = sigmaAt('r30', 30, code, end + 1), b = sigmaAt('r90', 90, code, end + 1); if (a && b) cards[code.toLowerCase()] = [+a.s.toFixed(4), +b.s.toFixed(4), a.nOwn]; }
     const p30 = sigmaAt('r30', 30, '__pool__', end + 1).sRec, p90 = sigmaAt('r90', 90, '__pool__', end + 1).sRec;
-    return JSON.stringify({ built: new Date(end * 864e5).toISOString().slice(0, 10), source: `pokeca-chart PSA10 price history, ${Object.keys(series).length} modern cards`,
-      pool_sigma: [+p30.toFixed(4), +p90.toFixed(4)], market_vol: { factor: +mkFactor(end + 1).toFixed(3), power: MK_POW, window_days: MK_WIN }, z_end30: q(z30, 100), z_touch90: q(z90, 100), n: [z30.length, z90.length], cards });
+    return window.__pcPage(JSON.stringify({ built: new Date(end * 864e5).toISOString().slice(0, 10), source: `pokeca-chart PSA10 price history, ${Object.keys(series).length} modern cards`,
+      pool_sigma: [+p30.toFixed(4), +p90.toFixed(4)], market_vol: { factor: +mkFactor(end + 1).toFixed(3), power: MK_POW, window_days: MK_WIN }, z_end30: q(z30, 100), z_touch90: q(z90, 100), n: [z30.length, z90.length], cards }));
   }
   if (step === 'hype') {
     // Hype-exposure reference (scripts/hype.py --ref): one line per card from the histories the grab step
@@ -129,7 +139,7 @@ window.__oddsBuilder = async (step) => {
       const h = window.__hypeOf(rows);
       if (h) lines.push(`HREF ${encodeURIComponent(code)} ${h}`);
     }
-    return lines.join('\n');
+    return window.__pcPage(lines.join('\n'));
   }
   return 'step must be list, grab, build or hype';
 };
