@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 127,
+  "odds_open": 129,
   "odds_early_yes": 8,
   "model_odds": {
    "logged": 203,
@@ -549,8 +549,8 @@
    "name": "カイリューV SR: SA[S7R 074/067](拡張パック「蒼空ストリーム」)",
    "tag": "dont_buy",
    "label": "Don't buy: at a new high after a +50% fortnight",
-   "latest_label": "Don't buy — ask ¥169k, sales ¥147-170k, above the ¥155k ceiling",
-   "reaffirmed": 1,
+   "latest_label": "Don't buy — ask ¥162k, sales ¥145-170k, above the ¥155k ceiling",
+   "reaffirmed": 2,
    "made": "2026-10-10T22:58:10+09:00",
    "price": 148000,
    "window_end": "2026-11-09T22:58:10+09:00",
@@ -2089,6 +2089,21 @@
    "gap_pct": -7.3
   },
   {
+   "url": "https://snkrdunk.com/apparels/91166",
+   "name": "カイリューV SR: SA[S7R 074/067](拡張パック「蒼空ストリーム」)",
+   "text": "A PSA10 listing at ≤¥140k (Buy) within 30 days",
+   "p": 0.25,
+   "type": "touch_below",
+   "price": 140000,
+   "by": "2026-11-19",
+   "made": "2026-10-20T20:56:13+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 162000,
+   "final": false,
+   "gap_pct": -13.6
+  },
+  {
    "url": "https://snkrdunk.com/apparels/105553",
    "name": "ピカチュウ AR[s12a 205/172](ハイクラスパック「VSTARユニバース」)",
    "text": "A PSA10 listing at ≤¥66,000 within 30 days",
@@ -3480,6 +3495,21 @@
    "status": "open",
    "why": "89 days left",
    "now": 25899,
+   "final": false,
+   "gap_pct": -22.8
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/91166",
+   "name": "カイリューV SR: SA[S7R 074/067](拡張パック「蒼空ストリーム」)",
+   "text": "A PSA10 listing at ≤¥125k (Definitely buy) within 90 days",
+   "p": 0.2,
+   "type": "touch_below",
+   "price": 125000,
+   "by": "2027-01-18",
+   "made": "2026-10-20T20:56:13+09:00",
+   "status": "open",
+   "why": "90 days left",
+   "now": 162000,
    "final": false,
    "gap_pct": -22.8
   },
