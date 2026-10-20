@@ -169,7 +169,10 @@ def findings(root=ROOT, upto=None):
                 mv = (pn / pa - 1) * 100
                 if abs(mv) >= T["move"]:
                     f.append(("move", abs(mv) / T["move"] * 0.8, f"{mv:+.0f}% since the previous check (¥{pa:,}→¥{pn:,})"))
-        hn, hp = heat(url, 0), heat(url, 7)
+        # now: from this snapshot's own sales, unrounded, like the site's heatOf (history.json keeps 2 decimals, and a
+        # rounded rate put a -50.0% move on the wrong side of the threshold on 2026-10-19); a week ago: history.json, as on the site
+        ages = [x for x in (sale_age(s.get("when"), now) for s in g.get("recent_completed_sales") or []) if x is not None]
+        hn, hp = (len(ages) / max(max(ages), 0.25) if len(ages) >= 2 else None), heat(url, 7)
         if hn is not None and hp and max(hn, hp) >= 1:
             hc = (hn / hp - 1) * 100
             if abs(hc) >= T["heat"]:
@@ -188,7 +191,7 @@ def findings(root=ROOT, upto=None):
         depth = f"{g.get('count_within_15pct', '?')}/{len(g.get('top20_cheapest_listings') or []) or 20} listings within 15%"
         tiers = (c.get("analysis") or {}).get("tiers") or {}
         tier = f"tiers {tiers.get('definitely_buy')}/{tiers.get('buy_upper')}/{tiers.get('ceiling')}" if tiers else "no tiers"
-        rows.append((sid, url, name, own, f, f"ask ¥{ask:,} · {tier} · limit {('¥%s' % format(lim, ',')) if lim else 'none'} · {depth} · {f_sales} · sales/day {hn if hn is not None else '—'}"))
+        rows.append((sid, url, name, own, f, f"ask ¥{ask:,} · {tier} · limit {('¥%s' % format(lim, ',')) if lim else 'none'} · {depth} · {f_sales} · sales/day {round(hn, 2) if hn is not None else '—'}"))
     return rows
 
 

@@ -29,8 +29,8 @@ jobs:
   rules:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Site, widget and Python rules agree on every snapshot
@@ -39,6 +39,8 @@ jobs:
         run: python3 tests/test_rules.py
       - name: Browser calls (jsrun.py) run only the stored, untampered scripts
         run: python3 tests/test_jsrun.py
+      - name: SNKRDUNK lines sent as a diff come back byte for byte (runner.js POLL ↔ salesdiff.py)
+        run: python3 tests/test_salesdiff.py
       - name: PSA backlog schedule and page parsing
         run: python3 tests/test_psa_backlog.py
       - name: Local runs print the procedures without the repo-finding prefix
