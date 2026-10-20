@@ -5,6 +5,8 @@ How long a price check takes, step by step (local only: data/incoming/ is not co
     python3 scripts/runclock.py start <mode>     # pricecheck/start.py calls this
     python3 scripts/runclock.py lap <label>      # full_update.py / quick_update.py call it when they publish
     python3 scripts/runclock.py end              # last step of a run: prints the total and the laps
+                                                 # (quick_update.py calls it itself when no follow-ups are left;
+                                                 # a second `end` then just repeats that line)
     python3 scripts/runclock.py history [N]      # the last N runs (default 10)
 
 `end` appends one line per run to data/incoming/run_times.jsonl, so runs can be compared over time.
@@ -19,6 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DIR = ROOT / "data" / "incoming"
 CUR = DIR / "runclock.json"
 LOG = DIR / "run_times.jsonl"
+LAST = DIR / "runclock-last.json"   # the last `end` line, so a repeated `end` can say it again
 
 
 def now():
@@ -40,6 +43,7 @@ def load():
 def start(mode):
     DIR.mkdir(parents=True, exist_ok=True)
     CUR.write_text(json.dumps({"mode": mode, "start": now().isoformat(timespec="seconds"), "laps": []}), encoding="utf-8")
+    LAST.unlink(missing_ok=True)   # a new run: a repeated `end` must not report the previous one
     print(f"⏱ run clock started {now():%H:%M:%S} JST ({mode} check)")
 
 
@@ -57,26 +61,43 @@ def lap(label):
         pass
 
 
+def _push_followups():
+    try:   # the follow-ups committed locally during the run (scripts/deferpush.py): one push for all of them
+        import deferpush
+        print("⏱ follow-ups: " + deferpush.push_pending(ROOT))
+    except Exception as e:  # noqa: BLE001
+        print(f"⏱ follow-ups: push failed ({e}); run `python3 scripts/deferpush.py`")
+
+
 def end():
     c = load()
     if not c:
+        try:   # already ended this run (quick_update.py ends it when no follow-ups are left): repeat that line
+            last = json.loads(LAST.read_text(encoding="utf-8"))
+            if (now() - datetime.fromisoformat(last["ended"])).total_seconds() < 3 * 3600:
+                print(f"{last['line']} (the run clock was already ended at {datetime.fromisoformat(last['ended']):%H:%M:%S} JST)")
+                _push_followups()
+                return
+        except Exception:  # noqa: BLE001
+            pass
         print("⏱ no run clock (start.py wasn't used for this run)")
         return
     t = now()
     s = datetime.fromisoformat(c["start"])
     total = (t - s).total_seconds()
     laps = [(lab, (datetime.fromisoformat(ts) - s).total_seconds()) for lab, ts in c["laps"]]
-    print(f"⏱ {c['mode']} check: {fmt(total)} total (started {s:%H:%M} JST)"
-          + "".join(f" · {lab} at +{fmt(x)}" for lab, x in laps))
+    line = (f"⏱ {c['mode']} check: {fmt(total)} total (started {s:%H:%M} JST)"
+            + "".join(f" · {lab} at +{fmt(x)}" for lab, x in laps))
+    print(line)
+    try:
+        LAST.write_text(json.dumps({"line": line, "ended": t.isoformat(timespec="seconds")}, ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass
     with LOG.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"mode": c["mode"], "start": c["start"], "total_s": round(total),
                             "laps": {lab: round(x) for lab, x in laps}}, ensure_ascii=False) + "\n")
     CUR.unlink(missing_ok=True)
-    try:   # the follow-ups committed locally during the run (scripts/deferpush.py): one push for all of them
-        import deferpush
-        print("⏱ follow-ups: " + deferpush.push_pending(ROOT))
-    except Exception as e:  # noqa: BLE001
-        print(f"⏱ follow-ups: push failed ({e}); run `python3 scripts/deferpush.py`")
+    _push_followups()
 
 
 def history(n=10):

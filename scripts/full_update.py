@@ -298,6 +298,8 @@ def main():
         binder.print_due(ROOT)
         import recap
         recap.print_due(ROOT)
+        import outliers
+        outliers.print_report(ROOT)
         print_followups()
         return
     files = [a for i, a in enumerate(args) if not a.startswith("--") and not (i and args[i - 1] == "--skip")]
@@ -385,6 +387,8 @@ def main():
     runclock.lap("published")
     import focus
     focus.print_report(ROOT)
+    import outliers
+    outliers.print_report(ROOT)
     print_eval_due()
     import review_due
     review_due.print_review_due(ROOT)
@@ -458,6 +462,7 @@ def print_followups():
     import psa_backlog, review_due, sealed_info, set_story
     todo = []
     for step, label, count in (
+        ("7b", "cards that stand out (pricecheck/steps/7b-outliers.md)", lambda: len(__import__("outliers").top(ROOT))),
         ("8b", "evaluate (pricecheck/steps/8b-evaluate.md)", lambda: min(3, len(eval_due()))),
         ("8b", "sell tiers (pricecheck/steps/8b-evaluate.md)", lambda: min(3, len(sell_due()))),
         ("8d", "review buy tiers (pricecheck/steps/8d-review.md)", lambda: min(review_due.per_run(review_due.compute(ROOT)[0]), len(review_due.compute(ROOT)[0]))),

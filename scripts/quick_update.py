@@ -364,7 +364,15 @@ def main():
             todo.insert(0, f"evaluate (pokemon-tcg-card-evaluation; pricecheck/steps/8b-evaluate.md): {min(eval_queue.PER_RUN, len(ev))}")
         import freshness
         freshness.print_stale(root)
-        print("\nFOLLOW-UPS (required before the chat message): " + (" · ".join(todo) if todo else "none"))
+        ended = False
+        if not todo and not not_checked and runclock.load():
+            # nothing left to do (no follow-ups, no card to retry): end the run clock here, which saves the run a
+            # separate `runclock.py end` call (2026-10-20). With an E-line retry or a follow-up pending, the run ends it.
+            print("\nRUN CLOCK (no follow-ups, so the run is timed and ended here; put this line in the chat message):")
+            runclock.end()
+            ended = True
+        print("\nFOLLOW-UPS (required before the chat message): " + (" · ".join(todo) if todo else "none")
+              + (" (run clock already ended above: don't call `runclock.py end`)" if ended else ""))
     sys.exit(r.returncode)
 
 

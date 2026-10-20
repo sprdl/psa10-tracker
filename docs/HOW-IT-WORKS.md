@@ -281,6 +281,13 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    (`add_custom_index.py --print-js`), `pokeca_premium.js` (slab premium and the hype reading) and
    `pokeca_scout.js` (Scout candidates). Each returns compact lines. The three sites run at the same
    time in separate tabs; each site still reads its own pages one after another.
+   Since 2026-10-20 the procedures cut Claude's round trips (each costs several seconds and re-reads the
+   whole context): independent calls go in one message (the Skill, `start.py` and the tool search; a
+   Write and the command that reads it), and predictable browser steps go in one `browser_batch` call
+   (start SNKRDUNK and create the other tabs; everything on the PSA and pokeca-chart tabs up to the
+   premium poll; a RUN with its first POLL). `start.py` removes the last run's `data/incoming/*-in.txt`
+   files first, so a Write never has to overwrite an unread file, and a command sent with a failed Write
+   finds no file instead of the last run's lines.
    The scripts reach the page through `pricecheck/jsrun.py` (since 2026-10-13): each site's
    `localStorage` keeps a copy of the script text (`pc:js:<name>`), and a short RUN call checks that
    copy's SHA-256 against the repo, fills in today's arguments (built by Python from the plan), checks
@@ -306,7 +313,8 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    stories for new cards, re-evaluate cards whose tiers are due, refresh written verdicts the price has
    moved 5%+ from, read sealed-product names, look at PSA's backlog page when `psa_backlog.py due` says so: from the
    day after an update is expected, daily until it's there).
-5. Step 7b writes a short analysis for the cards `outliers.py` flags (`set_insight.py`).
+5. Step 7b writes a short analysis for the cards `outliers.py` flags (`set_insight.py`). `full_update.py`
+   prints that list itself after publishing (`CARDS THAT STAND OUT`, and `7b` in the FOLLOW-UPS line).
 6. Monthly (step 5b): rebuild the odds model, the value model and the hype reference pool in the
    pokeca-chart tab (`odds_model_builder.js`, `value_model_builder.js`). Weekly on Mondays (step 6b):
    look for newly announced releases and add them with `events.py`.
@@ -1167,7 +1175,7 @@ with a docstring explaining its usage. Open the file and read the top.
 | `quick_update.py` | publishing a quick check |
 | `add_snapshot.py` | publishing an assembled snapshot (called by the two above) |
 | `freshness.py` | listing which data sources are older than their cadence |
-| `runclock.py` | the run clock: `start`, `end` (prints the run time and pushes the follow-ups), `history` |
+| `runclock.py` | the run clock: `start`, `end` (prints the run time and pushes the follow-ups; `quick_update.py` calls it itself when no follow-ups or retries are left, and a repeated `end` repeats the line), `history` |
 | `deferpush.py` | (library) commit without pushing while a run clock is running; `runclock.py end` pushes |
 | `site_bundle.py` | building `_site/` for the deploy (run by `deploy.yml`; `python3 scripts/site_bundle.py` to try it) |
 

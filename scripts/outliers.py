@@ -192,17 +192,37 @@ def findings(root=ROOT, upto=None):
     return rows
 
 
-def main():
-    show_all = "--all" in sys.argv
+def top(root=ROOT, show_all=False):
+    """(score, id, name, findings, context) for the cards step 7b writes about: at most 3 with score >= 1."""
     # A written analysis is only shown for cards you don't own (the card page shows the sell view instead),
     # so owned cards aren't candidates.
-    rows = [(r[4][0][1], r[0], r[2], [t for _, _, t in r[4]], r[5]) for r in findings(ROOT) if r[4] and not r[3]]
+    rows = [(r[4][0][1], r[0], r[2], [t for _, _, t in r[4]], r[5]) for r in findings(root) if r[4] and not r[3]]
     rows.sort(reverse=True)
-    top = [r for r in rows if show_all or r[0] >= 1][: None if show_all else 3]
-    if not top:
+    return [r for r in rows if show_all or r[0] >= 1][: None if show_all else 3]
+
+
+def print_top(rows):
+    if not rows:
         print("No card stands out enough for a written analysis this run.")
-    for score, sid, name, fs, ctx in top:
+    for score, sid, name, fs, ctx in rows:
         print(f"{sid} {name} · score {score:.1f}\n  findings: " + " | ".join(fs) + f"\n  context: {ctx}")
+
+
+def print_report(root=ROOT):
+    """full_update.py prints this after publishing, so step 7b needs no separate outliers.py call (2026-10-20).
+    Returns the number of cards listed."""
+    try:
+        rows = top(root)
+    except Exception as e:  # noqa: BLE001  never block a publish over it
+        print(f"\nCARDS THAT STAND OUT (step 7b): couldn't compute ({e}); run `python3 scripts/outliers.py`")
+        return 0
+    print("\nCARDS THAT STAND OUT (FULL-CHECK step 7b, scripts/outliers.py)" + (" — write an analysis for each (pricecheck/steps/7b-outliers.md):" if rows else ":"))
+    print_top(rows)
+    return len(rows)
+
+
+def main():
+    print_top(top(ROOT, "--all" in sys.argv))
 
 
 if __name__ == "__main__":

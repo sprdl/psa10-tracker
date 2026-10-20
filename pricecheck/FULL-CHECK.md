@@ -18,7 +18,7 @@ runs need are in their own files; read one only when its trigger appears (the in
 
 ## Tool pitfalls (read before the first browser call)
 
-- **Browser JavaScript tool.** The browser tools are often deferred (and again after a context compaction). Before the first call, load them with `ToolSearch` (`select:mcp__remote-devices__Claude_Browser__javascript_tool,...navigate,...tabs_create,...tabs_context,...tabs_close`, all in one call: the run uses three tabs) and read the schema. `javascript_tool` takes `action: "javascript_exec"` and `text` (the code). A call with wrong parameter names does not fail: it prints `undefined`. A correct call that returns nothing prints a value or an error, so **if you see `undefined` twice, stop retrying and check the tool's parameters** (the old "extra no-op call" trick only applies to a correct call). The code is a REPL expression: no `return` at top level; wrap async work as `await (async () => {...})()`.
+- **Browser JavaScript tool.** The browser tools are often deferred (and again after a context compaction). Before the first call, load them with `ToolSearch` (`select:mcp__remote-devices__Claude_Browser__browser_batch,...javascript_tool,...navigate,...tabs_create,...tabs_context,...tabs_close`, all in one call: the run uses three tabs and batches its browser steps) and read the schema. `javascript_tool` takes `action: "javascript_exec"` and `text` (the code). A call with wrong parameter names does not fail: it prints `undefined`. A correct call that returns nothing prints a value or an error, so **if you see `undefined` twice, stop retrying and check the tool's parameters** (the old "extra no-op call" trick only applies to a correct call). The code is a REPL expression: no `return` at top level; wrap async work as `await (async () => {...})()`.
 - **Pasting browser calls.** Paste the RUN / STORE / POLL calls exactly as `jsrun.py` printed them, never a shortened stand-in or a hand-edited argument. They carry today's arguments and the scripts' SHA-256 hashes, so a call that was altered refuses to run instead of reading wrong data.
 - **JSON for `apply_analysis.py` / `set_story.py`.** Build it with `python3 -c`/`json.dumps` or write it to a file and run `python3 -m json.tool file` before applying; hand-written JSON lost a closing brace on 2026-10-04 (nothing was saved; the script rejects bad JSON). Also include `predictions` whenever the reasoning states odds (price + deadline), or the warning "reasoning states odds but verdict.predictions is missing" appears.
 
@@ -90,46 +90,49 @@ sites just run in parallel, in separate tabs, so the wait is the slowest site ra
 reads happen in hidden iframes (the My-tier extractor scrolls its own tab, which is why it runs in the
 tab you are working in) and wait on the Worker timer, so a background tab is fine. Rules:
 - Use one tab per site, and pass that tab's id in every `javascript_tool` call: **S** = snkrdunk.com,
-  **P** = psacard.com, **K** = pokeca-chart.com. Create them with `tabs_create` (or `tabs_context` with
-  createIfEmpty for the first). Never run a call on another site's tab: a POLL that answers
+  **P** = psacard.com, **K** = pokeca-chart.com (created as the order below says). Never run a call on another site's tab: a POLL that answers
   `NOT STARTED` means you're on the wrong tab.
 - Only one script per tab at a time: don't start the next RUN on a tab until its POLL has returned lines.
 - Keep every returned line exactly as returned (the scripts' header comments document the codes);
   collect them for step 7.
 
-Order:
-1. **Tab S, start SNKRDUNK (step 2).** `navigate` tab S to `https://snkrdunk.com/apparels/<first id in PLAN>`
-   and paste the `snkrdunk_full` RUN call. It returns `started N cards` and keeps working (about 10 s per
-   card with listings, 3 s without). Don't wait for it.
-2. **Tab P, start the PSA pop report (step 3)**, only when the setup printed a `psa_pop` block (skip if
-   `PSAPOP = []`). `navigate` tab P to `https://www.psacard.com/pop/tcg-cards/156940` and paste the
-   `psa_pop` RUN call (`started …`; about 5–8 s per set page).
-3. **Tab K, pokeca-chart (step 4)**, while the other two run:
-   1. `navigate` to `https://pokeca-chart.com/gr/chart-index/`, paste the `pokeca_both` RUN call. It
-      returns two lines, `IDX psa10 {…}` and `IDX raw {…}`.
-   2. `navigate` to `https://pokeca-chart.com/gr/all-card/?sort=newest`, paste the `mytier` RUN call. It
-      returns one line, `MYTIER {…}`. If it returns `MYTIER! <error>`, leave that line out and mention
-      it (the My-tier index is skipped this run).
-   3. Paste the `pokeca_premium` RUN call and POLL until it returns its `PREM …` lines (about 2 s per
-      card). They carry each card's slab premium (PSA10 ÷ raw 美品) and its 6-month norm;
-      `full_update.py` saves them to `data/premium.json`. A `PREM <id> !…` line (the card has no
-      pokeca-chart page) is expected for a few cards; pass it along like the others.
-   4. Scout runs about every other day: when the setup printed `SCOUT = null`, skip this; otherwise it's
-      required (don't `--skip scout` to save time; `scripts/freshness.py` flags a stale Scout page).
-      `navigate` to `https://pokeca-chart.com/gr/all-card/?sort=newest` again if the tab is elsewhere,
-      paste the `pokeca_scout` RUN call and POLL (about 1 minute: the list, then up to 20 card pages).
-      One `SCP …` line lists today's candidates, then one `SC {…}` (or `SC! …`) line per card page read.
-      `full_update.py` saves them to `data/scout.json`, which feeds the site's Scout page (cards you
-      don't track yet that fit your criteria and look cheap).
-4. **Tab S, collect SNKRDUNK.** POLL tab S with the `snkrdunk_full` POLL call until it returns lines
-   (one per card). Then, only if the setup printed a `snkrdunk_held` block (step 2b: `HELD` lists what the
-   Holdings page needs a price for but the tracked cards don't cover: bought raw cards and raw/at-PSA
-   pulls that aren't tracked (raw A-rank ask plus the last 30 days of one-copy A sales, turned into the
-   raw A-rank price by `scripts/raw_price.py`), and sealed products with no pull logged (lowest ask); on Mondays also the Binder's cards, see step 6c), paste
-   the `snkrdunk_held` RUN call on tab S and POLL it for its `H` / `HE` lines (about 5 s per item). A
-   sealed product with a pull is opened and no longer listed; its stored price is deleted by the
-   publish step. Full checks only, never the quick check.
-5. **Tab P, collect the PSA pop report.** POLL tab P until it returns its `POP …` lines.
+Order. SNKRDUNK is the slowest site (about 4 minutes), so it starts first, and the steps you can
+predict go into one `browser_batch` call each (its items run one after another on the tabs you name;
+every item takes the same input as the tool alone, with an explicit `tabId`; item names: `navigate`,
+`javascript_tool` with `action: "javascript_exec"`, `tabs_create_mcp` / `tabs_close_mcp` in Claude in
+Chrome, `tabs_create` / `tabs_close` in the built-in browser). A batch stops only on a tool error, not
+on a script's answer: read every item's output, and handle a `NEED_SCRIPT` / `MYTIER!` / sign-in answer
+as below before going on (a POLL item after a RUN that didn't start answers `NOT STARTED`; ignore it).
+1. **Tab S, start SNKRDUNK (step 2).** One standalone `navigate` to `https://snkrdunk.com/apparels/<first id in PLAN>`
+   **without a tabId** (it opens the first tab itself and prints its id; only if your browser's
+   `navigate` insists on a tabId, call `tabs_context` with createIfEmpty first). Then **batch 1**:
+   the `snkrdunk_full` RUN call on tab S, then `tabs_create` twice (once if the setup printed no `psa_pop`
+   block). The RUN item returns `started N cards` and keeps working (about 10 s per card with listings,
+   3 s without); the two `tabs_create` items give you tabs P and K.
+2. **Batch 2, tabs P and K** (all in one `browser_batch`):
+   - only when the setup printed a `psa_pop` block (skip if `PSAPOP = []`): `navigate` tab P to
+     `https://www.psacard.com/pop/tcg-cards/156940`, then the `psa_pop` RUN call on tab P (`started …`;
+     about 5–8 s per set page);
+   - `navigate` tab K to `https://pokeca-chart.com/gr/chart-index/`, then the `pokeca_both` RUN call on
+     tab K. It returns two lines, `IDX psa10 {…}` and `IDX raw {…}`;
+   - `navigate` tab K to `https://pokeca-chart.com/gr/all-card/?sort=newest`, then the `mytier` RUN call on
+     tab K. It returns one line, `MYTIER {…}`. If it returns `MYTIER! <error>`, leave that line out and
+     mention it (the My-tier index is skipped this run);
+   - the `pokeca_premium` RUN call on tab K, then its POLL call on tab K (about 2 s per card). The `PREM …`
+     lines carry each card's slab premium (PSA10 ÷ raw 美品) and its 6-month norm; `full_update.py` saves
+     them to `data/premium.json`. A `PREM <id> !…` line (the card has no pokeca-chart page) is expected
+     for a few cards; pass it along like the others. If the POLL item still says `running i/N`, POLL
+     again with a plain `javascript_tool` call.
+   If a batch ever fails with a timeout, send its remaining items as separate calls.
+3. **Scout (step 4.4)** runs about every other day: when the setup printed `SCOUT = null`, skip this;
+   otherwise it's required (don't `--skip scout` to save time; `scripts/freshness.py` flags a stale Scout
+   page). Once the `PREM` lines are in, one batch on tab K: `navigate` to
+   `https://pokeca-chart.com/gr/all-card/?sort=newest` only if the tab is elsewhere, the `pokeca_scout` RUN
+   call, then its POLL (about 1 minute: the list, then up to 20 card pages; POLL again if needed). One
+   `SCP …` line lists today's candidates, then one `SC {…}` (or `SC! …`) line per card page read.
+   `full_update.py` saves them to `data/scout.json`, which feeds the site's Scout page (cards you don't
+   track yet that fit your criteria and look cheap).
+4. **Tab P, collect the PSA pop report.** POLL tab P until it returns its `POP …` lines.
    Gem rate = PSA 10s ÷ total graded on the card's row. If the lines say `PSA sign-in page`, ask the
    user to sign in to psacard.com in the browser pane and re-run; if they say `Cloudflare check`, ask the user
    to turn the VPN off. Never type credentials and never try to pass a "verify you are human" check. If PSA
@@ -137,7 +140,15 @@ Order:
    is carried forward. Same precautions as SNKRDUNK: the user's own browser, only when a check is asked for,
    one page load per set. (PSA's pop report is the only source of PSA10 population and gem rate since
    2026-10-12; it needs a signed-in PSA account, and the browser pane keeps the login.)
-6. Close tabs P and K (`tabs_close`) once their lines are collected.
+5. **Tab S, collect SNKRDUNK.** POLL tab S with the `snkrdunk_full` POLL call until it returns lines
+   (one per card). Then one batch: `tabs_close` tabs P and K (their lines are in), and, only if the setup
+   printed a `snkrdunk_held` block, the `snkrdunk_held` RUN call on tab S followed by its POLL for the `H` /
+   `HE` lines (about 5 s per item). Step 2b: `HELD` lists what the Holdings page needs a price for but the
+   tracked cards don't cover: bought raw cards and raw/at-PSA pulls that aren't tracked (raw A-rank ask plus
+   the last 30 days of one-copy A sales, turned into the raw A-rank price by `scripts/raw_price.py`), and
+   sealed products with no pull logged (lowest ask); on Mondays also the Binder's cards, see step 6c. A
+   sealed product with a pull is opened and no longer listed; its stored price is deleted by the publish
+   step. Full checks only, never the quick check.
 
 On Mondays you can do step 6/6b's web searches (`pricecheck/steps/6-monday.md`) while the reads run.
 
@@ -204,9 +215,10 @@ data/incoming/latest-run.json --prev <latest snapshot>`, then
 
 Run one price check at a time. Overlapping runs published three identical snapshots on 2026-09-25.
 
-**7b. Cards that stand out** (computer linked, after step 7 has published): one `device_bash` call,
-`cd "$R" && python3 scripts/outliers.py`. If it lists cards, follow `pricecheck/steps/7b-outliers.md`;
-if it says nothing stands out, skip it.
+**7b. Cards that stand out** (computer linked, after step 7 has published): `full_update.py` prints
+`scripts/outliers.py`'s list itself (`CARDS THAT STAND OUT`, and `7b` in the FOLLOW-UPS line), so no
+separate call is needed. If it lists cards, follow `pricecheck/steps/7b-outliers.md`; if it says nothing
+stands out, skip it.
 
 **Freshness.** Just before the follow-ups, `full_update.py` (and `quick_update.py`) print `STALE DATA` for any source the site shows that is older than its cadence (`python3 scripts/freshness.py` prints the whole table: source, last update, cadence, which check refreshes it). Refresh what the full check can in this run; name the rest in the chat message.
 
@@ -219,7 +231,7 @@ if it says nothing stands out, skip it.
 | 2c | `BINDER IDS NEEDED` printed | `pricecheck/steps/2c-binder-ids.md` |
 | 5b | `REBUILD DUE` printed | `pricecheck/steps/5b-models.md` |
 | 6, 6b, 6c | Mondays (6c: Binder prices ride along in step 2b) | `pricecheck/steps/6-monday.md` |
-| 7b | `outliers.py` lists cards | `pricecheck/steps/7b-outliers.md` |
+| 7b | `CARDS THAT STAND OUT` lists cards | `pricecheck/steps/7b-outliers.md` |
 | 8b | `EVALUATE NOW` / `SELL TIERS NOW` have cards (required, first) | `pricecheck/steps/8b-evaluate.md` |
 | 8c | `WRITE STORIES NOW` has cards (required) | `pricecheck/steps/8c-stories.md` |
 | 8d | `REVIEW DUE NOW` has cards | `pricecheck/steps/8d-review.md` |
@@ -231,7 +243,7 @@ if it says nothing stands out, skip it.
 
 The snapshot's JSON layout is in `pricecheck/references/output-shape.md` (only when you need it).
 
-**End of the run.** After the last follow-up, one `device_bash` call: `cd "$R" && python3 scripts/runclock.py end`. It also pushes the follow-ups (analyses, insights, stories, hype readings): during a run those scripts only commit, so the site redeploys once instead of after each one (`scripts/deferpush.py`). Never skip this step; if its line says commits were NOT pushed, tell me.
+**End of the run.** After the last follow-up, one `device_bash` call: `cd "$R" && python3 scripts/runclock.py end`, with the `tabs_close` of tab S in the same message. It also pushes the follow-ups (analyses, insights, stories, hype readings): during a run those scripts only commit, so the site redeploys once instead of after each one (`scripts/deferpush.py`). Never skip this step; if its line says commits were NOT pushed, tell me.
 It prints how long the run took (with the time it published) and logs it for comparison
 (`python3 scripts/runclock.py history`). Put that line in the chat message with the tokens used.
 

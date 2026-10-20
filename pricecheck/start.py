@@ -44,10 +44,11 @@ def _stem(cmd):
 def no_heredocs(text):
     def fenced(m):
         f = f"data/incoming/{_stem(m['cmd'])}-in.txt"
-        return (f"First save these lines, verbatim, with the **Write** tool to `{f}`:\n```\n{m['body']}\n```\n"
-                f"then run (one Bash call):\n```\n{m['cmd'].rstrip()} < {f}{m['rest']}\n```")
+        return (f"Save these lines, verbatim, with the **Write** tool to `{f}`:\n```\n{m['body']}\n```\n"
+                f"and **in the same message** (after the Write; the calls run in order, so the command reads the new file) "
+                f"run this one Bash call:\n```\n{m['cmd'].rstrip()} < {f}{m['rest']}\n```")
     text = FENCED_HEREDOC.sub(fenced, text)
-    text = INLINE_HEREDOC.sub(lambda m: f"`{m['cmd'].rstrip()} < data/incoming/{m['stem']}-in.txt` (save the lines to that file with the Write tool first)", text)
+    text = INLINE_HEREDOC.sub(lambda m: f"`{m['cmd'].rstrip()} < data/incoming/{m['stem']}-in.txt` (save the lines to that file with the Write tool first, in the same message)", text)
     # the leftover "+ the lines verbatim + `EOF`" / "… `EOF`" after an inline heredoc
     text = re.sub(r"\s*(?:\+ the lines verbatim \+|…)\s*`(?:EOF|JSON)`", "", text)
     return text.replace("into a heredoc", "into a file (Write tool)").replace("with a heredoc", "with the Write tool")
@@ -60,6 +61,17 @@ def local(text):
     text = re.sub(r"(?ms)^## 0\. .*?(?=^## )", "", text)
     text = CD_R.sub("", PREFIX.sub("", text)).replace('"$R"/', "").replace("$R/", "")
     return no_heredocs(text)
+
+
+def clear_inputs():
+    """Remove the previous run's data/incoming/*-in.txt files. The Write tool refuses to overwrite a file this session
+    hasn't read, which cost a failed Write and a second copy of the lines; and a Write sent in the same message as its
+    command must never leave the command reading the last run's lines (it now fails on the missing file instead)."""
+    for f in (ROOT / "data" / "incoming").glob("*-in.txt"):
+        try:
+            f.unlink()
+        except OSError:
+            pass   # a desktop-app run without delete permission: harmless (its procedures use heredocs)
 
 
 def sh(*cmd):
@@ -95,6 +107,7 @@ def main():
     why = "asked for" if asked else ("first check of the JST day" if mode == "full" else f"today's full check already ran ({st.get('last_full_jst')})")
     print(f"\nMODE: {mode} ({why})")
     print(sh("scripts/runclock.py", "start", mode))
+    clear_inputs()
 
     doc = ROOT / "pricecheck" / ("FULL-CHECK.md" if mode == "full" else "QUICK-CHECK.md")
     print(f"\n======== {doc.relative_to(ROOT)} (follow it) ========\n")
@@ -104,6 +117,8 @@ def main():
               "When a step file or skill shows that prefix, leave it out. Never use a heredoc (<<'EOF' … EOF): save the lines "
               "with the Write tool to data/incoming/<script>-in.txt and run the command with `< data/incoming/<script>-in.txt`. "
               "Read a step file through the same filter: python3 pricecheck/start.py --show pricecheck/steps/<file>. "
+              "Save round trips: send calls that don't depend on each other in one message, and put browser steps you can "
+              "predict into one browser_batch (the procedure says which). "
               "This run can't ask for permission: anything not pre-approved is refused, so a refused call means "
               "the command has the wrong form, not that you should retry it differently.\n")
     print(local(doc.read_text(encoding="utf-8").rstrip("\n")))
