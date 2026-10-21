@@ -2,10 +2,10 @@
  "about": "PSA grading backlog and the reopening of the Value tiers. Readings are PSA's own figures (millions of units, published every other Tuesday on its Backlog Tracker page and in its update notes; the first four copied from screenshots; later ones read from PSA's page by the full check, step 8i). threshold_m is the line PSA's tracker shows for 'Value Tiers Open'. 'projection' is plain arithmetic on the readings (scripts/psa_backlog.py), three scenarios for the next drops, not a forecast: PSA has to assess and announce after the backlog is under the line, and the Value tiers' prices, caps and turnaround may differ when they return. value_prices is PSA Japan's price chart that applied from 2026-02-10 (before the pause); PSA Japan corrected in the comments that Value Max's declared-value cap is 150,000 yen, not 80,000. Edit with scripts/psa_backlog.py. check = when the full check last looked at PSA's page (it looks from the day after an update is expected, daily until there is a newer one).",
  "threshold_m": 5.0,
  "source": "PSA Backlog Tracker and update notes, screenshots from Philipp 2026-10-10",
- "updated_jst": "2026-10-10 09:57",
+ "updated_jst": "2026-10-21 09:07",
  "check": {
-  "last_checked": "2026-10-10",
-  "result": "backfilled 7/14, 7/28, 8/11 from the page; newest is still 10/06"
+  "last_checked": "2026-10-21",
+  "result": "new update 2026-10-20"
  },
  "readings": [
   {
@@ -42,6 +42,11 @@
    "d": "2026-10-06",
    "m": 8.2,
    "note": "Six hubs; PSA: on path to assess reopening additional service tiers in the coming months"
+  },
+  {
+   "d": "2026-10-20",
+   "m": 7.2,
+   "note": "Our active grading backlog is now 7.2 million units, down a million units from 8.2 million reported October 6"
   }
  ],
  "tiers": [
@@ -107,21 +112,22 @@
   ]
  },
  "projection": {
-  "as_of": "2026-10-06",
-  "backlog_m": 8.2,
-  "gap_m": 3.2,
-  "next_update": "2026-10-20",
+  "as_of": "2026-10-20",
+  "backlog_m": 7.2,
+  "gap_m": 2.2,
+  "next_update": "2026-11-03",
   "drops_m": [
    -1.4,
    0.55,
    0.95,
    1.0,
    0.9,
-   0.8
+   0.8,
+   1.0
   ],
   "avg_drop_m": 0.9,
-  "last_drop_m": 0.8,
-  "drop_step_m": 0.1,
+  "last_drop_m": 1.0,
+  "drop_step_m": 0.0,
   "scenarios": [
    {
     "key": "avg",
@@ -131,118 +137,118 @@
     "floor_m": null,
     "path": [
      {
-      "d": "2026-10-20",
-      "m": 7.3
-     },
-     {
       "d": "2026-11-03",
-      "m": 6.4
+      "m": 6.3
      },
      {
       "d": "2026-11-17",
-      "m": 5.5
+      "m": 5.4
      },
      {
       "d": "2026-12-01",
-      "m": 4.6
+      "m": 4.5
      },
      {
       "d": "2026-12-15",
-      "m": 3.7
+      "m": 3.6
      },
      {
       "d": "2026-12-29",
-      "m": 2.8
+      "m": 2.7
      },
      {
       "d": "2027-01-12",
-      "m": 1.9
+      "m": 1.8
      },
      {
       "d": "2027-01-26",
-      "m": 1.0
+      "m": 0.9
+     },
+     {
+      "d": "2027-02-09",
+      "m": 0.0
      }
     ]
    },
    {
     "key": "latest",
     "label": "Latest pace holds",
-    "rule": "each update drops 0.80M, like the last one",
-    "under_on": "2026-12-15",
+    "rule": "each update drops 1.00M, like the last one",
+    "under_on": "2026-12-01",
     "floor_m": null,
     "path": [
      {
-      "d": "2026-10-20",
-      "m": 7.4
-     },
-     {
       "d": "2026-11-03",
-      "m": 6.6
+      "m": 6.2
      },
      {
       "d": "2026-11-17",
-      "m": 5.8
+      "m": 5.2
      },
      {
       "d": "2026-12-01",
-      "m": 5.0
-     },
-     {
-      "d": "2026-12-15",
       "m": 4.2
      },
      {
+      "d": "2026-12-15",
+      "m": 3.2
+     },
+     {
       "d": "2026-12-29",
-      "m": 3.4
+      "m": 2.2
      },
      {
       "d": "2027-01-12",
-      "m": 2.6
+      "m": 1.2
      },
      {
       "d": "2027-01-26",
-      "m": 1.8
+      "m": 0.2
+     },
+     {
+      "d": "2027-02-09",
+      "m": 0.0
      }
     ]
    },
    {
     "key": "slow",
     "label": "Slowdown continues",
-    "rule": "the drop keeps shrinking by 0.10M per update until it reaches zero",
-    "under_on": null,
-    "floor_m": 5.4,
+    "rule": "no slowdown in the last drops, same as the latest pace",
+    "under_on": "2026-12-01",
+    "floor_m": null,
     "path": [
      {
-      "d": "2026-10-20",
-      "m": 7.5
-     },
-     {
       "d": "2026-11-03",
-      "m": 6.9
+      "m": 6.2
      },
      {
       "d": "2026-11-17",
-      "m": 6.4
+      "m": 5.2
      },
      {
       "d": "2026-12-01",
-      "m": 6.0
+      "m": 4.2
      },
      {
       "d": "2026-12-15",
-      "m": 5.7
+      "m": 3.2
      },
      {
       "d": "2026-12-29",
-      "m": 5.5
+      "m": 2.2
      },
      {
       "d": "2027-01-12",
-      "m": 5.4
+      "m": 1.2
      },
      {
       "d": "2027-01-26",
-      "m": 5.4
+      "m": 0.2
+     },
+     {
+      "d": "2027-02-09",
+      "m": 0.0
      }
     ]
    }
