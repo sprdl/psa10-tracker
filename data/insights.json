@@ -127,6 +127,13 @@
      "url": "https://premium.gamepedia.jp/pokeca/archives/19842"
     }
    ]
+  },
+  "https://snkrdunk.com/apparels/93084": {
+   "written": "2026-10-21T09:07:58+09:00",
+   "headline": "Ask +16% in a week on only 0.3 sales a day",
+   "text": "What's happening: The PSA10 lowest ask rose 16% in a week, from ¥43,000 to ¥49,999, against a 3.2% fall in the My-tier index. The 7-day sales median is ¥49,500 (4 sales) against ¥46,000 before (16 sales), so trading has slowed to about 0.3 sales a day while the price climbed.\n\nWhy: Likely thin supply: only 3 of 18 listings are within 15% of the lowest ask, so a few sold-out listings move the floor a lot. I found no news of a reprint or new card for the three legendary birds that would explain it; the retailer pages I found only listed other rarities of the same card.\n\nFor you: The ask is at the ¥50,000 ceiling and well above your ¥37,000 limit, so it is not a buy zone. The tiers (¥36,800 / ¥41,400 / ¥50,000) stay as they are.\n\nWatch: Whether the ask holds above ¥48,000 with so few sales; slow trading with a rising ask often gives back the move.",
+   "signals": "7d price +16.3% (¥43,000→¥49,999) vs My-tier index -3.2% = +19.5 pts",
+   "sources": []
   }
  }
 }
