@@ -1,10 +1,4 @@
 {
  "about": "Focus watch cards (scripts/focus.py). Reported after every price check and on the site's Overview.",
- "cards": {
-  "https://snkrdunk.com/apparels/724996": {
-   "since": "2026-10-18",
-   "until": "2026-11-30",
-   "note": "Buy window: a listing at ≤¥60k (limit), ideally ¥57–58k; plan is to wait through the 11/13 deck release unless the wall thins while sales hold ≥¥60k."
-  }
- }
+ "cards": {}
 }
