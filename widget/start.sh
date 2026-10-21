@@ -15,7 +15,14 @@ tell application "Terminal"
 end tell
 OSA
     ;;
-  show) run_window show ;;
+  show)
+    if ! run_window show; then
+      if running_mode >/dev/null; then
+        notify "The run's window isn't open any more. If the run still shows as going, it clears itself within a minute."
+      else
+        notify "No run is going any more (its window was closed), so the widget is back to normal."
+      fi
+    fi ;;
   resume)
     sid=$(cat "$STATE/last-session" 2>/dev/null) || exit 1
     osascript >/dev/null <<OSA

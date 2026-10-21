@@ -12,6 +12,7 @@ How long a price check takes, step by step (local only: data/incoming/ is not co
 `end` appends one line per run to data/incoming/run_times.jsonl, so runs can be compared over time.
 """
 import json
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -42,7 +43,11 @@ def load():
 
 def start(mode):
     DIR.mkdir(parents=True, exist_ok=True)
-    CUR.write_text(json.dumps({"mode": mode, "start": now().isoformat(timespec="seconds"), "laps": []}), encoding="utf-8")
+    c = {"mode": mode, "start": now().isoformat(timespec="seconds"), "laps": []}
+    pid = os.environ.get("PSA10_RUN_PID", "")
+    if pid.isdigit():   # a menu-bar run: its run-check.sh process, so the widget can tell when the run is gone
+        c["pid"] = int(pid)
+    CUR.write_text(json.dumps(c), encoding="utf-8")
     LAST.unlink(missing_ok=True)   # a new run: a repeated `end` must not report the previous one
     print(f"⏱ run clock started {now():%H:%M:%S} JST ({mode} check)")
 

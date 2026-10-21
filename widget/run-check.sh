@@ -58,6 +58,7 @@ git pull --ff-only --quiet || echo "(git pull failed; the check pulls again at i
 session=$(uuidgen | tr 'A-Z' 'a-z')
 echo "$session" > "$STATE/last-session"
 export PSA10_RUN=1   # the hooks only act inside widget runs
+export PSA10_RUN_PID=$$   # start.py puts it in the run clock, so the widget can tell when this run is gone (lib.sh running_mode)
 
 # Watcher: ends the Claude session once the run is done (see the header).
 (

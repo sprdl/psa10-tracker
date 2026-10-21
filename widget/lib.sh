@@ -37,9 +37,21 @@ running_mode() {
     fi
   fi
   # 2. The repo's run clock: start.py writes it, runclock.py end removes it. Ignore it after 3 h
-  #    (a run that was abandoned without `runclock.py end`).
+  #    (a run that was abandoned without `runclock.py end`). A menu-bar run's clock carries its run-check.sh
+  #    pid: when that process is gone (its window was closed and the cleanup didn't run), the run is over, so
+  #    the clock is cleared here instead of keeping the widget on "running" (2026-10-21).
   if [ -f "$RUNCLOCK" ] && [ -n "$(find "$RUNCLOCK" -mmin -180 2>/dev/null)" ]; then
-    python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("mode",""))' "$RUNCLOCK" 2>/dev/null
+    local info rmode rpid
+    info=$(python3 -c 'import json,sys;c=json.load(open(sys.argv[1]));print(c.get("mode","") or "-", c.get("pid",""))' "$RUNCLOCK" 2>/dev/null)
+    read -r rmode rpid <<< "$info"
+    [ "$rmode" = "-" ] && rmode=""
+    if [ -n "$rpid" ] && ! kill -0 "$rpid" 2>/dev/null; then
+      rm -f "$RUNCLOCK" "$STATE/attention"
+      date "+%Y-%m-%d %H:%M ${rmode:-?} run ended without its cleanup (process $rpid gone): run clock cleared" >> "$STATE/runs.log"
+      (cd "$REPO" && python3 scripts/deferpush.py >> "$STATE/runs.log" 2>&1 &)   # follow-ups it committed but didn't push
+      return 1
+    fi
+    echo "$rmode"
     return 0
   fi
   return 1
@@ -108,17 +120,23 @@ run_window() {  # run_window show|close [tty]
   local tt="${2:-$(cat "$STATE/run-tty" 2>/dev/null)}"
   [ -n "$tt" ] || return 1
   if [ "$1" = show ]; then
-    osascript >/dev/null 2>&1 <<OSA
+    local found
+    found=$(osascript 2>/dev/null <<OSA
 tell application "Terminal"
+  set found to "none"
   repeat with w in windows
     if tty of tab 1 of w is "$tt" then
       set miniaturized of w to false
       set index of w to 1
+      set found to "found"
     end if
   end repeat
-  activate
+  if found is "found" then activate
+  return found
 end tell
 OSA
+)
+    [ "$found" = found ]
   else
     osascript >/dev/null 2>&1 <<OSA
 tell application "Terminal"
