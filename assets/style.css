@@ -443,6 +443,18 @@ img.card-img {
 .market-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
 .market-notes p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.55; }
 .market-notes .panel { padding: 14px 16px; }
+.market-notes .vb .lbl { margin-bottom: 8px; }
+.vb-row { display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 10px; font-size: 12px; margin: 5px 0; }
+.vb-k { color: var(--muted-2); white-space: nowrap; }
+.vb-bar { height: 10px; background: var(--panel-2); border-radius: 3px; overflow: hidden; }
+.vb-bar i { display: block; height: 100%; border-radius: 3px; }
+.vb-bar i.base { background: var(--muted-2); }
+.vb-bar i.hi { background: var(--accent); }
+.vb-bar i.lo { background: var(--ghost); }
+.vb-bar i.peak { background: var(--line-3); }
+.vb-v { font-variant-numeric: tabular-nums; color: var(--text); text-align: right; min-width: 64px; }
+.vb-v small { color: var(--muted-2); font-size: 10.5px; margin-left: 4px; }
+.vb-cap { font-size: 10.5px; color: var(--muted-2); margin-top: 8px; }
 
 /* history + listings */
 .history-block .lbl, .spark-block .lbl, .distribution .lbl { font: 15px var(--display); letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }

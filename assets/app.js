@@ -1764,7 +1764,31 @@
     const notes = [['PSA10 index volume', psa10.volume_note], ['Raw A-rank index volume', raw.volume_note]].filter((n) => n[1]);
     let mn = document.getElementById('market-notes');
     if (!mn) { mn = document.createElement('div'); mn.id = 'market-notes'; mn.className = 'market-notes'; els.marketStrip.after(mn); }
-    mn.innerHTML = notes.map(([k, v]) => `<div class="panel"><div class="lbl">${escapeHtml(k)}</div><p>${escapeHtml(v)}</p></div>`).join('');
+    mn.innerHTML = notes.map(([k, v], i) => volBarsHtml(k, v, i ? raw : psa10)).join('');
+  }
+
+  // A pokeca-chart index's daily trade counts as bars (2026-10-23): prior-30-day, 14-day and 7-day averages and the
+  // 14-day peak, from the volume note the full check stores. Falls back to the note text if it can't be parsed.
+  function volBarsHtml(label, note, idx) {
+    const m = String(note).match(/7d avg ([\d.]+), 14d avg ([\d.]+) vs prior-30d avg ([\d.]+)(?:; 14d peak ([\d.]+) on ([\d/]+))?(?:.*?data to ([\d/]+))?/);
+    if (!m) return `<div class="panel"><div class="lbl">${escapeHtml(label)}</div><p>${escapeHtml(note)}</p></div>`;
+    const [a7, a14, ap] = [m[1], m[2], m[3]].map(Number);
+    const peak = m[4] ? Number(m[4]) : null;
+    const md = (d) => (d ? d.split('/').slice(1).map(Number).join('/') : '');
+    const max = Math.max(a7, a14, ap, peak || 0) || 1;
+    const fmt = (x) => (x >= 100 ? Math.round(x).toLocaleString('en-US') : x.toFixed(1));
+    const row = (k, x, cls, sub) => `<div class="vb-row"><span class="vb-k">${k}</span><span class="vb-bar"><i class="${cls}" style="width:${Math.max(1.5, (x / max) * 100).toFixed(1)}%"></i></span><span class="vb-v">${fmt(x)}${sub ? `<small>${sub}</small>` : ''}</span></div>`;
+    const vs = (x) => (x >= ap ? 'hi' : 'lo');
+    const v = volTrendOf(idx);
+    const pctTxt = (x) => (ap ? ` (${fmtPct((x / ap - 1) * 100)})` : '');
+    return `<div class="panel vb" title="${escapeAttr(note)}">
+      <div class="lbl">${escapeHtml(label)}${v.t ? ` · <span class="${v.t === 'falling' ? 'down' : v.t === 'flat' ? '' : 'up'}">${escapeHtml(v.t)}</span>` : ''}</div>
+      ${row('Prior 30 days', ap, 'base', '')}
+      ${row('Last 14 days', a14, vs(a14), pctTxt(a14))}
+      ${row('Last 7 days', a7, vs(a7), pctTxt(a7))}
+      ${peak != null ? row(`Peak day ${md(m[5])}`, peak, 'peak', '') : ''}
+      <div class="vb-cap">Average trades a day on pokeca-chart${m[6] ? ` · data to ${md(m[6])}` : ''}</div>
+    </div>`;
   }
 
   // ---------- render: My-tier index (data/custom_index.json) ----------
