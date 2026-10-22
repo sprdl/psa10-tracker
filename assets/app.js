@@ -119,8 +119,12 @@
 
   // Values carried from an earlier full check (quick runs) carry the time they were
   // really measured; show it so old numbers never pass for new ones.
-  function asOfHtml(iso) {
-    return iso ? `<span class="asof">as of ${escapeHtml(fmtDateShort(iso).slice(5))}</span>` : '';
+  // maxDays: the value's usual refresh (population 7, listings 3); older than that it's amber, like STALE DATA in the runs.
+  function asOfHtml(iso, maxDays) {
+    if (!iso) return '';
+    const age = maxDays ? (Date.parse((state.currentData && state.currentData.collected_at_jst) || new Date().toISOString()) - Date.parse(iso)) / 86400000 : 0;
+    const stale = maxDays && age > maxDays;
+    return `<span class="asof${stale ? ' stale' : ''}"${stale ? ` title="Older than its usual refresh (${maxDays} days): ${Math.floor(age)} days old"` : ''}>as of ${escapeHtml(fmtDateShort(iso).slice(5))}</span>`;
   }
 
   function fmtDateShort(iso) {
@@ -504,9 +508,13 @@
 
   function depthInfo(grade) {
     const within = grade.count_within_15pct || 0;
-    const total = (grade.top20_cheapest_listings || []).length || 20;
+    const list = grade.top20_cheapest_listings || [];
+    const total = list.length || 20;
     const ratio = total ? Math.min(1, within / total) : 0;
-    return { within, total, ratio, cls: ratio >= 0.4 ? 'depth-tight' : 'depth-thin' };
+    // asks within 3% of the lowest: the wall at the cheap end (scripts/focus.py's BOOK DEPTH), the buy signal you watch
+    const lo = list.length ? Math.min(...list) : null;
+    const within3 = lo ? list.filter((p) => p <= lo * 1.03).length : null;
+    return { within, total, ratio, within3, cls: ratio >= 0.4 ? 'depth-tight' : 'depth-thin' };
   }
 
   function salesRangeText(sales) {
@@ -1636,7 +1644,7 @@
     const evOn = activeEvents().filter((e) => cards.some((c) => eventApplies(e, c) && c.analysis && c.analysis.tiers && !ownsCard(c)));
     const ruleTxt = correctionState().active ? 'correction rule on: only Definitely-buy and your limits count'
       : evOn.length ? `event rule on for ${[...new Set(evOn.map(eventScope))].join(', ')}: only Definitely-buy and your limits count there` : '';
-    const empty = buys.length ? '' : `<div class="ib-quiet"><span class="vtag none">Buy</span><span>No buy signals${ruleTxt ? ` (${escapeHtml(ruleTxt)})` : ''}. ${tracked} cards tracked.</span></div>`;
+    const empty = buys.length ? '' : `<div class="ib-quiet"><span>No buy signals${ruleTxt ? ` (${escapeHtml(ruleTxt)})` : ''}. ${tracked} cards tracked.</span></div>`;
     el.innerHTML = `<h2 class="section-title">Needs you${items.length ? ` <span class="ib-n">${items.length}</span>` : ''}</h2>
       ${items.length || empty ? '' : '<p class="ib-none">Nothing to act on today.</p>'}
       <ul class="ib-list">${items.map((x) => {
@@ -1661,6 +1669,10 @@
     const t = holdingsTotals(cards);
     const st = plannerState();
     const left = st.budget - state.holdings.reduce((a, h) => a + holdingCost(h), 0);
+    const paidSingles = state.holdings.reduce((a, h) => a + (h.purchase_price_jpy || 0), 0);
+    const budgetTip = `Budget ${fmtYen(st.budget)} (budget planner) − singles ${fmtYen(paidSingles)} − grading ${fmtYen(st.budget - left - paidSingles)} (raw copies, counted whether sent yet or not)`;
+    let spark = '';
+    try { spark = moneySpark(); } catch (e) { spark = ''; }
     let bench = null;
     try {
       const ps = portfolioSeries(), last = ps && ps.pts && ps.pts[ps.pts.length - 1];
@@ -1671,10 +1683,25 @@
       ${t.n ? `<span class="lbl">Holdings · ${escapeHtml(basisWord().toLowerCase())}</span>
       <span class="mn-v display">${fmtYen(t.worth)}</span>
       <span class="mn-d ${t.pnl >= 0 ? 'pos' : 'neg'}">${signedYen(t.pnl)}${pct != null ? ` (${fmtPct(pct)})` : ''} <small>on ${fmtYen(t.spent)}</small></span>` : '<span class="mn-d muted">Nothing bought yet.</span>'}
+      ${spark}
       <dl class="mn-rows">
         ${bench != null ? `<div title="The same purchases put into the My-tier index on the same days"><dt>vs My-tier index</dt><dd class="${dirClass(bench)}">${signedYen(bench)}</dd></div>` : ''}
-        <div title="Budget ${fmtYen(st.budget)} minus what you spent on singles (budget planner)"><dt>Budget left</dt><dd class="${left < 0 ? 'amb' : ''}">${left < 0 ? fmtYen(-left) + ' over' : fmtYen(left)}</dd></div>
+        <div title="${escapeAttr(budgetTip)}"><dt>${left < 0 ? 'Over budget by' : 'Budget left'}</dt><dd class="${left < 0 ? 'amb' : ''}">${fmtYen(Math.abs(left))}</dd></div>
       </dl>`;
+  }
+  // Your money: worth (line) against spent (dashed) over the last 30 days, from the Holdings chart's series.
+  function moneySpark() {
+    const ser = portfolioSeries();
+    if (!ser || !ser.pts || ser.pts.length < 2) return '';
+    const cut = ser.now - 30 * 86400000;
+    let pts = ser.pts.filter((p) => p.t >= cut);
+    if (pts.length < 2) pts = ser.pts.slice(-2);
+    const W = 300, H = 64, t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+    const vals = pts.flatMap((p) => [p.worth.total, p.spent.total]);
+    const lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
+    const X = (t) => ((t - t0) * W) / (t1 - t0 || 1), Y = (v) => 4 + (H - 8) * (1 - (v - lo) / span);
+    const path = (k) => pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.t).toFixed(1)},${Y(p[k].total).toFixed(1)}`).join(' ');
+    return `<div class="mn-spark" title="Last 30 days: what your holdings are worth (line) against what you spent (dashed)"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path class="s" d="${path('spent')}"/><path class="w" d="${path('worth')}"/></svg><span class="mn-spark-lbl">30 days</span></div>`;
   }
 
   // ---------- render: market strip ----------
@@ -3696,8 +3723,9 @@
     if (!t || (!t.n && !(state.sold || []).length)) { el.hidden = true; el.innerHTML = ''; return; }
     const pct = t.spent ? (t.pnl / t.spent) * 100 : null;
     const notes = [t.unopened ? `${t.unopened} sealed product${t.unopened === 1 ? '' : 's'} without a price counted at cost` : '', t.unpriced ? `${t.unpriced} item${t.unpriced === 1 ? '' : 's'} without a price left out of the value` : ''].filter(Boolean).join(' · ');
-    el.innerHTML = `<div class="pa-cell"><span class="lbl">Total spent</span><span class="v">${fmtYen(t.spent)}</span></div>
-      <div class="pa-cell"><span class="lbl">${basisWord()}</span><span class="v">${fmtYen(t.worth)}</span></div>
+    el.title = 'All holdings together: singles, sealed products and pulls. The Singles tab below shows singles only.';
+    el.innerHTML = `<div class="pa-cell"><span class="lbl">Spent · all holdings</span><span class="v">${fmtYen(t.spent)}</span></div>
+      <div class="pa-cell"><span class="lbl">${basisWord()} · singles, sealed, pulls</span><span class="v">${fmtYen(t.worth)}</span></div>
       <div class="pa-cell"><span class="lbl">+/−</span><span class="v ${t.pnl >= 0 ? 'pos' : 'neg'}">${t.pnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(t.pnl))}</span>${pct != null ? `<span class="pa-pct ${t.pnl >= 0 ? 'pos' : 'neg'}">${fmtPct(pct)}</span>` : ''}</div>
       ${(state.sold || []).length ? `<div class="pa-cell"><span class="lbl">Realized</span><span class="v ${soldTotals().profit >= 0 ? 'pos' : 'neg'}">${signedYen(soldTotals().profit)}</span></div>` : ''}
       ${notes ? `<div class="pa-note">${escapeHtml(notes)}</div>` : ''}`;
@@ -4326,9 +4354,12 @@
     const h = heatOf(card), x = h && h.psa, hype = (hypeOf(card) || {}).level === 'high';
     const lv = x ? HEAT_LEVELS.find(([min]) => x.rate >= min) : null;
     if (!lv && !hype) return '';
+    // High hype only matters when the market falls (those cards slid fastest in past falls), so the tag is quiet
+    // otherwise and turns red in a falling market (same test as the card page's Hype exposure text). 2026-10-23
+    const cs = hype ? correctionState() : null, falling = !!cs && (cs.active || (cs.pct != null && cs.pct < 0));
     const tip = [lv ? `${lv[2]}: about ${rateTxt(x)} PSA10 sales a day on SNKRDUNK` : 'No recent PSA10 sales',
-      hype ? 'High hype: swings harder than most cards when the market moves (see Hype exposure on the card page)' : ''].filter(Boolean).join('\n');
-    return `<span class="mkt-chip${hype ? ' has-hype' : ''}" title="${escapeAttr(tip)}">${lv ? `<span class="heat-chip heat-${lv[1]}">${HEAT_ICON[lv[1]] || ''}${lv[2]}</span>` : ''}${hype ? '<span class="mkt-hype">Hype</span>' : ''}</span>`;
+      hype ? `High hype: swings harder than most cards when the market moves (see Hype exposure on the card page). ${falling ? 'The market is falling, when this matters most.' : 'It matters most when the market falls; the tag turns red then.'}` : ''].filter(Boolean).join('\n');
+    return `<span class="mkt-chip${hype ? ' has-hype' : ''}" title="${escapeAttr(tip)}">${lv ? `<span class="heat-chip heat-${lv[1]}">${HEAT_ICON[lv[1]] || ''}${lv[2]}</span>` : ''}${hype ? `<span class="mkt-hype${falling ? '' : ' quiet'}">Hype</span>` : ''}</span>`;
   }
   function heatStatHtml(card) {
     const h = heatOf(card);
@@ -4462,7 +4493,11 @@
     const g = limitGap(card);
     if (!g) return `<span class="${cls} muted" title="No limit set for this card">—</span>`;
     const hit = g.pct <= 0;
-    return `<span class="${cls} ${hit ? 'lim-hit' : 'lim-gap'}" title="Lowest ask ${fmtYen(g.ask)} vs your limit ${fmtYen(g.lim)} (${fmtYen(Math.abs(g.ask - g.lim))} ${hit ? 'below' : 'above'})">${fmtYenShort(g.lim)}<small class="chg-sub">${hit ? '✓ ' + (g.pct === 0 ? '0%' : fmtPct(g.pct)) : fmtPct(g.pct)}</small></span>`;
+    const d = card.grades && card.grades.psa10 ? depthInfo(card.grades.psa10) : null;
+    const near = d && d.within3 != null && g.pct <= 10 ? d.within3 : null;   // close to your limit: how thick the cheap end is
+    const tip = `Lowest ask ${fmtYen(g.ask)} vs your limit ${fmtYen(g.lim)} (${fmtYen(Math.abs(g.ask - g.lim))} ${hit ? 'below' : 'above'})`
+      + (near != null ? `\n${near} of the ${d.total} cheapest asks are within 3% of the lowest` : '');
+    return `<span class="${cls} ${hit ? 'lim-hit' : 'lim-gap'}" title="${escapeAttr(tip)}">${fmtYenShort(g.lim)}<small class="chg-sub">${hit ? '✓ ' + (g.pct === 0 ? '0%' : fmtPct(g.pct)) : 'ask ' + fmtPct(g.pct)}${near != null ? ` · ${near} near` : ''}</small></span>`;
   }
   function changeCell(card, days, cls) {
     const c = priceChangeAgo(card, days);
@@ -4490,7 +4525,7 @@
   function wlHeadHtml(k) {
     const h = OV_HEAD[k];
     const b = (key, label, cls, tip) => `<button type="button" class="${cls || ''}" data-sort="${key}"${tip ? ` title="${escapeAttr(tip)}"` : ''}>${label}</button>`;
-    return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chgLast', 'Last', 'r', 'Change since the previous check (quick or full)')}${b('chg7', '7D', 'r', '7-day change, 30 days underneath')}${b('verdict', h.verdict, '', h.verdict === 'Verdict' ? 'Buy verdict, plus Self-grade / Limit flags' : 'Sell signal')}${b('heat', 'Market', 'wl-mkt', 'How the card trades: activity (PSA10 sales a day) and a red Hype end when it swings harder than most with the market')}</div>`;
+    return `<div class="wl-head"><span></span>${b('name', 'Card')}${b('price', 'Price', 'r')}${b('zone', h.zone, 'wl-zone', 'Sort by distance to the Buy line')}${b('limit', h.limit, 'r', h.limitTip)}${b('chgLast', 'Last', 'r', 'Change since the previous check (quick or full)')}${b('chg7', '7D', 'r', '7-day change, 30 days underneath')}${b('verdict', h.verdict, '', h.verdict === 'Verdict' ? 'Buy verdict, plus Self-grade / Limit flags' : 'Sell signal')}${b('heat', 'Market', 'wl-mkt', 'How the card trades: activity (PSA10 sales a day) and a Hype end when it swings harder than most with the market (red while the market falls)')}</div>`;
   }
   function wlRowHtml(card) {
     const { short, code, pack } = parseCardName(card.card_name_ja);
@@ -4743,11 +4778,11 @@
     const popText = `${card.psa10_population != null ? card.psa10_population.toLocaleString() : '—'}${card.psa10_gem_rate_pct != null ? ' · ' + card.psa10_gem_rate_pct + '%' : ''}${card.psa10_population != null ? `<small class="muted" title="${card.population_source === 'psa' ? `PSA's own population report: PSA 10s ÷ ${card.psa_total_graded != null ? card.psa_total_graded.toLocaleString() + ' ' : ''}graded` : 'an older reading from altema; PSA\'s pop report replaces it at the next full check'}"> ${card.population_source === 'psa' ? 'PSA' : 'old'}</small>` : ''}`;
     const statsHtml = `
       <div class="cd-stats">
-        <div class="cd-stat"><div class="lbl">Order-book depth</div><div class="val">${depth.within} / ${depth.total}${asOfHtml(psa10.listings_as_of)}</div><div class="depth-bar-track"><div class="depth-bar-fill" style="width:${Math.round(depth.ratio * 100)}%"></div></div></div>
+        <div class="cd-stat" title="The ${depth.total} cheapest PSA10 asks: how many sit within 3% of the lowest (the wall a buyer has to clear) and within 15%"><div class="lbl">Order-book depth</div><div class="val">${depth.within3 != null ? `${depth.within3} near the ask` : `${depth.within} / ${depth.total}`}${asOfHtml(psa10.listings_as_of, 3)}</div><div class="depth-bar-track"><div class="depth-bar-fill" style="width:${Math.round(depth.ratio * 100)}%"></div></div><div class="heat-sub">${depth.within3 != null ? `of ${depth.total} cheapest asks within 3% of the lowest · ${depth.within} within 15%` : `${depth.within} of ${depth.total} cheapest asks within 15% of the lowest`}</div></div>
         <div class="cd-stat"><div class="lbl">Recent sales</div><div class="val">${salesRangeText(psa10.recent_completed_sales)}</div></div>
         ${heatStatHtml(card)}
         <div class="cd-stat"><div class="lbl">Favorites</div><div class="val">${favHtml}</div></div>
-        <div class="cd-stat"><div class="lbl">Population · gem rate</div><div class="val">${popText}${card.population_as_of ? asOfHtml(card.population_as_of) : ''}${popGrowthTxt(card)}</div></div>
+        <div class="cd-stat"><div class="lbl">Population · gem rate</div><div class="val">${popText}${card.population_as_of ? asOfHtml(card.population_as_of, 7) : ''}${popGrowthTxt(card)}</div></div>
         <div class="cd-stat" title="${escapeAttr(rawPriceNote(rawPrice(card)))}"><div class="lbl">Raw A-rank</div><div class="val">${rawPriceV(card) != null ? fmtYen(rawPriceV(card)) : '—'}${raw && raw.lowest_price != null && rawPriceV(card) !== raw.lowest_price ? `<small class="muted"> · ask ${fmtYenShort(raw.lowest_price)}</small>` : ''}</div></div>
       </div>`;
 
@@ -5864,7 +5899,7 @@
       g.calls.sort((x, y) => (x.made < y.made ? 1 : -1));
       g.preds.sort((x, y) => (x.by < y.by ? -1 : x.by > y.by ? 1 : 0));
       const cur = g.calls[0];
-      const callSum = [['right', 'right'], ['wrong', 'wrong'], ['neutral', 'neutral'], ['pending', 'pending']]
+      const callSum = [['right', 'right'], ['wrong', 'wrong'], ['neutral', 'neutral'], ['pending', 'pending'], ['unscored', 'not scored'], ['void', 'void']]
         .map(([st, l]) => (cnt(g.calls, st) ? `${cnt(g.calls, st)} ${l}` : '')).filter(Boolean).join(' · ');
       const oddsSum = [['yes', 'happened'], ['no', "didn't"], ['open', 'open'], ['void', 'void']]
         .map(([st, l]) => (cnt(g.preds, st) ? `${cnt(g.preds, st)} ${l}` : '')).filter(Boolean).join(' · ');

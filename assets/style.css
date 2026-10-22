@@ -213,9 +213,16 @@ img { display: block; }
 .mn-rows dt { color: var(--muted); }
 .mn-rows dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
 .mn-rows .amb { color: var(--amber); }
+.mn-spark { position: relative; margin: 6px 0 4px; min-height: 0; flex: 1 1 auto; display: flex; align-items: center; }
+.mn-spark svg { width: 100%; height: 64px; display: block; overflow: visible; }
+.mn-spark .w { fill: none; stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.mn-spark .s { fill: none; stroke: var(--muted-2); stroke-width: 1.2; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+.mn-spark-lbl { position: absolute; right: 0; top: 0; font-size: 10px; color: var(--muted-2); }
+.asof.stale { color: var(--amber); }
 @media (max-width: 1299px) {
   .ov-top { grid-template-columns: 1fr; gap: 14px; }
-  .money { display: grid; grid-template-columns: auto auto minmax(0, 1fr) minmax(200px, 280px); grid-template-areas: "h h h h" "l l . r" "v d . r"; align-items: end; column-gap: 14px; row-gap: 2px; }
+  .money { display: grid; grid-template-columns: auto auto minmax(0, 1fr) minmax(200px, 280px); grid-template-areas: "h h h h" "l l s r" "v d s r"; align-items: end; column-gap: 14px; row-gap: 2px; }
+  .money .mn-spark { grid-area: s; align-self: stretch; margin: 0 4px; }
   .money .mn-head { grid-area: h; }
   .money .lbl { grid-area: l; }
   .money .mn-v { grid-area: v; font-size: 38px; }
@@ -641,6 +648,7 @@ td em { color: var(--muted-2); font-style: normal; }
   .ib-item > .vtag, .ib-item > .sig-pill, .ib-quiet .vtag { min-width: 64px; }
   .ib-txt b { font-size: 17px; }
   .money { display: flex; flex-direction: row; flex-wrap: wrap; align-items: baseline; column-gap: 12px; }
+  .money .mn-spark { display: none; }
   .money .mn-head { flex-basis: 100%; margin-bottom: 0; }
   .money .lbl { display: none; }
   .mn-v { font-size: 30px; }
@@ -798,7 +806,7 @@ td em { color: var(--muted-2); font-style: normal; }
 /* trading activity (heat) */
 .heat-chip { display: inline-flex; align-items: center; gap: 4px; font: 15px var(--display); letter-spacing: 0.08em; line-height: 1; padding: 4px 9px 2px; border-radius: 4px; border: 1px solid var(--line-3); color: var(--muted); white-space: nowrap; vertical-align: middle; }
 .heat-chip svg { width: 12px; height: 12px; flex: none; margin-top: -2px; }
-.heat-hot { color: var(--neg); border-color: rgba(255, 107, 99, 0.65); background: rgba(255, 107, 99, 0.08); }
+.heat-hot { color: var(--amber); border-color: rgba(245, 165, 36, 0.65); background: rgba(245, 165, 36, 0.08); }   /* busy trading isn't bad news: amber, not red (2026-10-23) */
 .heat-active { color: var(--green); border-color: rgba(69, 212, 131, 0.6); background: rgba(69, 212, 131, 0.08); }
 .heat-slow { color: #8fd3ff; border-color: rgba(143, 211, 255, 0.55); background: rgba(143, 211, 255, 0.08); }
 .heat-cold { color: var(--muted-2); border-style: dashed; }
@@ -1845,6 +1853,7 @@ div.rc-spark { font-size: 11px; height: auto; }
 .mkt-chip.has-hype .heat-chip { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: 0; }
 .mkt-hype { display: inline-flex; align-items: center; font: 13px var(--display); letter-spacing: 0.08em; line-height: 1; padding: 4px 7px 2px; color: #fff; background: var(--red); border-radius: 0 4px 4px 0; }
 .mkt-chip > .mkt-hype:first-child { border-radius: 4px; }
+.mkt-hype.quiet { color: var(--muted-2); background: transparent; border: 1px solid var(--line-3); padding: 3px 6px 1px; }   /* high hype in a rising market: shown, not alarming */
 
 /* Focus watch (scripts/focus.py → data/focus_report.json): Overview panel above Needs you */
 .focus-watch { padding: 16px 20px; margin-bottom: 16px; border-color: var(--accent); }
