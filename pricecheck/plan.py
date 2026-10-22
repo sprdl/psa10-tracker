@@ -120,7 +120,15 @@ def build_plan(root=ROOT, now=None):
         pop = prev.get("psa10_population")
         verdict = (((prev.get("analysis") or {}).get("verdict") or {}).get("tag"))
         if c.get("psa_pop_url"):
-            if isinstance(pop, int) and pop >= MATURE_POP and not monday and prev.get("population_source") == "psa":
+            # a mature card is read weekly (Mondays), and on the next full check when that Monday's read was missed
+            # (Cloudflare, VPN): its reading must not be more than a week old (2026-10-23)
+            pop_age = None
+            try:
+                pop_age = (now - datetime.fromisoformat(prev.get("population_as_of") or snap.get("collected_at_jst"))).days
+            except (TypeError, ValueError):
+                pass
+            if (isinstance(pop, int) and pop >= MATURE_POP and not monday and prev.get("population_source") == "psa"
+                    and pop_age is not None and pop_age < 7):
                 skipped[sid] = "weekly population check (mature card, 8,000+ graded)"
             else:
                 psapop.append([sid, c["psa_pop_url"], c.get("psa_pop_no", ""), c.get("psa_pop_name", "")])

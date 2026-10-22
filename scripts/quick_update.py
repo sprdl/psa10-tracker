@@ -332,7 +332,7 @@ def main():
     print(f"Quick check built on {base_file} ({base_ts}) → {out['collected_at_jst']}")
     print(f"  re-checked: {len(updated)} card(s)")
     if depth_read:
-        print(f"  PSA10 listings (book depth) re-read for Focus watch: {', '.join(depth_read)}")
+        print(f"  PSA10 listings (book depth) re-read (Focus watch, or within 5% of a limit / Take-profit line): {', '.join(depth_read)}")
     if not_checked:
         print("  NOT re-checked (values carried):")
         for n in not_checked:

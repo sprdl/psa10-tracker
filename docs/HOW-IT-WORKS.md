@@ -209,7 +209,7 @@ Files marked *generated* are rebuilt by a script; never edit them by hand.
 | `odds_log.json` | `odds_model.py` (via `add_snapshot.py`, full checks) | `build_calls.py` | the model's logged forecasts, for scoring |
 | `value_model.json` | `save_value_model.py` (monthly) | Upside tab, Hold value, combination finder, tier review | 12/24-month market and card-part outcome samples, swing per card, age curve, release months |
 | `hype.json` | `hype.py` (reference monthly) + `premium.py` (daily readings) | Hype exposure panel, "High hype" chip | per card: gain rank, trade rank, exposure score and level |
-| `premium.json` | `premium.py` (full check) | DIY tab slab premium, insights, `outliers.py` | per card: pokeca-chart PSA10 ÷ raw premium, its 6-month norm, deviation, 18-month series |
+| `premium.json` | `premium.py` (full check) | DIY tab slab premium, insights, `outliers.py`; 7/30-day moves where the tracker's own history is too short (dotted underline); `eval_context.py` PEAK line | per card: pokeca-chart PSA10 ÷ raw premium, its 6-month norm, deviation, 18-month series; since 2026-10-23 `chg` (pokeca-chart PSA10 % move over 7/30/90 days) and `peak` (highest monthly median of 18 months) |
 | `insights.json` | `set_insight.py` (full check step 7b) | card page "What stands out", drawer | written analyses for cards that stand out (dropped after 30 days) |
 | `stories.json` | `set_story.py` (full check step 8c) | Story tab, Stories page | researched write-up of each card's artwork, with sources |
 | `predict.json` | `predict.py` (via `build_history.py`), `set_predictions.py` (Action) | You vs the model | `weeks {monday: {questions, answers, results, close}}` |

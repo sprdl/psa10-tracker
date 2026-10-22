@@ -123,13 +123,43 @@ def args_for(name, plan=None):
     return {}
 
 
+NEAR_PCT = 5      # quick checks also read the listings of cards this close to a limit or a sell tier
+NEAR_MAX = 3      # at most this many (closest first): about 10 s each on SNKRDUNK
+
+
+def near_cards(root=ROOT):
+    """Cards whose lowest PSA10 ask is within NEAR_PCT of your limit (watchlist) or of the Take-profit line (owned):
+    where the order-book depth decides the next step, so a quick check reads their listings too (2026-10-23)."""
+    try:
+        m = json.loads((root / "data" / "manifest.json").read_text(encoding="utf-8"))
+        snaps = sorted([s for s in m.get("snapshots", []) if s.get("collected_at_jst")], key=lambda s: s["collected_at_jst"])
+        cards = json.loads((root / "data" / "snapshots" / snaps[-1]["file"]).read_text(encoding="utf-8")).get("cards", [])
+        lim = (json.loads((root / "data" / "limits.json").read_text(encoding="utf-8")).get("limits") or {})
+    except (OSError, ValueError, IndexError):
+        return []
+    near = []
+    for c in cards:
+        ask = ((c.get("grades") or {}).get("psa10") or {}).get("lowest_price")
+        url = (c.get("url") or "").rstrip("/")
+        if not ask or not url:
+            continue
+        l = (lim.get(url) or lim.get(url + "/") or {}).get("price")
+        tp = (((c.get("analysis") or {}).get("sell_tiers") or {}).get("take_profit_from"))
+        gaps = [abs(ask / l - 1) * 100 for l in [l] if l] + [abs(ask / tp - 1) * 100 for tp in [tp] if tp]
+        if gaps and min(gaps) <= NEAR_PCT:
+            near.append((min(gaps), url.split("/")[-1]))
+    return [i for _, i in sorted(near)[:NEAR_MAX]]
+
+
 def with_focus(ids):
-    """Cards in Focus watch (data/focus.json) are written "<id>:L": the quick script also reads their PSA10 listings."""
+    """Cards in Focus watch (data/focus.json), and cards near a limit or sell tier (near_cards), are written "<id>:L":
+    the quick script also reads their PSA10 listings."""
     fp = ROOT / "data" / "focus.json"
     try:
         focus = {u.rstrip("/").split("/")[-1] for u in (json.loads(fp.read_text(encoding="utf-8")).get("cards") or {})}
     except (OSError, ValueError):
         focus = set()
+    focus |= set(near_cards())
     return [f"{i}:L" if i in focus else i for i in ids]
 
 

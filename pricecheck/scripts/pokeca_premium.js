@@ -4,7 +4,9 @@
 // Each card page opens in a hidden same-origin iframe, one after another; the script reads the
 // price chart's own data (React props: item_status 0 = 美品 raw, 2 = PSA10). No fetch/XHR.
 // Returns at once; poll window.__pj like snkrdunk_full.js. About 2 s per card.
-// Line: PREM <snkrdunk id> d<yymmdd latest> r<raw> p<PSA10> m<6-month norm ratio|-> n<points> g<hype: base:now:vol:base date:date|-> s<yymmdd:ratio,...>
+// Line: PREM <snkrdunk id> d<yymmdd latest> r<raw> p<PSA10> m<6-month norm ratio|-> n<points> g<hype: base:now:vol:base date:date|-> c<PSA10 % change 7d:30d:90d|-> k<peak month yymm:median|-> s<yymmdd:ratio,...>
+//   c / k (2026-10-23): pokeca-chart's own PSA10 price moves and its highest monthly median of the last 18 months, so the
+//   site can show a 30-day move for cards the tracker added recently, and evaluations get the peak month without a lookup.
 //       PREM <snkrdunk id> !<uri-encoded error>
 // The norm is the median premium of the points 30–210 days before the latest one (needs 4+);
 // the series covers the last 18 months. Decoded by scripts/full_update.py into data/premium.json.
@@ -60,7 +62,19 @@
         const d6 = (t) => new Date(t * 864e5).toISOString().slice(2, 10).replace(/-/g, '');
         g = `${base || '-'}:${now}:${Math.round(vol * 10) / 10}:${d6(end - 365)}:${d6(end)}`;
       }
-      q.lines.push(`PREM ${sid} d${ymd(last.d)} r${last.raw} p${last.psa} m${norm ? norm.toFixed(3) : '-'} n${pts.length} g${g} s${series}`);
+      // PSA10 moves on pokeca-chart (latest price vs the last price at least k days earlier) and the peak month
+      let cg = '-', pk = '-';
+      if (hp.length) {
+        const end = hp[hp.length - 1][0], nowP = hp[hp.length - 1][1];
+        const at = (k) => { let v = null; for (const p of hp) if (p[0] <= end - k) v = p[1]; return v; };
+        cg = [7, 30, 90].map((k) => { const v = at(k); return v ? ((nowP / v - 1) * 100).toFixed(1) : '-'; }).join(':');
+        const months = {};
+        for (const p of hp) if (end - p[0] <= 548) { const m = new Date(p[0] * 864e5).toISOString().slice(2, 7).replace('-', ''); (months[m] = months[m] || []).push(p[1]); }
+        let best = null;
+        for (const [m, a] of Object.entries(months)) { const s = a.slice().sort((x, y) => x - y), md = s[s.length >> 1]; if (a.length >= 3 && (!best || md > best[1])) best = [m, md]; }
+        if (best) pk = `${best[0]}:${best[1]}`;
+      }
+      q.lines.push(`PREM ${sid} d${ymd(last.d)} r${last.raw} p${last.psa} m${norm ? norm.toFixed(3) : '-'} n${pts.length} g${g} c${cg} k${pk} s${series}`);
       q.i++;
       await sleep(250);
     }

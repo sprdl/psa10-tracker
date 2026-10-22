@@ -59,6 +59,13 @@ def decode(lines):
         out[sid] = {"asof": _date(tok["d"]), "raw": raw, "psa": psa, "prem": round(prem, 3),
                     "norm": norm, "dev": round((prem / norm - 1) * 100, 1) if norm else None,
                     "n": int(tok.get("n", "0")), "series": series, "_g": tok.get("g")}
+        # c: pokeca-chart's own PSA10 move over 7/30/90 days; k: its peak month (highest monthly median, 18 months)
+        chg = {d: float(v) for d, v in zip(("7", "30", "90"), (tok.get("c") or "").split(":")) if v not in ("", "-")}
+        if chg:
+            out[sid]["chg"] = chg
+        if ":" in (tok.get("k") or ""):
+            m, v = tok["k"].split(":", 1)
+            out[sid]["peak"] = {"month": f"20{m[:2]}-{m[2:4]}", "median": int(float(v))}
     return out
 
 

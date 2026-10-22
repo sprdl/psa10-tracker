@@ -19,8 +19,10 @@ Prints (from the latest snapshot and data/*.json; nothing is fetched):
   MARKET    My-tier index level, 7- and 30-day change, correction rule / rally flag, pokeca-chart PSA10 index,
             event rule window
   ODDS      limit-odds model, 30/90 days, for --odds prices, else the current tiers, else a ladder below the ask
-What it can't give (read it in the browser, as the evaluation skill says): the peak-month median and longer price
-history, set/release details, and fresh depth for a card the run only read with a quick check.
+  PEAK      pokeca-chart's PSA10 peak month (highest monthly median of the last 18 months) and its 7/30/90-day
+            moves, saved by full checks (data/premium.json, 2026-10-23): a starting point for the peak-month median
+What it can't give (read it in the browser, as the evaluation skill says): SNKRDUNK's own peak-month median when
+pokeca-chart's isn't enough, set/release details, and fresh depth for a card the run only read with a quick check.
 """
 import json
 import re
@@ -175,6 +177,12 @@ def main():
         print(f"CONTEXT   slab premium (pokeca-chart PSA10 ÷ raw 美品) {pr.get('prem')}x vs its 6-month norm {pr.get('norm')}x ({'n/a' if pr.get('dev') is None else format(pr['dev'], '+')}%), as of {pr.get('asof')}")
     else:
         print(f"CONTEXT   slab premium: {(pr or {}).get('error', 'not available')}")
+    if pr and (pr.get("peak") or pr.get("chg")):
+        pk, ch = pr.get("peak") or {}, pr.get("chg") or {}
+        print("PEAK      pokeca-chart PSA10"
+              + (f": peak month {pk['month']} (median {yen(pk['median'])})" if pk else "")
+              + (" · moves " + ", ".join(f"{d}d {v:+.1f}%" for d, v in sorted(ch.items(), key=lambda x: int(x[0]))) if ch else "")
+              + f" (as of {pr.get('asof')}; pokeca-chart averages, not SNKRDUNK asks)")
     if hy and hy.get("level"):
         print(f"          hype exposure {hy.get('level')} (score {hy.get('score')}; 12-month gain vs market {hy.get('gain_pct')}%, "
               f"gain rank {hy.get('gain_rank')}, trade rank {hy.get('trade_rank')})")

@@ -208,6 +208,12 @@ class Plan(unittest.TestCase):
         self.assertEqual(sorted(x[0] for x in p["psapop"]), ["1", "2"])
         self.assertEqual(sorted(x[0] for x in p["psapop_missing"]), ["3", "4"])  # Defer cards too, on Mondays
 
+    def test_mature_population_catches_up(self):
+        # Monday's weekly read was missed (Cloudflare/VPN): 8 days later a weekday full check reads it anyway (2026-10-23)
+        p = self.plan_at(2026, 10, 23)
+        self.assertEqual(sorted(x[0] for x in p["psapop"]), ["1", "2"])
+        self.assertNotIn("1", p["pop_skipped"])
+
     def test_a_carry_expires(self):
         rows = {r[0]: r for r in self.plan_at(2026, 10, 17, 10)["plan"]}   # Saturday 10:00
         self.assertEqual(rows["1"][3], 0)        # read 10/14 09:00: 3 days old → read again
@@ -231,6 +237,18 @@ class Plan(unittest.TestCase):
         s = self.plan_at(2026, 10, 17, 1)["scout"]                           # 41 h
         self.assertIn("zz-1-1", s["skip"])
         self.assertEqual(s["read"], {"p-1-2": "2026-10-15"})
+
+
+class PremiumTokens(unittest.TestCase):
+    def test_moves_and_peak(self):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import premium
+        e = premium.decode(["PREM 9 d261020 r100 p200 m1.9 n40 g- c-1.5:12.0:- k2605:139700 s251020:2.0"])["9"]
+        self.assertEqual(e["chg"], {"7": -1.5, "30": 12.0})
+        self.assertEqual(e["peak"], {"month": "2026-05", "median": 139700})
+        old = premium.decode(["PREM 9 d261020 r100 p200 m- n4 g- s251020:2.0"])["9"]   # lines from before 2026-10-23
+        self.assertNotIn("chg", old)
+        self.assertNotIn("peak", old)
 
 
 if __name__ == "__main__":

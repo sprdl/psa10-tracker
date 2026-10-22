@@ -3278,8 +3278,8 @@
     limit: { label: 'Limit: distance to my limit, then gain on owned', dir: 1, group: (c) => (ownsCard(c) ? 1 : 0),
       v: (c) => { const bg = boughtGap(c); return bg ? -bg.pct : (limitGap(c) || {}).pct ?? null; } },
     chgLast: { label: 'Change since last check', dir: 1, v: (c) => (priceChangeLast(c) || {}).pct ?? null },
-    chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeAgo(c, 7) || {}).pct ?? null },
-    chg30: { label: '30-day change', dir: 1, v: (c) => (priceChangeAgo(c, 30) || {}).pct ?? null },
+    chg7: { label: '7-day change', dir: 1, v: (c) => (priceChangeShown(c, 7) || {}).pct ?? null },
+    chg30: { label: '30-day change', dir: 1, v: (c) => (priceChangeShown(c, 30) || {}).pct ?? null },
     verdict: { label: 'Verdict', dir: 1, v: (c) => { const st = sellState(c); if (st) return st.tag === 'sell' || st.tag === 'take_profit' ? -1 : 5; return limitHit(c) ? -1 : VERDICT_RANK[displayTagFor(c)] ?? 5; } },
     heat: { label: 'Trading activity', dir: -1, v: (c) => { const h = heatOf(c); return h && h.psa ? h.psa.rate : null; } },
   };
@@ -4415,6 +4415,28 @@
     const old = then.p[card.url][0];
     return old ? { pct: (now / old - 1) * 100, from: then.d.slice(0, 10), old } : null;
   }
+  // For display only: the tracker's own change, else pokeca-chart's PSA10 move over the same days (full checks save it
+  // for every card: data/premium.json "chg"), so a card the tracker added recently still shows a 7/30-day move. Rules,
+  // insights and the tests keep using priceChangeAgo (the tracker's own SNKRDUNK prices). 2026-10-23
+  function priceChangeShown(card, days) {
+    const c = priceChangeAgo(card, days);
+    if (c) return c;
+    const pe = state.premium && state.premium.cards && state.premium.cards[card.url];
+    const v = pe && pe.chg && pe.chg[String(days)];
+    if (v == null || !pe.asof) return null;
+    const from = new Date(Date.parse(pe.asof + 'T12:00:00+09:00') - days * 86400000).toISOString().slice(0, 10);
+    return { pct: v, from, old: null, src: 'pokeca' };
+  }
+  // Hover text for one change, whichever source it came from.
+  function changeTip(c, label) {
+    if (!c) return '';
+    return c.src === 'pokeca' ? `${label}: ${fmtPct(c.pct)} on pokeca-chart's PSA10 prices (the tracker has no price of its own from ${c.from} yet)`
+      : `${label}: ${fmtPct(c.pct)} (${fmtYen(c.old)} on ${c.from})`;
+  }
+  // A change as a coloured number; one from pokeca-chart gets a dotted underline.
+  function chgSpan(c) {
+    return c ? `<span class="${dirClass(c.pct)}${c.src === 'pokeca' ? ' chg-pk' : ''}"${c.src === 'pokeca' ? ` title="${escapeAttr(changeTip(c, 'Change'))}"` : ''}>${c.pct === 0 ? '±0' : fmtPct(c.pct)}</span>` : '—';
+  }
   // Change vs the previous snapshot (the check before the one being shown).
   function priceChangeLast(card) {
     const prev = prevCardOf(card), now = getRep(card), old = prev ? getRep(prev) : null;
@@ -4500,19 +4522,19 @@
     return `<span class="${cls} ${hit ? 'lim-hit' : 'lim-gap'}" title="${escapeAttr(tip)}">${fmtYenShort(g.lim)}<small class="chg-sub">${hit ? '✓ ' + (g.pct === 0 ? '0%' : fmtPct(g.pct)) : 'ask ' + fmtPct(g.pct)}${near != null ? ` · ${near} near` : ''}</small></span>`;
   }
   function changeCell(card, days, cls) {
-    const c = priceChangeAgo(card, days);
-    if (!c) return `<span class="${cls} muted" title="No snapshot from ${days} days ago yet (history starts 2026-09-15)">—</span>`;
-    return `<span class="${cls} ${dirClass(c.pct)}" title="${fmtYen(c.old)} on ${c.from}">${fmtPct(c.pct)}</span>`;
+    const c = priceChangeShown(card, days);
+    if (!c) return `<span class="${cls} muted" title="No price from ${days} days ago yet, on the tracker or pokeca-chart">—</span>`;
+    return `<span class="${cls} ${dirClass(c.pct)}${c.src === 'pokeca' ? ' chg-pk' : ''}" title="${escapeAttr(changeTip(c, `${days} days`))}">${fmtPct(c.pct)}</span>`;
   }
 
 
 
   // Trend column: the 7-day change, with the last check and 30 days underneath.
   function trendCell(card) {
-    const last = priceChangeLast(card), d7 = priceChangeAgo(card, 7), d30 = priceChangeAgo(card, 30);
-    const pc = (c) => (c ? `<span class="${dirClass(c.pct)}">${c.pct === 0 ? '±0' : fmtPct(c.pct)}</span>` : '—');
-    const tip = [last ? `Since the last check: ${fmtPct(last.pct)} (${fmtYen(last.old)} at ${last.from} JST)` : '', d7 ? `7 days: ${fmtPct(d7.pct)} (${fmtYen(d7.old)} on ${d7.from})` : 'No snapshot from 7 days ago yet',
-      d30 ? `30 days: ${fmtPct(d30.pct)} (${fmtYen(d30.old)} on ${d30.from})` : ''].filter(Boolean).join('\n');
+    const last = priceChangeLast(card), d7 = priceChangeShown(card, 7), d30 = priceChangeShown(card, 30);
+    const pc = chgSpan;
+    const tip = [last ? `Since the last check: ${fmtPct(last.pct)} (${fmtYen(last.old)} at ${last.from} JST)` : '', d7 ? changeTip(d7, '7 days') : 'No price from 7 days ago yet',
+      d30 ? changeTip(d30, '30 days') : ''].filter(Boolean).join('\n');
     return `<span class="wl-chg wl-trend" title="${escapeAttr(tip)}">${d7 ? pc(d7) : '<span class="muted">—</span>'}<small class="chg-sub">30D ${pc(d30)}</small></span>`;
   }
   // The overview list in two sections with their own columns: cards you own (vs your cost, sell signal) and the
@@ -4932,8 +4954,8 @@
     const bgp = own ? boughtGap(card) : null;
     const posTile = ps && bgp ? `<div class="dw-st" title="${escapeAttr(boughtGapTitle(bgp))}"><div class="k">${bgp.raw ? 'PSA10 vs your DIY cost' : 'Vs. bought'}</div><div class="v ${bgp.pct >= 0 ? 'pos' : 'neg'}">${fmtPct(bgp.pct)}</div><div class="s">PSA10 ${fmtYen(bgp.now)} · ${bgp.raw ? 'DIY' : 'paid'} ${fmtYen(bgp.basis)}</div></div>` : '';
     const netTile = ps ? `<div class="dw-st"><div class="k">After costs</div><div class="v ${ps.net >= 0 ? 'pos' : 'neg'}">${signedYen(ps.net)}</div><div class="s">break-even ${fmtYen(ps.be)}</div></div>` : '';
-    const last = priceChangeLast(card), d7 = priceChangeAgo(card, 7), d30 = priceChangeAgo(card, 30);
-    const pc = (c) => (c ? `<span class="${dirClass(c.pct)}">${c.pct === 0 ? '±0' : fmtPct(c.pct)}</span>` : '—');
+    const last = priceChangeLast(card), d7 = priceChangeShown(card, 7), d30 = priceChangeShown(card, 30);
+    const pc = chgSpan;
     const main = d7 || last;
     const moves = `<div class="dw-st"><div class="k">Moves</div><div class="v">${pc(main)} <small>${d7 ? '7d' : 'last'}</small></div><div class="s">${d7 ? `last ${pc(last)} · ` : ''}30d ${pc(d30)}</div></div>`;
     const pk = o.peak && o.peak.price ? computeOffPeakPct(o.peak.price, o.repPrice) : null;
@@ -6961,8 +6983,8 @@
     const ROW_KEYS = { 'Current PSA10': 'price', 'Order-book depth': 'depth', 'Favorite count': 'favorites', 'Population / gem rate': 'population', 'Off peak (where known)': 'offpeak' };
     let body = rowsData.map(([label, vals]) => `<tr><td>${ROW_KEYS[label] ? sortableLabel(ROW_KEYS[label], label) : label}</td>${vals.map((v) => `<td>${v}</td>`).join('')}</tr>`).join('');
     body += `<tr><td>${sortableLabel('limit', 'vs. my limit (vs. paid if owned)')}</td>${cards.map((c) => { const bg = boughtGap(c); if (bg) return `<td class="${dirClass(bg.pct)}">${fmtPct(bg.pct)} <span class="muted">(paid ${fmtYen(bg.paid)})</span></td>`; const g = limitGap(c); return `<td class="${g ? (g.pct <= 0 ? 'lim-hit' : 'lim-gap') : ''}">${g ? fmtPct(g.pct) + ' <span class="muted">(' + fmtYen(g.lim) + ')</span>' : '—'}</td>`; }).join('')}</tr>`;
-    body += `<tr><td>${sortableLabel('chg7', '7-day change')}</td>${cards.map((c) => { const x = priceChangeAgo(c, 7); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? fmtPct(x.pct) : '—'}</td>`; }).join('')}</tr>`;
-    body += `<tr><td>${sortableLabel('chg30', '30-day change')}</td>${cards.map((c) => { const x = priceChangeAgo(c, 30); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? fmtPct(x.pct) : '—'}</td>`; }).join('')}</tr>`;
+    body += `<tr><td>${sortableLabel('chg7', '7-day change')}</td>${cards.map((c) => { const x = priceChangeShown(c, 7); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? chgSpan(x) : '—'}</td>`; }).join('')}</tr>`;
+    body += `<tr><td>${sortableLabel('chg30', '30-day change')}</td>${cards.map((c) => { const x = priceChangeShown(c, 30); return `<td class="${x ? dirClass(x.pct) : ''}">${x ? chgSpan(x) : '—'}</td>`; }).join('')}</tr>`;
     body += `<tr><td>${sortableLabel('heat', 'PSA10 sales / day')}</td>${cards.map((c) => { const h = heatOf(c); return `<td>${h && h.psa ? rateTxt(h.psa) + ' ' + heatChip(c) : '—'}</td>`; }).join('')}</tr>`;
 
     body += `<tr class="divider"><td colspan="${cards.length + 1}">PSA10 price tiers</td></tr>`;
