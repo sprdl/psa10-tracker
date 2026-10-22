@@ -83,13 +83,7 @@ Population counts only reflect what's already graded and returned — not true s
 - **Downside risk if bought today** — chance and magnitude of a further drop, and what would drive it (hype exposure belongs here)
 - Phrase buy advice as "wait for / buy a listing at ≤¥X", never "bid" or "offer". SNKRDUNK is not a bidding platform: sellers set fixed prices that generally aren't negotiated.
 
-*Sell part* (owned cards only): two lines, no stop-loss line (the user chose this on 2026-10-07):
-- **Hold** — below Take profit. Say what the card nets after selling costs at today's price vs the user's cost basis (for a raw card, the DIY cost with the price paid, as in step 2).
-- **Take profit from ¥X** — where selling becomes attractive: clearly above the user's break-even after fees, and rich against the card's own pre-hype level.
-- **Sell from ¥Y** — bubble territory, where holding on is mostly a bet on the bubble continuing.
-- **Timing and odds** — rough odds of a listing reaching each line by a stated date, and what would get it there (market rally, event) or stop it.
-- **Market regime** — whether the market is rising or rolling over, and the card's hype exposure: a high-exposure card at Take profit while the market turns down is the strongest case for selling.
-- Phrase it as "list at ≥¥X / take profit from ¥X". SNKRDUNK sales are fixed-price listings; to sell you list at or a little under the lowest ask.
+*Sell part* (owned cards only): **read `sell-side.md` in this skill's folder before writing it** — the two sell lines (Hold / Take profit from ¥X / Sell from ¥Y, no stop-loss), what the sell-tier studies say, and the `sell_tiers` / `sell_verdict` JSON rules.
 
 **Verdict guardrails (buy).** Apply them before choosing the buy verdict. The first two change only the verdict for today's price, never the tier numbers; the third changes nothing but the wording. Say so in the label/reasoning when one of them applies (the site applies the same rules to its computed call):
 1. **Event rule.** Within about 3 days before a major release or announcement (step 4), don't call Buy. Use Watch with a label like "Watch: wait until after <event>", unless today's price is already at or below Definitely-buy. Why: on 2026-09-15, the day before the 30th-anniversary release, two Buy calls (Umbreon ex SAR, Gengar VMAX SA) were beaten by release-day dips of 5–12%.
@@ -102,16 +96,9 @@ Population counts only reflect what's already graded and returned — not true s
 - **Reachability check for every tier.** Before finalising, look up the limit-odds model's 30/90-day odds for Definitely-buy and Buy (`eval_context.py <id> --odds <DB> <Buy>`, or the card page's Tier check line). Definitely-buy should usually sit around 15–35% within 90 days; under 10% is a long shot. If you keep it anyway, say so in the reasoning. Buy should be reachable within weeks (roughly 40–60% within 30 days) unless the price is already there.
 - **Upside statements** come from the card page's Upside tab (12- and 24-month ranges after SNKRDUNK fees). Its "Typical" assumes no market growth (the typical outcome is today's price, so the typical result is minus the selling cost); the italic figure shows the 2022–26 market as it was. The market part dominates: the mature market's 12-month moves ranged from −69% to +143% in 2022–26. Popular characters beat the rest by about +14% a year in the data, but not significantly. Mention it as a tilt, never as a reason on its own.
 
-**What the data says about setting sell tiers (2026-10-07, 284 PSA10s, 2021–26, monthly; project docs `claude/sell-tiers-2026-10-07.md` and `claude/crash-resilience-study-2026-10-03.md`):**
-- A card trading at **2× or more its own trailing-12-month median** had a median **−17% over the next 6 months**, and a **53%** chance of falling more than 10% (cards 0–70% above their median: median +19% to +29%, 19–26% chance of a >10% fall). These cases cluster at market tops (2023, 2026), so they mostly mark *market* peaks. Anchor **Sell from** around 2× the card's pre-hype level (its Q3–Q4 2025 range or trailing-12-month median), or the prior hype peak's monthly median if that's lower.
-- Below that, rising cards kept rising on average (momentum). Being up a lot is not by itself a reason to sell, and against other cards being far above its own history predicted nothing (+2 points on average, worse in only 10 of 27 months). So set **Take profit** where the gain is worth locking in: at least ~15% above the user's break-even after fees, and roughly +50–70% over the pre-hype level, or about 85% of the prior peak-month median.
-- When the market turns down, the cards that ran up most fall hardest (top third by run-up −11% to −22% vs the market in the 2023–24 and 2026 falls). So a high hype exposure plus a falling My-tier index is the strongest reason to act at Take profit rather than wait for Sell.
-- Never set Take profit below the user's break-even after fees. If the card is under water, the verdict is Hold (with today's net result stated), whatever the market does.
-- Check reachability: the Upside tab's 12-month range (Take profit usually between its Typical and Strong case) and the price history. A Sell line no listing has come near in the card's history is a long shot: say so.
-
 How calls are scored (so verdicts and odds are set with it in mind): the tracker judges each buy verdict on the lowest PSA10 ask over the next 30 days. A dip counts only when it's below the card's own threshold (5%, or the card's normal swing between checks if larger, up to 10%) for two checks in a row. Every prediction (buy or sell) gets a Brier score on the Track record page.
 
-**Cards with no PSA10 market yet** (no PSA10 listing, or one or two asks and no sales, typically a set released in the last few months, since slabs come back from PSA ~100 business days after submission): still evaluate them, because a new card on the tracker must end the price check with a written verdict. Use `verdict.tag` `"defer"` with no `tiers` and no `peak`, a label like "Defer — no PSA10 market yet", and reasoning that covers: when a PSA10 market is likely (release date vs PSA turnaround and the summer-submission wave), today's raw A-rank price and what a DIY slab would cost at the card's likely gem rate (say if the gem rate is a guess from similar cards), the age-curve drift for a young card, and what would make it worth tiers (e.g. "re-evaluate once 5+ PSA10 sales exist"). Add `raw_tiers` only if you can set them responsibly from raw sales (the user does buy raw copies to grade). Predictions are optional here and need a price and a deadline like any other. The price check gives a deferred card one fresh look a week (Mondays) once it has a PSA10 ask.
+**Cards with no PSA10 market yet** (no PSA10 listing, or one or two asks and no sales): still evaluate them, with a `defer` verdict — **read `defer.md` in this skill's folder** for what to write and which fields to leave out.
 
 **Part B — a structured JSON block**, output immediately after Part A, so the evaluation can be applied straight to that card's `analysis` field in the PSA10 tracker web app's snapshot JSON (see the app's `docs/schema.md` for the authoritative field list). Send only the parts you evaluated: a sell-only evaluation sends just `sell_tiers` + `sell_verdict`; everything else stays. Shape:
 
@@ -161,8 +148,7 @@ Field rules — get these right, since the app trusts this JSON as human judgmen
 - **`tiers`** — exactly these three numbers, in JPY, mapped from Part A's Definitely-buy / Buy / (Watch-closely upper edge = ceiling) tiers, no other keys. Omit the whole `tiers` object if there isn't enough data to responsibly set boundaries yet — never guess plausible-looking numbers just to fill the field. "Watch" is implicitly `buy_upper`..`ceiling` in the app; do not add a fourth number for it.
 - **`verdict.tag`** — which of `"definitely_buy"`, `"buy"`, `"watch"`, `"dont_buy"`, or `"defer"` applies to *today's* `representative_price` — not to the tiers in the abstract. Look at where `representative_price` actually falls relative to the tiers you just set, apply the guardrails, and say so plainly.
 - **`verdict.reasoning`** — compress Part A's timing window, probability estimate, and downside risk into 1–3 sentences, with today's numbers. The site shows it folded under a computed "today" summary, dated, and the full check rewrites it once the ask moves 5% from the price it was written at, so don't pad it with figures that will date fast.
-- **`sell_tiers`** (owned cards only) — exactly `take_profit_from` and `sell_from`, in JPY, `take_profit_from` < `sell_from`. Don't send `reassess_below`: the user chose two lines, and `apply_analysis.py` rejects it. Below `take_profit_from` the app shows Hold.
-- **`sell_verdict.tag`** — `"hold"`, `"take_profit"` or `"sell"` for *today's* price against the sell tiers (`apply_analysis.py` rejects any other tag). The label says it in a few words; the reasoning compresses Part A's sell part (net result today, anchors, odds, regime) into 1–3 sentences. `apply_analysis.py` dates it, and the full check asks for a fresh one after 30 days.
+- **`sell_tiers`** / **`sell_verdict`** (owned cards only) — see `sell-side.md`.
 - **`predictions`** (in `verdict` and `sell_verdict`) — every probability stated in Part A or the reasoning, as a checkable prediction. The Track record scores them against later prices (Brier score), so they must be honest and resolvable:
   - `p` is a probability between 0 and 1 (0.45, not 45). Use the midpoint for a range ("25–30%" → 0.275). It must be strictly between 0 and 1.
   - `type` is `touch_below` ("the lowest PSA10 ask reaches ≤ price", buy targets) or `touch_above` ("reaches ≥ price", sell targets). `price` is one number: the upper end of a target range for `touch_below` ("¥57–60k" → 60000), the lower end for `touch_above`.
@@ -192,85 +178,9 @@ Throughout: be explicit about data quality, flag stale or conflicting figures (e
 
 ---
 
-## Reusable prompt template
+## Reusable prompt template and card reference
 
-Copy this, fill in the brackets, and use it (with web search / browsing available) whenever evaluating a card outside a price check.
-
-```
-Analyze [CARD NAME] — [set code + number], [Japanese set name] (【set name】),
-released [date if known], illustrator [name if known] — for my PSA10 Japanese
-Pokémon TCG collection. [I'm watching it / I own it: bought [date] for ¥[price]
-([slab / raw, sent to PSA])].
-
-CRITERIA: only PSA10 graded copies (raw/A-rank for reference only). Only
-modern full-art cards of any rarity (AR, SAR, SR, CSR, SA, MA, …) — no
-regular-frame commons/rares, no vintage. Goal is display (magnetic UV case,
-office) plus investment. Today's date is [date]. [Optional: budget context /
-other cards being weighed against this / how much this card is wanted and why.]
-
-RESEARCH — use Japanese-market sources (SNKRDUNK, pokeca-chart.com/gr, card
-shop buyback trackers, note.com market commentary) and PSA's pop report
-(psacard.com/pop) for population, read in my browser. Gather:
-1. Current PSA10 market price — recent transaction prints over stated averages;
-   flag outlier prints
-2. PSA10 population and gem rate, release date, backlog check; DIY replacement
-   cost = (raw A-rank + ¥12,430) ÷ gem rate (Standard to ¥150,000; Priority
-   +¥2,000 to ¥250,000; Express above), where
-   raw A-rank = median of the last 5 one-copy A sales in 30 days, never
-   below the lowest ask (fewer than 3 sales: the lowest ask)
-3. Raw/A-rank price (rule above) and 1-month trend, cross-checked against real trades
-4. Longest reliable price range and average (state the window), the pre-hype
-   level, and the most recent peak (peak-month median) with % drawdown
-5. Demand drivers, cannibalization/reprint risk, in-print status
-6. Market regime: My-tier index 30-day change, pokeca-chart index, events in
-   the next 3 days, the card's age and hype exposure
-7. Selling cost on SNKRDUNK (9.5% + ¥300 + ~¥1,000 shipping) and, if owned,
-   my break-even sale price
-
-OUTPUT — two parts:
-
-PART A (prose): if watching, the buy part (Don't-buy ceiling, Watch, Buy,
-Definitely buy, timing, odds with deadlines checked against the limit-odds
-model, downside risk); if owned, the sell part (Hold / Take profit from ¥X /
-Sell from ¥Y, net result after fees today, anchors, odds with deadlines,
-market regime). Be honest about data quality; correct my assumptions when the
-data disagrees.
-
-PART B: the JSON block from the pokemon-tcg-card-evaluation skill (tiers +
-verdict for a buy evaluation, sell_tiers + sell_verdict for an owned card,
-every stated probability as {text,p,type,price,by}).
-```
-
----
-
-## Card reference (evaluated cards)
-
-Starting data for cards already evaluated with this skill. Use it for step 1 (identification) and as a prior baseline. Always re-pull live data: the tracker's latest snapshot and the card page are the current source, and these figures go stale within days.
-
-### ゲッコウガex SAR [SV5a 090/066] (Greninja ex SAR)
-- **Identity:** 強化拡張パック「クリムゾンヘイズ」 (Crimson Haze), released 2024-03-22, illus. akagi. SNKRDUNK https://snkrdunk.com/apparels/224087 · PSA pop: Pokemon Japanese Sv5a-Crimson Haze, no. 090. Don't confuse it with Mega Greninja (M4), the overseas promo SA, or other Greninja prints.
-- **Supply:** mature population, 15,446 PSA10 of 18,269 graded, 84.5% gem rate (PSA pop report, 2026-10-12). The sealed box trades at about 2× retail, which suggests it's likely out of print (not formally verified).
-- **PSA10 phases (SNKRDUNK monthly medians):** 2024: ¥12k post-release trough in May → ¥25.5k by Dec. 2025: ¥41–48k H1 → ¥47–49k Jul–Aug → ¥58–62k Sep–Dec. 2026: peak ¥79–83k Jan–Feb (high ¥85.5k on 2/13, before the anniversary announcement) → ¥64–75k Mar–Aug → ¥42.75k on 2026-09-25.
-- **Tiers (2026-09-25):** Definitely buy ≤¥38,000 · Buy ≤¥43,000 · Ceiling ¥49,000.
-- **Watch for:** the PSA10 premium over raw A-rank collapsed to about 13% (usually about 45%). The card fell 31% year on year while the index rose 5%; likely cause is cannibalization by M4 Mega Greninja (hypothesis, not proven). Raw A-rank trades only 1–3 times a month.
-- **Useful as an analog:** how a popular-character SAR behaves after release, from trough to about 7× over 21 months in a rising market.
-
-### ゲンガーVMAX SA [SGG 020/019] (Gengar VMAX, Special Art) — restored to the tracker 2026-10-10
-- **Identity:** ハイクラスデッキ「ゲンガーVMAX」 (High Class Deck Gengar VMAX). SNKRDUNK https://snkrdunk.com/apparels/91178.
-- **Price levels:** pre-hype ¥238–247k in Q4 2025, about ¥270k in Feb 2026, peak-month median ¥457.7k (Aug 2026). On 2026-10-10 the lowest ask was ¥378k with sales at ¥385–400k, up ~35% in a week during the rally.
-- **Tiers (2026-10-10):** Definitely buy ≤¥265,000 · Buy ≤¥295,000 · Ceiling ¥335,000 (Don't buy at ¥378k). The user's saved limit was ¥150,000. Above PSA Priority's ¥250,000 declared-value cap (only Express), and above the whole singles budget on its own.
-
-### メガゲッコウガex SAR [M4 114/083] (Mega Greninja ex SAR) — removed from the tracker 2026-10-06
-- **Identity:** 拡張パック「ニンジャスピナー」 (Ninja Spinner), released 2026-03-13, illus. Susumu Maeya. SNKRDUNK https://snkrdunk.com/apparels/776365. The MUR print (M4 120/083) is a separate card.
-- **Useful as an analog:** a card that launched into a bubble with no pre-hype baseline: median ¥118k (Apr 2026) → ¥28k (2026-09-25), raw ¥55k → ¥17k, PSA10 ending at DIY cost (94.7% gem rate, in print).
-
-### メガリザードンXex MA [M2a 223/193] (Mega Charizard X ex, Mega Attack Rare) — owned
-- **Identity:** ハイクラスパック「MEGAドリームex」 (MEGA Dream ex), released 2025-11-28, illus. Saboteri. SNKRDUNK https://snkrdunk.com/apparels/722239. Full art (American-comic style, INFERNO X in large letters). MA cards are numbered 223–232. Texture-error copies (Traditional Chinese texture) trade separately at about 7–10×.
-- **Supply:** 66,963 PSA10 at a 91.2% gem rate (2026-10-03): very common. Raw A-rank about ¥3.5–4k, so there's no DIY floor.
-- **PSA10 phases (monthly medians):** ¥27–28k Dec 2025–Jan 2026 → ¥21.6k Mar → peak ¥38.7k Apr → ¥33.5k May → ¥26.9k Jun → ¥20.3k Jul → ¥14.7k Aug → ¥12.7k Sep → ¥10.7k on 2026-10-03.
-- **Buy tiers (2026-10-03):** Definitely buy ≤¥8,500 · Buy ≤¥9,500 · Ceiling ¥11,500. Bought 2026-10-07 for ¥10,800 (slab).
-
----
+In `reference.md` in this skill's folder: the prompt template for evaluations outside a price check, and notes on cards evaluated before (Greninja ex SAR SV5a 090, Gengar VMAX SA SGG 020, Mega Greninja ex SAR M4 114, Mega Charizard X ex MA M2a 223). Read it when evaluating one of those cards.
 
 ## Notes for future use
 

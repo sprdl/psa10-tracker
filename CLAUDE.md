@@ -3,7 +3,9 @@
 This file is for Claude Code sessions started in this repo on the Mac, mainly by the menu bar
 widget (`widget/run-check.sh`). The project skills in `.claude/skills/` (a link to `widget/claude/skills/`) are copies of the claude.ai
 skills `pokemon-card-price-check` and `pokemon-tcg-card-evaluation`, written for the Claude desktop
-app's tools. Here, read them with this mapping:
+app's tools. The evaluation skill's copy here is split: SKILL.md points to `sell-side.md` (owned cards), `defer.md` (no PSA10
+market yet) and `reference.md` (prompt template, earlier cards) in the same folder; read one when SKILL.md says so.
+Here, read them with this mapping:
 
 **You are on the linked computer.** Never conclude "the computer isn't linked" or offer the public
 clone fallback: the repo is right here.
