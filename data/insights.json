@@ -89,11 +89,16 @@
    ]
   },
   "https://snkrdunk.com/apparels/91189": {
-   "written": "2026-10-22T09:30:35+09:00",
-   "headline": "Ask up 24% in a week on a thin book; premium 33% over its norm, no news found",
-   "text": "What's happening: The lowest PSA10 ask is ¥149,000, up 24% in a week (¥120,000 → ¥149,000) while the My-tier index fell 3.2%. Sales are running at about 1.4 a day with a 7-day median of ¥140,250 against ¥127,500 before, and only 5 of 11 listings sit within 15% of the lowest. The slab premium over raw is 3.39x against a 6-month norm of 2.55x.\n\nWhy: Likely a thin-market squeeze rather than news: with 11 listings and the cheapest ones sold, the ask walks up the ladder. Searches found no reprint, new card or other news for Tyranitar this week.\n\nFor you: The ask is above all three tiers (¥100,000 / ¥118,000 / ¥135,000) and your ¥75,000 limit, so this is chasing territory. Nothing here suggests waiting for the price to fall will fail: spikes like this have a premium that tends to mean-revert.\n\nWatch: Whether the next sales hold above ¥140,000 and whether listings refill below ¥135,000; the premium falling back toward 2.5x would be the signal that the tiers are reachable again.",
-   "signals": "7d price +24.2% (¥120,000→¥149,000) vs My-tier index -3.2% = +27.4 pts | slab premium 3.39x vs its 6-month norm 2.55x (+33%, pokeca-chart 2026-10-15)",
-   "sources": []
+   "written": "2026-10-23T07:55:27+09:00",
+   "headline": "Ask up 21% in a week on thin depth (3 of 11 listings near the ask); no news found",
+   "text": "What's happening: The lowest PSA10 ask is ¥145,000, up 20.8% in a week (from ¥120,000) while the My-tier index fell 2.8%. Sales are also higher: the median of the last 7 days is ¥140,250 (10 sales) against ¥127,500 before (10 sales), at about 1.35 sales a day. Only 3 of 11 listings sit within 15% of the ask, so the book is thin.\n\nWhy: Likely a thin market: the cheapest listings were bought out and the next ones start at ¥155,000. No news of a reprint or new card was found in searches; the sources seen only show the card's steady collector demand.\n\nFor you: The ask is well above your tiers (¥100,000 / ¥118,000 / ¥135,000) and your limit of ¥75,000, so this is not a buy now.\n\nWatch: Whether sales keep clearing at ¥140,000 or more, or the ask drifts back toward ¥120,000, which is where the tiers start to matter.",
+   "signals": "7d price +20.8% (¥120,000→¥145,000) vs My-tier index -2.8% = +23.7 pts",
+   "sources": [
+    {
+     "title": "Netoff 一撃マスター 買取情報",
+     "url": "https://www.netoff.co.jp/moetaku/tcg/pokemon_card/s5I/"
+    }
+   ]
   },
   "https://snkrdunk.com/apparels/146897": {
    "written": "2026-10-22T09:30:40+09:00",
