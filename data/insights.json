@@ -96,11 +96,16 @@
    "sources": []
   },
   "https://snkrdunk.com/apparels/146897": {
-   "written": "2026-10-22T08:21:12+09:00",
-   "headline": "Lowest ask 19% under recent sales as trading slows 51%",
-   "text": "What's happening: The lowest PSA10 ask is ¥399,997, about 19% under the median of recent sales (¥494,750). Trading has slowed: 2.3 sales a day against 4.6 a week ago (-51%). Only 5 of 20 read listings are within 15% of the lowest.\n\nWhy: Likely a seller undercutting a thin book while demand cools. The cheap ask lags the sales, which is typical when sales slow and a seller wants out. Searches found no PSA10 price report or news for this promo, so nothing outside the page explains it.\n\nFor you: ¥399,997 sits between the ¥390,000 buy tier and the ¥450,000 ceiling (tiers ¥340,000 / ¥390,000 / ¥450,000), so it is not a buy, and it is double your ¥200,000 limit. The gap to recent sales does not make it a bargain if sales keep slowing.\n\nWatch: Whether sales per day recover toward 4, whether the ask is bought up or the lowest ask drifts lower, and whether the next sales print near ¥400,000 or still near ¥490,000.",
-   "signals": "lowest ask ¥399,997 is -19% vs recent sales median ¥494,750 | PSA10 sales/day 2.3 vs 4.6 a week ago (-51%)",
-   "sources": []
+   "written": "2026-10-22T09:30:40+09:00",
+   "headline": "Lowest ask ¥399,997 is 19% under recent sales; the next listings start near ¥470,000",
+   "text": "What's happening: The lowest PSA10 ask is ¥399,997, 19% under the recent sales median of ¥493,500. Only 5 of 20 listings sit within 15% of it, and 19 sales cleared in the last 7 days (about 2.5 a day), mostly at ¥475,000–¥500,000.\n\nWhy: Likely one seller pricing well under the market, with the rest of the book at ¥470,000–¥496,000. Per a Japanese promo-card fan site, the Van Gogh Museum stopped handing out the card in October 2023 and no redistribution or Japanese version is planned, so supply is fixed; searches found no 2026 reprint news.\n\nFor you: The ¥399,997 listing is far above the tiers (¥340,000 / ¥390,000 / ¥450,000) and your ¥200,000 limit, and above the ¥250,000 Priority cap, so only Express grading applies if you ever buy raw. It is not a buy signal on its own: if it sells, the next ask is about ¥470,000.\n\nWatch: Whether the ¥399,997 listing sells and the new lowest ask settles near ¥470,000; a repeat of the ¥399,800 print would suggest the discount is a pattern.",
+   "signals": "lowest ask ¥399,997 is -19% vs recent sales median ¥493,500",
+   "sources": [
+    {
+     "title": "ポケカ ゴッホピカチュウ 配布中止・再配布の見込み",
+     "url": "https://premium.gamepedia.jp/pokeca/archives/18448"
+    }
+   ]
   },
   "https://snkrdunk.com/apparels/103079": {
    "written": "2026-10-22T08:21:02+09:00",
