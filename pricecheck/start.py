@@ -74,6 +74,28 @@ def clear_inputs():
             pass   # a desktop-app run without delete permission: harmless (its procedures use heredocs)
 
 
+# Sections of a procedure that apply only on some runs (FULL-CHECK.md): <!-- only:<cond> --> … <!-- /only -->.
+# start.py prints them only when today's plan needs them, so a run doesn't read steps it won't do (2026-10-23).
+ONLY = re.compile(r"(?ms)^<!-- only:(\w+) -->\n(.*?)^<!-- /only -->\n")
+ONLY_NAMES = {"psapop": "PSA pop report", "scout": "Scout", "rebuild": "monthly model rebuild", "monday": "Monday steps"}
+
+
+def only(text, conds):
+    """Keep a marked section when its condition holds (an unknown condition keeps it); drop the markers either way."""
+    return ONLY.sub(lambda m: m[2] if conds.get(m[1], True) else "", text)
+
+
+def today_conds():
+    try:
+        sys.path.insert(0, str(ROOT / "pricecheck"))
+        import plan as planmod
+        p = planmod.build_plan(ROOT)
+        return {"psapop": bool(p.get("psapop")), "scout": p.get("scout") is not None,
+                "rebuild": bool(p.get("odds_rebuild_due")), "monday": bool(p.get("monday"))}
+    except Exception:  # noqa: BLE001  never lose a section over this
+        return {}
+
+
 def sh(*cmd):
     r = subprocess.run([sys.executable, *cmd], cwd=ROOT, text=True, capture_output=True)
     out = (r.stdout or "") + (r.stderr or "")
@@ -85,7 +107,7 @@ def sh(*cmd):
 def main():
     a = sys.argv[1:]
     if a[:1] == ["--show"] and len(a) == 2:   # a step file, as a local run should read it
-        print(local((ROOT / a[1]).read_text(encoding="utf-8")).rstrip("\n"))
+        print(local(only((ROOT / a[1]).read_text(encoding="utf-8"), {})).rstrip("\n"))
         return
     asked = None
     for i, x in enumerate(a):
@@ -121,7 +143,11 @@ def main():
               "predict into one browser_batch (the procedure says which). "
               "This run can't ask for permission: anything not pre-approved is refused, so a refused call means "
               "the command has the wrong form, not that you should retry it differently.\n")
-    print(local(doc.read_text(encoding="utf-8").rstrip("\n")))
+    conds = today_conds() if mode == "full" else {}
+    skipped = [ONLY_NAMES.get(k, k) for k, v in conds.items() if not v]
+    if skipped:
+        print(f"(Not part of today's run, so left out below: {', '.join(skipped)}.)\n")
+    print(local(only(doc.read_text(encoding="utf-8"), conds).rstrip("\n")))
     print("\n======== today's setup output ========\n")
     if mode == "full":
         print(sh("pricecheck/plan.py"))

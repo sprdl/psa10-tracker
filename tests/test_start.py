@@ -48,10 +48,24 @@ class LocalProcedure(unittest.TestCase):
         q = start.local((ROOT / "pricecheck" / "QUICK-CHECK.md").read_text(encoding="utf-8"))
         self.assertIn("python3 scripts/quick_update.py - < data/incoming/quick_update-in.txt 2>&1 | tee", q)
 
+    def test_only_sections(self):
+        # FULL-CHECK.md's day-dependent sections (<!-- only:… -->) are printed only when today's plan needs them (2026-10-23)
+        start = self.load("")
+        text = (ROOT / "pricecheck" / "FULL-CHECK.md").read_text(encoding="utf-8")
+        self.assertIn("<!-- only:scout -->", text)
+        kept = start.only(text, {})
+        self.assertNotIn("<!-- only:", kept)
+        self.assertIn("**Scout (step 4.4)**", kept)
+        dropped = start.only(text, {"scout": False, "psapop": False, "monday": False, "rebuild": False})
+        for gone in ("**Scout (step 4.4)**", "4. **Tab P, collect the PSA pop report.**", "**5b. Monthly model rebuild**", "**6 / 6b. Mondays:**"):
+            self.assertNotIn(gone, dropped)
+        for kept_step in ("5. **Tab S, collect SNKRDUNK.**", "**Slab premiums:**", "## 7. Publish", "python3 scripts/runclock.py end"):
+            self.assertIn(kept_step, dropped)
+
     def test_desktop_run_unchanged(self):
         start = self.load("")
         text = (ROOT / "pricecheck" / "FULL-CHECK.md").read_text(encoding="utf-8")
-        self.assertEqual(start.local(text), text)
+        self.assertEqual(start.local(text), text)   # local() itself changes nothing for a desktop-app run
 
 
 if __name__ == "__main__":

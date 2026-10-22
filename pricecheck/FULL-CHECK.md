@@ -131,9 +131,11 @@ as below before going on (a POLL item after a RUN that didn't start answers `NOT
 2. **Batch 2: check the sites, then start everything** (all in one `browser_batch`). The first items check
    that PSA and pokeca-chart can be read *before* SNKRDUNK's 4-minute read starts (2026-10-23: two runs
    stopped half-way, on the VPN and on a blocked domain):
+<!-- only:psapop -->
    - only when the setup printed a `psa_pop` block (skip if `PSAPOP = []`): `navigate` tab P to
      `https://www.psacard.com/pop/tcg-cards/156940`, then the `psa_check` call on tab P (printed with the
      setup). It throws on a Cloudflare page or a sign-in page, which stops the batch;
+<!-- /only -->
    - `navigate` tab K to `https://pokeca-chart.com/gr/chart-index/`;
    - then the starts: the `snkrdunk_full` RUN call on tab S (`started N cards`; about 10 s per card with
      listings, 3 s without), the `psa_pop` RUN call on tab P when due (`started …`; about 5–8 s per set page),
@@ -152,6 +154,7 @@ as below before going on (a POLL item after a RUN that didn't start answers `NOT
    the `psa_check` call alone once more; if it answers `PSA page ok`, send the rest of batch 2.
    If a batch ever fails with a timeout, send its remaining items as separate calls.
 3. **Tab K: Scout, then the slab premiums.**
+<!-- only:scout -->
    - **Scout (step 4.4)** runs about every other day: when the setup printed `SCOUT = null`, skip it;
      otherwise it's required (don't `--skip scout` to save time; `scripts/freshness.py` flags a stale Scout
      page). POLL tab K with the `pokeca_scout` POLL call until it's done (about 1 minute: the list, then up
@@ -159,11 +162,13 @@ as below before going on (a POLL item after a RUN that didn't start answers `NOT
      `pokeca_premium` RUN call on tab K. One `SCP …` line lists today's candidates, then one `SC {…}` (or
      `SC! …`) line per card page read. `full_update.py` saves them to `data/scout.json`, which feeds the
      site's Scout page (cards you don't track yet that fit your criteria and look cheap).
+<!-- /only -->
    - **Slab premiums:** POLL tab K with the `pokeca_premium` POLL call until it's done (about 2 s per card),
      then `get_page_text` on tab K for the lines when it answered `PAGE …`. The `PREM …` lines carry each
      card's slab premium (PSA10 ÷ raw 美品) and its 6-month norm; `full_update.py` saves them to
      `data/premium.json`. A `PREM <id> !…` line (the card has no pokeca-chart page) is expected for a few
      cards; pass it along like the others.
+<!-- only:psapop -->
 4. **Tab P, collect the PSA pop report.** POLL tab P until it returns its `POP …` lines (or `PAGE …`:
    then `get_page_text` on tab P).
    Gem rate = PSA 10s ÷ total graded on the card's row. If the lines say `PSA sign-in page`, ask the
@@ -173,6 +178,7 @@ as below before going on (a POLL item after a RUN that didn't start answers `NOT
    is carried forward. Same precautions as SNKRDUNK: the user's own browser, only when a check is asked for,
    one page load per set. (PSA's pop report is the only source of PSA10 population and gem rate since
    2026-10-12; it needs a signed-in PSA account, and the browser pane keeps the login.)
+<!-- /only -->
 5. **Tab S, collect SNKRDUNK.** POLL tab S with the `snkrdunk_full` POLL call until it's done; it answers
    `PAGE …` (the lines are long), so the next batch starts with `get_page_text` on tab S. That batch: `tabs_close` tabs P and K (their lines are in), and, only if the setup
    printed a `snkrdunk_held` block, the `snkrdunk_held` RUN call on tab S followed by its POLL for the `H` /
@@ -183,19 +189,25 @@ as below before going on (a POLL item after a RUN that didn't start answers `NOT
    sealed product with a pull is opened and no longer listed; its stored price is deleted by the publish
    step. Full checks only, never the quick check.
 
+<!-- only:monday -->
 On Mondays you can do step 6/6b's web searches (`pricecheck/steps/6-monday.md`) while the reads run.
 
+<!-- /only -->
 Each `IDX` line carries `volume_trend_suggested` (spiking if any day in the last 14 exceeds 2x the
 prior-30-day average; rising/falling if the 7-day average is ±15% or the 14-day average ±10% vs the prior
 30 days; else flat; changed 2026-10-08 after the old 14-day-only rule called +29% over 7 days "flat"),
 which is used as-is. Only if you have a genuinely better read or a notable day worth describing, add
 a line `VOL psa10 {"volume_trend": "...", "volume_note": "..."}` (or `VOL raw …`).
 
+<!-- only:rebuild -->
 **5b. Monthly model rebuild** (when the setup printed `REBUILD DUE`): follow
 `pricecheck/steps/5b-models.md` after the price reads.
 
+<!-- /only -->
+<!-- only:monday -->
 **6 / 6b. Mondays:** follow `pricecheck/steps/6-monday.md` (PSA tier status, `TIER` line; release calendar).
 
+<!-- /only -->
 ## 7. Publish (one `device_bash` call)
 
 Paste every line from steps 2, 2b, 3 and 4 (including SNKRDUNK's `#B` line and the `PREM`, `SCP` and `SC` lines; plus `TIER`, `VOL` and a `NOTE <text>` line for anything
@@ -207,45 +219,22 @@ R=$(ls -d "$HOME"/mnt/*/psa10-tracker "$HOME"/mnt/psa10-tracker 2>/dev/null | he
 EOF
 ```
 
-**Completeness guard:** `full_update.py` refuses to publish when a planned step left no lines (IDX, MYTIER, POP when PSA pop pages were due, PREM, SCP/SC) and names the missing steps. Go back, run them, and re-run with all lines. Only when a step genuinely failed (the site is down, a script reports a changed page), re-run with `--skip <names>` (e.g. `--skip scout`) and say in the chat message which step was skipped and why. Never use `--skip` to save time.
-
-`full_update.py` keeps the input in `data/incoming/full-raw.txt`, pulls, decodes the lines into
-`data/incoming/full-raw.json` (exactly the raw shape `assemble.py` has always taken), runs
-`assemble.py` with `--prev` = the live snapshot (printing WARNINGS and CHANGES), publishes with
-`add_snapshot.py`, saves the My-tier index with `add_custom_index.py` (using the PSA10 index value
-from the `IDX` line) and stores any newly found photo URL. It prints `FULL_UPDATE NOTES` for things
-to mention, such as a PSA pop page that couldn't be read. `--dry-run` decodes and assembles
-without publishing.
-
 The whole output is also kept in `data/incoming/full-update.log`: if the shown part starts after the `WARNINGS:` / `CHANGES` blocks, read them there (`grep -n -A30 "WARNINGS:\|CHANGES" data/incoming/full-update.log`) rather than skipping them.
 
-Read the output. Each part of the publish (snapshot, My-tier index, premium, holdings prices, scout) commits on its own, and `full_update.py` pushes them together once at the end (`add_snapshot.py`'s "Committed locally" line is expected). The snapshot was published if it says "Pushed N commit(s)."; a failed push says so and nothing reached the site. If it says the snapshot is
-byte-identical to an existing one, nothing new was published; say so. The repo has its own
-credential file configured. **Never put a token or credential in any command**, and never ask the
-user for one. If a push fails with an auth error, tell the user the token in `.psa10-git-credentials`
-may have expired. If `git pull --ff-only` or the push fails because the history diverged, don't force
-anything; tell the user to run `git pull` then `git push` in the repo on their Mac. If git fails with
-`unable to unlink ... .git/index.lock: Operation not permitted`, call
-`device_request_delete_permission` for that folder once, then `rm -f .git/index.lock` and re-run.
+Read the output. The snapshot was published if it says "Pushed N commit(s)." (each part of the publish commits on
+its own and `full_update.py` pushes them together; `add_snapshot.py`'s "Committed locally" line is expected). If it
+says the snapshot is byte-identical to an existing one, nothing new was published; say so. **Never put a token or
+credential in any command**, and never ask the user for one.
+
+**Completeness guard:** `full_update.py` refuses to publish when a planned step left no lines and names them: run
+them and re-run with all lines. `--skip <names>` only for a step that genuinely failed (say which and why), never
+to save time.
+
+**When anything in this step fails** (git pull or push, an auth error, a refused publish, a script reporting a
+changed page, or no linked computer): read `pricecheck/references/troubleshooting.md` and follow it.
 
 Expected, don't report: tile-only cards (no PSA10 market) get "only 0 live listing(s)" warnings on
 their A grade, and new-release cards have empty PSA10 results (see `pricecheck/references/state.md`).
-
-**If the computer isn't linked:** run steps 2–4 the same way with the plan from a public clone
-(`git clone --depth 1 https://github.com/sprdl/psa10-tracker.git /tmp/pt && cd /tmp/pt && python3
-pricecheck/start.py --mode full`, using the RUN calls it prints), then write the lines to a file and run
-`python3 scripts/full_update.py <file> --dry-run` in the clone. `SendUserFile` its
-`data/incoming/latest-run.json` and tell the user to publish it from the repo on their Mac with
-`python3 scripts/add_snapshot.py ~/Downloads/latest-run.json`.
-
-**If a whole script fails** (it reports that a page's structure changed), read the affected cards
-by hand with the single-page scripts (`python3 pricecheck/jsrun.py run <name>` for `snkrdunk_base`, `grade_tiles`,
-`snkrdunk_listings` or `pokeca_index`, on the page each reads; a long result answers `PAGE …`, read with
-`get_page_text`; PSA pop by hand, never a hand-edited `psa_pop.js` call) per
-`pricecheck/references/manual-fallback.md`, and flag it at the end so the script can be fixed. The
-old raw-JSON path still works: `python3 pricecheck/scripts/assemble.py RAW.json --out
-data/incoming/latest-run.json --prev <latest snapshot>`, then
-`python3 scripts/add_snapshot.py data/incoming/latest-run.json`.
 
 Run one price check at a time. Overlapping runs published three identical snapshots on 2026-09-25.
 
