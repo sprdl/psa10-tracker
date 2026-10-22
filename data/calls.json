@@ -64,7 +64,7 @@
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 133,
+  "odds_open": 135,
   "odds_early_yes": 8,
   "model_odds": {
    "logged": 206,
@@ -3637,6 +3637,21 @@
    "gap_pct": -27.9
   },
   {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A listing at ≥¥78k (Take profit) by 2027-01-31",
+   "p": 0.15,
+   "type": "touch_above",
+   "price": 78000,
+   "by": "2027-01-31",
+   "made": "2026-10-22T09:30:01+09:00",
+   "status": "open",
+   "why": "101 days left",
+   "now": 60000,
+   "final": false,
+   "gap_pct": 30.0
+  },
+  {
    "url": "https://snkrdunk.com/apparels/224087",
    "name": "ゲッコウガex SAR [SV5a 090/066](強化拡張パック「クリムゾンヘイズ」)",
    "text": "Reaches ≤¥38k within 3–6 months",
@@ -3800,6 +3815,21 @@
    "now": 118499,
    "final": false,
    "gap_pct": -19.8
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/724996",
+   "name": "メガゲンガーex SAR [M2a 240/193](ハイクラスパック「MEGAドリームex」)",
+   "text": "A listing at ≥¥100k (Sell) by 2027-04-30",
+   "p": 0.05,
+   "type": "touch_above",
+   "price": 100000,
+   "by": "2027-04-30",
+   "made": "2026-10-22T09:30:01+09:00",
+   "status": "open",
+   "why": "190 days left",
+   "now": 60000,
+   "final": false,
+   "gap_pct": 66.7
   }
  ],
  "model_odds": [
