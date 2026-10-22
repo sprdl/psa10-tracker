@@ -47,3 +47,7 @@ by hand with the single-page scripts (`python3 pricecheck/jsrun.py run <name>` f
 old raw-JSON path still works: `python3 pricecheck/scripts/assemble.py RAW.json --out
 data/incoming/latest-run.json --prev <latest snapshot>`, then
 `python3 scripts/add_snapshot.py data/incoming/latest-run.json`.
+
+## Something seems stuck (widget, git, a run that never ended)
+
+`python3 scripts/doctor.py` lists leftover git lock files, a run clock whose run is gone, uncommitted or unpushed work and stale data sources, one line each. `python3 scripts/doctor.py --fix` clears the locks and the dead run clock (nothing else). start.py already prints the git part as a `DOCTOR:` block when something is wrong.

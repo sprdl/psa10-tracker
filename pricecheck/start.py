@@ -128,6 +128,14 @@ def main():
     mode = asked or st.get("suggested_mode") or "full"
     why = "asked for" if asked else ("first check of the JST day" if mode == "full" else f"today's full check already ran ({st.get('last_full_jst')})")
     print(f"\nMODE: {mode} ({why})")
+    try:   # leftover git locks / uncommitted or unpushed work from an earlier run: one line each, nothing when all is well
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import doctor
+        probs = [f"⚠ {t}" for k, t in doctor.check_locks(False) + doctor.check_git() if k == "warn"]
+        if probs:
+            print("DOCTOR:\n" + "\n".join(probs))
+    except Exception:  # noqa: BLE001  never stop a run over this
+        pass
     print(sh("scripts/runclock.py", "start", mode))
     clear_inputs()
 

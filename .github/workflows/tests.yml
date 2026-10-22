@@ -41,6 +41,8 @@ jobs:
         run: python3 tests/test_jsrun.py
       - name: SNKRDUNK lines sent as a diff come back byte for byte (runner.js POLL ↔ salesdiff.py)
         run: python3 tests/test_salesdiff.py
+      - name: Repo health check finds leftover git locks and dead run clocks
+        run: python3 tests/test_doctor.py
       - name: PSA backlog schedule and page parsing
         run: python3 tests/test_psa_backlog.py
       - name: Local runs print the procedures without the repo-finding prefix

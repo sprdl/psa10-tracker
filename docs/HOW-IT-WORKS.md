@@ -1198,6 +1198,7 @@ with a docstring explaining its usage. Open the file and read the top.
 | `quick_update.py` | publishing a quick check |
 | `add_snapshot.py` | publishing an assembled snapshot (called by the two above) |
 | `freshness.py` | listing which data sources are older than their cadence |
+| `doctor.py` | repo health: leftover git locks, a run clock whose run is gone, uncommitted/unpushed work, stale data; `--fix` clears locks and the dead clock; start.py prints problems as a `DOCTOR:` block |
 | `runclock.py` | the run clock: `start`, `end` (prints the run time and pushes the follow-ups; `quick_update.py` calls it itself when no follow-ups or retries are left, and a repeated `end` repeats the line), `history` |
 | `salesdiff.py` | (library) rebuilds the SNKRDUNK lines the POLL sends as a diff against the previous run, checks them, keeps the base (`data/incoming/snk-base.json`) |
 | `deferpush.py` | (library) commit without pushing while a run clock is running; `runclock.py end` pushes |
