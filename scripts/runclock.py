@@ -74,6 +74,28 @@ def _push_followups():
         print(f"⏱ follow-ups: push failed ({e}); run `python3 scripts/deferpush.py`")
 
 
+def lap_at(label, iso):
+    """A lap at a time measured elsewhere (a page script's start or end, from its #T line). Never fails the caller."""
+    try:
+        c = load()
+        if not c:
+            return
+        t = datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(JST)
+        if t < datetime.fromisoformat(c["start"]) - timedelta(minutes=5):
+            return   # from an earlier run on the same page
+        c["laps"].append([label, t.isoformat(timespec="seconds")])
+        CUR.write_text(json.dumps(c), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def record_timings(times):
+    """The #T lines of a publish step: '<script> start' and '<script> done' laps."""
+    for name, s, e in times:
+        lap_at(f"{name} start", s)
+        lap_at(f"{name} done", e)
+
+
 def end():
     c = load()
     if not c:
@@ -90,7 +112,7 @@ def end():
     t = now()
     s = datetime.fromisoformat(c["start"])
     total = (t - s).total_seconds()
-    laps = [(lab, (datetime.fromisoformat(ts) - s).total_seconds()) for lab, ts in c["laps"]]
+    laps = sorted(((lab, (datetime.fromisoformat(ts) - s).total_seconds()) for lab, ts in c["laps"]), key=lambda x: x[1])
     line = (f"⏱ {c['mode']} check: {fmt(total)} total (started {s:%H:%M} JST)"
             + "".join(f" · {lab} at +{fmt(x)}" for lab, x in laps))
     print(line)

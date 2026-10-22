@@ -229,6 +229,14 @@ def js_str(s):
     return json.dumps(s, ensure_ascii=False)
 
 
+# Site check before a full check's reads start (FULL-CHECK batch 2): a thrown error stops the batch, so SNKRDUNK's
+# 4-minute read never starts when PSA can't be read (Cloudflare with the VPN on, or signed out). 2026-10-23
+PSA_CHECK = ("(() => { const t = document.title + ' ' + (document.body ? document.body.innerText.slice(0, 3000) : ''); "
+             "if (!document.querySelector('table') && /Attention Required|Just a moment|verify you are human|Cloudflare/i.test(t)) throw new Error('PSA shows a Cloudflare check: turn the VPN off, then run again'); "
+             "if (/signin|login/i.test(location.href)) throw new Error('PSA shows its sign-in page: sign in to psacard.com in this browser, then run again'); "
+             "return 'PSA page ok'; })()")
+
+
 def js_sq(s):
     """A single-quoted JS string literal: an argument's JSON text needs no escaping of its double quotes this way."""
     return "'" + s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r") + "'"
@@ -291,6 +299,7 @@ def cmd_full():
     else:
         print("--- snkrdunk_held: HELD = [] → skip step 2b")
     if p.get("psapop"):
+        print(f"--- psa_check  [psacard.com]  tab P, right after navigating it (FULL-CHECK batch 2): throws on a Cloudflare or sign-in page\nCHECK:\n{PSA_CHECK}")
         print(block("psa_pop", p, "tab P (www.psacard.com/pop/tcg-cards/156940)"))
     else:
         print("--- psa_pop: PSAPOP = [] → skip step 3")

@@ -91,6 +91,14 @@ clear_stale_git_locks() {
   return 0
 }
 
+# Is a VPN carrying this Mac's traffic? (a system VPN connection, or a tunnel interface on the route to the internet,
+# e.g. NordVPN's NordLynx). psacard.com shows a Cloudflare check through it. Best effort: never fails a run. 2026-10-23
+vpn_on() {
+  scutil --nc list 2>/dev/null | grep -q '(Connected)' && return 0
+  route -n get 1.1.1.1 2>/dev/null | grep -Eq 'interface: (utun|ipsec|ppp|tun)[0-9]' && return 0
+  return 1
+}
+
 notify() {  # notify "message"
   osascript -e "display notification \"$1\" with title \"Ghost Bid\"" >/dev/null 2>&1
 }

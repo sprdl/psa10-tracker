@@ -78,7 +78,13 @@ export PSA10_RUN_PID=$$   # start.py puts it in the run clock, so the widget can
   done
 ) &
 
-prompt="Run a $mode price check on my tracked cards with the pokemon-card-price-check skill. This is a local Claude Code run in the repo root, already pulled: follow CLAUDE.md for how the skill's tools map here. In your first message send three calls together: the Skill call, the Bash call python3 pricecheck/start.py --mode $mode (exactly this), and one ToolSearch that loads the Claude in Chrome tools (browser_batch, navigate, javascript_tool, get_page_text, tabs_context_mcp, tabs_create_mcp, tabs_close_mcp). Write every later command the same way, without the skill's R=\$(ls -d …); cd \"\$R\" && prefix (a command with \$(…) stops the run for a permission question). Don't ask whether to start; the run was requested from the menu bar. Unattended: never ask me anything unless the check genuinely can't go on (PSA sign-in, a Cloudflare check, a site down); a tool call answered with a permission denial is not allowed here, so don't retry it in another form: use the way CLAUDE.md describes, or skip that step and name it in the chat message."
+vpn_note=""
+if [ "$mode" = full ] && vpn_on; then   # warn now instead of the run stopping at PSA's Cloudflare check
+  notify "Your VPN looks on: psacard.com will show a Cloudflare check. Turn it off now; the run checks PSA before it reads anything."
+  vpn_note=" Note: the VPN looked ON when this run started (psacard.com may show a Cloudflare check); if FULL-CHECK's psa_check stops batch 2, say so in one line and stop."
+fi
+
+prompt="Run a $mode price check on my tracked cards with the pokemon-card-price-check skill. This is a local Claude Code run in the repo root, already pulled: follow CLAUDE.md for how the skill's tools map here. In your first message send three calls together: the Skill call, the Bash call python3 pricecheck/start.py --mode $mode (exactly this), and one ToolSearch that loads the Claude in Chrome tools (browser_batch, navigate, javascript_tool, get_page_text, tabs_context_mcp, tabs_create_mcp, tabs_close_mcp). Write every later command the same way, without the skill's R=\$(ls -d …); cd \"\$R\" && prefix (a command with \$(…) stops the run for a permission question). Don't ask whether to start; the run was requested from the menu bar. Unattended: never ask me anything unless the check genuinely can't go on (PSA sign-in, a Cloudflare check, a site down); a tool call answered with a permission denial is not allowed here, so don't retry it in another form: use the way CLAUDE.md describes, or skip that step and name it in the chat message.$vpn_note"
 
 # dontAsk: anything .claude/settings.json doesn't allow is refused instead of asked, so a run you started never stops
 # for a permission question; the run reports a refused step in its chat message. Older Claude Code versions without

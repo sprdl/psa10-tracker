@@ -147,6 +147,21 @@ def process(text, root=ROOT):
     return "\n".join(out) + ("\n" if text.endswith("\n") else ""), (base if valid else None), seen, notes
 
 
+TIMING = re.compile(r"#T (\S+) (\S+) (\S+)")
+
+
+def take_timings(text):
+    """(text without the `#T <script> <started> <finished>` lines the runner's POLL adds, [(script, started, finished)])."""
+    keep, times = [], []
+    for ln in text.splitlines():
+        m = TIMING.fullmatch(ln.strip())
+        if m:
+            times.append(m.groups())
+        else:
+            keep.append(ln)
+    return "\n".join(keep) + ("\n" if text.endswith("\n") else ""), times
+
+
 def save(root, base, seen):
     """After a successful publish: keep the new base, or drop it when it didn't add up (the next run starts over)."""
     if not seen:

@@ -31,8 +31,8 @@ each other. Throughout the run, put independent calls in one message and predict
 one `browser_batch`, as the procedures say: each round trip costs several seconds.
 
 **Tabs (full check).** Open the three tabs (S, P, K) right at the start, as FULL-CHECK's order says: a
-standalone `navigate` without a tabId opens S (it creates the tab and prints its id), and the batch that
-starts SNKRDUNK creates P and K with `tabs_create_mcp`. Pass each tab's id explicitly.
+standalone `navigate` without a tabId opens S (it creates the tab and prints its id), batch 1 creates P and K
+with `tabs_create_mcp`, and batch 2 checks PSA and pokeca-chart before it starts any read (`psa_check`). Pass each tab's id explicitly.
 If a tab can't be created, call `tabs_context_mcp` once and retry once. If you still only have two
 tabs, put PSA and pokeca-chart on the second tab one after the other (PSA first: `psa_pop` RUN, POLL
 until done, then the pokeca steps) and never wait for SNKRDUNK's tab: on 2026-10-13 PSA waited for

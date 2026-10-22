@@ -306,6 +306,7 @@ def main():
     dry = "--dry-run" in args
     text = sys.stdin.read() if not files or files[0] == "-" else Path(files[0]).read_text(encoding="utf-8")
     import salesdiff   # the SNKRDUNK POLL sends lists as a diff against the previous run, ending with a #B line
+    text, page_times = salesdiff.take_timings(text)   # #T lines: when each page script ran (run-clock laps)
     try:
         text, diff_base, diff_seen, diff_notes = salesdiff.process(text, ROOT)
     except salesdiff.DiffError as e:
@@ -391,6 +392,7 @@ def main():
     if not no_push:
         push_once()
     import runclock
+    runclock.record_timings(page_times)
     runclock.lap("published")
     import focus
     focus.print_report(ROOT)

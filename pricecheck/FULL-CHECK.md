@@ -124,24 +124,32 @@ every item takes the same input as the tool alone, with an explicit `tabId`; ite
 Chrome, `tabs_create` / `tabs_close` in the built-in browser). A batch stops only on a tool error, not
 on a script's answer: read every item's output, and handle a `NEED_SCRIPT` / `MYTIER!` / sign-in answer
 as below before going on (a POLL item after a RUN that didn't start answers `NOT STARTED`; ignore it).
-1. **Tab S, start SNKRDUNK (step 2).** One standalone `navigate` to `https://snkrdunk.com/apparels/<first id in PLAN>`
-   **without a tabId** (it opens the first tab itself and prints its id; only if your browser's
-   `navigate` insists on a tabId, call `tabs_context` with createIfEmpty first). Then **batch 1**:
-   the `snkrdunk_full` RUN call on tab S, then `tabs_create` twice (once if the setup printed no `psa_pop`
-   block). The RUN item returns `started N cards` and keeps working (about 10 s per card with listings,
-   3 s without); the two `tabs_create` items give you tabs P and K.
-2. **Batch 2, tabs P and K** (all in one `browser_batch`):
+1. **Open the three tabs.** One standalone `navigate` to `https://snkrdunk.com/apparels/<first id in PLAN>`
+   **without a tabId** (it opens the first tab, S, and prints its id; only if your browser's `navigate`
+   insists on a tabId, call `tabs_context` with createIfEmpty first). Then **batch 1**: `tabs_create` twice
+   (once if the setup printed no `psa_pop` block). They give you tabs P and K.
+2. **Batch 2: check the sites, then start everything** (all in one `browser_batch`). The first items check
+   that PSA and pokeca-chart can be read *before* SNKRDUNK's 4-minute read starts (2026-10-23: two runs
+   stopped half-way, on the VPN and on a blocked domain):
    - only when the setup printed a `psa_pop` block (skip if `PSAPOP = []`): `navigate` tab P to
-     `https://www.psacard.com/pop/tcg-cards/156940`, then the `psa_pop` RUN call on tab P (`started …`;
-     about 5–8 s per set page);
-   - `navigate` tab K to `https://pokeca-chart.com/gr/chart-index/`, then the `pokeca_both` RUN call on
-     tab K. It returns two lines, `IDX psa10 {…}` and `IDX raw {…}`;
+     `https://www.psacard.com/pop/tcg-cards/156940`, then the `psa_check` call on tab P (printed with the
+     setup). It throws on a Cloudflare page or a sign-in page, which stops the batch;
+   - `navigate` tab K to `https://pokeca-chart.com/gr/chart-index/`;
+   - then the starts: the `snkrdunk_full` RUN call on tab S (`started N cards`; about 10 s per card with
+     listings, 3 s without), the `psa_pop` RUN call on tab P when due (`started …`; about 5–8 s per set page),
+     and the `pokeca_both` RUN call on tab K. It returns two lines, `IDX psa10 {…}` and `IDX raw {…}`;
    - `navigate` tab K to `https://pokeca-chart.com/gr/all-card/?sort=newest`, then the `mytier` RUN call on
      tab K. It returns one line, `MYTIER {…}`. If it returns `MYTIER! <error>`, leave that line out and
      mention it (the My-tier index is skipped this run);
    - last, on tab K: the `pokeca_scout` RUN call when Scout is due (step 3), otherwise the `pokeca_premium`
      RUN call (step 3 too). Scout goes first because it reads the all-card list on the tab itself, and a
      long result replaces the tab's page (see "Long results" above).
+   **If batch 2 stops at a site check** (a `navigate` refused with "Navigation to this domain is not
+   allowed", or `psa_check` throwing), nothing has started: stop there and say what blocked it and what to
+   do (VPN off; sign in to psacard.com; for a refused domain, close the run and start a fresh one, or run
+   the check from the Claude desktop app). Don't start SNKRDUNK alone. One exception: when it stopped with
+   "Security check failed: the page navigated to a different domain" (the navigation finished late), send
+   the `psa_check` call alone once more; if it answers `PSA page ok`, send the rest of batch 2.
    If a batch ever fails with a timeout, send its remaining items as separate calls.
 3. **Tab K: Scout, then the slab premiums.**
    - **Scout (step 4.4)** runs about every other day: when the setup printed `SCOUT = null`, skip it;

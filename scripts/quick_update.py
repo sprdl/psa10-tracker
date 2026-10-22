@@ -179,6 +179,7 @@ def load_raw(path):
     if text.lstrip().startswith("{"):
         return json.loads(text), None
     import salesdiff   # the POLL sends lists as a diff against the previous run, ending with a #B line: rebuild them
+    text, DIFF["times"] = salesdiff.take_timings(text)
     try:
         text, DIFF["base"], DIFF["seen"], notes = salesdiff.process(text, Path(__file__).resolve().parent.parent)
     except salesdiff.DiffError as e:
@@ -364,6 +365,7 @@ def main():
         import salesdiff
         salesdiff.save(root, DIFF["base"], DIFF["seen"])
         import runclock
+        runclock.record_timings(DIFF.get("times") or [])
         runclock.lap("published")
         sys.path.insert(0, str(root / "scripts"))
         import focus

@@ -114,7 +114,9 @@ def check(name):
     if g:
         assert out[14] == "running 2/5", out[14]
         assert out[16].split("\n")[:2] == ["H 1", "H 2"], out[16]
-        assert (name in jsrun.SALES_DIFF) == (len(out[16].split("\n")) == 3), out[16]   # + the #B line
+        tail = out[16].split("\n")[2:]
+        assert tail[-1].startswith(f"#T {name} "), out[16]                       # the run's timing (run-clock laps)
+        assert (name in jsrun.SALES_DIFF) == (len(tail) == 2 and tail[0].startswith("#B ")), out[16]   # + the #B line
         long = ["H %03d %s" % (i, "y" * 40) for i in range(40)]
         assert out[18].startswith("PAGE ") and len(out[18]) < 300, out[18]
         assert out[19].split("\n")[:40] == long, out[19][:200]

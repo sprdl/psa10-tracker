@@ -312,6 +312,12 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    runner returns a longer result as the tab's page (a `<pre>`, answer `PAGE …`) and Claude reads it with
    `get_page_text`, which returns a whole page. The tab stays on the site for its next scripts; Scout,
    which reads the all-card list on its tab, therefore runs before the slab premiums.
+   Since 2026-10-23 a full check checks the sites before any read starts: batch 2 opens PSA and
+   pokeca-chart first and runs `psa_check` (it throws on a Cloudflare or sign-in page), so a blocked site
+   stops the run before SNKRDUNK's 4-minute read; `widget/run-check.sh` also warns (notification) when
+   the Mac's VPN looks on (`vpn_on` in `widget/lib.sh`). Each background read's POLL ends with
+   `#T <script> <started> <finished>`, which `quick_update.py` / `full_update.py` record as run-clock laps
+   (`runclock.py history` then shows where a run's time went).
    `snkrdunk_full.js` waits for two identical sorted, unsold readings instead of fixed pauses. It skips a card's
    A-rank listings page when the A tile still shows the lowest ask of the last list read (`plan.py`'s
    `a_carry_price`, the fourth field of a plan line; never on Mondays, never when that list is 3+ days old):

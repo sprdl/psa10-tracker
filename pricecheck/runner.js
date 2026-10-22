@@ -7,6 +7,8 @@
 // POLL sends each card's sales and listing lists as a diff against the previous run's lines (kept in localStorage
 // "pc:base", mirrored in data/incoming/snk-base.json by scripts/salesdiff.py) and ends with a `#B <mode> <new base>
 // <lines>` line; scripts/salesdiff.py rebuilds the exact lines and checks them against that hash.
+// Every background read's POLL also ends with `#T <script> <started> <finished>` (ISO times; 2026-10-23): the publish
+// step turns them into run-clock laps, so a run's report shows where its time went.
 // Claude in Chrome's javascript_tool cuts a result at about 1,000 characters (seen 2026-10-20), but get_page_text
 // returns a whole page: a result longer than SHOW_MAX replaces the tab's page with the lines (a <pre>) and answers
 // `PAGE …`, and the lines are then read with get_page_text. The tab stays on the site, so later scripts on it (hidden
@@ -78,10 +80,13 @@
     const q = G[gg];
     if (!q) return 'NOT STARTED (no window.' + gg + ' on this tab)';
     if (!q.done) return `running ${q.i}/${q.n}${G.document?.hidden ? ' (tab hidden)' : ''}`;
+    const tm = (G.__pcT || {})[gg];
+    if (tm && !q.__pcEnd) q.__pcEnd = q.finished || new Date().toISOString();
+    const tl = tm ? '\n#T ' + tm.n + ' ' + tm.s + ' ' + q.__pcEnd : '';
     const bm = (G.__pcB || {})[gg];
-    if (!bm) return show(q.lines.join('\n'));
+    if (!bm) return show(q.lines.join('\n') + tl);
     if (!q.__pc) q.__pc = await pack(q.lines, bm);   // once per run: it also stores the new base
-    return show((full ? q.lines.join('\n') : q.__pc.out) + '\n' + q.__pc.tr);
+    return show((full ? q.lines.join('\n') : q.__pc.out) + '\n' + q.__pc.tr + tl);
   };
   let s;
   try { s = localStorage.getItem('pc:js:' + n); } catch (e) { return 'NEED_SCRIPT ' + n + ' (site storage unavailable: ' + e.message + '; use jsrun.py inline ' + n + ')'; }
@@ -95,6 +100,7 @@
   }
   if (!(await sha(s)).startsWith(hf)) return 'RUNNER ERROR ' + n + ': filled-in script differs from the repo build; nothing ran';
   if (g) (G.__pcB = G.__pcB || {})[g] = B || '';
+  if (g) (G.__pcT = G.__pcT || {})[g] = { n, s: new Date().toISOString() };
   let r;
   try { r = (0, eval)(s.replace(/^\s*await\s+/, '')); } catch (e) { return (e instanceof EvalError ? 'EVAL_BLOCKED ' : 'SCRIPT ERROR ') + n + ': ' + e.message; }
   r = await r;
