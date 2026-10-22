@@ -77,14 +77,14 @@
    "sources": []
   },
   "https://snkrdunk.com/apparels/103080": {
-   "written": "2026-10-14T19:24:39+09:00",
-   "headline": "Ask +4% in a week while the market rallied +19%: this card is lagging",
-   "text": "What's happening: The PSA10 ask is ¥27,000, up 4.2% over 7 days against +19.5% for the My-tier index. 14 of 20 listings sit within 15% of the lowest, with about 3.8 sales a day.\n\nWhy: Likely a lagging catch-up rather than weakness, though the slab premium is already 2.75x raw against a 6-month norm of 2.54x (+8%, pokeca-chart 2026-10-13). Per altema's reprint page there is no announced VSTARユニバース reprint; I found no new card or supply news.\n\nFor you: ¥27,000 is above your ¥20,000 limit and the ¥24,000 Buy tier, just under the ¥28,500 ceiling. The lag is not a reason to pay up.\n\nWatch: whether the ask follows the index higher, or the rally fades first. The 10/16 event rule is on.",
-   "signals": "7d price +4.2% (¥25,900→¥27,000) vs My-tier index +19.5% = -15.3 pts",
+   "written": "2026-10-23T07:55:34+09:00",
+   "headline": "Ask down 15% in a week to ¥24,980 in a deep book; no news found",
+   "text": "What's happening: The lowest PSA10 ask fell 15% in a week, from ¥29,400 to ¥24,980, while the My-tier index slipped 2.8%. The sales median of the last 7 days is ¥26,850 (14 sales) against ¥27,750 before (6 sales), and 15 of 20 listings sit within 15% of the ask.\n\nWhy: Likely sellers undercutting each other in a deep book (about 2.3 sales a day) rather than a change in demand. No news of a reprint or new card was found; the price sources seen are from August and show a raw price drifting down (per Altema, ¥13,000 to ¥11,000 over a month).\n\nFor you: The ask is now just above your lowest tier (¥20,000) and within reach of the middle one (¥24,000), still above your limit of ¥20,000.\n\nWatch: Whether the ask holds near ¥25,000 and sales stay at about ¥26,000, or the undercutting continues toward ¥24,000.",
+   "signals": "7d price -15.0% (¥29,400→¥24,980) vs My-tier index -2.8% = -12.2 pts",
    "sources": [
     {
-     "title": "ハイクラスパック VSTARユニバース 再販情報",
-     "url": "https://altema.jp/pokemoncard/vstaruniversesaihan"
+     "title": "Altema ミュウツーVSTAR SAR 相場",
+     "url": "https://altema.jp/pokemoncard/card/16138"
     }
    ]
   },
