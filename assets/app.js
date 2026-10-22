@@ -105,6 +105,7 @@
   function fmtPct(n, digits) {
     if (n === null || n === undefined || isNaN(n)) return '—';
     const d = digits === undefined ? 1 : digits;
+    if (Number(n.toFixed(d)) === 0) return '±0%';   // no "-0.0%" / "0.0%" for an unchanged value (2026-10-23)
     const sign = n > 0 ? '+' : '';
     return sign + n.toFixed(d) + '%';
   }
@@ -781,7 +782,8 @@
     if (!b) return '';
     const p = b.projection, thr = b.threshold_m;
     const when = p.scenarios.map((s) => s.under_on).filter(Boolean).sort();
-    const range = when.length ? `if the pace holds it is crossed around ${psaMd(when[0])} to ${psaMd(when[when.length - 1])}, a slowdown might not reach it` : 'at the current slowdown it may not be reached';
+    const span = when.length && psaMd(when[0]) !== psaMd(when[when.length - 1]) ? `${psaMd(when[0])} to ${psaMd(when[when.length - 1])}` : when.length ? psaMd(when[0]) : '';
+    const range = when.length ? `if the pace holds it is crossed around ${span}, a slowdown might not reach it` : 'at the current slowdown it may not be reached';
     return `<div class="psa-note"><b>PSA backlog ${p.backlog_m.toFixed(1)}M</b> (${psaMd(p.as_of)}) · Value tiers are paused and open below ${thr}M · ${range} · <a href="#/market">details on the Market page</a></div>`;
   }
 
@@ -1115,7 +1117,7 @@
     const days = own.since ? Math.max(0, Math.floor((Date.now() - Date.parse(own.since + 'T00:00:00+09:00')) / 86400000)) : null;
     return { own, price, gross, grossPct: own.basis ? (gross / own.basis) * 100 : null, net, netPct: own.basis ? (net / own.basis) * 100 : null, be, days };
   }
-  const signedYen = (v) => `${v >= 0 ? '+' : '−'}${fmtYen(Math.abs(v))}`;
+  const signedYen = (v) => (Math.round(v) === 0 ? '±¥0' : `${v >= 0 ? '+' : '−'}${fmtYen(Math.abs(v))}`);
   function positionHtml(card) {
     const ps = positionStats(card);
     if (!ps) return '';
@@ -1243,7 +1245,15 @@
     }
     return (fees[h.tier] || auto || h.grading_fee_jpy || PSA_STD.fee) + psaExtras(h.shipping_insurance_jpy);
   }
-  // A single's planned cash out (budget): the price, plus grading for a raw copy you mean to grade or that was graded.
+  // Budget use (2026-10-23): what the singles cost so far, grading counted once a copy is sent (holdingPaid, the same
+  // rule as Holdings' Total cost), and the grading still planned for raw copies not sent yet, shown separately.
+  // Every budget figure (Overview, planner, combination finder, Rate, Compare) uses this.
+  function budgetUse() {
+    let spent = 0, planned = 0;
+    for (const h of state.holdings) { const paid = holdingPaid(h); spent += paid; planned += Math.max(0, holdingCost(h) - paid); }
+    return { spent, planned };
+  }
+  // A single's planned cash out: the price, plus grading for a raw copy you mean to grade or that was graded.
   function holdingCost(h) {
     return (h.purchase_price_jpy || 0) + (h.condition === 'raw_to_grade' || h.graded_from_raw ? gradingCostOf(h) : 0);
   }
@@ -1668,9 +1678,10 @@
     const cards = state.currentData.cards || [];
     const t = holdingsTotals(cards);
     const st = plannerState();
-    const left = st.budget - state.holdings.reduce((a, h) => a + holdingCost(h), 0);
+    const bu = budgetUse();
+    const left = st.budget - bu.spent;
     const paidSingles = state.holdings.reduce((a, h) => a + (h.purchase_price_jpy || 0), 0);
-    const budgetTip = `Budget ${fmtYen(st.budget)} (budget planner) − singles ${fmtYen(paidSingles)} − grading ${fmtYen(st.budget - left - paidSingles)} (raw copies, counted whether sent yet or not)`;
+    const budgetTip = `Budget ${fmtYen(st.budget)} (budget planner) − singles ${fmtYen(paidSingles)} − grading sent ${fmtYen(bu.spent - paidSingles)}${bu.planned ? `. Not counted yet: ${fmtYen(bu.planned)} grading planned for raw copies not sent` : ''}. Sealed product doesn't count.`;
     let spark = '';
     try { spark = moneySpark(); } catch (e) { spark = ''; }
     let bench = null;
@@ -3544,13 +3555,38 @@
   function submitCalc(c, tierKey) {
     const card = c.card, it = c.item;
     if (!card) return { missing: 'not a tracked card, so no prices' };
-    const psa = getRep(card), raw = rawPriceV(card), gem = it.gem_rate_pct != null ? it.gem_rate_pct : card.psa10_gem_rate_pct;
-    if (!psa || !raw || !gem) return { missing: !psa ? 'no PSA10 price yet' : !raw ? 'no raw A-rank price' : 'no gem rate (give your own chance of a 10 in the grading info)', psa };
+    const dv = declaredValue(card);
+    const psa = dv.v, raw = rawPriceV(card), gem = it.gem_rate_pct != null ? it.gem_rate_pct : card.psa10_gem_rate_pct;
+    if (!psa || !raw || !gem) return { missing: !psa ? 'no PSA10 price yet' : !raw ? 'no raw A-rank price' : 'no gem rate (give your own chance of a 10 in the grading info)', psa, dv };
     const p = gem / 100, n10 = sellNet(psa), nraw = sellNet(raw);
     const fee = GRADE_TIERS[tierKey].fee + PSA_STD.ship + PSA_STD.handling;   // one card on its own, for the verdict
     const pBE = n10 > nraw ? fee / (n10 - nraw) : null;
     const verdict = pBE == null || p <= pBE - GRADE_MARGIN ? 'dont' : p >= pBE + GRADE_MARGIN ? 'grade' : 'close';
-    return { psa, raw, p, gem, own: it.gem_rate_pct != null, n10, nraw, ev: p * n10 + (1 - p) * nraw, verdict, pBE };
+    return { psa, raw, p, gem, own: it.gem_rate_pct != null, n10, nraw, ev: p * n10 + (1 - p) * nraw, verdict, pBE, dv };
+  }
+  // Declared value for PSA (2026-10-23): the PSA10 price, except on a thin market (1–2 PSA10 listings) where 3+ recent
+  // one-copy sales sit lower: then the median of the last 5 sales, flagged, so one lone ask doesn't set the service level.
+  function declaredValue(card) {
+    const rep = getRep(card);
+    const g = (card && card.grades && card.grades.psa10) || {};
+    const asks = (g.top20_cheapest_listings || []).length;
+    const sales = (g.recent_completed_sales || []).map((x) => x.price).filter((x) => x > 0).slice(0, 5).sort((a, b) => a - b);
+    const thin = rep != null && asks > 0 && asks <= 2;
+    if (thin && sales.length >= 3) {
+      const med = sales[Math.floor(sales.length / 2)];
+      if (med < rep) return { v: med, thin, note: `only ${asks} PSA10 listing${asks === 1 ? '' : 's'} (${fmtYen(rep)}); the median of the last ${sales.length} sales is ${fmtYen(med)}, used here` };
+    }
+    return { v: rep, thin, note: thin ? `only ${asks} PSA10 listing${asks === 1 ? '' : 's'} and few sales: a thin market` : '' };
+  }
+  // The paused Value tier (PSA Japan's pre-pause price, data/psa_backlog.json): when a raw copy could go there, how much
+  // waiting saves against Standard and when the backlog projection crosses PSA's line. null while Value is open or unknown.
+  function valueWait() {
+    const b = psaBacklog();
+    if (!b || !b.value_prices || (b.tiers || []).some((t) => /value/i.test(t.name) && t.status === 'open')) return null;
+    const v = (b.value_prices.rows || []).find((r) => r.name === 'Value');
+    if (!v) return null;
+    const when = b.projection.scenarios.map((x) => x.under_on).filter(Boolean).sort()[0] || null;
+    return { fee: v.fee, cap: v.cap, days: v.days, save: GRADE_TIERS.standard.fee - v.fee, when, thr: b.threshold_m };
   }
   function submitFormUrl(copies, tierKey, date) {
     const q = { template: 'grading-info.yml', title: `Grading: ${copies.length} card${copies.length === 1 ? '' : 's'} sent ${date}`,
@@ -3566,10 +3602,13 @@
       el.innerHTML = `<div class="empty-state">No raw copies to grade. Cards you buy raw (✓ Bought it → Raw) and raw pulls under a sealed product show up here.</div>`;
       return { title: 'PSA submission planner', sub: '' };
     }
-    const base = todo.map((c) => Object.assign({}, c, { std: submitCalc(c, 'standard') }));
-    const selIds = st.sel ? st.sel.filter((id) => todo.some((c) => c.id === id)) : base.filter((c) => !c.std.missing && c.std.verdict !== 'dont').map((c) => c.id);
+    const vw = valueWait();
+    // A copy that could go to the paused Value tier and is worth grading there: "Wait for Value" (2026-10-23).
+    const waitFor = (c) => !!(vw && c.card && !c.std.missing && c.std.psa <= vw.cap && c.std.verdict !== 'dont');
+    const base = todo.map((c) => Object.assign({}, c, { std: submitCalc(c, 'standard') })).map((c) => Object.assign(c, { wait: waitFor(c) }));
+    const selIds = st.sel ? st.sel.filter((id) => todo.some((c) => c.id === id)) : base.filter((c) => !c.std.missing && c.std.verdict !== 'dont' && !c.wait).map((c) => c.id);
     const picked = base.filter((c) => selIds.includes(c.id));
-    const maxDecl = Math.max(0, ...picked.map((c) => (c.card && getRep(c.card)) || 0));
+    const maxDecl = Math.max(0, ...picked.map((c) => (c.card && declaredValue(c.card).v) || 0));
     const autoKey = psaTierFor(maxDecl);
     const tierKey = st.tier === 'auto' ? autoKey : st.tier, tier = GRADE_TIERS[tierKey];
     const date = st.date || todayJst();
@@ -3579,7 +3618,7 @@
     const cost = picked.length ? picked.length * tier.fee + st.ship : 0;
     const ev = priced.reduce((a, c) => a + c.k.ev, 0), nraw = priced.reduce((a, c) => a + c.k.nraw, 0);
     const gain = ev - nraw - cost, tens = priced.reduce((a, c) => a + c.k.p, 0);
-    const over = tier.cap != null ? picked.filter((c) => c.card && getRep(c.card) > tier.cap) : [];
+    const over = tier.cap != null ? picked.filter((c) => c.card && declaredValue(c.card).v > tier.cap) : [];
     const back = picked.length ? addBusinessDays(addBusinessDays(date, PSA_REG_LAG), tier.days) : null;
     const tierBtn = (k, l) => `<button type="button" data-tier="${k}" class="${st.tier === k ? 'on' : ''}">${l}</button>`;
     const top = `<div class="pl-top">
@@ -3603,13 +3642,15 @@
       const on = selIds.includes(c.id), k = on ? (calc.find((x) => x.id === c.id) || {}).k : c.std;
       const nm = parseCardName((c.card && c.card.card_name_ja) || c.name);
       const img = (c.card && c.card.image_url) || c.item.image_url;
-      const sub = k.missing ? escapeHtml(k.missing)
-        : `${Math.round(k.gem)}% chance of a 10${k.own ? ' (yours)' : ''} · PSA10 ${fmtYen(k.psa)} · raw ${fmtYen(k.raw)} · graded ${fmtYen(k.ev)} expected vs ${fmtYen(k.nraw)} raw, after selling costs`;
+      const thinTxt = k.dv && k.dv.thin ? ` · <span class="sub-thin" title="${escapeAttr(k.dv.note)}">thin PSA10 market</span>` : '';
+      const sub = (k.missing ? escapeHtml(k.missing)
+        : `${Math.round(k.gem)}% chance of a 10${k.own ? ' (yours)' : ''} · PSA10 ${fmtYen(k.psa)} · raw ${fmtYen(k.raw)} · graded ${fmtYen(k.ev)} expected vs ${fmtYen(k.nraw)} raw, after selling costs`) + thinTxt
+        + (c.wait ? ` · <span class="sub-wait">Value would save ${fmtYen(vw.save)}${vw.when ? `; the backlog may cross PSA's ${vw.thr}M line around ${psaMd(vw.when)}, then PSA has to announce it` : ''}</span>` : '');
       return `<label class="pl-row ${on ? 'on' : ''}">
         <input type="checkbox" data-sub="${escapeAttr(c.id)}" ${on ? 'checked' : ''}>
         <span class="wthumb pl-thumb">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
-        <span class="pl-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.kind === 'pull' ? 'pull' : 'bought raw')} ${escapeHtml(c.id)}</span>${!c.std.missing ? ` <span class="vtag gr-${c.std.verdict}" title="On its own at Standard (¥${(GRADE_TIERS.standard.fee + PSA_STD.ship + PSA_STD.handling).toLocaleString()} all-in): it pays off at a ${c.std.pBE != null ? Math.ceil(c.std.pBE * 100) + '%+' : '—'} chance of a 10">${GRADE_LABELS[c.std.verdict]}</span>` : ''}</span>
-        <span class="pl-price">${k.psa ? fmtYen(k.psa) : '—'}<span class="pl-src">declared</span></span>
+        <span class="pl-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.kind === 'pull' ? 'pull' : 'bought raw')} ${escapeHtml(c.id)}</span>${!c.std.missing ? ` <span class="vtag gr-${c.std.verdict}" title="On its own at Standard (¥${(GRADE_TIERS.standard.fee + PSA_STD.ship + PSA_STD.handling).toLocaleString()} all-in): it pays off at a ${c.std.pBE != null ? Math.ceil(c.std.pBE * 100) + '%+' : '—'} chance of a 10">${GRADE_LABELS[c.std.verdict]}</span>` : ''}${c.wait ? ` <span class="vtag gr-wait" title="Declared ${fmtYen(c.std.psa)}, under Value's ${fmtYen(vw.cap)} cap: Value (${fmtYen(vw.fee)} a card before the pause, about ${vw.days} business days) would save ${fmtYen(vw.save)} on grading. Not ticked by default; tick it to send it at Standard now.">Wait for Value</span>` : ''}</span>
+        <span class="pl-price">${k.psa ? fmtYen(k.psa) : '—'}<span class="pl-src">${k.dv && k.dv.thin && k.dv.v !== getRep(c.card) ? 'declared · sales median' : 'declared'}</span></span>
         <span class="pl-sub">${sub}</span>
       </label>`;
     };
@@ -3622,7 +3663,7 @@
     const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeAttr(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(slash(date))} ↗</a>` : '';
     el.innerHTML = psaBacklogLine() + top + summary + warn +`<div class="sub-acts">${sendBtn}<span class="muted">${picked.length ? 'opens one GitHub form for all ticked cards; submit it after you post them' : 'tick the cards to send'}</span></div>`
       + (todo.length ? `<div class="pl-list">${base.map(row).join('')}</div>` : '<div class="empty-state">Every raw copy is at PSA.</div>') + awayHtml
-      + `<p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)} and Priority (¥2,000 more per card) up to ${fmtYen(GRADE_TIERS.priority.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are PSA's business days counted from the day PSA registers the card (add it in Grading info once PSA shows it); until then about a week after sending is assumed. Ticks, service and shipping are saved in this browser.</p>`;
+      + `<details class="cd-more"><summary>How this is worked out</summary><p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)} and Priority (¥2,000 more per card) up to ${fmtYen(GRADE_TIERS.priority.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are PSA's business days counted from the day PSA registers the card (add it in Grading info once PSA shows it); until then about a week after sending is assumed. Ticks, service and shipping are saved in this browser. A card with only one or two PSA10 listings is declared at the median of its recent sales when that is lower. “Wait for Value” marks copies that could go to the paused Value tier (declared under its cap): they aren't ticked by default.</p></details>`;
     trimImages(el);
     el.querySelectorAll('[data-tier]').forEach((b) => b.addEventListener('click', () => save({ tier: b.dataset.tier })));
     el.querySelectorAll('[data-sub]').forEach((cb) => cb.addEventListener('change', () => {
@@ -4263,13 +4304,17 @@
       return (b.price ?? -1) * (b.qty || 1) - (a.price ?? -1) * (a.qty || 1);
     });
     const arrow = (v) => (v == null ? '' : v > 0.05 ? '▲' : v < -0.05 ? '▼' : '–');
+    // ¥1,000 is the lowest price SNKRDUNK allows: a card selling there is worth that or less (2026-10-23).
+    const FLOOR = 1000;
+    const atFloor = (c) => c.price != null && c.price <= FLOOR;
+    const floorN = cs.filter(atFloor).length;
     el.innerHTML = `
       <div class="pf-summary">
         <div class="pf-stat"><div class="lbl">Binder value</div><div class="val">${st.priced ? fmtYen(st.worth) : '—'}</div>
-          <div class="kpi-d ${st.change == null ? 'muted' : dirClass(st.change)}">${st.change == null ? 'change shows after the second Monday reading' : `${arrow(st.change)} ${st.change >= 0 ? '+' : '−'}${fmtYen(Math.abs(st.change))} (${fmtPct(st.changePct)}) since the last reading`}</div></div>
+          <div class="kpi-d ${st.change == null ? 'muted' : dirClass(st.change)}">${st.change == null ? 'change shows after the second Monday reading' : Math.round(st.change) === 0 ? 'unchanged since the last reading' : `${arrow(st.change)} ${st.change >= 0 ? '+' : '−'}${fmtYen(Math.abs(st.change))} (${fmtPct(st.changePct)}) since the last reading`}${floorN ? ` · ${floorN} card${floorN === 1 ? '' : 's'} at SNKRDUNK's ¥1,000 floor` : ''}</div></div>
         <div class="pf-stat"><div class="lbl">Next price update</div><div class="val">Mon ${nextMonday()}</div><div class="kpi-d muted">${st.lastDate ? 'last read ' + st.lastDate.replace(/-/g, '/') : 'no reading yet'}${missing ? ` · ${missing} card${missing === 1 ? '' : 's'} not matched on SNKRDUNK yet` : ''}</div></div>
       </div>
-      <p class="muted" style="margin:8px 0 12px">Prices are A-rank raw copies: the median of the last 5 one-copy A-rank sales within 30 days, never below the lowest ask (fewer than 3 sales: the lowest ask). They are owned cards, so there are no limits or Buy signals.</p>
+      <p class="muted" style="margin:8px 0 12px">Prices are A-rank raw copies: the median of the last 5 one-copy A-rank sales within 30 days, never below the lowest ask (fewer than 3 sales: the lowest ask). They are owned cards, so there are no limits or Buy signals. “≤¥1,000” marks cards at SNKRDUNK's lowest possible price: they count as ¥1,000 in the total, but may be worth less.</p>
       <div class="wl-bar"><div class="seg wl-filter" role="tablist" aria-label="Sort binder">${Object.entries(sorts).map(([k, v]) => `<button type="button" data-bsort="${k}" class="${state.binderSort === k ? 'on' : ''}">${v}</button>`).join('')}</div></div>
       <div class="pf-list">${rows.map((c) => {
         const q = c.qty || 1, d = delta(c);
@@ -4284,8 +4329,8 @@
             <div class="pf-meta">${escapeHtml(c.name_ja || '')} · ${escapeHtml(c.set)} ${escapeHtml(c.number)}/${escapeHtml(c.total || '')}${c.rarity ? ' · ' + escapeHtml(c.rarity) : c.reprint_30th ? ' · 30th reprint' : ''} · A-rank raw · ${escapeHtml(basis)}</div>
           </div>
           <div class="pf-current">
-            <div class="val">${c.price != null ? fmtYen(c.price) : '—'}</div>
-            <div class="pf-pnl">${d != null ? `<span class="${dirClass(d)}">${arrow(d)} ${fmtPct(d)}</span>` : '<span class="muted">–</span>'}${q > 1 && c.price != null ? ` <span class="muted">· ${fmtYen(c.price * q)} for ${q}</span>` : ''}</div>
+            <div class="val"${atFloor(c) ? ` title="SNKRDUNK's lowest possible price: copies sell at the floor, so this card may be worth less"` : ''}>${c.price != null ? (atFloor(c) ? '≤' : '') + fmtYen(c.price) : '—'}</div>
+            <div class="pf-pnl">${d != null ? (Math.abs(d) < 0.05 ? '<span class="muted">unchanged</span>' : `<span class="${dirClass(d)}">${arrow(d)} ${fmtPct(d)}</span>`) : '<span class="muted">–</span>'}${q > 1 && c.price != null ? ` <span class="muted">· ${fmtYen(c.price * q)} for ${q}</span>` : ''}</div>
           </div>
         </div>`;
       }).join('')}</div>`;
@@ -5172,15 +5217,19 @@
       const today = lowestAsk(card);
       const lim = getLimit(card);
       const useLimit = st.mode === 'limits' && lim != null;
-      return { card, name: parseCardName(card.card_name_ja).short, today, lim,
+      const pn = parseCardName(card.card_name_ja);
+      return { card, name: pn.short, code: pn.code, today, lim,
                price: useLimit ? lim : today, fromLimit: useLimit,
                buyLine: card.analysis && card.analysis.tiers ? card.analysis.tiers.buy_upper : null,
                tag: displayTagFor(card), on: st.selected.includes(card.url) };
     });
+    // Closest to its Buy line first (today's price against Buy ≤), cards without tiers last (2026-10-23).
+    const gapOf = (r) => (r.buyLine ? r.today / r.buyLine - 1 : Infinity);
+    rows.sort((a, b) => gapOf(a) - gapOf(b));
     const picked = rows.filter((r) => r.on);
     const total = picked.reduce((a, r) => a + r.price, 0);
     const totalToday = picked.reduce((a, r) => a + r.today, 0);
-    const spent = state.holdings.reduce((a, h) => a + holdingCost(h), 0);
+    const { spent, planned } = budgetUse();
     const ownedUrls = new Set(state.holdings.map((h) => h.card_url));
     const left = st.budget - spent - total;
     const missingLimit = st.mode === 'limits' ? picked.filter((r) => !r.fromLimit).length : 0;
@@ -5188,9 +5237,9 @@
     const summary = `
       <div class="pl-summary">
         <div class="pl-stat"><div class="lbl">Selected (${picked.length})</div><div class="val">${fmtYen(total)}</div></div>
-        ${spent ? `<div class="pl-stat"><div class="lbl">Spent so far</div><div class="val">${fmtYen(spent)}</div></div>` : ''}
-        <div class="pl-stat"><div class="lbl">Budget</div><div class="val"><span class="pl-yen">¥</span><input type="number" class="pl-budget" aria-label="Budget (¥)" inputmode="numeric" step="10000" min="0" value="${st.budget}"></div></div>
-        <div class="pl-stat"><div class="lbl">${left >= 0 ? 'Left' : 'Over budget'}</div><div class="val ${left >= 0 ? 'pos' : 'neg'}">${fmtYen(Math.abs(left))}</div></div>
+        ${spent ? `<div class="pl-stat" title="Singles you bought, with grading once a copy is sent (the Holdings page's Total cost). Sealed product doesn't count."><div class="lbl">Spent so far</div><div class="val">${fmtYen(spent)}</div>${planned ? `<div class="pl-plan">+${fmtYen(planned)} grading planned, not sent yet</div>` : ''}</div>` : ''}
+        <div class="pl-stat"><div class="lbl">Budget</div><div class="val"><span class="pl-yen">¥</span><input type="text" class="pl-budget" aria-label="Budget (¥)" inputmode="numeric" value="${YEN_FMT.format(st.budget)}"></div></div>
+        <div class="pl-stat"><div class="lbl">${left >= 0 ? 'Left' : 'Over budget'}</div><div class="val ${left >= 0 ? 'pos' : 'neg'}">${fmtYen(Math.abs(left))}</div>${planned && left >= 0 ? `<div class="pl-plan">${left - planned >= 0 ? `${fmtYen(left - planned)} after the planned grading` : `${fmtYen(planned - left)} over after the planned grading`}</div>` : ''}</div>
         ${st.mode === 'limits' && picked.length ? `<div class="pl-stat"><div class="lbl">vs. buying today</div><div class="val ${totalToday - total >= 0 ? 'pos' : 'neg'}">${totalToday - total >= 0 ? 'saves ' : 'costs '}${fmtYen(Math.abs(totalToday - total))}</div></div>` : ''}
       </div>
       <div class="pl-bar">${spent ? `<div class="pl-bar-spent" style="width:${Math.min(100, st.budget ? (spent / st.budget) * 100 : 0).toFixed(1)}%" title="Spent so far"></div>` : ''}<div class="pl-bar-fill ${left < 0 ? 'over' : ''}" style="width:${Math.min(100, st.budget ? (total / st.budget) * 100 : 0).toFixed(1)}%"></div></div>`;
@@ -5209,7 +5258,8 @@
 
     const list = rows.map((r) => {
       const fits = !r.on && !ownedUrls.has(r.card.url) && r.price <= left;
-      const sub = [`today ${fmtYen(r.today)}`, r.lim != null ? `limit ${fmtYen(r.lim)}` : 'no limit', r.buyLine != null ? `Buy ≤${fmtYen(r.buyLine)}` : null].filter(Boolean).join(' · ');
+      const gap = r.buyLine ? (r.today / r.buyLine - 1) * 100 : null;
+      const sub = [r.code || null, `today ${fmtYen(r.today)}`, r.lim != null ? `limit ${fmtYen(r.lim)}` : 'no limit', r.buyLine != null ? `Buy ≤${fmtYen(r.buyLine)}${gap > 0 ? ` (ask +${gap.toFixed(0)}%)` : ' (at Buy)'}` : null].filter(Boolean).join(' · ');
       return `<label class="pl-row ${r.on ? 'on' : ''}">
         <input type="checkbox" data-url="${escapeAttr(r.card.url)}" ${r.on ? 'checked' : ''}>
         <span class="wthumb pl-thumb">${r.card.image_url ? `<img class="card-img" src="${escapeAttr(r.card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
@@ -5232,7 +5282,10 @@
       save({ selected: [...sel] });
     }));
     const bud = box.querySelector('.pl-budget');
-    if (bud) bud.addEventListener('change', () => { const v = Number(bud.value); save({ budget: v >= 0 ? v : 0 }); });
+    if (bud) {
+      bud.addEventListener('focus', () => { bud.value = String(plannerState().budget); bud.select(); });
+      bud.addEventListener('change', () => { const v = Number(String(bud.value).replace(/[^\d]/g, '')); save({ budget: v >= 0 ? v : 0 }); });
+    }
   }
 
 
@@ -5619,7 +5672,7 @@
     const el = document.getElementById('combos-page');
     const cards = (state.currentData && state.currentData.cards) || [];
     const st = plannerState();
-    const spent = state.holdings.reduce((s, h) => s + holdingCost(h), 0);
+    const spent = budgetUse().spent;
     const avail = st.budget - spent;
     const cat = cbCatsFor(st.mode).some((c) => c.k === st.cbCat) ? st.cbCat : 'fit';
     const syncPlanner = () => { renderPlanner(cards); renderKpis(state.currentData); };
@@ -5756,7 +5809,7 @@
       return { title: 'Rate my portfolio', sub: '' };
     }
     const st = plannerState();
-    const spent = state.holdings.reduce((s, h) => s + holdingCost(h), 0);
+    const spent = budgetUse().spent;
     const avail = st.budget - spent;
     if (avail <= 0) {
       el.innerHTML = `<div class="empty-state">Nothing left of the ${fmtYen(st.budget)} budget. Raise it in the <a href="#/planner">budget planner</a>.</div>`;
@@ -6821,7 +6874,7 @@
       return { title: 'Which one first?', sub: '' };
     }
     const st = plannerState();
-    const spent = state.holdings.reduce((s, h) => s + holdingCost(h), 0);
+    const spent = budgetUse().spent;
     const avail = st.budget - spent;
     const leftTxt = (x) => (x >= 0 ? `${fmtYen(x)} left after it` : `${fmtYen(-x)} over budget`);
     const oddsRow = (card, label, price, color) => {
