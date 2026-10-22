@@ -180,7 +180,7 @@ def main():
     if pr and (pr.get("peak") or pr.get("chg")):
         pk, ch = pr.get("peak") or {}, pr.get("chg") or {}
         print("PEAK      pokeca-chart PSA10"
-              + (f": peak month {pk['month']} (median {yen(pk['median'])})" if pk else "")
+              + (f": peak month {pk['month']} (median {yen(pk['median'])}" + (f" of {pk['points']} point{'s' if pk['points'] != 1 else ''}" if pk.get('points') else "") + ")" if pk else "")
               + (" · moves " + ", ".join(f"{d}d {v:+.1f}%" for d, v in sorted(ch.items(), key=lambda x: int(x[0]))) if ch else "")
               + f" (as of {pr.get('asof')}; pokeca-chart averages, not SNKRDUNK asks)")
     if hy and hy.get("level"):

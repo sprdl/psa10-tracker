@@ -243,9 +243,9 @@ class PremiumTokens(unittest.TestCase):
     def test_moves_and_peak(self):
         sys.path.insert(0, str(ROOT / "scripts"))
         import premium
-        e = premium.decode(["PREM 9 d261020 r100 p200 m1.9 n40 g- c-1.5:12.0:- k2605:139700 s251020:2.0"])["9"]
+        e = premium.decode(["PREM 9 d261020 r100 p200 m1.9 n40 g- c-1.5:12.0:- k2605:139700:2 s251020:2.0"])["9"]
         self.assertEqual(e["chg"], {"7": -1.5, "30": 12.0})
-        self.assertEqual(e["peak"], {"month": "2026-05", "median": 139700})
+        self.assertEqual(e["peak"], {"month": "2026-05", "median": 139700, "points": 2})
         old = premium.decode(["PREM 9 d261020 r100 p200 m- n4 g- s251020:2.0"])["9"]   # lines from before 2026-10-23
         self.assertNotIn("chg", old)
         self.assertNotIn("peak", old)

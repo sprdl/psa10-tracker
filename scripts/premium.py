@@ -64,8 +64,8 @@ def decode(lines):
         if chg:
             out[sid]["chg"] = chg
         if ":" in (tok.get("k") or ""):
-            m, v = tok["k"].split(":", 1)
-            out[sid]["peak"] = {"month": f"20{m[:2]}-{m[2:4]}", "median": int(float(v))}
+            m, v, *n = tok["k"].split(":")
+            out[sid]["peak"] = {"month": f"20{m[:2]}-{m[2:4]}", "median": int(float(v)), **({"points": int(n[0])} if n else {})}
     return out
 
 
