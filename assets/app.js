@@ -1025,7 +1025,10 @@
     }
     const rl = rallyState();
     if (rl.active && tiers && price != null && price >= tiers.take_profit_from * 0.95) reasons.push(`Market rally: My-tier index ${fmtPct(rl.pct)} over ${RALLY_DAYS} days with the price near or in the Take-profit zone`);
-    const v = { tag, reasons, target, tierTag };
+    // Every copy still raw (not back from PSA yet): the zones are PSA10 prices, so they apply once it's graded (2026-10-23).
+    const rawOnly = holdingsFor(card).every((h) => h.condition === 'raw_to_grade');
+    if (rawOnly && tag !== 'hold') reasons[0] = reasons[0] + ` — a PSA10 price: your copy is raw${holdingsFor(card).some((h) => h.sent) ? ' and at PSA' : ''}, so this applies once it's graded`;
+    const v = { tag, reasons, target, tierTag, rawOnly };
     sellCache.set(card, { key, v });
     return v;
   }
@@ -1034,7 +1037,7 @@
     const st = sellState(card);
     if (!st) return '';
     const tip = st.reasons.length ? st.reasons.join('. ') + '.' : st.target != null ? `Below your sell target ${fmtYen(st.target)}.` : 'No sell target set; no sell signal yet.';
-    return `<span class="vtag sell-${st.tag}" title="${escapeAttr(tip)}">${SELL_LABELS[st.tag]}</span>`;
+    return `<span class="vtag sell-${st.tag}" title="${escapeAttr(tip)}">${SELL_LABELS[st.tag]}${st.rawOnly && st.tag !== 'hold' ? '<small class="sell-raw"> after grading</small>' : ''}</span>`;
   }
   function sellHit(card) { const st = sellState(card); return !!st && st.tag === 'sell'; }
   function targetSyncHtml(card) {
@@ -2802,7 +2805,7 @@
       <button type="button" class="sc-img" data-big="${escapeAttr(SCOUT_IMG(r.slug).replace('-medium.', '-large.'))}" aria-label="Show the picture bigger" title="Tap for a bigger picture"><img src="${escapeAttr(SCOUT_IMG(r.slug))}" alt="${escapeAttr(c.nm || '')}" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.sc-img').classList.add('noimg')"></button>
       <div class="sc-body">
         <div class="sc-head"><b class="jp">${escapeHtml(c.nm || r.slug)}</b><span class="muted jp">${escapeHtml(c.set || '')}${c.rel ? ' · ' + escapeHtml(c.rel.replace('-', '/')) : ''}</span></div>
-        <div class="sc-price"><span class="display">${fmtYen(price)}</span>${disc != null ? `<span class="sc-pill ${disc <= 0 ? 'pos' : ''}">${disc <= 0 ? '−' : '+'}${Math.abs(disc).toFixed(0)}% vs pre-hype</span>` : ''}${dDiy != null ? `<span class="sc-pill pos" title="DIY cost ${fmtYen(diy)}: pokeca-chart raw price + PSA Standard grading, ÷ gem rate">−${Math.abs(dDiy).toFixed(0)}% vs DIY cost</span><span class="sc-pill warn" title="No pre-hype price yet, so it's compared with the cost of grading a raw copy. Young cards tend to keep drifting down for their first 9 months.">Young card</span>` : ''}${off != null && off >= 10 ? `<span class="sc-pill" title="2026 peak ${fmtYen(c.peak)} (${escapeAttr(c.pk || '')})">−${off.toFixed(0)}% off its ${escapeHtml((c.pk || '').replace(/^(\d{4})-(\d{2})$/, (m, y, mo) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo - 1]))} peak</span>` : ''}</div>
+        <div class="sc-price"><span class="display" title="PSA10 price on pokeca-chart (the Scout reads pokeca-chart only; open SNKRDUNK for today's lowest ask)">${fmtYen(price)}</span><span class="sc-src">PSA10 · pokeca-chart</span>${disc != null ? `<span class="sc-pill ${disc <= 0 ? 'pos' : ''}">${disc <= 0 ? '−' : '+'}${Math.abs(disc).toFixed(0)}% vs pre-hype</span>` : ''}${dDiy != null ? `<span class="sc-pill pos" title="DIY cost ${fmtYen(diy)}: pokeca-chart raw price + PSA Standard grading, ÷ gem rate">−${Math.abs(dDiy).toFixed(0)}% vs DIY cost</span><span class="sc-pill warn" title="No pre-hype price yet, so it's compared with the cost of grading a raw copy. Young cards tend to keep drifting down for their first 9 months.">Young card</span>` : ''}${off != null && off >= 10 ? `<span class="sc-pill" title="2026 peak ${fmtYen(c.peak)} (${escapeAttr(c.pk || '')})">−${off.toFixed(0)}% off its ${escapeHtml((c.pk || '').replace(/^(\d{4})-(\d{2})$/, (m, y, mo) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo - 1]))} peak</span>` : ''}</div>
         <ul class="sc-why">${r.reasons.slice(1).filter((w) => !/off its 2026 peak/.test(w)).map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
         ${chart ? `<div class="sc-chart">${chart}</div>` : ''}
         <div class="sc-actions">
@@ -2838,7 +2841,7 @@
         <table class="sc-table"><thead><tr><th>Card</th><th>PSA10</th><th>vs reference</th><th>off peak</th><th>Gem rate</th></tr></thead><tbody>
         ${near.map(scoutRowHtml).join('')}
         </tbody></table></details>` : ''}
-      <p class="tr-note">How it picks: modern secret rares (released 2021 or later) with a PSA10 price of ¥5k–150k on pokeca-chart that you don't track yet, trading at least 3 times a month, at most 10% above their pre-hype price (the Jul–Dec 2025 median, skipping each card's first three months). Young cards without a pre-hype price are compared with the cost of grading a raw copy yourself instead: only with a 75%+ gem rate, at least 3 months old and at or below that cost (pokeca-chart's raw price runs above SNKRDUNK A-rank, so check the card's numbers), and ranked lower while they're under 9 months old. Ranked by how far below that level they are, how much of the 2026 peak they gave back, and a slab premium below its own norm; cards with a 90%+ gem rate lose a little (easy to grade, keeps getting diluted). Each day brings 3 new cards; a card isn't shown again for 30 days while there are ones you haven't seen. Full checks refresh all ${pool.length} candidates' prices and re-read 20–40 card pages (${read} have data so far).${hidden.length ? ` ${hidden.length} card${hidden.length === 1 ? '' : 's'} hidden in this browser · <button type="button" class="linkish" id="sc-reset">show again</button>` : ''}</p>`;
+      <details class="cd-more"><summary>How Scout picks its cards</summary><p class="tr-note">How it picks: modern secret rares (released 2021 or later) with a PSA10 price of ¥5k–150k on pokeca-chart that you don't track yet, trading at least 3 times a month, at most 10% above their pre-hype price (the Jul–Dec 2025 median, skipping each card's first three months). Young cards without a pre-hype price are compared with the cost of grading a raw copy yourself instead: only with a 75%+ gem rate, at least 3 months old and at or below that cost (pokeca-chart's raw price runs above SNKRDUNK A-rank, so check the card's numbers), and ranked lower while they're under 9 months old. Ranked by how far below that level they are, how much of the 2026 peak they gave back, and a slab premium below its own norm; cards with a 90%+ gem rate lose a little (easy to grade, keeps getting diluted). Each day brings 3 new cards; a card isn't shown again for 30 days while there are ones you haven't seen. Full checks refresh all ${pool.length} candidates' prices and re-read 20–40 card pages (${read} have data so far).</p></details>${hidden.length ? `<p class="tr-note">${hidden.length} card${hidden.length === 1 ? '' : 's'} hidden in this browser · <button type="button" class="linkish" id="sc-reset">show again</button></p>` : ''}`;
     el.querySelector('#sc-other').addEventListener('change', (e) => { store.set('psa10.scout.other', e.target.checked); renderScout(); updateCounts(); });
     el.querySelectorAll('.sc-dismiss').forEach((b) => b.addEventListener('click', () => { const h = store.get('psa10.scout.dismissed', []); h.push(b.dataset.slug); store.set('psa10.scout.dismissed', h); renderScout(); updateCounts(); }));
     el.querySelectorAll('.sc-img').forEach((b) => b.addEventListener('click', () => openLightbox(b.dataset.big, b.querySelector('img').alt)));
@@ -5144,14 +5147,23 @@
     if (!g.odds || g.odds.reached) return '—';
     return `${fmtOdds(g.odds.p90)}`;
   }
+  // Grails stay out of buy signals (2026-10-23): the chip says how far the ask is from your target, not a verdict.
+  function grailChip(g) {
+    if (g.target == null || g.ask == null) return '';
+    if (g.atTarget) return '<span class="gr-chip pos">At your target</span>';
+    return `<span class="gr-chip" title="Lowest ask ${fmtYen(g.ask)} against your ${g.targetSrc === 'limit' ? 'target' : 'Buy line'} ${fmtYen(g.target)}">${fmtYenShort(g.ask - g.target)} to target</span>`;
+  }
   function grailFundingHtml(gs, f, compact) {
     if (!f.n) return '';
     const bar = (v, ask) => Math.max(2, Math.min(100, (v / ask) * 100)).toFixed(1);
-    const rows = gs.filter((g) => g.ask).map((g) => {
-      const pn = (f.now / g.ask) * 100, pt = (f.tp / g.ask) * 100;
-      return `<div class="gf-row"><span class="gf-name jp">${escapeHtml(g.short)}</span>
+    const priced = gs.filter((g) => g.ask);
+    const items = priced.map((g) => ({ name: g.short, ask: g.ask, jp: true }));
+    if (priced.length > 1) items.push({ name: priced.length === 2 ? 'Both' : `All ${priced.length}`, ask: priced.reduce((a, g) => a + g.ask, 0), both: true });
+    const rows = items.map((g) => {
+      const pn = (f.now / g.ask) * 100, pt = (f.tp / g.ask) * 100, short = g.ask - f.now;
+      return `<div class="gf-row ${g.both ? 'gf-both' : ''}"><span class="gf-name ${g.jp ? 'jp' : ''}">${escapeHtml(g.name)}</span>
         <span class="gf-bar" role="img" aria-label="${escapeAttr(`Selling today covers ${pn.toFixed(0)}% of ${fmtYen(g.ask)}; at Take profit ${pt.toFixed(0)}%`)}"><i class="gf-tp" style="width:${bar(f.tp, g.ask)}%"></i><i class="gf-now" style="width:${bar(f.now, g.ask)}%"></i></span>
-        <span class="gf-pct"><b>${pn.toFixed(0)}%</b> today · <b class="${pt >= 100 ? 'pos' : ''}">${pt.toFixed(0)}%</b> at Take profit</span></div>`;
+        <span class="gf-pct"><b>${pn.toFixed(0)}%</b> today${short > 0 ? ` (${fmtYenShort(short)} short)` : ''} · <b class="${pt >= 100 ? 'pos' : ''}">${pt.toFixed(0)}%</b> at Take profit</span></div>`;
     }).join('');
     return `<section class="panel gr-fund ${compact ? 'compact' : ''}" aria-label="Funding from your collection">
       <div class="gf-head"><h2 class="section-title">Could your collection pay for it?</h2>
@@ -5173,7 +5185,7 @@
         ${g.card.image_url ? `<span class="grc-glow" style="background-image:url('${escapeAttr(g.card.image_url)}')" aria-hidden="true"></span>` : ''}
         ${slabHtml(g.card, 'lg')}</a>
       <div class="grc-plaque">
-        <div class="grc-name"><h2 class="jp">${escapeHtml(g.short)}</h2>${tagChip(g.card)}</div>
+        <div class="grc-name"><h2 class="jp">${escapeHtml(g.short)}</h2>${grailChip(g)}</div>
         <p class="gr-meta">${grailMeta(g)}</p>
         <dl class="grc-nums">
           <div><dt>Ask</dt><dd class="display">${fmtYenShort(g.ask)}</dd></div>
@@ -6426,6 +6438,11 @@
     });
   }
   function yenShort(v) { return v >= 1e6 ? '¥' + +(v / 1e6).toFixed(2) + 'M' : v >= 1e4 ? '¥' + +(v / 1e3).toFixed(1) + 'k' : fmtYen(v); }
+  // One unit per axis (2026-10-23): when the top tick is ¥10k+, every tick from ¥1,000 up is in k (no "¥8,000" under "¥10k").
+  function yenAxis(ticks) {
+    const big = Math.max(...ticks) >= 1e4;
+    return (v) => (big && v >= 1000 && v < 1e6 ? '¥' + +(v / 1e3).toFixed(1) + 'k' : yenShort(v));
+  }
   function niceTicks(lo, hi, n) {
     const span = hi - lo || Math.abs(hi) || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
     const step = [1, 2, 2.5, 5, 10].map((k) => k * mag).find((k) => k >= raw) || 10 * mag;
@@ -6464,6 +6481,7 @@
     const ovs = (cfg.overlays || []).map((o) => Object.assign({}, o, { points: o.points.filter((q) => q.x >= x0 && q.x <= x1) })).filter((o) => o.points.length);
     const ys = pts.map((p) => p.y).concat((cfg.refs || []).map((r) => r.y), ...ovs.filter((o) => !o.dots).map((o) => o.points.map((q) => q.y)));
     const ticks = niceTicks(Math.min(...ys), Math.max(...ys), 4), lo = ticks[0], hi = ticks[ticks.length - 1];
+    const FA = cfg.fmt ? F : yenAxis(ticks);
     const X = (x) => m.l + (pts.length === 1 ? iw / 2 : ((x - x0) * iw) / (x1 - x0 || 1));
     const Y = (v) => m.t + ih * (1 - (v - lo) / (hi - lo || 1));
     const xy = pts.map((p) => [X(p.x), Y(p.y)]);
@@ -6483,7 +6501,7 @@
     const refs = (cfg.refs || []).map((r) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(r.y).toFixed(1)}" y2="${Y(r.y).toFixed(1)}" class="hist-ref-line ${r.cls}"/><text x="${r.left ? m.l + 4 : m.l + iw}" y="${(Y(r.y) - 4).toFixed(1)}" class="hist-ref-label ${r.cls}" text-anchor="${r.left ? 'start' : 'end'}">${escapeHtml(r.label)} ${F(r.y)}</text>`).join('');
     box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
       <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
-      ${ticks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${F(v)}</text>`).join('')}
+      ${ticks.map((v) => `<line x1="${m.l}" x2="${m.l + iw}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="ci-grid"/><text x="${m.l - 8}" y="${(Y(v) + 4).toFixed(1)}" class="ci-ytick">${FA(v)}</text>`).join('')}
       ${xt.map(([x, lab]) => `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${base}" y2="${base + 4}" class="ci-axis"/><text x="${x.toFixed(1)}" y="${base + 18}" class="ci-xtick">${escapeHtml(lab)}</text>`).join('')}
       <line x1="${m.l}" x2="${m.l + iw}" y1="${base}" y2="${base}" class="ci-axis"/>
       ${refs}

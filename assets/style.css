@@ -1752,10 +1752,10 @@ a.sl-icon:hover { border-color: var(--accent); }
 /* Gallery layout */
 .grc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .grc { display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
-.grc-frame { position: relative; display: flex; justify-content: center; align-items: center; padding: 44px 24px; min-height: 520px; overflow: hidden; background: #050506; isolation: isolate; }
+.grc-frame { position: relative; display: flex; justify-content: center; align-items: center; padding: 28px 24px; min-height: 0; overflow: hidden; background: #050506; isolation: isolate; }
 .grc-glow { position: absolute; inset: -20%; background-size: cover; background-position: center; filter: blur(46px) saturate(1.4); opacity: 0.55; z-index: -1; }
 .grc-frame::after { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 60% at 50% 50%, transparent 30%, rgba(5, 5, 6, 0.75)); z-index: -1; }
-.grc-frame .slab.lg { width: min(340px, 78%); height: auto; aspect-ratio: 63 / 88; transition: transform 0.25s; }
+.grc-frame .slab.lg { width: min(340px, 78%, calc(50vh * 63 / 88)); height: auto; aspect-ratio: 63 / 88; transition: transform 0.25s; }
 .grc-frame .slab img.card-img { filter: drop-shadow(0 26px 40px rgba(0, 0, 0, 0.7)); }
 .grc-frame:hover .slab.lg { transform: scale(1.015); }
 .grc-plaque { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); }
@@ -1990,3 +1990,30 @@ details.cd-more > summary { cursor: pointer; font-size: 12px; color: var(--muted
 details.cd-more > summary::before { content: '▸ '; }
 details.cd-more[open] > summary::before { content: '▾ '; }
 details.cd-more > .cd-note, details.cd-more > p { margin-top: 6px; }
+
+/* Grails (2026-10-23): distance-to-target chip instead of a buy verdict; combined row in the funding panel */
+.gr-chip { flex: 0 0 auto; font: 600 12px var(--sans); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-3); color: var(--soft); white-space: nowrap; }
+.gr-chip.pos { color: var(--green); border-color: var(--green); }
+.gf-both { border-top: 1px dashed var(--line); padding-top: 8px; }
+.gf-both .gf-name { color: var(--muted); }
+.sc-src { font-size: 10.5px; color: var(--muted-2); letter-spacing: 0.04em; align-self: center; }
+.vtag .sell-raw { font-size: 0.82em; opacity: 0.8; font-weight: 500; }
+
+/* iPad widths (2026-10-23): between the phone layout (≤899px) and 1100px the sidebar shrinks to icons, so the pages
+   keep their width. Labels show as tooltips; the snapshot picker and Add card stay. */
+@media (min-width: 900px) and (max-width: 1099px) {
+  .sidebar { width: 72px; padding-left: 10px; padding-right: 10px; gap: 16px; }
+  .sidebar .brand { justify-content: center; padding: 0; }
+  .sidebar .brand-word, .sidebar .brand-ten { display: none; }
+  .nav { gap: 10px; }
+  .nav-h { font-size: 0; padding: 0; height: 1px; margin: 4px 8px; background: var(--line); }
+  .nav a { justify-content: center; padding: 0; position: relative; min-height: 40px; }
+  .nav a span { display: none; }
+  .nav a em { position: absolute; top: 3px; right: 4px; font-size: 9px; }
+  .side-foot { padding: 0; }
+  .side-foot .lbl { display: none; }
+  .side-foot .snap-select { font-size: 10px; padding: 0 2px; min-height: 34px; width: 100%; min-width: 0; }
+  .side-foot .btn-primary { font-size: 0; padding: 0; min-height: 40px; }
+  .side-foot .btn-primary::before { content: '+'; font-size: 24px; line-height: 1; }
+  .card-requests { display: none; }
+}
