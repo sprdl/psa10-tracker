@@ -619,6 +619,11 @@
       "file": "20261023-0755.json",
       "collected_at_jst": "2026-10-23T07:55:03+09:00",
       "check_mode": "full"
+    },
+    {
+      "file": "20261023-0941.json",
+      "collected_at_jst": "2026-10-23T09:41:57+09:00",
+      "check_mode": "full"
     }
   ]
 }
