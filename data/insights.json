@@ -144,6 +144,18 @@
    "text": "What's happening: The lowest PSA10 ask is ¥49,999, up 8.7% in a week (¥46,000 → ¥49,999) against a My-tier index down 3.2%. Only 4 sales were read in the last 7 days (median ¥49,500) against 16 before (¥46,000), about 0.3 sales a day, and 3 of 18 listings sit within 15% of the lowest.\n\nWhy: Likely the cheapest listings selling out on a very thin market (123 favourites) so the ask steps up; the move is small in yen. Searches found no reprint, new card or news for this card.\n\nFor you: The ask is just at your Ceiling (¥50,000) and above Buy (¥41,400) and your ¥37,000 limit, so there is no reason to act now. Few trades means one listing can move the price.\n\nWatch: Whether sales keep clearing at ¥49,000–¥50,000 or the ask slips back toward ¥46,000; a drop to ¥41,400 would put it in the Buy zone.",
    "signals": "7d price +8.7% (¥46,000→¥49,999) vs My-tier index -3.2% = +11.9 pts",
    "sources": []
+  },
+  "https://snkrdunk.com/apparels/882279": {
+   "written": "2026-10-24T08:58:54+09:00",
+   "headline": "Ask +54% in a week on a single listing, 18% over sales; likely thin supply",
+   "text": "What's happening: The lowest PSA10 ask is ¥99,999, up from ¥65,000 a week ago, while the My-tier index fell 3.7%. It is the only PSA10 listing, and it sits 18% above the recent sales median of ¥85,000 (3 sales in 7 days, about 0.14 a day).\n\nWhy: Likely a single seller pricing high on a market with almost no supply, not a repricing of the card. The set came out on 2026-09-16, the raw A-rank ask is only about ¥5,100, and per Samurai Sword Tokyo the day version's SNKRDUNK ask fell from ¥11,000 on release day to ¥9,500 two days later. The searches found no news of a reprint, a record sale or a new card of this character.\n\nFor you: There are no tiers or limit on this card yet, so nothing to act on. One listing and three sales is too thin to read as a trend.\n\nWatch: Whether a second PSA10 listing appears and where it is priced, and whether sales stay near ¥85,000 or move toward the ¥99,999 ask.",
+   "signals": "7d price +53.8% (¥65,000→¥99,999) vs My-tier index -3.7% = +57.5 pts | lowest ask ¥99,999 is +18% vs recent sales median ¥85,000",
+   "sources": [
+    {
+     "title": "Samurai Sword Tokyo, Pikachu ex SAR day/night guide",
+     "url": "https://samuraiswordtokyo.com/blogs/news/pikachu-ex-sar-day-night-30th-celebration-card-guide"
+    }
+   ]
   }
  }
 }
