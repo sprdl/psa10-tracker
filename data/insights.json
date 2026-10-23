@@ -156,6 +156,18 @@
      "url": "https://samuraiswordtokyo.com/blogs/news/pikachu-ex-sar-day-night-30th-celebration-card-guide"
     }
    ]
+  },
+  "https://snkrdunk.com/apparels/882280": {
+   "written": "2026-10-24T08:58:57+09:00",
+   "headline": "Single PSA10 ask 25% over recent sales; thin market, no news",
+   "text": "What's happening: The lowest PSA10 ask is ¥99,999, 25% above the recent sales median of ¥80,000. It is the only listing, and there were 3 sales in the last 7 days (about 0.17 a day).\n\nWhy: Likely the same thin-supply pattern as the day version of this Pikachu ex SAR: one seller asking well above where slabs sell, with the raw A-rank ask near ¥6,700. The searches found no news of a reprint or a new card that would explain a higher price.\n\nFor you: There are no tiers or limit on this card yet. A single listing priced above sales is not a buy signal.\n\nWatch: Whether more PSA10 listings appear, and whether sales hold near ¥80,000.",
+   "signals": "lowest ask ¥99,999 is +25% vs recent sales median ¥80,000",
+   "sources": [
+    {
+     "title": "Samurai Sword Tokyo, Pikachu ex SAR day/night guide",
+     "url": "https://samuraiswordtokyo.com/blogs/news/pikachu-ex-sar-day-night-30th-celebration-card-guide"
+    }
+   ]
   }
  }
 }
