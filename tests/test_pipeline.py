@@ -152,6 +152,21 @@ def card(sid, psa10=None, a_low=None, a_list=True, asof=None, pop=None, source="
     return c
 
 
+class IndexCarry(unittest.TestCase):
+    def test_skipped_index_is_carried_with_its_date(self):
+        # a full check that couldn't read pokeca-chart keeps the last index, dated (2026-10-23)
+        prev = {"latest_index_value_jpy": 127166, "data_range": "x", "same_day_note": "n"}
+        o = assemble.index_obj(None, None, "x", "psa10", prev, "2026-10-23T07:55:00+09:00")
+        self.assertEqual(o["latest_index_value_jpy"], 127166)
+        self.assertEqual(o["as_of"], "2026-10-23T07:55:00+09:00")
+        self.assertIn("carried", o["carried_note"])
+        self.assertNotIn("same_day_note", o)
+        kept = assemble.index_obj(None, None, "x", "psa10", dict(prev, as_of="2026-10-22T08:00:00+09:00"), "2026-10-23T07:55:00+09:00")
+        self.assertEqual(kept["as_of"], "2026-10-22T08:00:00+09:00")   # carried twice: still the real reading's date
+        self.assertIn("error", assemble.index_obj(None, None, None, "psa10", None, None))
+        self.assertIn("error", assemble.index_obj(None, None, None, "psa10", {"error": "not collected this run"}, None))
+
+
 class Plan(unittest.TestCase):
     SNAP_AT = "2026-10-15T09:00:00+09:00"   # a Thursday
 

@@ -146,12 +146,20 @@ as below before going on (a POLL item after a RUN that didn't start answers `NOT
    - last, on tab K: the `pokeca_scout` RUN call when Scout is due (step 3), otherwise the `pokeca_premium`
      RUN call (step 3 too). Scout goes first because it reads the all-card list on the tab itself, and a
      long result replaces the tab's page (see "Long results" above).
-   **If batch 2 stops at a site check** (a `navigate` refused with "Navigation to this domain is not
-   allowed", or `psa_check` throwing), nothing has started: stop there and say what blocked it and what to
-   do (VPN off; sign in to psacard.com; for a refused domain, close the run and start a fresh one, or run
-   the check from the Claude desktop app). Don't start SNKRDUNK alone. One exception: when it stopped with
-   "Security check failed: the page navigated to a different domain" (the navigation finished late), send
-   the `psa_check` call alone once more; if it answers `PSA page ok`, send the rest of batch 2.
+   **If batch 2 stops at a site check**, nothing has started yet. Don't end the run: skip only the site that
+   failed and still read the others (SNKRDUNK above all). Since 2026-10-23 a run never stops for one site.
+   - `psa_check` threw "Security check failed: the page navigated to a different domain" (the navigation
+     finished late): send the `psa_check` call alone once more; if it answers `PSA page ok`, go on.
+   - `psa_check` threw a Cloudflare page or a sign-in page: skip PSA this run (no `psa_pop` RUN, no step 4,
+     publish with `--skip psapop`). Name it in the chat with what to do (VPN off; sign in to psacard.com).
+   - a `navigate` to pokeca-chart.com refused with "Navigation to this domain is not allowed" (a Claude in
+     Chrome fault that can hit one domain for a whole session): retry once in a fresh tab (`tabs_create`,
+     then `navigate` that tab; it becomes tab K). If it's refused again, skip pokeca-chart this run: no
+     `pokeca_both` / `mytier` / Scout / `pokeca_premium` calls and no step 3, and publish with
+     `--skip index,mytier,premium` (add `scout` when Scout was due). The snapshot keeps the last market
+     index with its date. Say in the chat: "pokeca-chart was refused by the browser; market index, My-tier
+     index and slab premiums are from the last run" (a fresh run or tomorrow's full check reads them).
+   - Then send the rest of batch 2 without the skipped site's items.
    If a batch ever fails with a timeout, send its remaining items as separate calls.
 3. **Tab K: Scout, then the slab premiums.**
 <!-- only:scout -->

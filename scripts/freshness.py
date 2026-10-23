@@ -69,7 +69,9 @@ def checks(root=ROOT, now=None):
             last_full = d
             break
     out.append(("SNKRDUNK prices (latest snapshot)", (latest or {}).get("collected_at_jst"), 26 * H, "quick or full check"))
-    out.append(("full check: depth, pokeca index, volume", (last_full or {}).get("collected_at_jst"), 30 * H, "full check"))
+    # a full check that couldn't read pokeca-chart carries the index with its as_of (2026-10-23): age it from that
+    pidx = ((last_full or {}).get("pokeca_chart_index") or {}).get("psa10") or {}
+    out.append(("full check: depth, pokeca index, volume", pidx.get("as_of") or (last_full or {}).get("collected_at_jst"), 30 * H, "full check"))
     ci = _load(root, "custom_index.json") or {}
     ser = ci.get("series") or []
     out.append(("My-tier index", ser[-1]["d"] + "T00:00:00+09:00" if ser else None, 48 * H, "full check (MYTIER)"))

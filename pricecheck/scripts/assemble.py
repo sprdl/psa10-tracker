@@ -78,8 +78,16 @@ def grade_obj(listing, sales, label):
     return g
 
 
-def index_obj(r, override, prev_range, label):
+def index_obj(r, override, prev_range, label, prev_obj=None, prev_ts=None):
     if not r:
+        # Not read this run (pokeca-chart skipped, e.g. the browser refused the domain): carry the previous snapshot's
+        # reading with the time it was really measured, as a quick check does, so the site keeps showing it (2026-10-23).
+        if prev_obj and not prev_obj.get("error") and prev_obj.get("latest_index_value_jpy") is not None:
+            o = {k: v for k, v in prev_obj.items() if k != "same_day_note"}
+            o.setdefault("as_of", prev_ts)
+            o["carried_note"] = f"not read this run; carried from the reading of {o.get('as_of') or 'the previous snapshot'}"
+            warnings.append(f"index {label}: not collected, carried from {o.get('as_of')}")
+            return o
         warnings.append(f"index {label}: not collected")
         return {"error": "not collected this run"}
     o = {f: r.get(f) for f in INDEX_FIELDS}
@@ -157,8 +165,10 @@ def main():
                   + (" " + raw["run_notes"] if raw.get("run_notes") else "")),
         "cards": cards_out,
         "pokeca_chart_index": {
-            "psa10": index_obj(idx.get("psa10"), ov.get("psa10"), pidx.get("psa10", {}).get("data_range"), "psa10"),
-            "raw_bihin": index_obj(idx.get("raw"), ov.get("raw"), pidx.get("raw_bihin", {}).get("data_range"), "raw"),
+            "psa10": index_obj(idx.get("psa10"), ov.get("psa10"), pidx.get("psa10", {}).get("data_range"), "psa10",
+                               pidx.get("psa10"), (prev or {}).get("collected_at_jst")),
+            "raw_bihin": index_obj(idx.get("raw"), ov.get("raw"), pidx.get("raw_bihin", {}).get("data_range"), "raw",
+                                   pidx.get("raw_bihin"), (prev or {}).get("collected_at_jst")),
         },
     }
     if raw.get("psa_tier_status"):

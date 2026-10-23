@@ -313,8 +313,10 @@ The procedure is in `pricecheck/FULL-CHECK.md`; this is the outline.
    `get_page_text`, which returns a whole page. The tab stays on the site for its next scripts; Scout,
    which reads the all-card list on its tab, therefore runs before the slab premiums.
    Since 2026-10-23 a full check checks the sites before any read starts: batch 2 opens PSA and
-   pokeca-chart first and runs `psa_check` (it throws on a Cloudflare or sign-in page), so a blocked site
-   stops the run before SNKRDUNK's 4-minute read; `widget/run-check.sh` also warns (notification) when
+   pokeca-chart first and runs `psa_check` (it throws on a Cloudflare or sign-in page), and a blocked site
+   is skipped before SNKRDUNK's 4-minute read starts instead of failing half-way: the run reads the other
+   sites and publishes with `--skip` (pokeca-chart refused → the market index is carried from the previous
+   snapshot with its `as_of`, `assemble.py`; `freshness.py` ages it from that date); `widget/run-check.sh` also warns (notification) when
    the Mac's VPN looks on (`vpn_on` in `widget/lib.sh`). Each background read's POLL ends with
    `#T <script> <started> <finished>`, which `quick_update.py` / `full_update.py` record as run-clock laps
    (`runclock.py history` then shows where a run's time went).
