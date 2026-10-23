@@ -89,14 +89,14 @@
    ]
   },
   "https://snkrdunk.com/apparels/91189": {
-   "written": "2026-10-23T07:55:27+09:00",
-   "headline": "Ask up 21% in a week on thin depth (3 of 11 listings near the ask); no news found",
-   "text": "What's happening: The lowest PSA10 ask is ¥145,000, up 20.8% in a week (from ¥120,000) while the My-tier index fell 2.8%. Sales are also higher: the median of the last 7 days is ¥140,250 (10 sales) against ¥127,500 before (10 sales), at about 1.35 sales a day. Only 3 of 11 listings sit within 15% of the ask, so the book is thin.\n\nWhy: Likely a thin market: the cheapest listings were bought out and the next ones start at ¥155,000. No news of a reprint or new card was found in searches; the sources seen only show the card's steady collector demand.\n\nFor you: The ask is well above your tiers (¥100,000 / ¥118,000 / ¥135,000) and your limit of ¥75,000, so this is not a buy now.\n\nWatch: Whether sales keep clearing at ¥140,000 or more, or the ask drifts back toward ¥120,000, which is where the tiers start to matter.",
-   "signals": "7d price +20.8% (¥120,000→¥145,000) vs My-tier index -2.8% = +23.7 pts",
+   "written": "2026-10-23T09:43:22+09:00",
+   "headline": "Ask +21% in a week on a thin book, no news found",
+   "text": "What's happening: The lowest PSA10 ask is ¥145,000, up 20.8% in 7 days (¥120,000 before) while the My-tier index fell 2.8%. Recent sales are rising too: median ¥140,250 over the last 7 days (10 sales) against ¥127,500 before. Only 3 of 12 listings sit within 15% of the lowest ask and trading is about 1.3 sales a day, so the book is thin.\n\nWhy: Likely a thin-supply squeeze: few slabs listed, and each buyer pushes the ask up. A search for Japanese news found no reprint, new product or event for this card; the only price data found was from July, so the cause is not confirmed.\n\nFor you: The ask is above all three tiers (¥100,000 / ¥118,000 / ¥135,000) and well above your ¥75,000 limit. Nothing to buy here.\n\nWatch: Whether the sales median holds near ¥140,000 as more listings appear, and whether the ask falls back toward the Ceiling tier (¥135,000).",
+   "signals": "7d price +20.8% (¥120,000→¥145,000) vs My-tier index -2.8% = +23.6 pts",
    "sources": [
     {
-     "title": "Netoff 一撃マスター 買取情報",
-     "url": "https://www.netoff.co.jp/moetaku/tcg/pokemon_card/s5I/"
+     "title": "Gamepedia Tyranitar V price page",
+     "url": "https://premium.gamepedia.jp/pokeca/card/%E3%83%90%E3%83%B3%E3%82%AE%E3%83%A9%E3%82%B9V"
     }
    ]
   },
