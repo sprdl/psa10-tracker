@@ -49,7 +49,7 @@
     "neutral": 0,
     "n": 28,
     "right_pct": 64.3,
-    "rel_pts": 13.3
+    "rel_pts": 13.5
    },
    "watch": {
     "right": 10,
@@ -57,14 +57,14 @@
     "neutral": 0,
     "n": 28,
     "right_pct": 35.7,
-    "rel_pts": 13.3
+    "rel_pts": 13.5
    }
   },
   "odds_resolved": 0,
   "brier": null,
   "expected_yes": null,
   "actual_yes": 0,
-  "odds_open": 137,
+  "odds_open": 139,
   "odds_early_yes": 8,
   "model_odds": {
    "logged": 221,
@@ -357,8 +357,8 @@
    "name": "リザードンVSTAR SAR[s12a 212/172](ハイクラスパック「VSTARユニバース」)",
    "tag": "dont_buy",
    "label": "Don't buy — ask ¥29.5k is above every tier; wait for the Oct 16 card set",
-   "latest_label": "Don't buy — ask ¥31,500 is above the ¥28,500 ceiling and still rising",
-   "reaffirmed": 1,
+   "latest_label": "Don't buy — ask ¥29,000 is still above the ¥28,500 ceiling and your ¥20,000 limit",
+   "reaffirmed": 2,
    "made": "2026-10-15T09:13:14+09:00",
    "price": 29500,
    "window_end": "2026-11-14T09:13:14+09:00",
@@ -2384,6 +2384,36 @@
    "now": 115999,
    "final": false,
    "gap_pct": -18.1
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/103079",
+   "name": "リザードンVSTAR SAR[s12a 212/172](ハイクラスパック「VSTARユニバース」)",
+   "text": "A PSA10 listing at ≤¥24,500 within 30 days",
+   "p": 0.26,
+   "type": "touch_below",
+   "price": 24500,
+   "by": "2026-11-23",
+   "made": "2026-10-24T08:58:22+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 29000,
+   "final": false,
+   "gap_pct": -15.5
+  },
+  {
+   "url": "https://snkrdunk.com/apparels/103079",
+   "name": "リザードンVSTAR SAR[s12a 212/172](ハイクラスパック「VSTARユニバース」)",
+   "text": "A PSA10 listing at ≤¥21,000 within 30 days",
+   "p": 0.1,
+   "type": "touch_below",
+   "price": 21000,
+   "by": "2026-11-23",
+   "made": "2026-10-24T08:58:22+09:00",
+   "status": "open",
+   "why": "30 days left",
+   "now": 29000,
+   "final": false,
+   "gap_pct": -27.6
   },
   {
    "url": "https://snkrdunk.com/apparels/387059",
