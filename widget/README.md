@@ -42,11 +42,11 @@ within 2 hours after. Times and windows are at the top of `lib.sh`.
 
 1. **Command Line Tools** (for the Swift compiler), if `xcrun --find swiftc` fails: `xcode-select --install`
 2. **Claude Code**, signed in with `/login` (claude.ai account) and connected to Chrome (`/chrome`)
-3. **Installer**: `bash ~/Documents/"My JavaScript Projects"/psa10-tracker/widget/install.sh`
+3. **Installer**: `bash ~/"My JavaScript Projects"/psa10-tracker/widget/install.sh` (the repo moved out of the iCloud-synced Documents folder on 2026-10-24; after any move, run the installer again)
    It builds the app into `~/.psa10/PSA10Bar.app`, starts it and sets it to start at login.
    Run it again after a `git pull` that changes `app/PSA10Bar.swift`.
 4. **Chrome sign-ins**: psacard.com (and SNKRDUNK) in Chrome; allow the sites in the Claude extension
-5. **First click**: macOS asks whether PSA10Bar may access the Documents folder and control Terminal.
+5. **First click**: macOS asks whether PSA10Bar may control Terminal (and, only if the repo is inside Documents, Desktop or Downloads, access that folder).
    Allow both (System Settings → Privacy & Security → Files and Folders / Automation, if missed).
 
 ## Files

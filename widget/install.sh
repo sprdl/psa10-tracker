@@ -96,4 +96,4 @@ echo
 echo "Remaining one-time steps (see widget/README.md):"
 echo "  • claude, then /login with your claude.ai account (Chrome needs it), then /chrome → Enabled check."
 echo "  • In Chrome: Claude extension installed and signed in; sign in to psacard.com once."
-echo "  • First click: allow PSA10Bar to access Documents and to control Terminal when macOS asks."
+echo "  • First click: allow PSA10Bar to control Terminal (and to access the repo's folder, if macOS asks) when macOS asks."

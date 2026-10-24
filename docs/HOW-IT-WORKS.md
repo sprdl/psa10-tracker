@@ -1308,7 +1308,7 @@ Opening `index.html` by double-clicking won't work, because browsers block `fetc
 from `file://` pages. Start a tiny local server from the repo folder instead:
 
 ```bash
-cd ~/Documents/My\ JavaScript\ Projects/psa10-tracker
+cd ~/My\ JavaScript\ Projects/psa10-tracker
 python3 -m http.server 8000
 ```
 
