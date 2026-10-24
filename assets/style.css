@@ -1997,7 +1997,9 @@ details.cd-more > .cd-note, details.cd-more > p { margin-top: 6px; }
 .gf-both { border-top: 1px dashed var(--line); padding-top: 8px; }
 .gf-both .gf-name { color: var(--muted); }
 .sc-src { font-size: 10.5px; color: var(--muted-2); letter-spacing: 0.04em; align-self: center; }
-.vtag .sell-raw { font-size: 0.82em; opacity: 0.8; font-weight: 500; margin-left: 4px; }
+/* raw copy: "after grading" goes on a second line inside the pill, so the pill grows taller, not wider (2026-10-24) */
+.vtag .sell-two { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; gap: 2px; }
+.vtag .sell-raw { font: 600 9px var(--sans); letter-spacing: 0.04em; text-transform: none; opacity: 0.85; }
 
 /* iPad widths (2026-10-23): between the phone layout (≤899px) and 1100px the sidebar shrinks to icons, so the pages
    keep their width. Labels show as tooltips; the snapshot picker and Add card stay. */
