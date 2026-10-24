@@ -1998,8 +1998,6 @@ details.cd-more > .cd-note, details.cd-more > p { margin-top: 6px; }
 .gf-both .gf-name { color: var(--muted); }
 .sc-src { font-size: 10.5px; color: var(--muted-2); letter-spacing: 0.04em; align-self: center; }
 /* raw copy: "after grading" goes on a second line inside the pill, so the pill grows taller, not wider (2026-10-24) */
-.vtag .sell-two { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; gap: 2px; }
-.vtag .sell-raw { font: 600 9px var(--sans); letter-spacing: 0.04em; text-transform: none; opacity: 0.85; }
 
 /* iPad widths (2026-10-23): between the phone layout (≤899px) and 1100px the sidebar shrinks to icons, so the pages
    keep their width. Labels show as tooltips; the snapshot picker and Add card stay. */
@@ -2019,3 +2017,55 @@ details.cd-more > .cd-note, details.cd-more > p { margin-top: 6px; }
   .side-foot .btn-primary::before { content: '+'; font-size: 24px; line-height: 1; }
   .card-requests { display: none; }
 }
+
+/* ---------- Labels: "Holo foil" (option 04, chosen 2026-10-24) ----------
+   One shape for every pill: Space Grotesk 600, fixed 26px height with the text centred by flexbox (no uneven
+   padding), 8px corners. States are tinted in their own colour; things to act on (Buy, Take profit, Grade it) get
+   the holographic edge, and the strongest calls (Definitely buy, Sell, a limit hit) the full foil. */
+:root { --pill-font: 600 12.5px/1 'Space Grotesk', var(--sans); --foil: linear-gradient(120deg, #ff7eb6, #ffd23f 30%, #5eead4 60%, #b48bff); --foil-soft: linear-gradient(120deg, #ff9cc8, #ffe07a 30%, #7ef0dc 60%, #c3a2ff); }
+.vtag, .heat-chip, .mkt-hype, .limit-chip, .due-chip, .diy-chip, .ins-pill, .sig-pill.limit {
+  --c: var(--muted); box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  height: 26px; padding: 0 11px; border-radius: 8px; font: var(--pill-font); letter-spacing: 0.01em; text-transform: none;
+  white-space: nowrap; color: var(--c); border: 1.5px solid color-mix(in srgb, var(--c) 45%, transparent);
+  background: color-mix(in srgb, var(--c) 8%, var(--bg)); vertical-align: middle;
+}
+/* states */
+.vtag.watch, .vtag.gr-close, .due-chip { --c: var(--amber); }
+.vtag.dont_buy, .vtag.gr-dont { --c: var(--neg); }
+.vtag.defer, .vtag.none, .vtag.sell-hold { --c: var(--muted-2); }
+.vtag.pulled, .diy-chip { --c: #7cc4ff; }
+.diy-chip { border-style: dashed; }
+.vtag.sell-peak, .vtag.sell-rich, .vtag.review, .ins-pill { --c: var(--accent); }
+.vtag.gr-wait { --c: var(--ghost-soft); }
+.heat-chip { --c: var(--muted-2); }
+.heat-hot { --c: var(--amber); }
+.heat-active { --c: var(--green); }
+.heat-slow { --c: #8fd3ff; }
+.heat-cold { --c: var(--muted-2); border-style: dashed; }
+.mkt-hype { --c: #ff7eb6; font-size: 12px; padding: 0 9px; }
+.mkt-hype.quiet { --c: var(--muted-2); padding: 0 9px; }
+.heat-chip svg { width: 13px; height: 13px; margin-top: 0; }
+/* calls to act on: foil edge */
+.vtag.buy, .vtag.sell-take_profit, .vtag.gr-grade {
+  color: var(--text); border: 1.5px solid transparent;
+  background: linear-gradient(#1d1630, #1d1630) padding-box, var(--foil) border-box;
+}
+/* the strongest calls: full foil */
+.vtag.definitely_buy, .vtag.sell-sell, .limit-chip, .sig-pill.limit {
+  color: var(--on-accent); font-weight: 700; border: 1.5px solid transparent; background: var(--foil-soft) border-box;
+}
+/* a raw copy's sell signal: "PSA10" in foil, raised */
+.vtag .sell-raw { font: 700 8.5px/1 'Space Grotesk', var(--sans); letter-spacing: 0.04em; align-self: flex-start; margin-top: 4px;
+  background: var(--foil); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* joined Market chip (activity + Hype) */
+.mkt-chip { align-items: center; }
+.mkt-chip.has-hype .heat-chip { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: 0; }
+.mkt-chip.has-hype .mkt-hype { border-radius: 0 8px 8px 0; }
+.mkt-chip > .mkt-hype:first-child { border-radius: 8px; }
+/* sizes that used to be tuned per place */
+.wl-tag > span > .vtag, .wl-tag > span > .diy-chip, .wl-tag > span > .limit-chip { font-size: 12.5px; padding: 0 11px; }
+.grade-line .vtag { height: 22px; font-size: 11.5px; padding: 0 8px; vertical-align: middle; }
+.limit-chip, .due-chip, .diy-chip { height: 22px; font-size: 11.5px; padding: 0 8px; border-radius: 6px; }
+.ins-pill { padding: 0 7px; }
+.tile-chips .vtag, .tile-chips .heat-chip { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
+.tile-chips .vtag.watch, .tile-chips .vtag.dont_buy, .tile-chips .vtag.defer, .tile-chips .vtag.none, .tile-chips .vtag.sell-hold, .tile-chips .heat-chip { background: color-mix(in srgb, var(--c) 8%, var(--bg)); }

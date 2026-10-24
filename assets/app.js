@@ -1037,7 +1037,7 @@
     const st = sellState(card);
     if (!st) return '';
     const tip = st.reasons.length ? st.reasons.join('. ') + '.' : st.target != null ? `Below your sell target ${fmtYen(st.target)}.` : 'No sell target set; no sell signal yet.';
-    return `<span class="vtag sell-${st.tag}" title="${escapeAttr(tip)}">${st.rawOnly && st.tag !== 'hold' ? `<span class="sell-two"><span>${SELL_LABELS[st.tag]}</span><small class="sell-raw">after grading</small></span>` : SELL_LABELS[st.tag]}</span>`;
+    return `<span class="vtag sell-${st.tag}" title="${escapeAttr(tip)}">${SELL_LABELS[st.tag]}${st.rawOnly && st.tag !== 'hold' ? '<sup class="sell-raw" title="A PSA10 price: your copy is raw, so this applies once it is graded">PSA10</sup>' : ''}</span>`;
   }
   function sellHit(card) { const st = sellState(card); return !!st && st.tag === 'sell'; }
   function targetSyncHtml(card) {
