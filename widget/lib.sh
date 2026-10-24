@@ -100,7 +100,9 @@ vpn_on() {
 }
 
 notify() {  # notify "message"
-  osascript -e "display notification \"$1\" with title \"Ghost Bid\"" >/dev/null 2>&1
+  # The text goes in as an argument, never spliced into the AppleScript, so quotes or backslashes in it can't
+  # break out of the string (2026-10-24 security audit).
+  osascript -e 'on run argv' -e 'display notification (item 1 of argv) with title "Ghost Bid"' -e 'end run' "$1" >/dev/null 2>&1
 }
 
 # Opens a Terminal window running the check, minimized and without taking the focus. It closes by

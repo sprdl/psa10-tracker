@@ -19,6 +19,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE_DAYS = 30   # keep in step with SITE_DAYS in assets/app.js
+# never published, even from a local build (2026-10-24 security audit): credentials and Finder metadata
+SKIP_FILES = {".git-credentials", ".psa10-git-credentials", ".DS_Store", ".env"}
 SKIP_DIRS = {".git", ".github", ".claude", "_site", "__pycache__", "tests", "scripts", "pricecheck", "widget", "docs", "node_modules"}
 
 
@@ -43,6 +45,7 @@ def main():
     def ignore(d, names):
         d = Path(d).resolve()
         skip = {n for n in names if n in SKIP_DIRS or (d == ROOT and n == out.name)}
+        skip |= {n for n in names if n in SKIP_FILES}
         if d == ROOT / "data":
             skip |= {n for n in names if (d / n).resolve() == incoming}
         if d == snapdir:

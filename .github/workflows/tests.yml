@@ -12,6 +12,8 @@ on:
       - 'scripts/**'
       - 'tests/**'
       - 'pricecheck/**'
+      - 'widget/claude/**'
+      - 'CLAUDE.md'
       - '.github/workflows/tests.yml'
   pull_request:
     paths:
@@ -20,6 +22,8 @@ on:
       - 'scripts/**'
       - 'tests/**'
       - 'pricecheck/**'
+      - 'widget/claude/**'
+      - 'CLAUDE.md'
   workflow_dispatch:
 
 permissions:
@@ -29,8 +33,8 @@ jobs:
   rules:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
       - name: Site, widget and Python rules agree on every snapshot
@@ -51,3 +55,5 @@ jobs:
         run: python3 tests/test_pipeline.py
       - name: Focus watch status rules
         run: python3 tests/test_focus.py
+      - name: Unattended runs only run the repo's own scripts, and every procedure command is allowed
+        run: python3 tests/test_permissions.py

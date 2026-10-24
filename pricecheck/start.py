@@ -60,6 +60,8 @@ def local(text):
     # section 0 (delete permission for the desktop app's mounted folder) doesn't apply on the Mac itself
     text = re.sub(r"(?ms)^## 0\. .*?(?=^## )", "", text)
     text = CD_R.sub("", PREFIX.sub("", text)).replace('"$R"/', "").replace("$R/", "")
+    # `cat "path"` → `cat path`: the allow list names each file a run may print (.claude/settings.json), unquoted
+    text = re.sub(r'cat "([\w./-]+)"', r"cat \1", text)
     return no_heredocs(text)
 
 

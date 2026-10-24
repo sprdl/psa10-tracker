@@ -1,6 +1,17 @@
 (function () {
   'use strict';
 
+  // Broken images (2026-10-24): one listener instead of inline onerror="…" attributes, which the page's
+  // Content-Security-Policy (index.html) doesn't allow. data-onerr: remove | noimg | broken.
+  document.addEventListener('error', (e) => {
+    const t = e.target;
+    if (!t || t.tagName !== 'IMG' || !t.dataset || !t.dataset.onerr) return;
+    const how = t.dataset.onerr;
+    if (how === 'noimg') { const box = t.closest('.sc-img'); if (box) box.classList.add('noimg'); return; }
+    if (how === 'broken' && t.parentNode) t.parentNode.classList.add('broken');
+    t.remove();
+  }, true);
+
   // The visible height, for the sidebar: 100vh/100dvh overshoot in some iPad web views (home-screen
   // app, in-app browsers), which pushed the sidebar's bottom (+ Add card) off the screen.
   const setAppHeight = () => {
@@ -151,6 +162,16 @@
   function escapeAttr(str) {
     return escapeHtml(str).replace(/"/g, '&quot;');
   }
+
+  // For link and image addresses built from data (2026-10-24 security audit): only http(s), protocol-relative and
+  // relative addresses pass; anything with another scheme (javascript:, data:, vbscript: …) becomes '#'. Browsers
+  // ignore tabs, newlines and other control characters inside a scheme, so they're stripped before the check.
+  function safeUrl(u) {
+    const s = u === null || u === undefined ? '' : String(u).trim();
+    const t = s.replace(/[\u0000-\u0020\u007f]/g, '');
+    return /^[a-z][a-z0-9+.-]*:/i.test(t) && !/^https?:/i.test(t) ? '#' : s;
+  }
+  function escapeUrl(u) { return escapeAttr(safeUrl(u)); }
 
   function dirClass(pct) {
     if (pct === null || pct === undefined || isNaN(pct) || pct === 0) return '';
@@ -461,7 +482,7 @@
         <span class="rm-name jp">${escapeHtml(parseCardName(r.name || r.id).short || r.id)}</span>
         <span class="rm-st muted">${r.pending ? 'waiting for the GitHub form: submit it to remove the card for good' : `removed ${escapeHtml(fmtDateShort(r.at || ''))}`}</span>
         ${r.pending ? `<button type="button" class="btn rm-undo" data-undo-remove="${escapeAttr(r.id)}">Undo</button>`
-          : `<a class="btn rm-restore" data-restore-card="${escapeAttr(r.id)}" href="${escapeAttr(restoreCardFormUrl(r.id, r.name))}" target="_blank" rel="noopener">Restore</a>`}
+          : `<a class="btn rm-restore" data-restore-card="${escapeAttr(r.id)}" href="${escapeUrl(restoreCardFormUrl(r.id, r.name))}" target="_blank" rel="noopener">Restore</a>`}
       </div>`).join('')}</div>`;
   }
   document.addEventListener('click', (e) => {
@@ -1045,7 +1066,7 @@
     if (st === 'synced') return '<span class="limit-sync ok">✓ Saved on all devices</span>';
     if (st !== 'local') return '';
     const clearing = getTarget(card) == null;
-    return `<span class="limit-sync">${clearing ? 'Removed on this device only' : 'Only on this device'} · <a href="${escapeAttr(targetFormUrl(card))}" target="_blank" rel="noopener">${clearing ? 'Remove everywhere' : 'Save to all devices'} ↗</a><span class="limit-sync-hint">opens a GitHub form; submit it and every device updates in about a minute</span></span>`;
+    return `<span class="limit-sync">${clearing ? 'Removed on this device only' : 'Only on this device'} · <a href="${escapeUrl(targetFormUrl(card))}" target="_blank" rel="noopener">${clearing ? 'Remove everywhere' : 'Save to all devices'} ↗</a><span class="limit-sync-hint">opens a GitHub form; submit it and every device updates in about a minute</span></span>`;
   }
   function sellRowHtml(card) {
     const st = sellState(card);
@@ -1300,7 +1321,7 @@
     if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'bought-dlg'; dlg.className = 'bd'; document.body.appendChild(dlg); }
     const ask = lowestAsk(card);
     dlg.innerHTML = `<form method="dialog" class="bd-form">
-      <div class="bd-head"><span class="pf-thumb bd-thumb">${card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="">` : ''}</span>
+      <div class="bd-head"><span class="pf-thumb bd-thumb">${card.image_url ? `<img class="card-img" src="${escapeUrl(card.image_url)}" alt="">` : ''}</span>
         <div><div class="bd-title">Log a purchase</div><div class="bd-sub">${escapeHtml(parseCardName(card.card_name_ja).short)} · ${escapeHtml(parseCardName(card.card_name_ja).code)}</div></div></div>
       <label class="bd-row"><span>Price paid (¥)</span><input name="price" type="number" inputmode="numeric" min="1" step="1" required value="${ask || ''}"></label>
       <div class="bd-hint">${ask ? `Today's lowest SNKRDUNK ask is ${fmtYen(ask)}; change it to what you actually paid.` : ''}</div>
@@ -1343,7 +1364,7 @@
     if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'limit-dlg'; dlg.className = 'bd'; document.body.appendChild(dlg); }
     const cur = getLimit(card), ask = lowestAsk(card), { short, code } = parseCardName(card.card_name_ja);
     dlg.innerHTML = `<form method="dialog" class="bd-form">
-      <div class="bd-head"><span class="pf-thumb bd-thumb">${card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="">` : ''}</span>
+      <div class="bd-head"><span class="pf-thumb bd-thumb">${card.image_url ? `<img class="card-img" src="${escapeUrl(card.image_url)}" alt="">` : ''}</span>
         <div><div class="bd-title">${cur != null ? 'Change your limit' : 'Set a limit'}</div><div class="bd-sub">${escapeHtml(short)} · ${escapeHtml(code)}</div></div></div>
       <label class="bd-row"><span>Limit (¥)</span><input name="limit" type="number" inputmode="numeric" min="0" step="${LIMIT_STEP}" required value="${cur != null ? cur : ''}" placeholder="e.g. 300000"></label>
       <div class="bd-hint">${cur != null ? `Now ${fmtYen(cur)}. ` : ''}${ask != null ? `Today's lowest PSA10 ask is ${fmtYen(ask)}. ` : ''}Enter 0 to remove the limit.</div>
@@ -1526,7 +1547,7 @@
       const nm = parseCardName(x.card.card_name_ja).short;
       const fill = Math.max(6, Math.min(100, 100 - x.pct * 2.5));
       return `<a class="od-tile${x.own ? ' own' : ''}" href="#/card/${escapeAttr(cardId(x.card))}" data-ib="${escapeAttr(x.card.url)}" title="${escapeAttr(`${nm}: ${fmtYen(x.now)} now, ${x.what} ${fmtYen(x.line)}`)}">
-        <span class="wthumb od-th">${x.card.image_url ? `<img class="card-img" src="${escapeAttr(x.card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+        <span class="wthumb od-th">${x.card.image_url ? `<img class="card-img" src="${escapeUrl(x.card.image_url)}" alt="" loading="lazy" data-onerr="remove">` : ''}</span>
         <span class="od-txt"><b class="jp">${escapeHtml(nm)}</b>
           <small>${fmtYen(x.now)} → ${escapeHtml(x.what)} ${fmtYen(x.line)}</small>
           <span class="od-bar"><i style="width:${fill.toFixed(0)}%"></i></span>
@@ -1620,7 +1641,7 @@
         const gap = c.target && c.ask ? (c.ask <= c.target ? `at/under your ${c.target_is}` : `${pct(c.ask, c.target)} to your ${c.target_is}`) : '';
         return `<article class="fw-card fw-${cls}">
           <a class="fw-head" href="#/card/${escapeAttr(c.id)}" data-fw="${escapeAttr(c.url)}">
-            <span class="wthumb fw-th">${c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+            <span class="wthumb fw-th">${c.image_url ? `<img class="card-img" src="${escapeUrl(c.image_url)}" alt="" loading="lazy" data-onerr="remove">` : ''}</span>
             <span class="fw-name"><b class="jp">${escapeHtml(c.short || c.name)}</b><small>${c.until ? `in focus until ${escapeHtml(c.until.slice(5).replace('-', '/'))}` : 'in focus'}</small></span>
             <span class="fw-status ${cls}">${escapeHtml(lbl)}</span>${isNew ? '<span class="sig-new">NEW</span>' : ''}
           </a>
@@ -2263,7 +2284,7 @@
     const age = Math.floor(daysBetween(e.written, refTime()));
     return `<div class="ins-written"><div class="ins-wh"><span class="lbl">Analysis</span><span class="muted">written ${escapeHtml(fmtDateShort(e.written))} by the full check${age > 7 ? ` · ${age} days old, may be outdated` : ''}</span></div>
       ${e.headline ? `<b class="ins-hl">${escapeHtml(e.headline)}</b>` : ''}${insightParas(e.text)}
-      ${(e.sources || []).filter((x) => /^https?:\/\//.test(x.url || '')).length ? `<div class="ins-src"><span class="muted">Sources:</span> ${e.sources.filter((x) => /^https?:\/\//.test(x.url || '')).map((x) => `<a href="${escapeAttr(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.title || x.url)} ↗</a>`).join(' · ')}</div>` : ''}</div>`;
+      ${(e.sources || []).filter((x) => /^https?:\/\//.test(x.url || '')).length ? `<div class="ins-src"><span class="muted">Sources:</span> ${e.sources.filter((x) => /^https?:\/\//.test(x.url || '')).map((x) => `<a href="${escapeUrl(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.title || x.url)} ↗</a>`).join(' · ')}</div>` : ''}</div>`;
   }
   // The same five checks for every card, with today's values: shown as "Nothing unusual" when no
   // finding fires, and as "Other checks" under the findings when some do.
@@ -2316,7 +2337,7 @@
     const st = storyOf(card); if (!st) return '';
     const img = bigImg(card), nm = parseCardName(card.card_name_ja);
     return `<div class="st">
-      <button type="button" class="st-art" ${img ? `data-big="${escapeAttr(img)}" data-alt="${escapeAttr(nm.short)}"` : 'disabled'} aria-label="Show the picture bigger">${img ? `<img src="${escapeAttr(img)}" alt="${escapeAttr(nm.short)}" loading="lazy">` : slabHtml(card, 'md')}</button>
+      <button type="button" class="st-art" ${img ? `data-big="${escapeAttr(img)}" data-alt="${escapeAttr(nm.short)}"` : 'disabled'} aria-label="Show the picture bigger">${img ? `<img src="${escapeUrl(img)}" alt="${escapeAttr(nm.short)}" loading="lazy">` : slabHtml(card, 'md')}</button>
       <div class="st-body">
         <div class="st-by"><span class="lbl">Illustrated by</span><b>${escapeHtml(st.illustrator || 'unknown')}</b>${st.illustrator_ja ? `<span class="jp muted">${escapeHtml(st.illustrator_ja)}</span>` : ''}</div>
         <h4>The artwork</h4><p>${escapeHtml(st.art)}</p>
@@ -2324,7 +2345,7 @@
         <h4>The set</h4><p>${escapeHtml(st.set)}</p>
         ${st.trivia && st.trivia.length ? `<h4>Worth knowing</h4><ul>${st.trivia.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
         ${st.english ? `<p class="st-en"><span class="lbl">English release</span> ${escapeHtml(st.english)}</p>` : ''}
-        <p class="st-src">Sources: ${(st.sources || []).map((x) => `<a href="${escapeAttr(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.title)}</a>`).join(' · ')}${st.confidence !== 'high' ? '<br>Some details about the scene come from a single source; the illustrator credit is confirmed.' : ''}</p>
+        <p class="st-src">Sources: ${(st.sources || []).map((x) => `<a href="${escapeUrl(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.title)}</a>`).join(' · ')}${st.confidence !== 'high' ? '<br>Some details about the scene come from a single source; the illustrator credit is confirmed.' : ''}</p>
       </div></div>`;
   }
   function renderStories() {
@@ -2338,7 +2359,7 @@
       ${shared.length ? `<p class="st-shared"><span class="lbl">Same artist</span> ${shared.map(([a, v]) => `<b>${escapeHtml(a)}</b> drew ${v.map((c) => { const n = parseCardName(c.card_name_ja); return `${escapeHtml(n.short)} <span class="muted">${escapeHtml(n.code)}</span>`; }).join(' and ')}`).join(' · ')}</p>` : ''}
       <div class="st-grid">${cards.map((c, i) => { const st = storyOf(c), nm = parseCardName(c.card_name_ja), img = bigImg(c);
         return `<a class="st-tile" href="#/card/${escapeAttr(cardId(c))}" style="--i:${i}">
-          <span class="st-pic">${img ? `<img src="${escapeAttr(img)}" alt="" loading="lazy">` : slabHtml(c, 'md')}</span>
+          <span class="st-pic">${img ? `<img src="${escapeUrl(img)}" alt="" loading="lazy">` : slabHtml(c, 'md')}</span>
           <span class="st-tb"><b class="jp">${escapeHtml(nm.short)}</b><span class="muted">${escapeHtml(nm.code)} · by ${escapeHtml(st.illustrator || 'unknown')}</span><span class="st-teaser">${escapeHtml(st.art.split(/(?<=\.)\s/)[0])}</span></span></a>`; }).join('')}</div>`;
     const toStory = () => { state.cardTab = 'story'; state.cardFrom = 'stories'; };
     el.querySelectorAll('.st-tile').forEach((a) => { a.addEventListener('pointerdown', toStory); a.addEventListener('keydown', (e) => { if (e.key === 'Enter') toStory(); }); a.addEventListener('click', toStory, true); });
@@ -2544,7 +2565,7 @@
     for (const [day, bs] of Object.entries(byDay)) happened.push({ d: day, mine: true, title: bs.length === 1 ? `You bought ${bs[0].name}` : `You bought ${bs.length} items (${fmtYen(bs.reduce((a, b) => a + b.cost, 0))})`, text: bs.length === 1 ? fmtYen(bs[0].cost) : bs.map((b) => `${b.name} ${fmtYenShort(b.cost)}`).join(' · ') });
     if (note && note.happened) for (const h of note.happened) if (!happened.some((x) => x.d === h.d && x.title === h.title)) happened.push({ d: h.d, title: h.title, text: h.text, src: h.source });
     happened.sort((a, b) => String(a.d || '').localeCompare(String(b.d || '')));
-    const tl = (items, empty) => items.length ? `<ol class="rc-tl">${items.map((x) => `<li class="${x.mine ? 'mine' : ''}"><span class="rc-tl-d${x.now ? ' now' : ''}">${x.d ? escapeHtml(fmtWdMd(x.d)) : x.now ? 'Now' : 'Date TBA'}</span><div><b>${escapeHtml(x.title)}</b>${x.text ? `<p>${escapeHtml(x.text)}</p>` : ''}${x.src ? `<a class="rc-src" href="${escapeAttr(x.src)}" target="_blank" rel="noopener">Source ↗</a>` : ''}</div></li>`).join('')}</ol>` : `<p class="muted rc-empty">${empty}</p>`;
+    const tl = (items, empty) => items.length ? `<ol class="rc-tl">${items.map((x) => `<li class="${x.mine ? 'mine' : ''}"><span class="rc-tl-d${x.now ? ' now' : ''}">${x.d ? escapeHtml(fmtWdMd(x.d)) : x.now ? 'Now' : 'Date TBA'}</span><div><b>${escapeHtml(x.title)}</b>${x.text ? `<p>${escapeHtml(x.text)}</p>` : ''}${x.src ? `<a class="rc-src" href="${escapeUrl(x.src)}" target="_blank" rel="noopener">Source ↗</a>` : ''}</div></li>`).join('')}</ol>` : `<p class="muted rc-empty">${empty}</p>`;
     const outlook = recapOutlook(d);
     el.innerHTML = `${nav}
       <section class="rc-head panel">
@@ -2698,7 +2719,7 @@
         <div class="pq-side model"><div class="pq-who">Model</div><div class="pq-big">${f3(sc.model)}</div><div class="pq-hint">same questions · limit-odds model</div></div>
       </div>
       <p class="pq-hint pq-note">Brier score = the average of (your odds − what happened)², with what happened = 1 or 0. Always saying 50% scores 0.25; perfect foresight scores 0.</p>
-      ${unsynced.length ? `<div class="pq-save"><span>${unsynced.length} answer${unsynced.length === 1 ? '' : 's'} locked on this device only${predAnswerBy(cur) > Date.now() ? ` · save before ${predCutoff(cur)} to count` : ' · the answer window has closed, so they won\u2019t count'}.</span><a class="btn btn-primary" href="${escapeAttr(saveUrl)}" target="_blank" rel="noopener">Save to all devices</a></div>` : ''}
+      ${unsynced.length ? `<div class="pq-save"><span>${unsynced.length} answer${unsynced.length === 1 ? '' : 's'} locked on this device only${predAnswerBy(cur) > Date.now() ? ` · save before ${predCutoff(cur)} to count` : ' · the answer window has closed, so they won\u2019t count'}.</span><a class="btn btn-primary" href="${escapeUrl(saveUrl)}" target="_blank" rel="noopener">Save to all devices</a></div>` : ''}
       ${cur ? `<h2 class="pq-h">This week <span class="muted">${cur.questions.length} questions · ${cur.questions.filter((q) => predAnswer(cur, q.id)).length} locked · ${predAnswerBy(cur) > Date.now() ? `answer by ${predCutoff(cur)}` : `answers closed ${predCutoff(cur)}`} · resolves ${predClose(cur.close)}</span></h2>
         <div class="pq-grid">${cur.questions.map((q, i) => predQuestionHtml(cur, q, i)).join('')}</div>` : `<p class="pq-hint">No open questions right now: the next ones (up to ten) come with the first price check on Monday or Tuesday.</p>`}
       ${pastHtml}
@@ -2726,7 +2747,7 @@
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
       document.body.appendChild(lb);
     }
-    const img = lb.querySelector('img'); img.src = src; img.alt = alt || '';
+    const img = lb.querySelector('img'); img.src = safeUrl(src); img.alt = alt || '';
     lb.classList.add('on'); document.body.classList.add('lb-open');
   }
   function closeLightbox() { const lb = document.getElementById('lightbox'); if (lb) lb.classList.remove('on'); document.body.classList.remove('lb-open'); }
@@ -2802,14 +2823,14 @@
       refs: c.pre ? [{ y: c.pre, label: 'pre-hype', cls: 'norm', left: true }] : diy ? [{ y: diy, label: 'DIY cost', cls: 'norm', left: true }] : [], points: ser }) : '';
     const add = `${REPO_URL}/issues/new?${new URLSearchParams({ template: 'add-card.yml', title: 'Add card', url: c.sid ? `https://snkrdunk.com/apparels/${c.sid}` : '', notes: `Found by Scout on ${new Date().toISOString().slice(0, 10)}: ${c.nm || r.slug}` })}`;
     return `<article class="sc-card" style="--i:${i}">
-      <button type="button" class="sc-img" data-big="${escapeAttr(SCOUT_IMG(r.slug).replace('-medium.', '-large.'))}" aria-label="Show the picture bigger" title="Tap for a bigger picture"><img src="${escapeAttr(SCOUT_IMG(r.slug))}" alt="${escapeAttr(c.nm || '')}" loading="lazy" referrerpolicy="no-referrer" onerror="this.closest('.sc-img').classList.add('noimg')"></button>
+      <button type="button" class="sc-img" data-big="${escapeAttr(SCOUT_IMG(r.slug).replace('-medium.', '-large.'))}" aria-label="Show the picture bigger" title="Tap for a bigger picture"><img src="${escapeUrl(SCOUT_IMG(r.slug))}" alt="${escapeAttr(c.nm || '')}" loading="lazy" referrerpolicy="no-referrer" data-onerr="noimg"></button>
       <div class="sc-body">
         <div class="sc-head"><b class="jp">${escapeHtml(c.nm || r.slug)}</b><span class="muted jp">${escapeHtml(c.set || '')}${c.rel ? ' · ' + escapeHtml(c.rel.replace('-', '/')) : ''}</span></div>
         <div class="sc-price"><span class="display" title="PSA10 price on pokeca-chart (the Scout reads pokeca-chart only; open SNKRDUNK for today's lowest ask)">${fmtYen(price)}</span><span class="sc-src">PSA10 · pokeca-chart</span>${disc != null ? `<span class="sc-pill ${disc <= 0 ? 'pos' : ''}">${disc <= 0 ? '−' : '+'}${Math.abs(disc).toFixed(0)}% vs pre-hype</span>` : ''}${dDiy != null ? `<span class="sc-pill pos" title="DIY cost ${fmtYen(diy)}: pokeca-chart raw price + PSA Standard grading, ÷ gem rate">−${Math.abs(dDiy).toFixed(0)}% vs DIY cost</span><span class="sc-pill warn" title="No pre-hype price yet, so it's compared with the cost of grading a raw copy. Young cards tend to keep drifting down for their first 9 months.">Young card</span>` : ''}${off != null && off >= 10 ? `<span class="sc-pill" title="2026 peak ${fmtYen(c.peak)} (${escapeAttr(c.pk || '')})">−${off.toFixed(0)}% off its ${escapeHtml((c.pk || '').replace(/^(\d{4})-(\d{2})$/, (m, y, mo) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo - 1]))} peak</span>` : ''}</div>
         <ul class="sc-why">${r.reasons.slice(1).filter((w) => !/off its 2026 peak/.test(w)).map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>
         ${chart ? `<div class="sc-chart">${chart}</div>` : ''}
         <div class="sc-actions">
-          ${c.sid ? `<a class="btn btn-primary" href="${escapeAttr(add)}" target="_blank" rel="noopener" title="Open the Add card form with this card's SNKRDUNK page filled in">+ Track it</a><a class="btn" href="https://snkrdunk.com/apparels/${escapeAttr(c.sid)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>` : ''}
+          ${c.sid ? `<a class="btn btn-primary" href="${escapeUrl(add)}" target="_blank" rel="noopener" title="Open the Add card form with this card's SNKRDUNK page filled in">+ Track it</a><a class="btn" href="https://snkrdunk.com/apparels/${escapeAttr(c.sid)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>` : ''}
           <a class="btn" href="https://pokeca-chart.com/gr/${escapeAttr(r.slug)}/" target="_blank" rel="noopener">pokeca ↗</a>
           <button type="button" class="btn sc-dismiss" data-slug="${escapeAttr(r.slug)}" title="Hide this card from the scout (this browser)">Not for me</button>
         </div>
@@ -3222,7 +3243,7 @@
         } catch (e) { resolve(null); } // canvas tainted: no CORS on the CDN
       };
       im.onerror = () => resolve(null);
-      im.src = url;
+      im.src = safeUrl(url);
     });
   }
   function applyTrim(img, t) {
@@ -3501,7 +3522,7 @@
   function gradeLineHtml(card, c) {
     if (!card) return '';
     const g = gradeCalc(card, c), name = parseCardName(card.card_name_ja).short;
-    const link = `<a class="pf-remove" href="${escapeAttr(gradingFormUrl(c, name))}" target="_blank" rel="noopener">${c.item.sent || c.item.gem_rate_pct != null || c.item.tier ? 'Edit grading info' : 'Grading info'}</a>`;
+    const link = `<a class="pf-remove" href="${escapeUrl(gradingFormUrl(c, name))}" target="_blank" rel="noopener">${c.item.sent || c.item.gem_rate_pct != null || c.item.tier ? 'Edit grading info' : 'Grading info'}</a>`;
     const retTxt = g.ret ? g.ret.txt : '';
     if (g.missing) return `<div class="grade-line muted">Grading: ${escapeHtml(g.missing)}.${retTxt ? ' ' + retTxt + '.' : ''} ${link}</div>`;
     const chance = `${Math.round(g.gem)}% chance of a 10${g.own ? ' (your estimate)' : ' (population gem rate)'}`;
@@ -3516,7 +3537,7 @@
   function gradeMetaHtml(card, c) {
     const name = parseCardName(card.card_name_ja).short, it = c.item;
     const tierKey = GRADE_TIERS[it.tier] ? it.tier : psaTierFor(getRep(card)), tier = GRADE_TIERS[tierKey];
-    const link = `<a class="pf-remove" href="${escapeAttr(gradingFormUrl(c, name))}" target="_blank" rel="noopener">${it.sent || it.gem_rate_pct != null || it.tier ? 'Edit grading info' : 'Grading info'}</a>`;
+    const link = `<a class="pf-remove" href="${escapeUrl(gradingFormUrl(c, name))}" target="_blank" rel="noopener">${it.sent || it.gem_rate_pct != null || it.tier ? 'Edit grading info' : 'Grading info'}</a>`;
     const ret = it.sent || it.registered ? psaReturnTxt(it, tier, !GRADE_TIERS[it.tier]) + ' · ' : 'Not sent yet · ';
     return `<div class="grade-line muted">${ret}${link}</div>`;
   }
@@ -3651,7 +3672,7 @@
         + (c.wait ? ` · <span class="sub-wait">Value would save ${fmtYen(vw.save)}${vw.when ? `; the backlog may cross PSA's ${vw.thr}M line around ${psaMd(vw.when)}, then PSA has to announce it` : ''}</span>` : '');
       return `<label class="pl-row ${on ? 'on' : ''}">
         <input type="checkbox" data-sub="${escapeAttr(c.id)}" ${on ? 'checked' : ''}>
-        <span class="wthumb pl-thumb">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+        <span class="wthumb pl-thumb">${img ? `<img class="card-img" src="${escapeUrl(img)}" alt="" loading="lazy" data-onerr="remove">` : ''}</span>
         <span class="pl-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.kind === 'pull' ? 'pull' : 'bought raw')} ${escapeHtml(c.id)}</span>${!c.std.missing ? ` <span class="vtag gr-${c.std.verdict}" title="On its own at Standard (¥${(GRADE_TIERS.standard.fee + PSA_STD.ship + PSA_STD.handling).toLocaleString()} all-in): it pays off at a ${c.std.pBE != null ? Math.ceil(c.std.pBE * 100) + '%+' : '—'} chance of a 10">${GRADE_LABELS[c.std.verdict]}</span>` : ''}${c.wait ? ` <span class="vtag gr-wait" title="Declared ${fmtYen(c.std.psa)}, under Value's ${fmtYen(vw.cap)} cap: Value (${fmtYen(vw.fee)} a card before the pause, about ${vw.days} business days) would save ${fmtYen(vw.save)} on grading. Not ticked by default; tick it to send it at Standard now.">Wait for Value</span>` : ''}</span>
         <span class="pl-price">${k.psa ? fmtYen(k.psa) : '—'}<span class="pl-src">${k.dv && k.dv.thin && k.dv.v !== getRep(c.card) ? 'declared · sales median' : 'declared'}</span></span>
         <span class="pl-sub">${sub}</span>
@@ -3660,10 +3681,10 @@
     const awayHtml = away.length ? `<h2 class="section-title sub-h">At PSA now <span class="muted">${away.length}</span></h2><div class="pf-list">${away.map((c) => {
       const t = GRADE_TIERS[c.item.tier] || GRADE_TIERS[psaTierFor(c.card ? getRep(c.card) : null)], nm = parseCardName((c.card && c.card.card_name_ja) || c.name);
       const img = (c.card && c.card.image_url) || c.item.image_url;
-      return `<div class="pf-row"><span class="wthumb sub-away-th">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span><div class="pf-info"><div class="pf-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.id)}</span></div>
-        <div class="pf-meta">${c.item.sent || c.item.registered ? psaReturnTxt(c.item, t, !GRADE_TIERS[c.item.tier]) : 'At PSA, no send date saved'} · <a class="pf-remove" href="${escapeAttr(gradingFormUrl({ id: c.id, item: c.item }, nm.short))}" target="_blank" rel="noopener">Grading info</a></div></div></div>`;
+      return `<div class="pf-row"><span class="wthumb sub-away-th">${img ? `<img class="card-img" src="${escapeUrl(img)}" alt="" loading="lazy" data-onerr="remove">` : ''}</span><div class="pf-info"><div class="pf-name">${c.card ? `<a href="#/card/${escapeAttr(cardId(c.card))}">${escapeHtml(nm.short)}</a>` : escapeHtml(nm.short)} <span class="muted">${escapeHtml(c.id)}</span></div>
+        <div class="pf-meta">${c.item.sent || c.item.registered ? psaReturnTxt(c.item, t, !GRADE_TIERS[c.item.tier]) : 'At PSA, no send date saved'} · <a class="pf-remove" href="${escapeUrl(gradingFormUrl({ id: c.id, item: c.item }, nm.short))}" target="_blank" rel="noopener">Grading info</a></div></div></div>`;
     }).join('')}</div>` : '';
-    const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeAttr(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(slash(date))} ↗</a>` : '';
+    const sendBtn = picked.length ? `<a class="btn btn-primary" href="${escapeUrl(submitFormUrl(picked, tierKey, date))}" target="_blank" rel="noopener">Mark ${picked.length} as sent on ${escapeHtml(slash(date))} ↗</a>` : '';
     el.innerHTML = psaBacklogLine() + top + summary + warn +`<div class="sub-acts">${sendBtn}<span class="muted">${picked.length ? 'opens one GitHub form for all ticked cards; submit it after you post them' : 'tick the cards to send'}</span></div>`
       + (todo.length ? `<div class="pl-list">${base.map(row).join('')}</div>` : '<div class="empty-state">Every raw copy is at PSA.</div>') + awayHtml
       + `<details class="cd-more"><summary>How this is worked out</summary><p class="cd-note">One order uses one service level, so the most valuable card decides: PSA's declared value is what the card is worth after grading (here its PSA10 price), Standard takes up to ${fmtYen(GRADE_TIERS.standard.cap)} and Priority (¥2,000 more per card) up to ${fmtYen(GRADE_TIERS.priority.cap)}. The grading fee is per card; the ¥${(PSA_STD.ship + PSA_STD.handling).toLocaleString()} for shipping, insurance and handling comes from a 1-card Standard order (2026-09-30), so the planner counts it once per order: correct it above with the amount on PSA's order screen. The verdict next to each card is for sending it on its own at Standard (the card page's Grade it?). Expected values: chance of a 10 × the PSA10 price, the rest × the raw A-rank price (a slab that isn't a 10 can be cracked and sold raw), both after SNKRDUNK's selling costs. Return dates are PSA's business days counted from the day PSA registers the card (add it in Grading info once PSA shows it); until then about a week after sending is assumed. Ticks, service and shipping are saved in this browser. A card with only one or two PSA10 listings is declared at the median of its recent sales when that is lower. “Wait for Value” marks copies that could go to the paused Value tier (declared under its cap): they aren't ticked by default.</p></details>`;
@@ -3716,7 +3737,7 @@
   function sealedValue(sd) { const u = sd.url && !(sd.pulls || []).length ? heldPrice(sd.url) : null; return u != null ? u * (sd.qty || 1) : null; }
   function sealedHtml(cards) {
     const items = (state.sealed || []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
-    const addBtn = `<a class="btn btn-primary" href="${escapeAttr(sealedFormUrl())}" target="_blank" rel="noopener">+ Add sealed product</a>`;
+    const addBtn = `<a class="btn btn-primary" href="${escapeUrl(sealedFormUrl())}" target="_blank" rel="noopener">+ Add sealed product</a>`;
     const head = `<div class="sl-head"><h2 class="section-title">Sealed</h2>${addBtn}</div>
       <p class="sl-note">Boxes, sets and packs bought at MSRP, and the cards worth keeping that came out of them. Sealed products are valued at their lowest SNKRDUNK ask until you log a pull; then the product counts as opened and only its pulls are valued (raw A-rank ask, or the PSA10 price once one comes back a 10).</p>`;
     if (!items.length) return head + `<div class="pf-list"><div class="empty-state">No sealed products yet. Use <b>+ Add sealed product</b> for a box, set or packs; then add the good pulls under it.</div></div>`;
@@ -3734,26 +3755,26 @@
         const img = (card && card.image_url) || p.image_url;
         const [stTxt, stCls] = PULL_STATUS[p.status] || PULL_STATUS.raw;
         return `<div class="sl-pull">
-          <span class="pf-thumb sl-pthumb">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+          <span class="pf-thumb sl-pthumb">${img ? `<img class="card-img" src="${escapeUrl(img)}" alt="" loading="lazy" data-onerr="remove">` : ''}</span>
           <div class="sl-pinfo"><div class="sl-pname">${card ? `<a href="#/card/${escapeAttr(cardId(card))}">${escapeHtml(nm)}</a>` : escapeHtml(nm)} <span class="sl-st ${stCls}">${stTxt}</span></div>
-            <div class="pf-meta">${escapeHtml(parseCardName(p.card_name_ja || '').code || '')}${p.date ? ` · pulled ${escapeHtml(p.date)}` : ''}${p.notes ? ' · ' + escapeHtml(p.notes) : ''} · <a class="pf-remove" href="${escapeAttr(removeIdUrl(p.id, nm))}" target="_blank" rel="noopener">Remove</a></div>${card && (p.status === 'raw' || p.status === 'grading') ? gradeLineHtml(card, { kind: 'pull', id: p.id, item: p, sunk: p.status === 'grading' }) : ''}</div>
+            <div class="pf-meta">${escapeHtml(parseCardName(p.card_name_ja || '').code || '')}${p.date ? ` · pulled ${escapeHtml(p.date)}` : ''}${p.notes ? ' · ' + escapeHtml(p.notes) : ''} · <a class="pf-remove" href="${escapeUrl(removeIdUrl(p.id, nm))}" target="_blank" rel="noopener">Remove</a></div>${card && (p.status === 'raw' || p.status === 'grading') ? gradeLineHtml(card, { kind: 'pull', id: p.id, item: p, sunk: p.status === 'grading' }) : ''}</div>
           <div class="pf-current"><div class="val">${v != null ? fmtYen(v) : '—'}</div><div class="pf-pnl muted">${escapeHtml(src)}</div></div>
         </div>`;
       }).join('') : `<div class="sl-empty">No pulls logged yet.</div>`;
       const code = (s.set_code || '').toLowerCase();
       const setCards = code ? cards.filter((c) => (parseCardName(c.card_name_ja).code.split(/\s+/)[0] || '').toLowerCase() === code) : [];
-      const chips = setCards.map((c) => `<a class="sl-chip" href="${escapeAttr(pullFormUrl(s, c))}" target="_blank" rel="noopener">${c.image_url ? `<img src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}${escapeHtml(parseCardName(c.card_name_ja).short)}</a>`).join('');
+      const chips = setCards.map((c) => `<a class="sl-chip" href="${escapeUrl(pullFormUrl(s, c))}" target="_blank" rel="noopener">${c.image_url ? `<img src="${escapeUrl(c.image_url)}" alt="" loading="lazy" data-onerr="remove">` : ''}${escapeHtml(parseCardName(c.card_name_ja).short)}</a>`).join('');
       return `<div class="sl-item">
         <div class="sl-top">${s.image
-            ? `<a class="sl-photo" href="${escapeAttr(s.url || s.image)}" target="_blank" rel="noopener" title="Open on SNKRDUNK"><img src="${escapeAttr(s.image)}" alt="${escapeAttr(sealedName(s))}" loading="lazy" onerror="this.parentNode.classList.add('broken');this.remove();"></a>`
+            ? `<a class="sl-photo" href="${escapeUrl(s.url || s.image)}" target="_blank" rel="noopener" title="Open on SNKRDUNK"><img src="${escapeUrl(s.image)}" alt="${escapeAttr(sealedName(s))}" loading="lazy" data-onerr="broken"></a>`
             : s.url
-              ? `<a class="sl-icon" href="${escapeAttr(s.url)}" target="_blank" rel="noopener" title="The picture comes from SNKRDUNK with the next price check">${BOX_ICON}<span>next check</span></a>`
-              : `<a class="sl-icon" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener" title="Link it to its SNKRDUNK page for the name and picture">${BOX_ICON}<span>+ SNKRDUNK</span></a>`}
-          <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${s.url ? `<a href="${escapeAttr(s.url)}" target="_blank" rel="noopener">${escapeHtml(sealedName(s))}</a>` : escapeHtml(sealedName(s))}</div><div class="pf-meta">${meta}${s.url && !s.snkrdunk_name ? ' · name and picture come from SNKRDUNK with the next price check' : ''} · <a class="pf-remove" href="${escapeAttr(sealedLinkUrl(s))}" target="_blank" rel="noopener">${s.url ? 'Change SNKRDUNK link' : 'Add SNKRDUNK link'}</a> · ${pulls.length ? '' : `<a class="pf-remove" href="${escapeAttr(soldFormUrl(s.id, sealedName(s), mkt != null ? (state.holdBasis === 'net' ? sealedValue(s) : mkt) : null))}" target="_blank" rel="noopener">Sold it</a> · `}<a class="pf-remove" href="${escapeAttr(removeIdUrl(s.id, sealedName(s)))}" target="_blank" rel="noopener">Remove</a></div></div>
+              ? `<a class="sl-icon" href="${escapeUrl(s.url)}" target="_blank" rel="noopener" title="The picture comes from SNKRDUNK with the next price check">${BOX_ICON}<span>next check</span></a>`
+              : `<a class="sl-icon" href="${escapeUrl(sealedLinkUrl(s))}" target="_blank" rel="noopener" title="Link it to its SNKRDUNK page for the name and picture">${BOX_ICON}<span>+ SNKRDUNK</span></a>`}
+          <div class="sl-info"><div class="sl-name">${s.qty > 1 ? `${s.qty} × ` : ''}${s.url ? `<a href="${escapeUrl(s.url)}" target="_blank" rel="noopener">${escapeHtml(sealedName(s))}</a>` : escapeHtml(sealedName(s))}</div><div class="pf-meta">${meta}${s.url && !s.snkrdunk_name ? ' · name and picture come from SNKRDUNK with the next price check' : ''} · <a class="pf-remove" href="${escapeUrl(sealedLinkUrl(s))}" target="_blank" rel="noopener">${s.url ? 'Change SNKRDUNK link' : 'Add SNKRDUNK link'}</a> · ${pulls.length ? '' : `<a class="pf-remove" href="${escapeUrl(soldFormUrl(s.id, sealedName(s), mkt != null ? (state.holdBasis === 'net' ? sealedValue(s) : mkt) : null))}" target="_blank" rel="noopener">Sold it</a> · `}<a class="pf-remove" href="${escapeUrl(removeIdUrl(s.id, sealedName(s)))}" target="_blank" rel="noopener">Remove</a></div></div>
           <div class="pf-current"><div class="val">${pulls.length ? fmtYen(val) : mkt != null ? fmtYen(mkt) : fmtYen(s.price_jpy || 0)}</div><div class="pf-pnl ${pulls.length ? (pct == null ? 'muted' : pct >= 100 ? 'pos' : '') : mpnl == null ? 'muted' : mpnl >= 0 ? 'pos' : 'neg'}">${pulls.length ? `pulls worth ${pct != null ? Math.round(pct) + '% of cost' : ''}` : mpnl != null ? `${mpnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(mpnl))} · lowest ask${s.qty > 1 ? ' × ' + s.qty : ''}` : 'at cost · no price yet'}</div></div>
         </div>
         <div class="sl-pulls">${rows}</div>
-        <div class="sl-add">${chips ? `<span class="sl-add-lbl">Pulled one of these?</span>${chips}` : ''}<a class="sl-chip sl-other" href="${escapeAttr(pullFormUrl(s, null))}" target="_blank" rel="noopener">+ ${chips ? 'Other card' : 'Add pull'}</a></div>
+        <div class="sl-add">${chips ? `<span class="sl-add-lbl">Pulled one of these?</span>${chips}` : ''}<a class="sl-chip sl-other" href="${escapeUrl(pullFormUrl(s, null))}" target="_blank" rel="noopener">+ ${chips ? 'Other card' : 'Add pull'}</a></div>
       </div>`;
     }).join('');
     const sum = `<div class="pf-summary sl-summary">
@@ -3814,7 +3835,7 @@
   // "Sold it" for an owned card: opens the form for your latest copy (a second copy is marked sold the same way afterwards).
   function soldBtnHtml(card, own) {
     const h = own.hs[own.hs.length - 1];
-    return `<a class="btn" href="${escapeAttr(soldFormUrl(h.id, parseCardName(card.card_name_ja).short, soldPrefill(h, card)))}" target="_blank" rel="noopener" title="Record the sale of ${own.n > 1 ? 'your latest copy' : 'this card'}">✓ Sold it</a>`;
+    return `<a class="btn" href="${escapeUrl(soldFormUrl(h.id, parseCardName(card.card_name_ja).short, soldPrefill(h, card)))}" target="_blank" rel="noopener" title="Record the sale of ${own.n > 1 ? 'your latest copy' : 'this card'}">✓ Sold it</a>`;
   }
   // Suggested sale price for the Sold form: a slab sells at the PSA10 price, a raw copy at the raw A-rank price.
   function soldPrefill(h, card) {
@@ -3841,9 +3862,9 @@
       const nm = r.kind === 'single' ? (parseCardName((card && card.card_name_ja) || r.name || '').short || r.name) : `${r.qty > 1 ? r.qty + ' × ' : ''}${r.name}`;
       const img = (card && card.image_url) || r.image_url || r.image;
       const pf = soldProfit(r), pct = r.cost_jpy ? (pf / r.cost_jpy) * 100 : null, d = soldDays(r);
-      return `<div class="pf-row sold-row"><span class="pf-thumb">${img ? `<img class="card-img" src="${escapeAttr(img)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+      return `<div class="pf-row sold-row"><span class="pf-thumb">${img ? `<img class="card-img" src="${escapeUrl(img)}" alt="" loading="lazy" data-onerr="remove">` : ''}</span>
         <div class="pf-info"><div class="pf-name">${card ? `<a href="#/card/${escapeAttr(cardId(card))}">${escapeHtml(nm)}</a>` : escapeHtml(nm)}</div>
-          <div class="pf-meta">Bought ${escapeHtml(r.bought || '—')} for ${fmtYen(r.cost_jpy)} · sold ${escapeHtml(r.sold_date)} for ${fmtYen(r.sold_price_jpy)} · fees &amp; shipping ${fmtYen(r.fees_jpy)}${r.fees_estimated ? ' (estimated)' : ''}${d != null ? ` · held ${d} day${d === 1 ? '' : 's'}` : ''}${r.notes ? ' · ' + escapeHtml(r.notes) : ''} · <a class="pf-remove" href="${escapeAttr(undoSoldUrl(r))}" target="_blank" rel="noopener">Undo sale</a></div></div>
+          <div class="pf-meta">Bought ${escapeHtml(r.bought || '—')} for ${fmtYen(r.cost_jpy)} · sold ${escapeHtml(r.sold_date)} for ${fmtYen(r.sold_price_jpy)} · fees &amp; shipping ${fmtYen(r.fees_jpy)}${r.fees_estimated ? ' (estimated)' : ''}${d != null ? ` · held ${d} day${d === 1 ? '' : 's'}` : ''}${r.notes ? ' · ' + escapeHtml(r.notes) : ''} · <a class="pf-remove" href="${escapeUrl(undoSoldUrl(r))}" target="_blank" rel="noopener">Undo sale</a></div></div>
         <div class="pf-current"><div class="val ${pf >= 0 ? 'pos' : 'neg'}">${signedYen(pf)}</div><div class="pf-pnl muted">${pct != null ? fmtPct(pct) + ' on cost' : ''}</div></div></div>`;
     }).join('');
     const years = Object.keys(t.years).sort().reverse();
@@ -4243,7 +4264,7 @@
     els.portfolioList.innerHTML = rows.map(({ h, match, currentPrice, pnl, pnlPct }) => {
       const displayName = match ? parseCardName(match.card_name_ja).short : parseCardName(h.card_name_ja || '').short;
       const imgSrc = (match && match.image_url) || h.image_url;
-      const thumbHtml = imgSrc ? `<img class="card-img" src="${escapeAttr(imgSrc)}" alt="" loading="lazy" onerror="this.remove();">` : '';
+      const thumbHtml = imgSrc ? `<img class="card-img" src="${escapeUrl(imgSrc)}" alt="" loading="lazy" data-onerr="remove">` : '';
       const costNote = h.condition === 'raw_to_grade' ? ' + grading' : '';
       const pnlHtml = pnl != null
         ? `<span class="${pnl >= 0 ? 'pos' : 'neg'}">${pnl >= 0 ? '+' : '−'}${fmtYen(Math.abs(pnl))}${pnlPct != null ? ' (' + fmtPct(pnlPct) + ')' : ''}</span>`
@@ -4255,7 +4276,7 @@
           <div class="pf-info">
             <div class="pf-name">${nameHtml}</div>
             ${nextStepHtml(h, match)}
-            <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeAttr(soldFormUrl(h.id, parseCardName(h.card_name_ja || '').short, soldPrefill(h, match)))}" target="_blank" rel="noopener">Sold it</a> · <a class="pf-remove" href="${escapeAttr(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
+            <div class="pf-meta">Bought ${escapeHtml(h.purchase_date || '—')} for ${fmtYen(h.purchase_price_jpy)}${costNote}${h.notes ? ' · ' + escapeHtml(h.notes) : ''}${h.id ? ` · <a class="pf-remove" href="${escapeUrl(soldFormUrl(h.id, parseCardName(h.card_name_ja || '').short, soldPrefill(h, match)))}" target="_blank" rel="noopener">Sold it</a> · <a class="pf-remove" href="${escapeUrl(removeFormUrl(h))}" target="_blank" rel="noopener">Remove</a>` : ''}</div>
             ${h.condition === 'raw_to_grade' && h.id && match ? gradeMetaHtml(match, { kind: 'holding', id: h.id, item: h }) : ''}
             ${holdingTimingHtml(h, match)}
           </div>
@@ -4321,7 +4342,7 @@
       <div class="wl-bar"><div class="seg wl-filter" role="tablist" aria-label="Sort binder">${Object.entries(sorts).map(([k, v]) => `<button type="button" data-bsort="${k}" class="${state.binderSort === k ? 'on' : ''}">${v}</button>`).join('')}</div></div>
       <div class="pf-list">${rows.map((c) => {
         const q = c.qty || 1, d = delta(c);
-        const img = c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : `<span class="muted" style="font-size:11px;text-align:center;padding:4px">${escapeHtml(c.set)}</span>`;
+        const img = c.image_url ? `<img class="card-img" src="${escapeUrl(c.image_url)}" alt="" loading="lazy" data-onerr="remove">` : `<span class="muted" style="font-size:11px;text-align:center;padding:4px">${escapeHtml(c.set)}</span>`;
         const basis = c.price == null ? (c.snkrdunk_id ? 'no price yet' : 'not matched on SNKRDUNK yet')
           : c.basis === 'sales' ? `median of ${Math.min(5, (c.sales || []).length)} recent A-rank sales` : 'lowest A-rank ask';
         return `
@@ -4470,7 +4491,7 @@
 
   function slabHtml(card, size) {
     const code = parseCardName(card.card_name_ja).code;
-    const img = card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const img = card.image_url ? `<img class="card-img" src="${escapeUrl(card.image_url)}" alt="" loading="lazy" data-onerr="remove">` : '';
     // Just the card (2026-10-11: no PSA case drawn around it). The coloured art band only shows when there's no photo (CSS :has).
     return `<span class="slab ${size || ''}" title="${escapeAttr(code)}"><span class="slab-art ${artClassFor(card)}">${img}</span></span>`;
   }
@@ -4688,7 +4709,7 @@
     const prev = list[(i - 1 + list.length) % list.length], next = list[(i + 1) % list.length];
     const link = (c, dir) => `<a class="cn-btn cn-${dir}" href="#/card/${escapeAttr(cardId(c))}" data-nav="${dir}" title="${dir === 'prev' ? 'Previous' : 'Next'} card (${dir === 'prev' ? '←' : '→'})">
         ${dir === 'prev' ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>' : ''}
-        <span class="wthumb cn-thumb">${c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+        <span class="wthumb cn-thumb">${c.image_url ? `<img class="card-img" src="${escapeUrl(c.image_url)}" alt="" loading="lazy" data-onerr="remove">` : ''}</span>
         <span class="cn-txt"><small>${dir === 'prev' ? 'Previous' : 'Next'}</small><b class="jp">${escapeHtml(parseCardName(c.card_name_ja).short)}</b></span>
         ${dir === 'next' ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' : ''}</a>`;
     return `<nav class="card-nav" aria-label="Browse cards">${link(prev, 'prev')}<span class="cn-pos">${i + 1} / ${list.length}</span>${link(next, 'next')}</nav>`;
@@ -4772,8 +4793,8 @@
       }
       const fav = card.favorite_count != null ? card.favorite_count.toLocaleString() : '—';
       const { short, code } = parseCardName(card.card_name_ja);
-      const thumbHtml = card.image_url ? `<img class="card-img" src="${escapeAttr(card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '';
-      return `<a class="watch-row" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">
+      const thumbHtml = card.image_url ? `<img class="card-img" src="${escapeUrl(card.image_url)}" alt="" loading="lazy" data-onerr="remove">` : '';
+      return `<a class="watch-row" href="${escapeUrl(card.url)}" target="_blank" rel="noopener">
         <span class="wthumb">${thumbHtml}</span>
         <span class="wname"><b class="jp">${escapeHtml(short || card.card_name_ja)}</b><small>${escapeHtml(code)}</small></span>
         <span class="wraw" title="${escapeAttr(rawPriceNote(rawPrice(card)))}"><small>Raw A</small><b class="display">${rawPriceV(card) != null ? fmtYen(rawPriceV(card)) : '—'}</b></span>
@@ -4945,9 +4966,9 @@
     const tabs = [['overview', 'Overview'], ['story', 'Story'], ['history', 'History'], ['listings', 'Listings'], ['diy', 'DIY'], ['upside', 'Upside']]
       .filter(([k]) => (k !== 'story' || storyOf(card)) && (k !== 'diy' || !own || own.toGrade)); // DIY (buy slab vs grade it yourself) is a buying question
     const actionsHtml = `<div class="cd-actions">
-          <a class="btn${own ? '' : ' btn-primary'}" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">${own ? '+ Bought another' : '✓ Bought it'}</a>
+          <a class="btn${own ? '' : ' btn-primary'}" href="${escapeUrl(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">${own ? '+ Bought another' : '✓ Bought it'}</a>
           ${own ? soldBtnHtml(card, own) : ''}
-          <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
+          <a class="btn" href="${escapeUrl(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
           ${mode === 'page' ? removeBtnHtml(card) : ''}
         </div>`;
     const cur = tabs.some(([k]) => k === state.cardTab) ? state.cardTab : 'overview';
@@ -5058,9 +5079,9 @@
       ${sellRowHtml(card)}
       <div class="dw-acts">
         <a class="btn btn-primary" href="#/card/${escapeAttr(id)}">Open card page →</a>
-        <a class="btn" href="${escapeAttr(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">${own ? '+ Bought another' : '✓ Bought it'}</a>
+        <a class="btn" href="${escapeUrl(boughtFormUrl(card))}" data-bought="${escapeAttr(cardId(card))}" target="_blank" rel="noopener" title="Log a purchase of this card">${own ? '+ Bought another' : '✓ Bought it'}</a>
         ${own ? soldBtnHtml(card, own) : ''}
-        <a class="btn" href="${escapeAttr(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
+        <a class="btn" href="${escapeUrl(card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a>
       </div>
     </div>`;
   }
@@ -5173,7 +5194,7 @@
     </section>`;
   }
   function grailFoot(g) {
-    return `<div class="gr-foot"><a class="btn" href="#/card/${escapeAttr(cardId(g.card))}">Full analysis</a><a class="btn" href="${escapeAttr(limitFormUrl(g.card))}" target="_blank" rel="noopener" data-limit-dlg="${escapeAttr(cardId(g.card))}" title="Your target is the card's limit, saved to all devices">${g.targetSrc === 'limit' ? 'Change target' : 'Set a target'}</a><a class="btn" href="${escapeAttr(g.card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a></div>`;
+    return `<div class="gr-foot"><a class="btn" href="#/card/${escapeAttr(cardId(g.card))}">Full analysis</a><a class="btn" href="${escapeUrl(limitFormUrl(g.card))}" target="_blank" rel="noopener" data-limit-dlg="${escapeAttr(cardId(g.card))}" title="Your target is the card's limit, saved to all devices">${g.targetSrc === 'limit' ? 'Change target' : 'Set a target'}</a><a class="btn" href="${escapeUrl(g.card.url)}" target="_blank" rel="noopener">SNKRDUNK ↗</a></div>`;
   }
   function grailMeta(g) {
     return [g.code, g.english ? 'English print' : '', g.pop != null ? `PSA10 pop ${g.pop.toLocaleString('en-US')}${g.gem != null ? ` · ${g.gem}% gem` : ''}` : ''].filter(Boolean).map(escapeHtml).join(' · ');
@@ -5274,7 +5295,7 @@
       const sub = [r.code || null, `today ${fmtYen(r.today)}`, r.lim != null ? `limit ${fmtYen(r.lim)}` : 'no limit', r.buyLine != null ? `Buy ≤${fmtYen(r.buyLine)}${gap > 0 ? ` (ask +${gap.toFixed(0)}%)` : ' (at Buy)'}` : null].filter(Boolean).join(' · ');
       return `<label class="pl-row ${r.on ? 'on' : ''}">
         <input type="checkbox" data-url="${escapeAttr(r.card.url)}" ${r.on ? 'checked' : ''}>
-        <span class="wthumb pl-thumb">${r.card.image_url ? `<img class="card-img" src="${escapeAttr(r.card.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>
+        <span class="wthumb pl-thumb">${r.card.image_url ? `<img class="card-img" src="${escapeUrl(r.card.image_url)}" alt="" loading="lazy" data-onerr="remove">` : ''}</span>
         <span class="pl-name">${escapeHtml(r.name)}${r.tag ? ` <span class="vtag ${r.tag}">${escapeHtml(tagLabel(r.tag))}</span>` : ''}${ownedUrls.has(r.card.url) ? ' <span class="pl-owned">owned</span>' : ''}</span>
         <span class="pl-price">${fmtYen(r.price)}${st.mode === 'limits' ? `<span class="pl-src">${r.fromLimit ? 'my limit' : 'today'}</span>` : ''}</span>
         <span class="pl-sub">${escapeHtml(sub)}${fits ? ' <span class="pl-fits">fits</span>' : ''}</span>
@@ -5695,7 +5716,7 @@
     }
     const res = comboSearch(cards, st, avail);
     const nameOf = (c) => parseCardName(c.card_name_ja).short;
-    const img = (c, cls) => (c.image_url ? `<img class="card-img ${cls || ''}" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '');
+    const img = (c, cls) => (c.image_url ? `<img class="card-img ${cls || ''}" src="${escapeUrl(c.image_url)}" alt="" loading="lazy" data-onerr="remove">` : '');
 
     const pinsTxt = res.pool.filter((x) => st.pins.includes(x.card.url)).map((x) => nameOf(x.card));
     const exclTxt = cards.filter((c) => st.excl.includes(c.url)).map(nameOf);
@@ -5790,7 +5811,7 @@
   // cards ignored, so the comparison is with everything on the tracker).
   // "Find best match": the best combination in one category that keeps every card of the portfolio.
   function rtThumb(c) {
-    return `<span class="wthumb rt-th">${c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : ''}</span>`;
+    return `<span class="wthumb rt-th">${c.image_url ? `<img class="card-img" src="${escapeUrl(c.image_url)}" alt="" loading="lazy" data-onerr="remove">` : ''}</span>`;
   }
   function rtAddHtml(added, nameOf) {
     return `<div class="rt-kh"><span>Add</span><div class="rt-adds">${added.map((x) => `<a class="rt-add" href="#/card/${escapeAttr(cardId(x.card))}">${rtThumb(x.card)}<span><b>${escapeHtml(nameOf(x.card))}</b><i>${fmtYen(x.p)}${x.fromLimit ? ' · my limit' : ''}</i></span></a>`).join('')}</div></div>`;
@@ -5831,7 +5852,7 @@
     const find = !!state.rateFind;
     const P = res.mine, o = P.o, N = res.combos.length;
     const nameOf = (c) => parseCardName(c.card_name_ja).short;
-    const img = (c) => (c.image_url ? `<img class="card-img" src="${escapeAttr(c.image_url)}" alt="" loading="lazy" onerror="this.remove();">` : '');
+    const img = (c) => (c.image_url ? `<img class="card-img" src="${escapeUrl(c.image_url)}" alt="" loading="lazy" data-onerr="remove">` : '');
     const t = cbMeasureText('fit', o, avail), over = o.total > avail;
     const pct = (v) => (v >= 0.99 ? (Math.floor(v * 1000) / 10).toFixed(1) : Math.round(v * 100)) + '%';
     const cats = cbCatsFor(st.mode).filter((c) => P.cats[c.k]);
@@ -6170,7 +6191,7 @@
     if (st === 'synced') return '<span class="limit-sync ok">✓ Saved on all devices</span>';
     if (st !== 'local') return '';
     const clearing = getLimit(card) == null;
-    return `<span class="limit-sync">${clearing ? 'Removed on this device only' : 'Only on this device'} · <a href="${escapeAttr(limitFormUrl(card))}" target="_blank" rel="noopener">${clearing ? 'Remove everywhere' : 'Save to all devices'} ↗</a><span class="limit-sync-hint">opens a GitHub form; submit it and every device updates in about a minute</span></span>`;
+    return `<span class="limit-sync">${clearing ? 'Removed on this device only' : 'Only on this device'} · <a href="${escapeUrl(limitFormUrl(card))}" target="_blank" rel="noopener">${clearing ? 'Remove everywhere' : 'Save to all devices'} ↗</a><span class="limit-sync-hint">opens a GitHub form; submit it and every device updates in about a minute</span></span>`;
   }
 
   function openLimitEditor(row, card) {
@@ -7115,7 +7136,8 @@
       const r = await fetch('https://api.github.com/repos/sprdl/psa10-tracker/issues?state=open&per_page=50',
         { headers: { Accept: 'application/vnd.github+json' } });
       if (!r.ok) return;
-      const issues = (await r.json()).filter((i) => !i.pull_request);
+      // only your own issues (2026-10-24): the repo is public, so anyone can open an issue with these labels
+      const issues = (await r.json()).filter((i) => !i.pull_request && i.user && String(i.user.login).toLowerCase() === 'sprdl');
       const has = (i, name) => (i.labels || []).some((l) => l.name === name);
       const cards = issues.filter((i) => has(i, 'add-card')).length;
       // Purchases are handled by GitHub Actions within a minute or so; one still open
@@ -7125,7 +7147,7 @@
       const parts = [];
       if (cards) parts.push(escapeHtml(`${cards} card request${cards === 1 ? '' : 's'} waiting for the next price check`));
       if (buys.length - stuck.length) parts.push('Recording a purchase… reload in a minute');
-      if (stuck.length) parts.push(`<a href="${escapeAttr(stuck[0].html_url)}" target="_blank" rel="noopener">A purchase couldn't be recorded. See why ↗</a>`);
+      if (stuck.length) parts.push(`<a href="${escapeUrl(stuck[0].html_url)}" target="_blank" rel="noopener">A purchase couldn't be recorded. See why ↗</a>`);
       if (!parts.length) return;
       [el, document.getElementById('card-requests-m')].forEach((x) => { if (x) { x.innerHTML = parts.join(' · '); x.hidden = false; } });
       if (state.currentData && !lazyPending.collection) renderCollection(state.currentData.cards || []);

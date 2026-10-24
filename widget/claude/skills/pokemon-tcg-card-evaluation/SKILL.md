@@ -15,7 +15,7 @@ A repeatable process for evaluating any PSA10 Japanese Pokémon card as a displa
 
 Check ownership first. With the computer linked, one `device_bash` call:
 ```
-python3 -c "import json;[print(h['id'],h['card_url'],h['condition'],h['purchase_price_jpy'],h.get('grading_fee_jpy',0)+h.get('shipping_insurance_jpy',0),h['purchase_date']) for h in json.load(open('data/holdings.json'))['holdings']]"
+python3 scripts/skill_query.py holdings
 ```
 A copy with condition `graded_other` came back below a 10 and isn't a PSA10 position: it needs no sell tiers. For break-even, `eval_context.py` prints the cost basis the site uses (grading counts once a copy is sent). An owned card gets the sell evaluation; do the buy part too only when the price check also asks for it (EVALUATE NOW / review due / verdict refresh), or the user wants to buy another copy.
 
@@ -49,7 +49,7 @@ Population counts only reflect what's already graded and returned — not true s
 - **Anniversary/event calendar** — is a hype-driving event (anniversary, new set, regulation news) approaching or just passed? Check whether unrelated cards/sets peaked in the same month — that pattern signals a single speculative narrative rather than card-specific fundamentals. If a card's own drawdown is *steeper* than the broad index's, say so explicitly — it means the card ran up harder than the market or is a bigger target for profit-taking. The tracker's `data/events.json` lists dated releases.
 - **My-tier index** (the tracker's own equal-weighted index of 22 modern SAR/alt-art PSA10s, the tier actually being bought) — its 30-day change feeds the correction rule and its 7-day change the rally flag in step 7. `eval_context.py` prints both; without it, one `device_bash` call reads the 30-day change:
   ```
-  python3 -c "import json,datetime as D;s=json.load(open('data/custom_index.json'))['series'];l=s[-1];t=(D.date.fromisoformat(l['d'])-D.timedelta(30)).isoformat();o=[e for e in s if e['d']<=t];print(l['d'],l['level'],'30d:',f\"{(l['level']/o[-1]['level']-1)*100:+.1f}%\" if o else 'n/a (under 30 days of data)')"
+  python3 scripts/skill_query.py mytier
   ```
 - **Upcoming events in the next ~3 days** — a major set or anniversary product release, a Pokémon Presents / product announcement, a PSA service or price change. Needed for the event rule in step 7 (confirmed on our own snapshots on 2026-10-02: keep it).
 - **Historical analog** — for anniversary-driven moves, the prior cycle (e.g. 25th anniversary → 30th anniversary) is a useful calibration tool: typical peak-to-trough give-back and typical time-to-floor
@@ -161,7 +161,7 @@ Field rules — get these right, since the app trusts this JSON as human judgmen
 
 ### 8. Apply it to the tracker
 
-**If the linked computer is available** (the `mcp__remote-devices__*` tools work), one `device_bash` call. Key the JSON by the card's **SNKRDUNK URL**, not its name, since similar names collide (V CSR vs. VMAX CSR, ゲッコウガ vs. メガゲッコウガ); several cards go in one object. Build the JSON with `json.dumps` or check it with `python3 -m json.tool` before applying (hand-typed JSON has lost a closing brace before), and preview with `--dry-run` when it's a new card or new sell tiers:
+**If the linked computer is available** (the `mcp__remote-devices__*` tools work), one `device_bash` call. Key the JSON by the card's **SNKRDUNK URL**, not its name, since similar names collide (V CSR vs. VMAX CSR, ゲッコウガ vs. メガゲッコウガ); several cards go in one object. Check the saved JSON with `python3 scripts/skill_query.py checkjson data/incoming/apply_analysis-in.txt` before applying (hand-typed JSON has lost a closing brace before), and preview with `--dry-run` when it's a new card or new sell tiers:
 ```
 python3 scripts/apply_analysis.py - < data/incoming/apply_analysis-in.txt 2>&1 | tail -30
 ```

@@ -8,6 +8,6 @@ try: print(json.load(sys.stdin).get("message","")[:120])
 except Exception: print("")' 2>/dev/null)
 touch "$HOME/.psa10/state/attention"
 msg=${msg:-Claude is waiting for you}
-msg=${msg//\"/\'}
-osascript -e "display notification \"$msg — click 👻 → Show window\" with title \"Ghost Bid: price check needs you\" sound name \"Glass\"" >/dev/null 2>&1
+# passed as an argument, never spliced into the AppleScript (2026-10-24 security audit)
+osascript -e 'on run argv' -e 'display notification ((item 1 of argv) & " — click 👻 → Show window") with title "Ghost Bid: price check needs you" sound name "Glass"' -e 'end run' "$msg" >/dev/null 2>&1
 exit 0

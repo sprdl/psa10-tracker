@@ -41,6 +41,10 @@ from pathlib import Path
 REPO = "sprdl/psa10-tracker"
 API = f"https://api.github.com/repos/{REPO}"
 LABEL = "add-card"
+# Only requests opened by the repo owner count (2026-10-24 security audit): the repo is public and its issue forms
+# are open to anyone, so a stranger's "Add card" issue must never reach a price check (it would add a card, push
+# and deploy, and its text would be read by the run). The GitHub Actions filter the same way.
+OWNER = REPO.split("/")[0]
 JST = timezone(timedelta(hours=9))
 ROOT = Path(__file__).resolve().parent.parent
 TRACKED = ROOT / "data" / "tracked_cards.json"
@@ -142,15 +146,20 @@ def flag(args, name, default=None):
 def cmd_list(args):
     t = token()
     issues = api("GET", f"/issues?state=open&labels={LABEL}&per_page=50", auth=bool(t))
-    out = []
+    out, foreign = [], 0
     for it in issues:
         if "pull_request" in it:
+            continue
+        if ((it.get("user") or {}).get("login") or "").lower() != OWNER.lower():
+            foreign += 1   # not yours: ignored, and its title/body is never printed
             continue
         m = URL_RE.search((it.get("title") or "") + "\n" + (it.get("body") or ""))
         out.append({"number": it["number"], "title": it.get("title"),
                     "snkrdunk_id": m.group(1) if m else None,
                     "url": f"https://snkrdunk.com/apparels/{m.group(1)}" if m else None})
     print(json.dumps(out, ensure_ascii=False))
+    if foreign:
+        print(f"(ignored {foreign} add-card request(s) not opened by {OWNER})", file=sys.stderr)
 
 
 def cmd_add(args):
@@ -165,6 +174,8 @@ def cmd_add(args):
                               ("psa_pop_name", flag(args, "--psa-name", ""))) if v}
 
     issue = api("GET", f"/issues/{num}", auth=bool(token()))
+    if ((issue.get("user") or {}).get("login") or "").lower() != OWNER.lower():
+        die(f"issue #{num} wasn't opened by {OWNER}: only your own requests are added")
     m = URL_RE.search((issue.get("title") or "") + "\n" + (issue.get("body") or ""))
     if not m:
         die(f"issue #{num} has no SNKRDUNK product URL — use `reject {num} \"...\"` instead")
